@@ -30,7 +30,7 @@ function contentsContainCongrats(message) {
 }
 function playCongrats(connection, message){
     var server = servers[message.guild.id];
-    server.dispatcher = connection.play(ytdl("https://www.youtube.com/watch?v=oyFQVZ2h0V8", {filter: "audioonly"}));
+    server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', { quality: 'highestaudio'}));
     server.dispatcher.setVolume(1);
 }
 
