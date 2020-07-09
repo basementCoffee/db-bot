@@ -13,6 +13,7 @@
     "discord.js": "^12.2.0",
     "npm-install": "^1.4.1",
     "npm-start": "^1.4.2",
-    "sqlite3": "^5.0.0"
+    "sqlite3": "^5.0.0",
+    "ytdl-core": "^3.1.2"
   }
 }
