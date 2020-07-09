@@ -75,7 +75,7 @@ function playCongrats(connection, message){
                 case '!p':
                     function play(connection, message){
                         var server = servers[message.guild.id];
-                        server.dispatcher = connection.play(ytdl(server.queue[0], {filter: "audioonly"}));
+                        server.dispatcher = connection.play(ytdl(server.queue[0], { quality: 'highestaudio'}));
                         server.queue.shift();
 
                         server.dispatcher.on("end", function(){
