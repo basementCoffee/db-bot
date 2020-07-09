@@ -130,13 +130,11 @@ function playCongrats(connection, message){
                 
                 
                 
-                
-                
-                
-                
-                
-                
-                
+                // prints out the database size
+                case "!c" :
+                    message.channel.send("Database size:" + congratsDatabase.length);
+              
+                break;
                 //!d to run database songs
 
                 case "!d":
@@ -152,13 +150,13 @@ function playCongrats(connection, message){
                     }
                     
                     server = servers[message.guild.id];
-        
-                    server.queue.push(congratsDatabase.get(args[1]));
                     whatsp = args[1];
+                    server.queue.push(congratsDatabase.get(args[1]));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
                         } catch(e) {
+                            console.log("this broke:" + whatsp);
                             console.log(e);
                             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
                             connection.disconnect();
@@ -173,23 +171,40 @@ function playCongrats(connection, message){
                     if(!servers[message.guild.id]) servers[message.guild.id] = {
                         queue: []
                     }
+                    let numOfRetries = 0;
+                    function playRandom() {
+                        numOfRetries += 1;
                     server = servers[message.guild.id];
                     let rKeyArray = Array.from(congratsDatabase.keys());
                     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
                     let rk = rKeyArray[rn];
+                    console.log("attempting to play key:" + rk);
+                    whatsp = congratsDatabase.get(rk);
                     server.queue.push(congratsDatabase.get(rk));
-                    whatsp = congratsDatabase.get(rk)
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
                         } catch(e) {
+                            console.log("this key broke:" + rk);
                             console.log(e);
-                            message.channel.send("Sorry buddy, couldn't find the video. uh... this is weird");
-                            message.channel.send("I'll see myself out");
-                            connection.disconnect();
+                            if (rk > 2) {
+                                message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
+                                connection.disconnect();
+                                return;
+                            } else {
+                                if (rk > 1) { 
+                                    message.channel.send("Hmmm, lemme try that again...");
+                                } else {
+                            message.channel.send("There was something funky happening in my db dw but here's a random song.");
+                                }
+                            //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
+                            playRandom();
+                            }
                             return;
                         }
                     })
+                }
+                playRandom();
                     break;
                 
                 //!h returns all existing tags in the database
@@ -218,8 +233,8 @@ function playCongrats(connection, message){
 
                 case "!h" :
                     message.channel.send(
-                        "Things you could ask me:\n !p [insert youtube link] -> to play a video\n !e -> stops playing [\n"
-                        + "!keys -> see a list of saved musicians\n !d [insert a key] -> to play a song from the key list\n"
+                        "Things you could ask me:\n !p [youtube link] --> to play a video\n !e --> stops playing \n"
+                        + "!keys --> see a list of saved musicians\n !d [insert a key] --> to play a song from the key list\n"
                         +"**Or just say congrats! I love saying it too :)**");
             break;
             case "!?":
