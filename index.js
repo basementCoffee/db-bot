@@ -7,7 +7,7 @@ const {
 // initialization 
 const bot = new Client();
 const ytdl = require("ytdl-core");
-const token = 'NzMwMzUwNDUyMjY4NTk3MzAw.Xwa_9Q.DR8jEGBzVt31unaK0WJe2FCtGw0';
+// const token = 'NzMwMzUwNDUyMjY4NTk3MzAw.Xwa_9Q.DR8jEGBzVt31unaK0WJe2FCtGw0';
 const PREFIX = '!';
 var version = '1.0.0';
 var servers = {};
