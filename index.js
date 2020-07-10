@@ -18,7 +18,28 @@ var whatsp = "";
 // parses message, provides a response
 bot.on('message', msg=>{
     if(msg.content.includes("hello")){
-        msg.reply('HELLO FRIEND!');
+        let randomInt = Math.floor(Math.random() * 3);
+        if (randomInt == 0) {
+            let randomInt2 = Math.floor(Math.random() * 3);
+            // valorant responses
+            if (randomInt2 == 0) {
+        msg.reply("Sup, who's down for some Valorant?");
+            } else if(randomInt2 == 1) {
+                msg.reply("Hello my fellow Valorant gamer");
+            } else {
+                msg.reply("Hi, just busy trying out this game called Valorant... I heard it's not half bad");
+            }
+            // end valorant responses
+        } else if (randomInt = 1) {
+            let randomInt3 = Math.floor(Math.random() * 2);
+            if (randomInt3 == 0) {
+            msg.reply("Howdy-.. I mean BKAWHH");
+            } else {
+                msg.reply("Quak quak?");
+            }
+        } else {
+            msg.reply('HELLO FRIEND!');
+        }
     }
 })
 
@@ -61,7 +82,7 @@ function playCongrats(connection, message){
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         playCongrats(connection, message);
                     })
-                    return;
+                    return; 
                 }
             }
             }
@@ -127,13 +148,10 @@ function playCongrats(connection, message){
                         
                         break;
                 
-                
-                
-                
                 // prints out the database size
                 case "!c" :
                     let rKeyArray = Array.from(congratsDatabase.keys());
-                    message.channel.send("Database size: " + rKeyArray.length.toString);
+                    message.channel.send("Database size: " + rKeyArray.length);
               
                 break;
                 //!d to run database songs
@@ -173,10 +191,10 @@ function playCongrats(connection, message){
                         queue: []
                     }
                     var numOfRetries = 0;
-                    function playRandom() {
-                        numOfRetries += 1;
                     server = servers[message.guild.id];
                     let rKeyArray = Array.from(congratsDatabase.keys());
+                    function playRandom() {
+                        numOfRetries += 1;
                     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
                     let rk = rKeyArray[rn];
                     console.log("attempting to play key:" + rk);
@@ -186,14 +204,14 @@ function playCongrats(connection, message){
                         try {
                         play(connection, message);
                         } catch(e) {
-                            console.log("this key broke:" + rk);
+                            console.log("this key broke:" + rk);x
                             console.log(e);
-                            if (rk > 2) {
+                            if (numOfRetries > 2) {
                                 message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
                                 connection.disconnect();
                                 return;
                             } else {
-                                if (rk > 1) { 
+                                if (numOfRetries > 1) { 
                                     message.channel.send("Hmmm, lemme try that again...");
                                 } else {
                             message.channel.send("There was something funky happening in my db dw but here's a random song.");
@@ -231,18 +249,20 @@ function playCongrats(connection, message){
                }
                message.channel.send(s);
                 break;
-
-                case "!h" :
-                    message.channel.send(
-                        "Things you could ask me:\n !p [youtube link] --> to play a video\n !e --> stops playing \n"
-                        + "!keys --> see a list of saved musicians\n !d [insert a key] --> to play a song from the key list\n"
-                        +"**Or just say congrats! I love saying it too :)**");
-            break;
             case "!?":
                 if (whatsp != "") {
                 message.channel.send(whatsp);
                 }
                 break;
+            case "!h" :
+                    message.channel.send(
+                        "Things you could ask me:\n !p [youtube link] --> to play a video\n !e --> stops playing \n"
+                        + "!keys --> see a list of saved musicians\n !d [insert a key] --> to play a song from the key list\n"
+                        +"**Or just say congrats! I love saying it too :)**");
+            break;
+            case "!hv" :
+            message.channel.send("version:" + v);
+            break;
           }
         }
     })
