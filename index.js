@@ -72,7 +72,7 @@ function playCongrats(connection, message){
                 queue: []
             }
             server = servers[message.guild.id];
-            //server.queue.push(args[1]);
+            server.queue.push(args[1]);
             var word = messageArray[i];
             console.log(word);
             if ((word.includes("grats") || word.includes("gratz")|| word.includes("ongratulations")) && !(word.substring(0,1).includes("!"))) {
@@ -125,7 +125,7 @@ function playCongrats(connection, message){
 
                     
                     server = servers[message.guild.id];
-                    //server.queue.push(args[1]);
+                    server.queue.push(args[1]);
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
@@ -151,10 +151,7 @@ function playCongrats(connection, message){
                         if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                             server.dispatcher = connection.disconnect();
                         })
-                        
-
                         whatsp = "";
-                        
                         break;
                 
                 // prints out the database size
@@ -178,7 +175,7 @@ function playCongrats(connection, message){
                     server = servers[message.guild.id];
                     whatsp = congratsDatabase.get(args[1]);
                     let dPhrase = args[1];
-                    //server.queue.push(congratsDatabase.get(args[1]));
+                    server.queue.push(congratsDatabase.get(args[1]));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
@@ -207,7 +204,7 @@ function playCongrats(connection, message){
                     let rk = rKeyArray[rn];
                     console.log("attempting to play key:" + rk);
                     whatsp = congratsDatabase.get(rk);
-                    //server.queue.push(congratsDatabase.get(rk));
+                    server.queue.push(congratsDatabase.get(rk));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
