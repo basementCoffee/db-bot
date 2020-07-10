@@ -178,7 +178,7 @@ function playCongrats(connection, message){
                     //server = servers[message.guild.id];
                     whatsp = congratsDatabase.get(args[1]);
                     let dPhrase = args[1];
-                    server.queue.push(congratsDatabase.get(args[1]));
+                    //server.queue.push(congratsDatabase.get(args[1]));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
