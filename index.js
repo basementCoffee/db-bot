@@ -31,12 +31,15 @@ bot.on('message', msg=>{
             }
             // end valorant responses
         } else if (randomInt == 1) {
-            let randomInt3 = Math.floor(Math.random() * 3);
+            let randomInt3 = Math.floor(Math.random() * 4);
             if (randomInt3 == 0) {
             msg.reply("Howdy-.. I mean BKAWHH");
             } else if (randomInt3 == 1) {
                 msg.reply("Quak quak?");
-            } else {
+            } else if (randomInt3 == 2) {
+                msg.reply("Hi. How's it going.");
+            } 
+            else {
                 msg.reply("Hello! I'm your friendly neighborhood penguin.");
             }
         } else {
@@ -214,7 +217,7 @@ function playCongrats(connection, message){
                         try {
                         play(connection, message);
                         } catch(e) {
-                            console.log("this broke:" + rk);x
+                            console.log("this broke:" + rk);
                             console.log(e);
                             if (numOfRetries > 2) {
                                 message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
