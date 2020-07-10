@@ -306,7 +306,7 @@ function printErrorToChannel(activationType, songKey, e) {
         
         ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
 
-        ["broken", "https://www.youtube.com1aKeETk"],
+        ["broken", "https://www.youtube.com/watch?v=6ih1aKeETk"],
         
         
         ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
