@@ -28,7 +28,7 @@ bot.on('message', msg=>{
             } else if(randomInt2 == 1) {
                 msg.reply("Hello my fellow Valorant gamer");
             } else {
-                msg.reply("Hi, just busy trying out this game called Valorant... I heard it's not half bad");
+                msg.reply("Hi, just busy trying out this game called Valorant... it's not half bad");
             }
             // end valorant responses
         } else if (randomInt == 1) {
@@ -178,7 +178,12 @@ function playCongrats(connection, message){
                     }
                     
                     server = servers[message.guild.id];
+                    try {
                     whatsp = congratsDatabase.get(args[1]);
+                    } catch(e) {
+                        message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
+                        return;
+                    }
                     let dPhrase = args[1];
                     server.queue.push(congratsDatabase.get(args[1]));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
@@ -290,7 +295,7 @@ function playCongrats(connection, message){
             break;
             // prints out the version number
             case "!v" :
-            message.channel.send("version: " + v);
+            message.channel.send("version: " + version);
             break;
           }
         }
@@ -346,7 +351,7 @@ function printErrorToChannel(activationType, songKey, e) {
         ["gorillaz", "https://www.youtube.com/watch?v=NDvlD3E7DWg"],
         
         
-        ["mr.robot", "https://www.youtube.com/watch?v=PxJJkfsHGyM"],
+        ["mrrobot", "https://www.youtube.com/watch?v=PxJJkfsHGyM"],
         
         
         ["glassanimals-y", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
@@ -360,7 +365,7 @@ function printErrorToChannel(activationType, songKey, e) {
         
         ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
 
-        ["postmalone-no", "https://www.youtube.com/watch?v=tdKBNT641V8"],
+        ["malone-no", "https://www.youtube.com/watch?v=tdKBNT641V8"],
         
         
         ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
@@ -381,6 +386,8 @@ function printErrorToChannel(activationType, songKey, e) {
         
         
         ["ishome", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
+
+        ["toliver-ap", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
         
         
         ["zhu-f", "https://www.youtube.com/watch?v=7373VBAN9eU"],
