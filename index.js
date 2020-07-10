@@ -9,7 +9,7 @@ const bot = new Client();
 const ytdl = require("ytdl-core");
 //const token = 'N  z     MwMzUwNDUyMjY4NTk3MzAw.Xwdv7g.cQoviYyvcFsDhXSHme4m--5L_d0';
 const PREFIX = '!';
-var version = '1.0.2';
+var version = '1.0.3';
 var servers = {};
 var testingChannelGuildID = 726687842150907924;
 //bot.login(token);
@@ -219,7 +219,7 @@ function playCongrats(connection, message){
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                             console.log("calling play method...");
-                        play(connection, message);
+                            play(connection, message);
                         } catch(e) {
                             // Error catching - fault with the database yt link?
                             console.log("this broke:" + rk);
