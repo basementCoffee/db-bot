@@ -72,7 +72,7 @@ function playCongrats(connection, message){
                 queue: []
             }
             server = servers[message.guild.id];
-            server.queue.push(args[1]);
+            //server.queue.push(args[1]);
             var word = messageArray[i];
             console.log(word);
             if ((word.includes("grats") || word.includes("gratz")|| word.includes("ongratulations")) && !(word.substring(0,1).includes("!"))) {
@@ -159,17 +159,10 @@ function playCongrats(connection, message){
                 
                 // prints out the database size
                 case "!s" :
-                    // OLD WORKING CODE
-                    /*
-                    let cKeyArray = Array.from(congratsDatabase.keys());
-                    message.channel.send("Database size: " + cKeyArray.length);
-                    */
-
-                   // NEW ATTEMPT - faster delivery
                    message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
                 break;
-                //!d to run database songs
 
+                // to run database songs
                 case "!d":
                     if (!args[1]) {
                         message.channel.send("N-NANI? There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
@@ -214,7 +207,7 @@ function playCongrats(connection, message){
                     let rk = rKeyArray[rn];
                     console.log("attempting to play key:" + rk);
                     whatsp = congratsDatabase.get(rk);
-                    server.queue.push(congratsDatabase.get(rk));
+                    //server.queue.push(congratsDatabase.get(rk));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
@@ -243,14 +236,7 @@ function playCongrats(connection, message){
                 
                 //!h returns all existing tags in the database
                 case "!keys" :
-                    /*
-                    for (var key in congratsDatabase){
-                        keys.push(key);
-                    message.channel.send(key);
-                }
-                */
                let keyArray = Array.from(congratsDatabase.keys());
-               //var keyArray = Object.keys(congratsDatabase);
                var s = "";
                for (var key in keyArray) {
                    //s = s + key;
@@ -260,7 +246,6 @@ function playCongrats(connection, message){
                    } else {
                        s = s + ", " + keyArray[key]
                    }
-                   
                }
                message.channel.send(s);
                 break;
@@ -271,6 +256,7 @@ function playCongrats(connection, message){
                     message.channel.send("Nothing is playing right now");
                 }
                 break;
+                // list commands for public
             case "!h" :
                     message.channel.send(
                         "Things you could! ask me: (v: " + version +") \n"
@@ -283,6 +269,7 @@ function playCongrats(connection, message){
                         + "!s --> Prints the size of the song database \n"
                         +"**Or just say congrats! I love saying that too :)**");
             break;
+            // prints out the version number
             case "!hv" :
             message.channel.send("version:" + v);
             break;
@@ -328,6 +315,8 @@ function playCongrats(connection, message){
         
         ["glassanimals-y", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
         ["glassanimals-t", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
+
+        ["haddaway", "https://www.youtube.com/watch?v=HEXWRTEbj1I"],
         
         
         ["brokenbells", "https://www.youtube.com/watch?v=Lkv2zF2Bgq0"],
