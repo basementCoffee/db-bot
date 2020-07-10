@@ -143,10 +143,10 @@ function playCongrats(connection, message){
 
                //!e is the Stop feature
                 case "!e" :
-                        //server = servers[message.guild.id];
-                        //if(!servers[message.guild.id]) servers[message.guild.id] = {
-                        //    queue: []
-                        //}
+                        server = servers[message.guild.id];
+                        if(!servers[message.guild.id]) servers[message.guild.id] = {
+                            queue: []
+                        }
                         
                         if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                             server.dispatcher = connection.disconnect();
@@ -175,7 +175,7 @@ function playCongrats(connection, message){
                         queue: []
                     }
                     
-                    //server = servers[message.guild.id];
+                    server = servers[message.guild.id];
                     whatsp = congratsDatabase.get(args[1]);
                     let dPhrase = args[1];
                     //server.queue.push(congratsDatabase.get(args[1]));
@@ -235,12 +235,11 @@ function playCongrats(connection, message){
                     break;
                 
                 //!h returns all existing tags in the database
-                case "!keys" :
-               let keyArray = Array.from(congratsDatabase.keys());
+                case "!key" :
+               var keyArray = Array.from(congratsDatabase.keys());
+               keyArray.sort();
                var s = "";
                for (var key in keyArray) {
-                   //s = s + key;
-                   //message.channel.send(s);
                    if (key == 0) {
                        s = keyArray[key];
                    } else {
