@@ -214,12 +214,13 @@ function playCongrats(connection, message){
                     server.queue.push(congratsDatabase.get(rk));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
+                            console.log("calling play method...");
                         play(connection, message);
                         } catch(e) {
                             // Error catching - fault with the database yt link?
                             console.log("this broke:" + rk);
-                            bot.channels.cache.get("726687842150907924").send("ERROR: When called random, song key: "+ rk);
-                            bot.channels.cache.get("726687842150907924").send(e);
+                            //bot.channels.cache.get("726687842150907924").send("ERROR: When called random, song key: "+ rk);
+                            //bot.channels.cache.get("726687842150907924").send(e);
                             console.log(e);
                             if (numOfRetries > 2) {
                                 message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
@@ -242,7 +243,7 @@ function playCongrats(connection, message){
                     break;
                 
                 //!h returns all existing tags in the database
-                case "!key" || "!keys" :
+                case "!key" :
                var keyArray = Array.from(congratsDatabase.keys());
                keyArray.sort();
                var s = "";
@@ -255,7 +256,21 @@ function playCongrats(connection, message){
                }
                message.channel.send(s);
                 break;
+                case "!keys" :
+                    var keyArray = Array.from(congratsDatabase.keys());
+                    keyArray.sort();
+                    var s = "";
+                    for (var key in keyArray) {
+                        if (key == 0) {
+                            s = keyArray[key];
+                        } else {
+                            s = s + ", " + keyArray[key]
+                        }
+                    }
+                    message.channel.send(s);
+                     break;
             case "!?":
+                printErrorToChannel2();
                 if (whatsp != "") {
                 message.channel.send(whatsp);
                 } else {
@@ -264,8 +279,9 @@ function playCongrats(connection, message){
                 break;
                 // list commands for public
             case "!h" :
+                printErrorToChannel();
                     message.channel.send(
-                        "Things you could ask me: *(v: " + version +")* \n"
+                        "Things you could ask me:\n"
                         + "----------------------------------------------\n"
                         + "!p [youtube link] --> Plays YouTube video\n "
                         + "!e --> Stops playing \n "
@@ -278,7 +294,7 @@ function playCongrats(connection, message){
             break;
             // prints out the version number
             case "!hv" :
-            message.channel.send("version:" + v);
+            message.channel.send("version: " + v);
             break;
           }
         }
@@ -297,7 +313,14 @@ function printErrorToChannel(activationType, songKey, e) {
      * Prints the error to the testing channel with no args.
      */
     function printErrorToChannel() {
-        bot.channels.cache.get("726687842150907924").send("There was an error!");
+        bot.channels.cache.get("730239813403410619").send("There was an error Keith!");
+    }
+
+    /**
+     * Prints the error to the testing channel with no args take 2.
+     */
+    function printErrorToChannel2() {
+        bot.channels.cache.get("726687842150907924").send("There was an error Bot!");
     }
 
 
