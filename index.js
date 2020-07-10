@@ -285,7 +285,7 @@ function playCongrats(connection, message){
 
 //Map for the database with [tag], [url]
 
-    var congratsDatabase = new Map([
+    var congratsDatabase = new Map(
         ["karmafields-b", "https://www.youtube.com/watch?v=ijpgqchByuY"], 
         ["karmafields-w", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
 
@@ -322,6 +322,8 @@ function playCongrats(connection, message){
         
         
         ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
+
+        ["postmalone-no", "https://www.youtube.com/watch?v=tdKBNT641V8"],
         
         
         ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
@@ -350,4 +352,4 @@ function playCongrats(connection, message){
         
         ["beberexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"]
         
-      ]);
+      );
