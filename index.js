@@ -72,7 +72,7 @@ function playCongrats(connection, message){
                 queue: []
             }
             server = servers[message.guild.id];
-            //server.queue.push(args[1]);
+            server.queue.push(args[1]);
             var word = messageArray[i];
             console.log(word);
             if ((word.includes("grats") || word.includes("gratz")|| word.includes("ongratulations")) && !(word.substring(0,1).includes("!"))) {
@@ -147,10 +147,12 @@ function playCongrats(connection, message){
                         //if(!servers[message.guild.id]) servers[message.guild.id] = {
                         //    queue: []
                         //}
-
+                        
                         if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                             server.dispatcher = connection.disconnect();
                         })
+                        
+
                         whatsp = "";
                         
                         break;
@@ -176,14 +178,14 @@ function playCongrats(connection, message){
                     if(!message.member.voice.channel){
                         return;
                     }
-                    //if(!servers[message.guild.id]) servers[message.guild.id] = {
-                      //  queue: []
-                    //}
+                    if(!servers[message.guild.id]) servers[message.guild.id] = {
+                        queue: []
+                    }
                     
                     //server = servers[message.guild.id];
                     whatsp = congratsDatabase.get(args[1]);
                     let dPhrase = args[1];
-                    //server.queue.push(congratsDatabase.get(args[1]));
+                    server.queue.push(congratsDatabase.get(args[1]));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
@@ -200,11 +202,11 @@ function playCongrats(connection, message){
                     if(!message.member.voice.channel){
                         return;
                     }
-                    //if(!servers[message.guild.id]) servers[message.guild.id] = {
-                    //    queue: []
-                    //}
+                    if(!servers[message.guild.id]) servers[message.guild.id] = {
+                        queue: []
+                    }
                     var numOfRetries = 0;
-                    //server = servers[message.guild.id];
+                    server = servers[message.guild.id];
                     let rKeyArray = Array.from(congratsDatabase.keys());
                     function playRandom() {
                         numOfRetries += 1;
@@ -212,7 +214,7 @@ function playCongrats(connection, message){
                     let rk = rKeyArray[rn];
                     console.log("attempting to play key:" + rk);
                     whatsp = congratsDatabase.get(rk);
-                    //server.queue.push(congratsDatabase.get(rk));
+                    server.queue.push(congratsDatabase.get(rk));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
