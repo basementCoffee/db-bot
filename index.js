@@ -192,7 +192,7 @@ function playCongrats(connection, message){
                         } catch(e) {
                             console.log("this broke:" + dPhrase);
                             console.log(e);
-                            printErrorToChannel("!d", whatsp, e);
+                            printErrorToChannel("!d", whatsp + " - probably a broken link?", e);
                             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
                             connection.disconnect();
                             return;
