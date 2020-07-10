@@ -17,7 +17,7 @@ var whatsp = "";
 
 // parses message, provides a response
 bot.on('message', msg=>{
-    if(msg.content.includes("hello")){
+    if(msg.content.includes("hello" || "howdy")){
         let randomInt = Math.floor(Math.random() * 3);
         if (randomInt == 0) {
             let randomInt2 = Math.floor(Math.random() * 3);
@@ -30,12 +30,14 @@ bot.on('message', msg=>{
                 msg.reply("Hi, just busy trying out this game called Valorant... I heard it's not half bad");
             }
             // end valorant responses
-        } else if (randomInt = 1) {
-            let randomInt3 = Math.floor(Math.random() * 2);
+        } else if (randomInt == 1) {
+            let randomInt3 = Math.floor(Math.random() * 3);
             if (randomInt3 == 0) {
             msg.reply("Howdy-.. I mean BKAWHH");
-            } else {
+            } else if (randomInt3 == 1) {
                 msg.reply("Quak quak?");
+            } else {
+                msg.reply("Hello! I'm your friendly neighborhood penguin.");
             }
         } else {
             msg.reply('HELLO FRIEND!');
@@ -149,10 +151,15 @@ function playCongrats(connection, message){
                         break;
                 
                 // prints out the database size
-                case "!c" :
+                case "!s" :
+                    // OLD WORKING CODE
+                    /*
                     let cKeyArray = Array.from(congratsDatabase.keys());
                     message.channel.send("Database size: " + cKeyArray.length);
-              
+                    */
+
+                   // NEW ATTEMPT - faster delivery
+                   message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
                 break;
                 //!d to run database songs
 
@@ -256,9 +263,15 @@ function playCongrats(connection, message){
                 break;
             case "!h" :
                     message.channel.send(
-                        "Things you could ask me:\n !p [youtube link] --> to play a video\n !e --> stops playing \n"
-                        + "!keys --> see a list of saved musicians\n !d [insert a key] --> to play a song from the key list\n"
-                        +"**Or just say congrats! I love saying it too :)**");
+                        "Things you could ask me: (v: " + version +") \n"
+                        + "!p [youtube link] --> Plays YouTube video\n "
+                        + "!e --> Stops playing \n "
+                        + "!? --> Tells you what's playing \n"
+                        + "*Curated songs[WIP]:*  \n"
+                        + "!keys --> All the artist tags (separated by a comma) \n"
+                        + "!d [key] --> Plays a song from the database \n"
+                        + "!s --> Prints the size of the song database \n"
+                        +"**Or just say congrats! I love saying that too :)**");
             break;
             case "!hv" :
             message.channel.send("version:" + v);
