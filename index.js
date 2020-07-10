@@ -187,7 +187,6 @@ function playCongrats(connection, message){
                         } catch(e) {
                             console.log("this broke:" + dPhrase);
                             console.log(e);
-                            bot.channels.cache.get("726687842150907924").send("ERROR: When called !d, song key: "+ rk);
                             printErrorToChannel("!d", rk, e);
                             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
                             connection.disconnect();
@@ -219,8 +218,7 @@ function playCongrats(connection, message){
                         } catch(e) {
                             // Error catching - fault with the database yt link?
                             console.log("this broke:" + rk);
-                            //bot.channels.cache.get("726687842150907924").send("ERROR: When called random, song key: "+ rk);
-                            //bot.channels.cache.get("726687842150907924").send(e);
+                            printErrorToChannel("!r", rk, e);
                             console.log(e);
                             if (numOfRetries > 2) {
                                 message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
@@ -270,16 +268,14 @@ function playCongrats(connection, message){
                     message.channel.send(s);
                      break;
             case "!?":
-                printErrorToChannel2();
                 if (whatsp != "") {
-                message.channel.send(whatsp);
+                    message.channel.send(whatsp);
                 } else {
                     message.channel.send("Nothing is playing right now");
                 }
                 break;
                 // list commands for public
             case "!h" :
-                printErrorToChannel();
                     message.channel.send(
                         "Things you could ask me:\n"
                         + "----------------------------------------------\n"
@@ -293,7 +289,7 @@ function playCongrats(connection, message){
                         +"**Or just say congrats! I love saying that too :)**");
             break;
             // prints out the version number
-            case "!hv" :
+            case "!v" :
             message.channel.send("version: " + v);
             break;
           }
@@ -303,24 +299,20 @@ function playCongrats(connection, message){
 
     /**
      * Prints the error to the testing channel.
+     * @param activationType the keyword that causes the error
+     * @param songKey the keyword of the song in the database
+     * @param e the error message
      */
 function printErrorToChannel(activationType, songKey, e) {
-    bot.channels.cache.get("726687842150907924").send("ERROR: When called " + activationType +", song key: "+ songKey);
-    bot.channels.cache.get("726687842150907924").send(e);
+    bot.channels.cache.get("730239813403410619").send("ERROR: When called " + activationType +", song key: "+ songKey);
+    bot.channels.cache.get("730239813403410619").send(e);
 }
 
     /**
      * Prints the error to the testing channel with no args.
      */
     function printErrorToChannel() {
-        bot.channels.cache.get("730239813403410619").send("There was an error Keith!");
-    }
-
-    /**
-     * Prints the error to the testing channel with no args take 2.
-     */
-    function printErrorToChannel2() {
-        bot.channels.cache.get("726687842150907924").send("There was an error Bot!");
+        bot.channels.cache.get("730239813403410619").send("There was an error!");
     }
 
 
