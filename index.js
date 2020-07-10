@@ -11,6 +11,7 @@ const ytdl = require("ytdl-core");
 const PREFIX = '!';
 var version = '1.0.1';
 var servers = {};
+var testingChannelGuildID = 726687842150907924;
 //bot.login(token);
 bot.login(process.env.token);
 var whatsp = "";
@@ -209,7 +210,10 @@ function playCongrats(connection, message){
                         try {
                         play(connection, message);
                         } catch(e) {
+                            // Error catching - fault with the database yt link?
                             console.log("this broke:" + rk);
+                            bot.channels.cache.get("726687842150907924").send("ERROR: When called random, song key: "+ rk);
+                            bot.channels.cache.get("726687842150907924").send(e);
                             console.log(e);
                             if (numOfRetries > 2) {
                                 message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
@@ -217,9 +221,9 @@ function playCongrats(connection, message){
                                 return;
                             } else {
                                 if (numOfRetries > 1) { 
-                                    message.channel.send("Hmmm, lemme try that again...");
+                                    message.channel.send("Uh oh, hmm, lemme try that again...");
                                 } else {
-                            message.channel.send("There was something funky happening in my db dw but here's a random song.");
+                            message.channel.send("There was a slight problem but I think I got it, here's a random song.");
                                 }
                             //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
                             playRandom();
@@ -256,8 +260,8 @@ function playCongrats(connection, message){
                 // list commands for public
             case "!h" :
                     message.channel.send(
-                        "Things you could! ask me: (v: " + version +") \n"
-                        + "----------------------------------------------"
+                        "Things you could ask me: (v: " + version +") \n"
+                        + "----------------------------------------------\n"
                         + "!p [youtube link] --> Plays YouTube video\n "
                         + "!e --> Stops playing \n "
                         + "!? --> Tells you what's playing \n"
@@ -290,6 +294,8 @@ function playCongrats(connection, message){
 
         
         ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
+
+        ["broken", "https://www.youtube.com1aKeETk"],
         
         
         ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
