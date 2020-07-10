@@ -132,7 +132,8 @@ function playCongrats(connection, message){
                 
                 // prints out the database size
                 case "!c" :
-                    message.channel.send("Database size:" + congratsDatabase.length);
+                    let rKeyArray = Array.from(congratsDatabase.keys());
+                    message.channel.send("Database size: " + rkeyArray.length.toString);
               
                 break;
                 //!d to run database songs
@@ -171,7 +172,7 @@ function playCongrats(connection, message){
                     if(!servers[message.guild.id]) servers[message.guild.id] = {
                         queue: []
                     }
-                    let numOfRetries = 0;
+                    var numOfRetries = 0;
                     function playRandom() {
                         numOfRetries += 1;
                     server = servers[message.guild.id];
