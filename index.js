@@ -232,7 +232,7 @@ function playCongrats(connection, message){
                     break;
                 
                 //!h returns all existing tags in the database
-                case "!key" :
+                case "!key" || "!keys" :
                var keyArray = Array.from(congratsDatabase.keys());
                keyArray.sort();
                var s = "";
@@ -247,6 +247,7 @@ function playCongrats(connection, message){
                 break;
             case "!?":
                 if (whatsp != "") {
+                message.channel.send(message.guild.id);
                 message.channel.send(whatsp);
                 } else {
                     message.channel.send("Nothing is playing right now");
@@ -256,6 +257,7 @@ function playCongrats(connection, message){
             case "!h" :
                     message.channel.send(
                         "Things you could! ask me: (v: " + version +") \n"
+                        + "----------------------------------------------"
                         + "!p [youtube link] --> Plays YouTube video\n "
                         + "!e --> Stops playing \n "
                         + "!? --> Tells you what's playing \n"
