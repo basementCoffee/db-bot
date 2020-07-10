@@ -11,7 +11,7 @@ const ytdl = require("ytdl-core");
 const PREFIX = '!';
 var version = '1.0.3';
 var servers = {};
-var testingChannelGuildID = 726687842150907924;
+var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
 bot.login(process.env.token);
 var whatsp = "";
@@ -192,7 +192,7 @@ function playCongrats(connection, message){
                         } catch(e) {
                             console.log("this broke:" + dPhrase);
                             console.log(e);
-                            printErrorToChannel("!d", rk, e);
+                            printErrorToChannel("!d", whatsp, e);
                             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
                             connection.disconnect();
                             return;
