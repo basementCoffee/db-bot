@@ -9,7 +9,7 @@ const bot = new Client();
 const ytdl = require("ytdl-core");
 //const token = 'N  z     MwMzUwNDUyMjY4NTk3MzAw.Xwdv7g.cQoviYyvcFsDhXSHme4m--5L_d0';
 const PREFIX = '!';
-var version = '1.0.1';
+var version = '1.0.2';
 var servers = {};
 var testingChannelGuildID = 726687842150907924;
 //bot.login(token);
@@ -57,8 +57,13 @@ function contentsContainCongrats(message) {
 }
 function playCongrats(connection, message){
     var server = servers[message.guild.id];
-    server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', { quality: 'highestaudio'}));
-    server.dispatcher.setVolume(1);
+    try {
+        server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', { quality: 'highestaudio'}));
+        server.dispatcher.setVolume(1);
+    } catch (e) {
+        printErrorToChannel("congrats", "congratulations", e);
+    }
+    
 }
 
 // parses message, provides a response
@@ -73,7 +78,7 @@ function playCongrats(connection, message){
                 queue: []
             }
             server = servers[message.guild.id];
-            server.queue.push(args[1]);
+            //server.queue.push(args[1]);
             var word = messageArray[i];
             console.log(word);
             if ((word.includes("grats") || word.includes("gratz")|| word.includes("ongratulations")) && !(word.substring(0,1).includes("!"))) {
@@ -183,6 +188,8 @@ function playCongrats(connection, message){
                         } catch(e) {
                             console.log("this broke:" + dPhrase);
                             console.log(e);
+                            bot.channels.cache.get("726687842150907924").send("ERROR: When called !d, song key: "+ rk);
+                            printErrorToChannel("!d", rk, e);
                             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
                             connection.disconnect();
                             return;
@@ -251,7 +258,6 @@ function playCongrats(connection, message){
                 break;
             case "!?":
                 if (whatsp != "") {
-                message.channel.send(message.guild.id);
                 message.channel.send(whatsp);
                 } else {
                     message.channel.send("Nothing is playing right now");
@@ -280,8 +286,13 @@ function playCongrats(connection, message){
     })
 
 
-    
-
+    /**
+     * Prints the error to the testing channel.
+     */
+function printErrorToChannel(activationType, songKey, e) {
+    bot.channels.cache.get("726687842150907924").send("ERROR: When called " + activationType +", song key: "+ songKey);
+    bot.channels.cache.get("726687842150907924").send(e);
+}
 
 
 
