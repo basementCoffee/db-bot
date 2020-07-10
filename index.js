@@ -107,9 +107,14 @@ function playCongrats(connection, message){
                 case '!p':
                     function play(connection, message){
                         var server = servers[message.guild.id];
+                        try {
                         server.dispatcher = connection.play(ytdl(server.queue[0], { quality: 'highestaudio'}));
                         server.queue.shift();
-
+                        } catch (e) {
+                            message.connection.send("caught the error, yippee!");
+                            printErrorToChannel();
+                            return;
+                        }
                         server.dispatcher.on("end", function(){
                             if(server.queue[0]){
                                 play(connection, message);
@@ -294,6 +299,13 @@ function printErrorToChannel(activationType, songKey, e) {
     bot.channels.cache.get("726687842150907924").send(e);
 }
 
+    /**
+     * Prints the error to the testing channel with no args.
+     */
+    function printErrorToChannel() {
+        bot.channels.cache.get("726687842150907924").send("There was an error!");
+    }
+
 
 
 
@@ -306,7 +318,7 @@ function printErrorToChannel(activationType, songKey, e) {
         
         ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
 
-        ["broken", "https://www.youtube.com/watch?v=6ih1aKeETk"],
+        ["broken", "https://www.youtube.com/watch?v=A6ih1aKeETk"],
         
         
         ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
