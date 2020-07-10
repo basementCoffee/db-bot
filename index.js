@@ -129,6 +129,7 @@ function playCongrats(connection, message){
                         whatsp = args[1];
                     } catch(e) {
                         console.log(e);
+                        whatsp = "";
                         message.channel.send("Sorry buddy, couldn't find the video. uh... is the link a real youtube video?");
                         connection.disconnect();
                         return;
@@ -261,6 +262,8 @@ function playCongrats(connection, message){
             case "!?":
                 if (whatsp != "") {
                 message.channel.send(whatsp);
+                } else {
+                    message.channel.send("Nothing is playing right now");
                 }
                 break;
             case "!h" :
