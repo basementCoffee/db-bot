@@ -125,7 +125,7 @@ function playCongrats(connection, message){
 
                     
                     server = servers[message.guild.id];
-                    server.queue.push(args[1]);
+                    //server.queue.push(args[1]);
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
