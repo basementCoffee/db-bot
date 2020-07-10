@@ -108,12 +108,15 @@ function playCongrats(connection, message){
                         server.dispatcher = connection.play(ytdl(server.queue[0], { quality: 'highestaudio'}));
                         server.queue.shift();
                         server.dispatcher.on("end", function(){
-                            if(server.queue[0]){
-                                play(connection, message);
-                            }else{
-                                connection.disconnect();
-                            }
-                        });
+                           //commment out if issues persist
+                            //if(server.queue[0]){
+                            //    play(connection, message);
+                            //}else{
+                            //    connection.disconnect();
+                            //}
+                            //comment in if issues persist
+                             return;
+                        })
                     }
                     if (!args[1]) {
                         message.channel.send("Where's the link? I can't read your mind... unfortunately.");
@@ -184,7 +187,7 @@ function playCongrats(connection, message){
                         return;
                     }
                     let dPhrase = args[1];
-                    server.queue.push(congratsDatabase.get(args[1]));
+                    await server.queue.push(congratsDatabase.get(args[1]));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
