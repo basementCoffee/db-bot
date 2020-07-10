@@ -98,11 +98,9 @@ function playCongrats(connection, message){
             }
             }
           } else {
-            let args = message.content.split(" ");
+            var args = message.content.split(" ");
             console.log(args);
             switch (args[0]) {
-                
-                
                 //!p is just the basic rythm bot 
                 case '!p':
                     function play(connection, message){
