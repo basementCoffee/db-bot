@@ -107,14 +107,8 @@ function playCongrats(connection, message){
                 case '!p':
                     function play(connection, message){
                         var server = servers[message.guild.id];
-                        try {
                         server.dispatcher = connection.play(ytdl(server.queue[0], { quality: 'highestaudio'}));
                         server.queue.shift();
-                        } catch (e) {
-                            message.connection.send("caught the error, yippee!");
-                            printErrorToChannel();
-                            return;
-                        }
                         server.dispatcher.on("end", function(){
                             if(server.queue[0]){
                                 play(connection, message);
@@ -271,7 +265,7 @@ function playCongrats(connection, message){
                 // list commands for public
             case "!h" :
                     message.channel.send(
-                        "Things you could ask me: (v: " + version +") \n"
+                        "Things you could ask me: *(v: " + version +")* \n"
                         + "----------------------------------------------\n"
                         + "!p [youtube link] --> Plays YouTube video\n "
                         + "!e --> Stops playing \n "
