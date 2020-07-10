@@ -9,7 +9,7 @@ const bot = new Client();
 const ytdl = require("ytdl-core");
 //const token = 'N  z     MwMzUwNDUyMjY4NTk3MzAw.Xwdv7g.cQoviYyvcFsDhXSHme4m--5L_d0';
 const PREFIX = '!';
-var version = '1.0.0';
+var version = '1.0.1';
 var servers = {};
 //bot.login(token);
 bot.login(process.env.token);
@@ -119,13 +119,14 @@ function playCongrats(connection, message){
                     if(!servers[message.guild.id]) servers[message.guild.id] = {
                         queue: []
                     }
-                    whatsp = "";
+
+                    
                     server = servers[message.guild.id];
-        
                     server.queue.push(args[1]);
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
+                        whatsp = args[1];
                     } catch(e) {
                         console.log(e);
                         message.channel.send("Sorry buddy, couldn't find the video. uh... is the link a real youtube video?");
@@ -138,10 +139,10 @@ function playCongrats(connection, message){
 
                //!e is the Stop feature
                 case "!e" :
-                        server = servers[message.guild.id];
-                        if(!servers[message.guild.id]) servers[message.guild.id] = {
-                            queue: []
-                        }
+                        //server = servers[message.guild.id];
+                        //if(!servers[message.guild.id]) servers[message.guild.id] = {
+                        //    queue: []
+                        //}
 
                         if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                             server.dispatcher = connection.disconnect();
@@ -171,18 +172,19 @@ function playCongrats(connection, message){
                     if(!message.member.voice.channel){
                         return;
                     }
-                    if(!servers[message.guild.id]) servers[message.guild.id] = {
-                        queue: []
-                    }
+                    //if(!servers[message.guild.id]) servers[message.guild.id] = {
+                      //  queue: []
+                    //}
                     
-                    server = servers[message.guild.id];
-                    whatsp = args[1];
-                    server.queue.push(congratsDatabase.get(args[1]));
+                    //server = servers[message.guild.id];
+                    whatsp = congratsDatabase.get(args[1]);
+                    let dPhrase = args[1];
+                    //server.queue.push(congratsDatabase.get(args[1]));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
                         } catch(e) {
-                            console.log("this broke:" + whatsp);
+                            console.log("this broke:" + dPhrase);
                             console.log(e);
                             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
                             connection.disconnect();
@@ -194,11 +196,11 @@ function playCongrats(connection, message){
                     if(!message.member.voice.channel){
                         return;
                     }
-                    if(!servers[message.guild.id]) servers[message.guild.id] = {
-                        queue: []
-                    }
+                    //if(!servers[message.guild.id]) servers[message.guild.id] = {
+                    //    queue: []
+                    //}
                     var numOfRetries = 0;
-                    server = servers[message.guild.id];
+                    //server = servers[message.guild.id];
                     let rKeyArray = Array.from(congratsDatabase.keys());
                     function playRandom() {
                         numOfRetries += 1;
@@ -206,12 +208,12 @@ function playCongrats(connection, message){
                     let rk = rKeyArray[rn];
                     console.log("attempting to play key:" + rk);
                     whatsp = congratsDatabase.get(rk);
-                    server.queue.push(congratsDatabase.get(rk));
+                    //server.queue.push(congratsDatabase.get(rk));
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         try {
                         play(connection, message);
                         } catch(e) {
-                            console.log("this key broke:" + rk);x
+                            console.log("this broke:" + rk);x
                             console.log(e);
                             if (numOfRetries > 2) {
                                 message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
@@ -263,7 +265,7 @@ function playCongrats(connection, message){
                 break;
             case "!h" :
                     message.channel.send(
-                        "Things you could ask me: (v: " + version +") \n"
+                        "Things you could! ask me: (v: " + version +") \n"
                         + "!p [youtube link] --> Plays YouTube video\n "
                         + "!e --> Stops playing \n "
                         + "!? --> Tells you what's playing \n"
