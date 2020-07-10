@@ -150,8 +150,8 @@ function playCongrats(connection, message){
                 
                 // prints out the database size
                 case "!c" :
-                    let rKeyArray = Array.from(congratsDatabase.keys());
-                    message.channel.send("Database size: " + rKeyArray.length);
+                    let cKeyArray = Array.from(congratsDatabase.keys());
+                    message.channel.send("Database size: " + cKeyArray.length);
               
                 break;
                 //!d to run database songs
