@@ -136,10 +136,11 @@ function playCongrats(connection, message){
                         play(connection, message);
                         whatsp = args[1];
                     } catch(e) {
+                        console.log("Below is a caught error, should not cause any issues.");
                         console.log(e);
                         whatsp = "";
                         message.channel.send("Sorry buddy, couldn't find the video. uh... is the link a real youtube video?");
-                        connection.disconnect();
+                        //connection.disconnect();
                         return;
                     }
                     })
@@ -190,7 +191,7 @@ function playCongrats(connection, message){
                         try {
                         play(connection, message);
                         } catch(e) {
-                            console.log("this broke:" + dPhrase);
+                            console.log("Below is a caught error messong: (this broke:" + dPhrase+")");
                             console.log(e);
                             printErrorToChannel("!d", whatsp + " - probably a broken link?", e);
                             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
@@ -222,8 +223,8 @@ function playCongrats(connection, message){
                             play(connection, message);
                         } catch(e) {
                             // Error catching - fault with the database yt link?
-                            console.log("this broke:" + rk);
-                            printErrorToChannel("!r", rk, e);
+                            console.log("Below is a caught error message. (this broke:" + rk+")");
+                            //printErrorToChannel("!r", rk, e);
                             console.log(e);
                             if (numOfRetries > 2) {
                                 message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
@@ -254,7 +255,7 @@ function playCongrats(connection, message){
                    if (key == 0) {
                        s = keyArray[key];
                    } else {
-                       s = s + ", " + keyArray[key]
+                       s = s + ", " + keyArray[key];
                    }
                }
                message.channel.send(s);
@@ -267,7 +268,7 @@ function playCongrats(connection, message){
                         if (key == 0) {
                             s = keyArray[key];
                         } else {
-                            s = s + ", " + keyArray[key]
+                            s = s + ", " + keyArray[key];
                         }
                     }
                     message.channel.send(s);
@@ -316,9 +317,9 @@ function printErrorToChannel(activationType, songKey, e) {
     /**
      * Prints the error to the testing channel with no args.
      */
-    function printErrorToChannel() {
-        bot.channels.cache.get("730239813403410619").send("There was an error!");
-    }
+    //function printErrorToChannel() {
+    //    bot.channels.cache.get("730239813403410619").send("There was an error!");
+    //}
 
 
 
