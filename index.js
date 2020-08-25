@@ -18,7 +18,7 @@ var whatsp = "";
 
 // parses message, provides a response
 bot.on('message', msg=>{
-    if(msg.content.includes("hello" || "howdy")){
+    if(msg.content.includes("hello" || "howdy" || "hey" || "Hello")){
         let randomInt = Math.floor(Math.random() * 3);
         if (randomInt == 0) {
             let randomInt2 = Math.floor(Math.random() * 3);
@@ -28,7 +28,7 @@ bot.on('message', msg=>{
             } else if(randomInt2 == 1) {
                 msg.reply("Hello my fellow Valorant gamer");
             } else {
-                msg.reply("Hi, just busy trying out this game called Valorant... it's not half bad");
+                msg.reply("Hey, just busy trying out this game called Valorant... it's not half bad");
             }
             // end valorant responses
         } else if (randomInt == 1) {
@@ -44,7 +44,7 @@ bot.on('message', msg=>{
                 msg.reply("Hello! I'm your friendly neighborhood penguin.");
             }
         } else {
-            msg.reply('HELLO FRIEND!');
+            msg.reply('Hello friend!');
         }
     }
 })
@@ -297,7 +297,7 @@ function playCongrats(connection, message){
                         + "!keys --> All the artist tags (separated by a comma) \n"
                         + "!d [key] --> Plays a song from the database \n"
                         + "!s --> Prints the size of the song database \n"
-                        +"**Or just say congrats! I love saying that too :)**");
+                        +"**Or just say congrats to a friend. I will chime in too :)**");
             break;
             // prints out the version number
             case "!v" :
