@@ -56,13 +56,13 @@ async function gsrun(cl){
 
 async function gsPushUpdate(cl, providedKey, providedLink){
     const gsapi = google.sheets({version: 'v4', auth: cl});
-
+    dataSize += 1;
     var aProvKey = new Array(providedKey);
     const updateOptions = {
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
             range: "entries!A:" + dataSize.toString(),
             valueInputOption: 'USER_ENTERED',
-            resource: { values: aProvKey}
+            resource: {values: aProvKey}
     };
 
     let response = await gsapi.spreadsheets.values.update(updateOptions);
@@ -72,7 +72,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
             range: "entries!B:" + dataSize.toString(),
             valueInputOption: 'USER_ENTERED',
-            resource: { values: aProvLink}
+            resource: {values: aProvLink}
     };
 
     let response2 = await gsapi.spreadsheets.values.update(updateOptions2);
