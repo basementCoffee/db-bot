@@ -1,4 +1,34 @@
 
+const {google} = require('googleapis');
+const keys = require('./DiscordBot-d96fd2d64ee5.json');
+
+const client = new google.auth.JWT(
+    keys.client_email, null, keys.private_key,['https://www.googleapis.com/auth/spreadsheets']
+);
+
+client.authorize(function(err,tokens){
+    if(err){
+        console.log(err);
+        return;
+    } else {
+        console.log("Connected to google apis.")
+        gsrun(cl);
+    }
+});
+
+async function gsrun(cl){
+    const gsapi = google.sheets({version: 'v4', auth: cl});
+
+    const opt = {
+        spreadsheetid: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+        range: 'entries!A2:B34'
+
+    };
+
+    let data = await gsapi.spreadsheets.values.get(opt);
+    console.log(data.data.values);
+}
+
 //ABOVE IS GOOGLE API
 
 
@@ -373,6 +403,7 @@ function playCongrats(connection, message){
                 message.channel.send(songsAddedInt.toString() + " songs added to the database.");
             }
             break;
+            //removes databse entries
             case "!rm":
             var successInDelete = congratsDatabase.delete(args[1]);
             if (successInDelete == true){
