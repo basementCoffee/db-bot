@@ -46,7 +46,7 @@ async function gsrun(cl){
        var line;
        var keyT
        var valueT;
-        for (i = 0; i < dataSizeCell; i++){
+        for (i = 0; i < dataSize; i++){
             line = arrayOfSpreadsheetValues[i];
             keyT = line[0];
             valueT = line[1];
@@ -73,7 +73,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
             resource: { values: providedLink}
     };
 
-    let response = await gsapi.spreadsheets.values.update(updateOptions2);
+    let response2 = await gsapi.spreadsheets.values.update(updateOptions2);
 }
 
 
