@@ -427,7 +427,7 @@ function printErrorToChannel(activationType, songKey, e) {
         ["zhuO", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
         ["zhuT", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
         
-        ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"]
+        ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"],
 
         ["snavesUs", "https://www.youtube.com/watch?v=OjT1nqtlGGU"]
         
