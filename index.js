@@ -1,4 +1,3 @@
-
 const {google} = require('googleapis');
 const keys = require('./DiscordBot-d96fd2d64ee5.json');
 
@@ -6,7 +5,7 @@ const client = new google.auth.JWT(
     keys.client_email, null, keys.private_key,['https://www.googleapis.com/auth/spreadsheets']
 );
 
-client.authorize(function(err,tokens){
+client.authorize(function(err, tokens){
     if(err){
         console.log(err);
         return;
@@ -16,24 +15,58 @@ client.authorize(function(err,tokens){
     }
 });
 
+
+
 async function gsrun(cl){
     const gsapi = google.sheets({version: 'v4', auth: cl});
 
-    const opt = {
-        spreadsheetid: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+    const songObjects = {
+        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
         range: 'entries!A2:B34'
 
     };
 
-    let data = await gsapi.spreadsheets.values.get(opt);
-    console.log(data.data.values);
+    const spreadsheetSizeObjects = {
+        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+        range: 'entries!C1'
+    }
+
+    let dataSO = await gsapi.spreadsheets.values.get(songObjects);
+    var arrayOfSpreadsheetValues = dataSO.data.values;
+    console.log(arrayOfSpreadsheetValues);
+   
+    let dataSize = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
+    var dataSizeCell = dataSize.data.values;
+    
+    console.log(dataSizeCell);
+       var line;
+       var keyT
+       var valueT;
+        for (i = 0; i < dataSizeCell; i++){
+            line = arrayOfSpreadsheetValues[i];
+            keyT = line[0];
+            valueT = line[1];
+        congratsDatabase.set(keyT, valueT);
+    }
+//console.log(congratsDatabase.toString);
+    
+    console.log( congratsDatabase.keys );
+/*
+const updateOptions = {
+    spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+        range: 'entries!A2:B34',
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: newDataArray}
+};
+*/
+
+//let response = await gsapi.spreadsheets.values.update(updateOptions);
+
 }
 
+
+
 //ABOVE IS GOOGLE API
-
-
-
-
 const {
     Client,
     Attachment
@@ -42,7 +75,6 @@ const {
 // initialization 
 const bot = new Client();
 const ytdl = require("ytdl-core");
-//const token = 'N  z     MwMzUwNDUyMjY4NTk3MzAw.Xwdv7g.cQoviYyvcFsDhXSHme4m--5L_d0';
 const PREFIX = '!';
 var version = '2.0.1';
 var buildNumber = "2.1.c";
@@ -98,6 +130,8 @@ bot.on('message', msg=>{
     }
 })
 
+
+//Who's down greeting
 bot.on('message', msg=>{
     var randomIntForDown = Math.floor(Math.random() * 6);
     if(msg.content.includes("s down")){
@@ -114,7 +148,6 @@ bot.on('message', msg=>{
 
 
 //aylmao the entire reason we built this damn bot
-
 function contentsContainCongrats(message) {
     return message.content.includes("grats") || message.content.includes("gratz") || message.content.includes("ongratulations");
 }
@@ -268,6 +301,9 @@ function playCongrats(connection, message){
                         }
                     })
                     break;   
+                
+                
+                //Randomizer    
                 case "!r" :
                     if(!message.member.voice.channel){
                         return;
@@ -341,6 +377,8 @@ function playCongrats(connection, message){
                     }
                     message.channel.send(s);
                      break;
+
+            //What's Playing?         
             case "!?":
                 if (args[1] == true){
                     if(args[1] == "" || args[1] == " "){
@@ -356,7 +394,9 @@ function playCongrats(connection, message){
                     message.channel.send("Nothing is playing right now");
                 }
                 break;
-                // list commands for public
+
+
+            // list commands for public
             case "!h" :
                     message.channel.send(
                         "Things you could ask me:\n"
@@ -371,6 +411,8 @@ function playCongrats(connection, message){
                         + "!rm --> Removes a song from the database\n"
                         +"**Or just say congrats to a friend. I will chime in too :) **");
             break;
+
+            
             // prints out the version number
             case "!v" :
             message.channel.send("version: " + version);
@@ -436,89 +478,104 @@ function printErrorToChannel(activationType, songKey, e) {
     //}
 
 
+   
+ 
+var congratsDatabase = new Map();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //Map for the database with [tag], [url]
-
-    var congratsDatabase = new Map([
-        ["karmaFieldsB", "https://www.youtube.com/watch?v=ijpgqchByuY"], 
-        ["karmaFieldsW", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
-
-        
-        ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
-
-        ["broken", "https://www.youtube.com/watch?v=A6ih1aKeETk"],
-        
-        
-        ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
-        
-        
-        ["everything", "https://www.youtube.com/watch?v=It6OTZD140E"],
-        
-        
-        ["tender", "https://www.youtube.com/watch?v=SN9IZ86evb4"],
-        
-        
-        ["rkcbV", "https://www.youtube.com/watch?v=tUwUenVk7zc"],
-        ["rkcbB", "https://www.youtube.com/watch?v=LYN4YPAFfuo"],
-        
-        
-        ["gorillaz", "https://www.youtube.com/watch?v=NDvlD3E7DWg"],
-        
-        
-        ["mrRobot", "https://www.youtube.com/watch?v=P0sAYxS03i0"],
-        
-        
-        ["glassanimalsY", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
-        ["glassanimalsT", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
-
-        ["haddaway", "https://www.youtube.com/watch?v=HEXWRTEbj1I"],
-        
-        
-        ["brokenbells", "https://www.youtube.com/watch?v=Lkv2zF2Bgq0"],
-        
-        
-        ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
-
-        ["pMaloneNoOption", "https://www.youtube.com/watch?v=tdKBNT641V8"],
-        
-        
-        ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
-        
-        
-        ["banksG", "https://www.youtube.com/watch?v=rD85HZQwwWw"],
-        ["banksS", "https://www.youtube.com/watch?v=Zn4TnsWUpmU"],
-        ["banksA", "https://www.youtube.com/watch?v=nIVEAQfbI5w"],
-        ["banksH", "https://www.youtube.com/watch?v=Z5mNZ6B9ESk"],
-        
-        
-        ["bigdataE", "https://www.youtube.com/watch?v=tlbNZ_oGgdc"],
-        ["bigdataM", "https://www.youtube.com/watch?v=ZtZc4h-m8wQ"],
-        ["bigdataL", "https://www.youtube.com/watch?v=WAmCeYz9D90"],
-        
-        
-        ["glitch", "https://youtu.be/ezk_dD2Ia-w"],
-        
-        
-        ["ishome", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
-
-        ["toliverAp", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
-        
-        
-        ["zhuF", "https://www.youtube.com/watch?v=7373VBAN9eU"],
-        ["zhuO", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
-        ["zhuT", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
-        
-        ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"],
-
-        ["snavesUs", "https://www.youtuWbe.com/watch?v=OjT1nqtlGGU"]
-        
-    ]);
-
+ /*   
+var congratsDatabase = new Map([
+    ["karmaFieldsB", "https://www.youtube.com/watch?v=ijpgqchByuY"], 
+    ["karmaFieldsW", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
 
     
- 
+    ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
+
+    ["broken", "https://www.youtube.com/watch?v=A6ih1aKeETk"],
     
+    
+    ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
+    
+    
+    ["everything", "https://www.youtube.com/watch?v=It6OTZD140E"],
+    
+    
+    ["tender", "https://www.youtube.com/watch?v=SN9IZ86evb4"],
+    
+    
+    ["rkcbV", "https://www.youtube.com/watch?v=tUwUenVk7zc"],
+    ["rkcbB", "https://www.youtube.com/watch?v=LYN4YPAFfuo"],
+    
+    
+    ["gorillaz", "https://www.youtube.com/watch?v=NDvlD3E7DWg"],
+    
+    
+    ["mrRobot", "https://www.youtube.com/watch?v=P0sAYxS03i0"],
+    
+    
+    ["glassanimalsY", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
+    ["glassanimalsT", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
+
+    ["haddaway", "https://www.youtube.com/watch?v=HEXWRTEbj1I"],
+    
+    
+    ["brokenbells", "https://www.youtube.com/watch?v=Lkv2zF2Bgq0"],
+    
+    
+    ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
+
+    ["pMaloneNoOption", "https://www.youtube.com/watch?v=tdKBNT641V8"],
+    
+    
+    ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
+    
+    
+    ["banksG", "https://www.youtube.com/watch?v=rD85HZQwwWw"],
+    ["banksS", "https://www.youtube.com/watch?v=Zn4TnsWUpmU"],
+    ["banksA", "https://www.youtube.com/watch?v=nIVEAQfbI5w"],
+    ["banksH", "https://www.youtube.com/watch?v=Z5mNZ6B9ESk"],
+    
+    
+    ["bigdataE", "https://www.youtube.com/watch?v=tlbNZ_oGgdc"],
+    ["bigdataM", "https://www.youtube.com/watch?v=ZtZc4h-m8wQ"],
+    ["bigdataL", "https://www.youtube.com/watch?v=WAmCeYz9D90"],
+    
+    
+    ["glitch", "https://youtu.be/ezk_dD2Ia-w"],
+    
+    
+    ["ishome", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
+
+    ["toliverAp", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
+    
+    
+    ["zhuF", "https://www.youtube.com/watch?v=7373VBAN9eU"],
+    ["zhuO", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
+    ["zhuT", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
+    
+    ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"],
+
+    ["snavesUs", "https://www.youtuWbe.com/watch?v=OjT1nqtlGGU"]
+    
+]);
+*/
 
 
 
