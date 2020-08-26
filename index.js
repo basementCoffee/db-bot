@@ -16,7 +16,7 @@ var testingChannelGuildID = 730239813403410619;
 bot.login(process.env.token);
 var whatsp = "";
 //ytpl test for youtube playlists
-var ytpl = require('ytpl');
+//var ytpl = require('ytpl');
 
 
 // parses message, provides a response
