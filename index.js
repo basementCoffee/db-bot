@@ -15,6 +15,9 @@ var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
 bot.login(process.env.token);
 var whatsp = "";
+//ytpl test for youtube playlists
+var ytpl = require('ytpl');
+
 
 // parses message, provides a response
 bot.on('message', msg=>{
@@ -46,6 +49,13 @@ bot.on('message', msg=>{
         } else {
             msg.reply('Hello friend!');
         }
+    }
+})
+
+bot.on('message', msg=>{
+    let randomInt = Math.floor(Math.random() * 3);
+    if(msg.content.includes("s down") && randomInt == 3){
+        msg.reply("I would be down but I get flagged for cheating every. single. time.");
     }
 })
 
@@ -293,8 +303,8 @@ function playCongrats(connection, message){
                         + "!p [youtube link] --> Plays YouTube video\n "
                         + "!e --> Stops playing \n "
                         + "!? --> Tells you what's playing \n"
-                        + "*Curated songs[WIP]:*  \n"
-                        + "!keys --> All the artist tags (separated by a comma) \n"
+                        + "*Curated songs [Work in Progress]:*  \n"
+                        + "!key --> All the artist tags (separated by a comma) \n"
                         + "!d [key] --> Plays a song from the database \n"
                         + "!s --> Prints the size of the song database \n"
                         +"**Or just say congrats to a friend. I will chime in too :)**");
@@ -302,6 +312,23 @@ function playCongrats(connection, message){
             // prints out the version number
             case "!v" :
             message.channel.send("version: " + version);
+            break;
+            // add to the databse
+            case "!a":
+                if (!args[1] || !args[2]){
+                    message.channel.send("Could not add to the databse. Put a song key followed by a link.");
+                    break;
+                }
+                var z = 1;
+                while (args[z] && args[z+1]){
+                    var linkZ = args[z+1];
+                    if (linkZ.substring(linkZ.length - 1,linkZ.length) == ",") {
+                        linkZ = linkZ.substring(0,linkZ.length-1);
+                    }
+                congratsDatabase [args[z]] = args[z+1] ;
+                z = z+2;
+            }
+            message.channel.send("Song successfully added to the database.");
             break;
           }
         }
@@ -332,8 +359,8 @@ function printErrorToChannel(activationType, songKey, e) {
 //Map for the database with [tag], [url]
 
     var congratsDatabase = new Map([
-        ["karmafields-b", "https://www.youtube.com/watch?v=ijpgqchByuY"], 
-        ["karmafields-w", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
+        ["karmaFieldsB", "https://www.youtube.com/watch?v=ijpgqchByuY"], 
+        ["karmaFieldsW", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
 
         
         ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
@@ -350,18 +377,18 @@ function printErrorToChannel(activationType, songKey, e) {
         ["tender", "https://www.youtube.com/watch?v=SN9IZ86evb4"],
         
         
-        ["rkcb-v", "https://www.youtube.com/watch?v=tUwUenVk7zc"],
-        ["rkcb-b", "https://www.youtube.com/watch?v=LYN4YPAFfuo"],
+        ["rkcbV", "https://www.youtube.com/watch?v=tUwUenVk7zc"],
+        ["rkcbB", "https://www.youtube.com/watch?v=LYN4YPAFfuo"],
         
         
         ["gorillaz", "https://www.youtube.com/watch?v=NDvlD3E7DWg"],
         
         
-        ["mrrobot", "https://www.youtube.com/watch?v=PxJJkfsHGyM"],
+        ["mrRobot", "https://www.youtube.com/watch?v=P0sAYxS03i0"],
         
         
-        ["glassanimals-y", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
-        ["glassanimals-t", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
+        ["glassanimalsY", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
+        ["glassanimalsT", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
 
         ["haddaway", "https://www.youtube.com/watch?v=HEXWRTEbj1I"],
         
@@ -371,21 +398,21 @@ function printErrorToChannel(activationType, songKey, e) {
         
         ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
 
-        ["malone-no", "https://www.youtube.com/watch?v=tdKBNT641V8"],
+        ["pMaloneNoOption", "https://www.youtube.com/watch?v=tdKBNT641V8"],
         
         
         ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
         
         
-        ["banks-g", "https://www.youtube.com/watch?v=rD85HZQwwWw"],
-        ["banks-s", "https://www.youtube.com/watch?v=Zn4TnsWUpmU"],
-        ["banks-a", "https://www.youtube.com/watch?v=nIVEAQfbI5w"],
-        ["banks-h", "https://www.youtube.com/watch?v=Z5mNZ6B9ESk"],
+        ["banksG", "https://www.youtube.com/watch?v=rD85HZQwwWw"],
+        ["banksS", "https://www.youtube.com/watch?v=Zn4TnsWUpmU"],
+        ["banksA", "https://www.youtube.com/watch?v=nIVEAQfbI5w"],
+        ["banksH", "https://www.youtube.com/watch?v=Z5mNZ6B9ESk"],
         
         
-        ["bigdata-e", "https://www.youtube.com/watch?v=tlbNZ_oGgdc"],
-        ["bigdata-m", "https://www.youtube.com/watch?v=ZtZc4h-m8wQ"],
-        ["bigdata-l", "https://www.youtube.com/watch?v=WAmCeYz9D90"],
+        ["bigdataE", "https://www.youtube.com/watch?v=tlbNZ_oGgdc"],
+        ["bigdataM", "https://www.youtube.com/watch?v=ZtZc4h-m8wQ"],
+        ["bigdataL", "https://www.youtube.com/watch?v=WAmCeYz9D90"],
         
         
         ["glitch", "https://youtu.be/ezk_dD2Ia-w"],
@@ -393,13 +420,19 @@ function printErrorToChannel(activationType, songKey, e) {
         
         ["ishome", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
 
-        ["toliver-ap", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
+        ["toliverAp", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
         
         
-        ["zhu-f", "https://www.youtube.com/watch?v=7373VBAN9eU"],
-        ["zhu-o", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
-        ["zhu-t", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
+        ["zhuF", "https://www.youtube.com/watch?v=7373VBAN9eU"],
+        ["zhuO", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
+        ["zhuT", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
         
-        ["beberexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"]
+        ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"]
+
+        ["snavesUs", "https://www.youtube.com/watch?v=OjT1nqtlGGU"]
         
     ]);
+
+
+
+  
