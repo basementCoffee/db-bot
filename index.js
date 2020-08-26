@@ -10,7 +10,7 @@ const ytdl = require("ytdl-core");
 //const token = 'N  z     MwMzUwNDUyMjY4NTk3MzAw.Xwdv7g.cQoviYyvcFsDhXSHme4m--5L_d0';
 const PREFIX = '!';
 var version = '2.0.1';
-var buildNumber = "2.1.a";
+var buildNumber = "2.1.c";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -22,8 +22,9 @@ var whatsp = "";
 
 // parses message, provides a response
 bot.on('message', msg=>{
-    if(msg.content.includes("hello" || "howdy" || "hey" || "Hello")){
-        let randomInt = Math.floor(Math.random() * 3);
+    if(msg.content.includes("hello" || "howdy" || "hey" || "Hello" || "sup" || "Hey")){
+        let randomInt = Math.floor(Math.random() * 5);
+        // section 1
         if (randomInt == 0) {
             let randomInt2 = Math.floor(Math.random() * 3);
             // valorant responses
@@ -35,28 +36,44 @@ bot.on('message', msg=>{
                 msg.reply("Hey, just busy trying out this game called Valorant... it's not half bad");
             }
             // end valorant responses
+
+            // section 2
         } else if (randomInt == 1) {
             let randomInt3 = Math.floor(Math.random() * 4);
             if (randomInt3 == 0) {
             msg.reply("Howdy-.. I mean BKAWHH");
             } else if (randomInt3 == 1) {
-                msg.reply("Quak quak?");
+                msg.reply("Quak quack (translation: sup my dude)");
             } else if (randomInt3 == 2) {
                 msg.reply("Hi. How's it going.");
             } 
             else {
                 msg.reply("Hello! I'm your friendly neighborhood penguin.");
             }
-        } else {
-            msg.reply('Hello friend!');
+
+            // section 3
+        } else if (randomInt == 2) {
+            let randomInt4 = Math.floor(Math.random() * 2);
+            if (randomInt4 == 1){
+            msg.reply("Hello friend!");
+            } else {
+                msg.reply("Hello to you too. Oh... that wasn't for me was it")
+            }
         }
     }
 })
 
 bot.on('message', msg=>{
-    //let randomInt = Math.floor(Math.random() * 3);
+    var randomIntForDown = Math.floor(Math.random() * 6);
     if(msg.content.includes("s down")){
-        msg.reply("I would be down but I get flagged for cheating every. single. time.");
+        if (randomIntForDown = 4) {
+        var randomIntForDown2 = Math.floor(Math.random() * 2);
+        if (randomIntForDown2 == 0){
+        msg.reply("I would be down but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
+        } else {
+            msg.reply("You are a one player army... good luck!")
+        }
+        }
     }
 })
 
@@ -304,11 +321,12 @@ function playCongrats(connection, message){
                         + "!p [youtube link] --> Plays YouTube video\n "
                         + "!e --> Stops playing \n "
                         + "!? --> Tells you what's playing \n"
-                        + "*Curated songs [Work in Progress]:*  \n"
-                        + "!key --> All the artist tags (separated by a comma) \n"
+                        + "--- *Curated songs [Work in Progress]:* ---  \n"
+                        + "!key --> All the artist song tags (separated by a comma) \n"
                         + "!d [key] --> Plays a song from the database \n"
-                        + "!s --> Prints the size of the song database \n"
-                        +"**Or just say congrats to a friend. I will chime in too :)**");
+                        + "!a --> Adds a song to the database \n"
+                        + "!rm --> Removes a song from the database\n"
+                        +"**Or just say congrats to a friend. I will chime in too :) **");
             break;
             // prints out the version number
             case "!v" :
@@ -324,6 +342,7 @@ function playCongrats(connection, message){
                     message.channel.send("Could not add to the databse. Put a song key followed by a link.");
                     break;
                 }
+                var songsAddedInt = 0;
                 var z = 1;
                 while (args[z] && args[z+1]){
                     var linkZ = args[z+1];
@@ -332,8 +351,22 @@ function playCongrats(connection, message){
                     }
                 congratsDatabase.set(args[z], args[z+1]);
                 z = z+2;
+                songsAddedInt += 1;
             }
+            if (songsAddedInt = 1){
             message.channel.send("Song successfully added to the database.");
+            break;
+            } else if (songsAddedInt > 1) {
+                message.channel.send(songsAddedInt.toString() + " songs added to the database.");
+            }
+            break;
+            case "!rm":
+            var successInDelete = congratsDatabase.delete(args[1]);
+            if (successInDelete == true){
+                message.channel.send("Song successfully removed from the database.");
+            } else {
+                message.channel.send("Could not find song tag within the database.");
+            }
             break;
           }
         }
