@@ -1,17 +1,17 @@
 const {google} = require('googleapis');
 const keys = require('./DiscordBot-d96fd2d64ee5.json');
 
-const client = new google.auth.JWT(
+const client2 = new google.auth.JWT(
     keys.client_email, null, keys.private_key,['https://www.googleapis.com/auth/spreadsheets']
 );
 
-client.authorize(function(err, tokens){
+client2.authorize(function(err, tokens){
     if(err){
         console.log(err);
         return;
     } else {
         console.log("Connected to google apis.")
-        gsrun(client);
+        gsrun(client2);
     }
 });
 
@@ -48,9 +48,9 @@ async function gsrun(cl){
             valueT = line[1];
         congratsDatabase.set(keyT, valueT);
     }
-//console.log(congratsDatabase.toString);
+    //console.log(congratsDatabase.toString);
     
-    console.log( congratsDatabase.keys );
+    //console.log( congratsDatabase.keys() );
 /*
 const updateOptions = {
     spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
@@ -76,8 +76,8 @@ const {
 const bot = new Client();
 const ytdl = require("ytdl-core");
 const PREFIX = '!';
-var version = '2.0.1';
-var buildNumber = "2.1.c";
+var version = '3.0.0';
+var buildNumber = "3.0.a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -96,7 +96,7 @@ bot.on('message', msg=>{
             let randomInt2 = Math.floor(Math.random() * 3);
             // valorant responses
             if (randomInt2 == 0) {
-        msg.reply("Sup, who's down for some Valorant?");
+        msg.reply("Sup, who's up for some Valorant?");
             } else if(randomInt2 == 1) {
                 msg.reply("Hello my fellow Valorant gamer");
             } else {
