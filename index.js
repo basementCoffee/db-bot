@@ -10,6 +10,7 @@ const ytdl = require("ytdl-core");
 //const token = 'N  z     MwMzUwNDUyMjY4NTk3MzAw.Xwdv7g.cQoviYyvcFsDhXSHme4m--5L_d0';
 const PREFIX = '!';
 var version = '2.0.1';
+var buildNumber = "2.1.a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -312,6 +313,10 @@ function playCongrats(connection, message){
             // prints out the version number
             case "!v" :
             message.channel.send("version: " + version);
+            break;
+            // prints out the build number
+            case "!vv" :
+            message.channel.send("version: " + buildNumber);
             break;
             // add to the databse
             case "!a":

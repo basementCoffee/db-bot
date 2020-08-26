@@ -16,6 +16,7 @@
     "npm": "^6.14.8",
     "npm-install": "^1.4.1",
     "npm-start": "^1.4.2",
+    "npm-start-command": "^1.0.1",
     "opusscript": "0.0.7",
     "sqlite3": "^5.0.0",
     "ytdl-core": "^3.2.2",
