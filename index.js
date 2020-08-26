@@ -53,8 +53,8 @@ bot.on('message', msg=>{
 })
 
 bot.on('message', msg=>{
-    let randomInt = Math.floor(Math.random() * 3);
-    if(msg.content.includes("s down") && randomInt == 3){
+    //let randomInt = Math.floor(Math.random() * 3);
+    if(msg.content.includes("s down")){
         msg.reply("I would be down but I get flagged for cheating every. single. time.");
     }
 })
@@ -325,7 +325,7 @@ function playCongrats(connection, message){
                     if (linkZ.substring(linkZ.length - 1,linkZ.length) == ",") {
                         linkZ = linkZ.substring(0,linkZ.length-1);
                     }
-                congratsDatabase[args[z]] = args[z+1] ;
+                congratsDatabase.set(args[z], args[z+1]);
                 z = z+2;
             }
             message.channel.send("Song successfully added to the database.");
