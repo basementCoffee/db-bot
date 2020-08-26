@@ -16,29 +16,33 @@ client2.authorize(function(err, tokens){
 });
 
 
+var dataSize;
 
 async function gsrun(cl){
     const gsapi = google.sheets({version: 'v4', auth: cl});
 
-    const songObjects = {
-        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-        range: 'entries!A2:B34'
-
-    };
+    
 
     const spreadsheetSizeObjects = {
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-        range: 'entries!C1'
+        range: 'entries!C2'
     }
+    let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
+    dataSize = dataSizeFromSheets.data.values;
+
+
+    const songObjects = {
+        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+        range: 'entries!A2:B' + dataSize.parse()
+
+    };
 
     let dataSO = await gsapi.spreadsheets.values.get(songObjects);
     var arrayOfSpreadsheetValues = dataSO.data.values;
     console.log(arrayOfSpreadsheetValues);
-   
-    let dataSize = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
-    var dataSizeCell = dataSize.data.values;
-    
-    console.log(dataSizeCell);
+
+    console.log(dataSize);
+
        var line;
        var keyT
        var valueT;
@@ -48,20 +52,28 @@ async function gsrun(cl){
             valueT = line[1];
         congratsDatabase.set(keyT, valueT);
     }
-    //console.log(congratsDatabase.toString);
-    
-    //console.log( congratsDatabase.keys() );
-/*
-const updateOptions = {
-    spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-        range: 'entries!A2:B34',
-        valueInputOption: 'USER_ENTERED',
-        resource: { values: newDataArray}
-};
-*/
+}
 
-//let response = await gsapi.spreadsheets.values.update(updateOptions);
+async function gsPushUpdate(cl, providedKey, providedLink){
+    const gsapi = google.sheets({version: 'v4', auth: cl});
 
+    const updateOptions = {
+        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+            range: 'entries!A:' + dataSize.parse(),
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: providedKey}
+    };
+
+    let response = await gsapi.spreadsheets.values.update(updateOptions);
+
+    const updateOptions2 = {
+        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+            range: 'entries!B:' + dataSize.parse(),
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: providedLink}
+    };
+
+    let response = await gsapi.spreadsheets.values.update(updateOptions2);
 }
 
 
@@ -77,7 +89,7 @@ const bot = new Client();
 const ytdl = require("ytdl-core");
 const PREFIX = '!';
 var version = '3.0.0';
-var buildNumber = "3.0.a";
+var buildNumber = "3.0.b";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -350,6 +362,7 @@ function playCongrats(connection, message){
                 playRandom();
                     break;
                 
+                
                 //!h returns all existing tags in the database
                 case "!key" :
                var keyArray = Array.from(congratsDatabase.keys());
@@ -364,6 +377,7 @@ function playCongrats(connection, message){
                }
                message.channel.send(s);
                 break;
+                
                 case "!keys" :
                     var keyArray = Array.from(congratsDatabase.keys());
                     keyArray.sort();
@@ -421,6 +435,8 @@ function playCongrats(connection, message){
             case "!vv" :
             message.channel.send("version: " + buildNumber);
             break;
+            
+            
             // add to the databse
             case "!a":
                 if (!args[1] || !args[2]){
@@ -435,6 +451,7 @@ function playCongrats(connection, message){
                         linkZ = linkZ.substring(0,linkZ.length-1);
                     }
                 congratsDatabase.set(args[z], args[z+1]);
+                gsPushUpdate(client2, args[z], args[z+1]);
                 z = z+2;
                 songsAddedInt += 1;
             }
@@ -445,6 +462,8 @@ function playCongrats(connection, message){
                 message.channel.send(songsAddedInt.toString() + " songs added to the database.");
             }
             break;
+            
+            
             //removes databse entries
             case "!rm":
             var successInDelete = congratsDatabase.delete(args[1]);
@@ -580,5 +599,3 @@ var congratsDatabase = new Map([
 
 
 
-
-    
