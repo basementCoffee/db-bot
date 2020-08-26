@@ -133,9 +133,9 @@ bot.on('message', msg=>{
 
 //Who's down greeting
 bot.on('message', msg=>{
-    var randomIntForDown = Math.floor(Math.random() * 6);
     if(msg.content.includes("s down")){
-        if (randomIntForDown = 4) {
+        var randomIntForDown = Math.floor(Math.random() * 6);
+        if (randomIntForDown == 4) {
         var randomIntForDown2 = Math.floor(Math.random() * 2);
         if (randomIntForDown2 == 0){
         msg.reply("I would be down but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
