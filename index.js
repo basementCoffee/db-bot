@@ -33,7 +33,7 @@ async function gsrun(cl){
 
     const songObjects = {
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-        range: 'entries!A2:B' + dataSize.parse()
+        range: "entries!A2:B" + dataSize.toString()
 
     };
 
@@ -59,7 +59,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
 
     const updateOptions = {
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-            range: 'entries!A:' + dataSize.parse(),
+            range: "entries!A:" + dataSize.toString(),
             valueInputOption: 'USER_ENTERED',
             resource: { values: providedKey}
     };
@@ -68,7 +68,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
 
     const updateOptions2 = {
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-            range: 'entries!B:' + dataSize.parse(),
+            range: "entries!B:" + dataSize.toString(),
             valueInputOption: 'USER_ENTERED',
             resource: { values: providedLink}
     };
