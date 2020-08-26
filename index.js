@@ -12,7 +12,7 @@ client.authorize(function(err,tokens){
         return;
     } else {
         console.log("Connected to google apis.")
-        gsrun(cl);
+        gsrun(client);
     }
 });
 
