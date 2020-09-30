@@ -48,7 +48,7 @@ async function gsrun(cl){
        var valueT;
         for (i = 0; i < dataSize; i++){
             line = arrayOfSpreadsheetValues[i];
-            keyT = line[];
+            keyT = line[0];
             valueT = line[1];
         congratsDatabase.set(keyT, valueT);
     }
@@ -423,9 +423,9 @@ function playCongrats(connection, message){
                         + "--- *Curated songs [Work in Progress]:* ---  \n"
                         + "!key --> All the artist song tags (separated by a comma) \n"
                         + "!d [key] --> Plays a song from the database \n"
-                        + "!a --> Adds a song to the database \n"
+                        + "!a [song] [url] --> Adds a song to the database \n"
                         + "!rm --> Removes a song from the database\n"
-                        +"**Or just say congrats to a friend. I will chime in too :) **");
+                        +"**Or just say congrats to a friend. I will chime in too  :) **");
             break;
 
             

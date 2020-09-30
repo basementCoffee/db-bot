@@ -21,7 +21,7 @@
     "npm-start-command": "^1.0.1",
     "opusscript": "0.0.7",
     "sqlite3": "^5.0.0",
-    "ytdl-core": "^3.2.2",
+    "ytdl-core": "^3.3.0",
     "ytpl": "^0.3.0"
   }
 }
