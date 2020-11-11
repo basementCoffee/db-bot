@@ -99,7 +99,7 @@ var version = '3.2.1';
 var latestRelease = "-DB keys are no longer case specific\n" +
     "-Added support for dev-add link to database\n" +
     "-Keys update from database when called"
-var buildNumber = "321a";
+var buildNumber = "321c";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -336,7 +336,7 @@ bot.on('message', message=>{
 
                 server = servers[message.guild.id];
                 try {
-                    whatsp = congratsDatabase.get(args[1]);
+                    whatsp = referenceDatabase.get(args[1].toUpperCase());
                 } catch(e) {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
@@ -522,11 +522,11 @@ bot.on('message', message=>{
                     z = z+2;
                     songsAddedInt += 1;
                 }
-                if (songsAddedInt == 1){
-                    message.channel.send("Song successfully added to the database.");
+                if (songsAddedInt === 1){
+                    message.channel.send("Song successfully added to the TEMP database.");
                     break;
                 } else if (songsAddedInt > 1) {
-                    message.channel.send(songsAddedInt.toString() + " songs added to the database.");
+                    message.channel.send(songsAddedInt.toString() + " songs added to the temporary database.");
                 }
                 break;
 
