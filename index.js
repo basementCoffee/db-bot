@@ -102,7 +102,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 var version = '3.1.1';
 var latestRelease = "-Added support for dev-add link to database\n-Keys update from database when called"
-var buildNumber = "311a";
+var buildNumber = "311b";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
