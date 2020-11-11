@@ -88,11 +88,11 @@ const {
 
 // initialization
 const bot = new Client();
-const ytdl = require('ytdl-core-discord');
+const ytdl = require('discord-ytdl-core');
 
-async function play(connection, url) {
-    connection.play(await ytdl(url), { type: 'opus' });
-}
+// async function play(connection, url) {
+//     connection.play(await ytdl(url), { type: 'opus' });
+// }
 
 const PREFIX = '!';
 var version = '3.0.0';
