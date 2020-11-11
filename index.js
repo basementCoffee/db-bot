@@ -229,6 +229,7 @@ bot.on('message', message=>{
     } else {
         var args = message.content.split(" ");
         console.log(args);
+
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
@@ -270,7 +271,7 @@ bot.on('message', message=>{
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
-                    let myStream = ytdl(server.queue[0], {
+                    let myStream = ytdl(args[1], {
                         filter: "audioonly",
                         opusEncoded: true,
                         encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
@@ -338,7 +339,7 @@ bot.on('message', message=>{
                 server.queue.push(congratsDatabase.get(args[1]));
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                     try {
-                        let myStream = ytdl(server.queue[0], {
+                        let myStream = ytdl(args[1], {
                             filter: "audioonly",
                             opusEncoded: true,
                             encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
