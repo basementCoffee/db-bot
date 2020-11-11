@@ -18,11 +18,6 @@ client2.authorize(function(err, tokens){
 
 var dataSize;
 
-/**
- * Prints the error to the testing channel with no args.
- */
-var congratsDatabase = new Map();
-
 async function gsrun(cl){
     const gsapi = google.sheets({version: 'v4', auth: cl});
 
@@ -51,7 +46,7 @@ async function gsrun(cl){
     var line;
     var keyT
     var valueT;
-    for (let i = 0; i < dataSize; i++){
+    for (i = 0; i < dataSize; i++){
         line = arrayOfSpreadsheetValues[i];
         keyT = line[0];
         valueT = line[1];
@@ -85,7 +80,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
 
 
 
-//ABOVE IS GOOGLE API --------------------------------------------------
+//ABOVE IS GOOGLE API
 const {
     Client,
     Attachment
@@ -99,10 +94,10 @@ const ytdl = require("discord-ytdl-core");
 //     connection.play(await ytdl(url), { type: 'opus' });
 // }
 
-//const PREFIX = '!';
-var version = '3.1.1';
+const PREFIX = '!';
+var version = '3.1.0';
 var latestRelease = "-Added support for dev-add link to database\n-Keys update from database when called"
-var buildNumber = "311b";
+var buildNumber = "310a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -114,14 +109,14 @@ var whatsp = "";
 // parses message, provides a response
 bot.on('message', msg=>{
     if(msg.content.includes("hello" || "howdy" || "hey" || "Hello" || "sup" || "Hey")){
-        let randomInt = Math.floor(Math.random() * 4);
+        let randomInt = Math.floor(Math.random() * 5);
         // section 1
-        if (randomInt === -1) {
+        if (randomInt == 0) {
             let randomInt2 = Math.floor(Math.random() * 3);
             // valorant responses
-            if (randomInt2 === 0) {
+            if (randomInt2 == 0) {
                 msg.reply("Sup, who's up for some Valorant?");
-            } else if(randomInt2 === 1) {
+            } else if(randomInt2 == 1) {
                 msg.reply("Hello my fellow Valorant gamer");
             } else {
                 msg.reply("Hey, just busy trying out this game called Valorant... it's not half bad");
@@ -129,13 +124,13 @@ bot.on('message', msg=>{
             // end valorant responses
 
             // section 2
-        } else if (randomInt === 1) {
+        } else if (randomInt == 1) {
             let randomInt3 = Math.floor(Math.random() * 4);
-            if (randomInt3 === 0) {
+            if (randomInt3 == 0) {
                 msg.reply("Howdy-.. I mean BKAWHH");
-            } else if (randomInt3 === 1) {
+            } else if (randomInt3 == 1) {
                 msg.reply("Quak quack (translation: sup my dude)");
-            } else if (randomInt3 === 2) {
+            } else if (randomInt3 == 2) {
                 msg.reply("Hi. How's it going.");
             }
             else {
@@ -143,14 +138,11 @@ bot.on('message', msg=>{
             }
 
             // section 3
-        } else if (randomInt === 2) {
+        } else if (randomInt == 2) {
             let randomInt4 = Math.floor(Math.random() * 2);
-            if (randomInt4 === 1){
+            if (randomInt4 == 1){
                 msg.reply("Hello friend!");
-            } else if (randomInt4 ===2) {
-                msg.reply("Hey! Why not listen to some music?");
-            }
-            else {
+            } else {
                 msg.reply("Hello to you too. Oh... that wasn't for me was it")
             }
         }
@@ -162,9 +154,9 @@ bot.on('message', msg=>{
 bot.on('message', msg=>{
     if(msg.content.includes("s down")){
         var randomIntForDown = Math.floor(Math.random() * 6);
-        if (randomIntForDown === 4) {
+        if (randomIntForDown == 4) {
             var randomIntForDown2 = Math.floor(Math.random() * 2);
-            if (randomIntForDown2 === 0){
+            if (randomIntForDown2 == 0){
                 msg.reply("I would be down but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
             } else {
                 msg.reply("You are a one player army... good luck!")
@@ -242,26 +234,26 @@ bot.on('message', message=>{
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
-            // function play(connection, message){
-            //     var server = servers[message.guild.id];
-            //     let myStream = ytdl(server.queue[0], {
-            //         filter: "audioonly",
-            //         opusEncoded: true,
-            //         encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-            //     });
-            //     server.dispatcher = connection.play();
-            //     server.queue.shift();
-            //     // server.dispatcher.on("end", function(){
-            //     //    //commment out if issues persist
-            //     //     //if(server.queue[0]){
-            //     //     //    play(connection, message);
-            //     //     //}else{
-            //     //     //    connection.disconnect();
-            //     //     //}
-            //     //     //comment in if issues persist
-            //     //      return;
-            //     // })
-            // }
+                // function play(connection, message){
+                //     var server = servers[message.guild.id];
+                //     let myStream = ytdl(server.queue[0], {
+                //         filter: "audioonly",
+                //         opusEncoded: true,
+                //         encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                //     });
+                //     server.dispatcher = connection.play();
+                //     server.queue.shift();
+                //     // server.dispatcher.on("end", function(){
+                //     //    //commment out if issues persist
+                //     //     //if(server.queue[0]){
+                //     //     //    play(connection, message);
+                //     //     //}else{
+                //     //     //    connection.disconnect();
+                //     //     //}
+                //     //     //comment in if issues persist
+                //     //      return;
+                //     // })
+                // }
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
                     return;
@@ -283,14 +275,14 @@ bot.on('message', message=>{
                     let myStream = ytdl(args[1], {
                         filter: "audioonly",
                         opusEncoded: true,
-                        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=150']
+                        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
                     });
-                    connection.play(myStream, {
+                    let dispatcher = connection.play(myStream, {
                         type: "opus"
                     })
-                    .on("finish", () => {
-                        connection.disconnect();
-                    })
+                        .on("finish", () => {
+                            connection.disconnect();
+                        })
                     try {
                         //play(connection, message);
                         whatsp = args[1];
@@ -351,7 +343,7 @@ bot.on('message', message=>{
                         let myStream = ytdl(whatsp, {
                             filter: "audioonly",
                             opusEncoded: true,
-                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=150']
+                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
                         });
                         let dispatcher = connection.play(myStream, {
                             type: "opus"
@@ -395,7 +387,7 @@ bot.on('message', message=>{
                         let myStream = ytdl(whatsp, {
                             filter: "audioonly",
                             opusEncoded: true,
-                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=150']
+                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
                         });
                         let dispatcher = connection.play(myStream, {
                             type: "opus"
@@ -432,14 +424,14 @@ bot.on('message', message=>{
             //!h returns all existing tags in the database
             case "!key" :
                 gsrun(client2);
-                let keyArray1 = Array.from(congratsDatabase.keys());
+                var keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 var s = "";
-                for (var key in keyArray1) {
+                for (var key in keyArray) {
                     if (key == 0) {
-                        s = keyArray1[key];
+                        s = keyArray[key];
                     } else {
-                        s = s + ", " + keyArray1[key];
+                        s = s + ", " + keyArray[key];
                     }
                 }
                 message.channel.send(s);
@@ -447,14 +439,14 @@ bot.on('message', message=>{
 
             case "!keys" :
                 gsrun(client2);
-                let keyArray2 = Array.from(congratsDatabase.keys());
+                var keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 var s = "";
-                for (var key in keyArray2) {
+                for (var key in keyArray) {
                     if (key == 0) {
-                        s = keyArray2[key];
+                        s = keyArray[key];
                     } else {
-                        s = s + ", " + keyArray2[key];
+                        s = s + ", " + keyArray[key];
                     }
                 }
                 message.channel.send(s);
@@ -462,15 +454,15 @@ bot.on('message', message=>{
 
             //What's Playing?
             case "!?":
-                if (args[1] === true){
-                    if(args[1] === "" || args[1] === " "){
+                if (args[1] == true){
+                    if(args[1] == "" || args[1] == " "){
                         // intentionally left blank
                     }else {
                         message.channel.send(congratsDatabase.get(args[1]));
                         break;
                     }
                 }
-                if (whatsp !== "") {
+                if (whatsp != "") {
                     message.channel.send(whatsp);
                 } else {
                     message.channel.send("Nothing is playing right now");
@@ -506,7 +498,7 @@ bot.on('message', message=>{
             case "!devadd" :
                 message.channel.send("Here's link to add to the database:\n" +
                     "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622")
-                break;
+
             // add to the databse
             case "!a":
                 if (!args[1] || !args[2]){
@@ -517,7 +509,7 @@ bot.on('message', message=>{
                 var z = 1;
                 while (args[z] && args[z+1]){
                     var linkZ = args[z+1];
-                    if (linkZ.substring(linkZ.length - 1) === ",") {
+                    if (linkZ.substring(linkZ.length - 1) == ",") {
                         linkZ = linkZ.substring(0,linkZ.length-1);
                     }
                     congratsDatabase.set(args[z], args[z+1]);
@@ -525,7 +517,7 @@ bot.on('message', message=>{
                     z = z+2;
                     songsAddedInt += 1;
                 }
-                if (songsAddedInt === 1){
+                if (songsAddedInt = 1){
                     message.channel.send("Song successfully added to the database.");
                     break;
                 } else if (songsAddedInt > 1) {
@@ -537,7 +529,7 @@ bot.on('message', message=>{
             //removes databse entries
             case "!rm":
                 var successInDelete = congratsDatabase.delete(args[1]);
-                if (successInDelete === true){
+                if (successInDelete == true){
                     message.channel.send("Song successfully removed from the database.");
                 } else {
                     message.channel.send("Could not find song tag within the database.");
@@ -559,85 +551,70 @@ function printErrorToChannel(activationType, songKey, e) {
     bot.channels.cache.get("730239813403410619").send(e);
 }
 
+/**
+ * Prints the error to the testing channel with no args.
+ */
+    //function printErrorToChannel() {
+    //    bot.channels.cache.get("730239813403410619").send("There was an error!");
+    //}
+
+
+
+
+var congratsDatabase = new Map();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //Map for the database with [tag], [url]
 /*
 var congratsDatabase = new Map([
    ["karmaFieldsB", "https://www.youtube.com/watch?v=ijpgqchByuY"],
    ["karmaFieldsW", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
-
-
    ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
-
    ["broken", "https://www.youtube.com/watch?v=A6ih1aKeETk"],
-
-
    ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
-
-
    ["everything", "https://www.youtube.com/watch?v=It6OTZD140E"],
-
-
    ["tender", "https://www.youtube.com/watch?v=SN9IZ86evb4"],
-
-
    ["rkcbV", "https://www.youtube.com/watch?v=tUwUenVk7zc"],
    ["rkcbB", "https://www.youtube.com/watch?v=LYN4YPAFfuo"],
-
-
    ["gorillaz", "https://www.youtube.com/watch?v=NDvlD3E7DWg"],
-
-
    ["mrRobot", "https://www.youtube.com/watch?v=P0sAYxS03i0"],
-
-
    ["glassanimalsY", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
    ["glassanimalsT", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
-
    ["haddaway", "https://www.youtube.com/watch?v=HEXWRTEbj1I"],
-
-
    ["brokenbells", "https://www.youtube.com/watch?v=Lkv2zF2Bgq0"],
-
-
    ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
-
    ["pMaloneNoOption", "https://www.youtube.com/watch?v=tdKBNT641V8"],
-
-
    ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
-
-
    ["banksG", "https://www.youtube.com/watch?v=rD85HZQwwWw"],
    ["banksS", "https://www.youtube.com/watch?v=Zn4TnsWUpmU"],
    ["banksA", "https://www.youtube.com/watch?v=nIVEAQfbI5w"],
    ["banksH", "https://www.youtube.com/watch?v=Z5mNZ6B9ESk"],
-
-
    ["bigdataE", "https://www.youtube.com/watch?v=tlbNZ_oGgdc"],
    ["bigdataM", "https://www.youtube.com/watch?v=ZtZc4h-m8wQ"],
    ["bigdataL", "https://www.youtube.com/watch?v=WAmCeYz9D90"],
-
-
    ["glitch", "https://youtu.be/ezk_dD2Ia-w"],
-
-
    ["ishome", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
-
    ["toliverAp", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
-
-
    ["zhuF", "https://www.youtube.com/watch?v=7373VBAN9eU"],
    ["zhuO", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
    ["zhuT", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
-
    ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"],
-
    ["snavesUs", "https://www.youtuWbe.com/watch?v=OjT1nqtlGGU"]
-
 ]);
 */
-
-
-
-
