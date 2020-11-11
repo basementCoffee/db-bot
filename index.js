@@ -272,7 +272,7 @@ bot.on('message', message=>{
                         connection.disconnect();
                     })
                     try {
-                        play(connection, message);
+                        //play(connection, message);
                         whatsp = args[1];
                     } catch(e) {
                         console.log("Below is a caught error, should not cause any issues.");
