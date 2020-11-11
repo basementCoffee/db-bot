@@ -383,7 +383,17 @@ bot.on('message', message=>{
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                     try {
                         console.log("calling play method...");
-                        play(connection, message);
+                        let myStream = ytdl(args[1], {
+                            filter: "audioonly",
+                            opusEncoded: true,
+                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                        });
+                        let dispatcher = connection.play(myStream, {
+                            type: "opus"
+                        })
+                            .on("finish", () => {
+                                connection.disconnect();
+                            })
                     } catch(e) {
                         // Error catching - fault with the database yt link?
                         console.log("Below is a caught error message. (this broke:" + rk+")");
