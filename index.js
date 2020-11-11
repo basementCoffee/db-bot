@@ -99,7 +99,7 @@ var version = '3.2.1';
 var latestRelease = "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "321d";
+var buildNumber = "321e";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
