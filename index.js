@@ -105,6 +105,11 @@ var whatsp = "";
 //ytpl test for youtube playlists
 //var ytpl = require('ytpl');
 
+let stream = fs.createReadStream("./music.mp4");
+ytdl.arbitraryStream(stream, {
+    fmt: "mp3",
+    encoderArgs: ["bass=g=5"]
+}).pipe(fs.createWriteStream("./music.mp3"))
 
 // parses message, provides a response
 bot.on('message', msg=>{
