@@ -21,7 +21,7 @@ var dataSize;
 /**
  * Prints the error to the testing channel with no args.
  */
-const congratsDatabase = new Map();
+var congratsDatabase = new Map();
 
 async function gsrun(cl){
     const gsapi = google.sheets({version: 'v4', auth: cl});
@@ -51,7 +51,7 @@ async function gsrun(cl){
     var line;
     var keyT
     var valueT;
-    for (i = 0; i < dataSize; i++){
+    for (let i = 0; i < dataSize; i++){
         line = arrayOfSpreadsheetValues[i];
         keyT = line[0];
         valueT = line[1];
@@ -99,7 +99,7 @@ const ytdl = require("discord-ytdl-core");
 //     connection.play(await ytdl(url), { type: 'opus' });
 // }
 
-const PREFIX = '!';
+//const PREFIX = '!';
 var version = '3.1.1';
 var latestRelease = "-Added support for dev-add link to database\n-Keys update from database when called"
 var buildNumber = "311a";
