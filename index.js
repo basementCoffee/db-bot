@@ -21,7 +21,7 @@ var dataSize;
 async function gsrun(cl){
     const gsapi = google.sheets({version: 'v4', auth: cl});
 
-    
+
 
     const spreadsheetSizeObjects = {
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
@@ -43,13 +43,13 @@ async function gsrun(cl){
 
     console.log(dataSize);
 
-       var line;
-       var keyT
-       var valueT;
-        for (i = 0; i < dataSize; i++){
-            line = arrayOfSpreadsheetValues[i];
-            keyT = line[0];
-            valueT = line[1];
+    var line;
+    var keyT
+    var valueT;
+    for (i = 0; i < dataSize; i++){
+        line = arrayOfSpreadsheetValues[i];
+        keyT = line[0];
+        valueT = line[1];
         congratsDatabase.set(keyT, valueT);
     }
 }
@@ -60,9 +60,9 @@ async function gsPushUpdate(cl, providedKey, providedLink){
     var aProvKey = new Array(providedKey);
     const updateOptions = {
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-            range: "entries!A:" + dataSize.toString(),
-            valueInputOption: 'USER_ENTERED',
-            resource: {values: aProvKey}
+        range: "entries!A:" + dataSize.toString(),
+        valueInputOption: 'USER_ENTERED',
+        resource: {values: aProvKey}
     };
 
     let response = await gsapi.spreadsheets.values.update(updateOptions);
@@ -70,9 +70,9 @@ async function gsPushUpdate(cl, providedKey, providedLink){
     var aProvLink = new Array(providedLink);
     const updateOptions2 = {
         spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-            range: "entries!B:" + dataSize.toString(),
-            valueInputOption: 'USER_ENTERED',
-            resource: {values: aProvLink}
+        range: "entries!B:" + dataSize.toString(),
+        valueInputOption: 'USER_ENTERED',
+        resource: {values: aProvLink}
     };
 
     let response2 = await gsapi.spreadsheets.values.update(updateOptions2);
@@ -86,9 +86,14 @@ const {
     Attachment
 } = require('discord.js');
 
-// initialization 
+// initialization
 const bot = new Client();
-const ytdl = require("ytdl-core");
+const ytdl = require('ytdl-core-discord');
+
+async function play(connection, url) {
+    connection.play(await ytdl(url), { type: 'opus' });
+}
+
 const PREFIX = '!';
 var version = '3.0.0';
 var buildNumber = "3.0.b";
@@ -110,7 +115,7 @@ bot.on('message', msg=>{
             let randomInt2 = Math.floor(Math.random() * 3);
             // valorant responses
             if (randomInt2 == 0) {
-        msg.reply("Sup, who's up for some Valorant?");
+                msg.reply("Sup, who's up for some Valorant?");
             } else if(randomInt2 == 1) {
                 msg.reply("Hello my fellow Valorant gamer");
             } else {
@@ -122,12 +127,12 @@ bot.on('message', msg=>{
         } else if (randomInt == 1) {
             let randomInt3 = Math.floor(Math.random() * 4);
             if (randomInt3 == 0) {
-            msg.reply("Howdy-.. I mean BKAWHH");
+                msg.reply("Howdy-.. I mean BKAWHH");
             } else if (randomInt3 == 1) {
                 msg.reply("Quak quack (translation: sup my dude)");
             } else if (randomInt3 == 2) {
                 msg.reply("Hi. How's it going.");
-            } 
+            }
             else {
                 msg.reply("Hello! I'm your friendly neighborhood penguin.");
             }
@@ -136,7 +141,7 @@ bot.on('message', msg=>{
         } else if (randomInt == 2) {
             let randomInt4 = Math.floor(Math.random() * 2);
             if (randomInt4 == 1){
-            msg.reply("Hello friend!");
+                msg.reply("Hello friend!");
             } else {
                 msg.reply("Hello to you too. Oh... that wasn't for me was it")
             }
@@ -150,12 +155,12 @@ bot.on('message', msg=>{
     if(msg.content.includes("s down")){
         var randomIntForDown = Math.floor(Math.random() * 6);
         if (randomIntForDown == 4) {
-        var randomIntForDown2 = Math.floor(Math.random() * 2);
-        if (randomIntForDown2 == 0){
-        msg.reply("I would be down but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
-        } else {
-            msg.reply("You are a one player army... good luck!")
-        }
+            var randomIntForDown2 = Math.floor(Math.random() * 2);
+            if (randomIntForDown2 == 0){
+                msg.reply("I would be down but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
+            } else {
+                msg.reply("You are a one player army... good luck!")
+            }
         }
     }
 })
@@ -173,17 +178,17 @@ function playCongrats(connection, message){
     } catch (e) {
         printErrorToChannel("congrats", "congratulations", e);
     }
-    
+
 }
 
 // parses message, provides a response
- bot.on('message', message=>{
+bot.on('message', message=>{
     var server;
     if (message.author.bot) return;
     if(contentsContainCongrats(message)) {
         if (message.author.bot) return;
         var messageArray = message.content.substring(message.length).split(" ");
-        for (i = 0; i < messageArray.length; i++) { 
+        for (i = 0; i < messageArray.length; i++) {
             if(!servers[message.guild.id]) servers[message.guild.id] = {
                 queue: []
             }
@@ -197,57 +202,57 @@ function playCongrats(connection, message){
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         playCongrats(connection, message);
                     })
-                   return; 
+                    return;
                 } else {
                     message.channel.send("Congratulations " + messageArray[i+1]+"!");
                     if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                         playCongrats(connection, message);
                     })
-                    return; 
+                    return;
                 }
             }
+        }
+    } else {
+        var args = message.content.split(" ");
+        console.log(args);
+        switch (args[0]) {
+            //!p is just the basic rythm bot
+            case '!p':
+            function play(connection, message){
+                var server = servers[message.guild.id];
+                server.dispatcher = connection.play(ytdl(server.queue[0], { quality: 'highestaudio'}));
+                server.queue.shift();
+                server.dispatcher.on("end", function(){
+                    //commment out if issues persist
+                    //if(server.queue[0]){
+                    //    play(connection, message);
+                    //}else{
+                    //    connection.disconnect();
+                    //}
+                    //comment in if issues persist
+                    return;
+                })
             }
-          } else {
-            var args = message.content.split(" ");
-            console.log(args);
-            switch (args[0]) {
-                //!p is just the basic rythm bot 
-                case '!p':
-                    function play(connection, message){
-                        var server = servers[message.guild.id];
-                        server.dispatcher = connection.play(ytdl(server.queue[0], { quality: 'highestaudio'}));
-                        server.queue.shift();
-                        server.dispatcher.on("end", function(){
-                           //commment out if issues persist
-                            //if(server.queue[0]){
-                            //    play(connection, message);
-                            //}else{
-                            //    connection.disconnect();
-                            //}
-                            //comment in if issues persist
-                             return;
-                        })
-                    }
-                    if (!args[1]) {
-                        message.channel.send("Where's the link? I can't read your mind... unfortunately.");
-                        return;
-                    }
-                    if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
-                        message.channel.send("There's something wrong with what you put there.");
-                        return;
-                    }
-                    if(!message.member.voice.channel){
-                        return;
-                    }
-                    if(!servers[message.guild.id]) servers[message.guild.id] = {
-                        queue: []
-                    }
+                if (!args[1]) {
+                    message.channel.send("Where's the link? I can't read your mind... unfortunately.");
+                    return;
+                }
+                if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
+                    message.channel.send("There's something wrong with what you put there.");
+                    return;
+                }
+                if(!message.member.voice.channel){
+                    return;
+                }
+                if(!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
 
-            
-                    server = servers[message.guild.id];
-                    server.queue.push(args[1]);
-                    if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
-                        try {
+
+                server = servers[message.guild.id];
+                server.queue.push(args[1]);
+                if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
+                    try {
                         play(connection, message);
                         whatsp = args[1];
                     } catch(e) {
@@ -258,143 +263,143 @@ function playCongrats(connection, message){
                         //connection.disconnect();
                         return;
                     }
-                    })
+                })
                 break;
 
 
-               //!e is the Stop feature
-                case "!e" :
-                        server = servers[message.guild.id];
-                        if(!servers[message.guild.id]) servers[message.guild.id] = {
-                            queue: []
-                        }
-                        
-                        if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
-                            server.dispatcher = connection.disconnect();
-                        })
-                        whatsp = "";
-                        break;
-                
-                // prints out the database size
-                case "!s" :
-                   message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
+            //!e is the Stop feature
+            case "!e" :
+                server = servers[message.guild.id];
+                if(!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
+
+                if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
+                    server.dispatcher = connection.disconnect();
+                })
+                whatsp = "";
                 break;
 
-                // to run database songs
-                case "!d":
-                    if (!args[1]) {
-                        message.channel.send("N-NANI? There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
-                        return;
-                    }
-                    if(!message.member.voice.channel){
-                        return;
-                    }
-                    if(!servers[message.guild.id]) servers[message.guild.id] = {
-                        queue: []
-                    }
-                    
-                    server = servers[message.guild.id];
-                    try {
+            // prints out the database size
+            case "!s" :
+                message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
+                break;
+
+            // to run database songs
+            case "!d":
+                if (!args[1]) {
+                    message.channel.send("N-NANI? There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+                    return;
+                }
+                if(!message.member.voice.channel){
+                    return;
+                }
+                if(!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
+
+                server = servers[message.guild.id];
+                try {
                     whatsp = congratsDatabase.get(args[1]);
+                } catch(e) {
+                    message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
+                    return;
+                }
+                let dPhrase = args[1];
+                server.queue.push(congratsDatabase.get(args[1]));
+                if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
+                    try {
+                        play(connection, message);
                     } catch(e) {
-                        message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
+                        console.log("Below is a caught error messong: (this broke:" + dPhrase+")");
+                        console.log(e);
+                        printErrorToChannel("!d", whatsp + " - probably a broken link?", e);
+                        message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
+                        connection.disconnect();
                         return;
                     }
-                    let dPhrase = args[1];
-                    server.queue.push(congratsDatabase.get(args[1]));
-                    if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
-                        try {
+                })
+                break;
+
+
+            //Randomizer
+            case "!r" :
+                if(!message.member.voice.channel){
+                    return;
+                }
+                if(!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
+                var numOfRetries = 0;
+                server = servers[message.guild.id];
+                let rKeyArray = Array.from(congratsDatabase.keys());
+            function playRandom() {
+                numOfRetries += 1;
+                let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
+                let rk = rKeyArray[rn];
+                console.log("attempting to play key:" + rk);
+                whatsp = congratsDatabase.get(rk);
+                server.queue.push(congratsDatabase.get(rk));
+                if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
+                    try {
+                        console.log("calling play method...");
                         play(connection, message);
-                        } catch(e) {
-                            console.log("Below is a caught error messong: (this broke:" + dPhrase+")");
-                            console.log(e);
-                            printErrorToChannel("!d", whatsp + " - probably a broken link?", e);
-                            message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
+                    } catch(e) {
+                        // Error catching - fault with the database yt link?
+                        console.log("Below is a caught error message. (this broke:" + rk+")");
+                        //printErrorToChannel("!r", rk, e);
+                        console.log(e);
+                        if (numOfRetries > 2) {
+                            message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
                             connection.disconnect();
                             return;
-                        }
-                    })
-                    break;   
-                
-                
-                //Randomizer    
-                case "!r" :
-                    if(!message.member.voice.channel){
-                        return;
-                    }
-                    if(!servers[message.guild.id]) servers[message.guild.id] = {
-                        queue: []
-                    }
-                    var numOfRetries = 0;
-                    server = servers[message.guild.id];
-                    let rKeyArray = Array.from(congratsDatabase.keys());
-                    function playRandom() {
-                        numOfRetries += 1;
-                    let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
-                    let rk = rKeyArray[rn];
-                    console.log("attempting to play key:" + rk);
-                    whatsp = congratsDatabase.get(rk);
-                    server.queue.push(congratsDatabase.get(rk));
-                    if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
-                        try {
-                            console.log("calling play method...");
-                            play(connection, message);
-                        } catch(e) {
-                            // Error catching - fault with the database yt link?
-                            console.log("Below is a caught error message. (this broke:" + rk+")");
-                            //printErrorToChannel("!r", rk, e);
-                            console.log(e);
-                            if (numOfRetries > 2) {
-                                message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
-                                connection.disconnect();
-                                return;
+                        } else {
+                            if (numOfRetries > 1) {
+                                message.channel.send("Uh oh, hmm, lemme try that again...");
                             } else {
-                                if (numOfRetries > 1) { 
-                                    message.channel.send("Uh oh, hmm, lemme try that again...");
-                                } else {
-                            message.channel.send("There was a slight problem but I think I got it, here's a random song.");
-                                }
+                                message.channel.send("There was a slight problem but I think I got it, here's a random song.");
+                            }
                             //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
                             playRandom();
-                            }
-                            return;
                         }
-                    })
-                }
-                playRandom();
-                    break;
-                
-                
-                //!h returns all existing tags in the database
-                case "!key" :
-               var keyArray = Array.from(congratsDatabase.keys());
-               keyArray.sort();
-               var s = "";
-               for (var key in keyArray) {
-                   if (key == 0) {
-                       s = keyArray[key];
-                   } else {
-                       s = s + ", " + keyArray[key];
-                   }
-               }
-               message.channel.send(s);
-                break;
-                
-                case "!keys" :
-                    var keyArray = Array.from(congratsDatabase.keys());
-                    keyArray.sort();
-                    var s = "";
-                    for (var key in keyArray) {
-                        if (key == 0) {
-                            s = keyArray[key];
-                        } else {
-                            s = s + ", " + keyArray[key];
-                        }
+                        return;
                     }
-                    message.channel.send(s);
-                     break;
+                })
+            }
+                playRandom();
+                break;
 
-            //What's Playing?         
+
+            //!h returns all existing tags in the database
+            case "!key" :
+                var keyArray = Array.from(congratsDatabase.keys());
+                keyArray.sort();
+                var s = "";
+                for (var key in keyArray) {
+                    if (key == 0) {
+                        s = keyArray[key];
+                    } else {
+                        s = s + ", " + keyArray[key];
+                    }
+                }
+                message.channel.send(s);
+                break;
+
+            case "!keys" :
+                var keyArray = Array.from(congratsDatabase.keys());
+                keyArray.sort();
+                var s = "";
+                for (var key in keyArray) {
+                    if (key == 0) {
+                        s = keyArray[key];
+                    } else {
+                        s = s + ", " + keyArray[key];
+                    }
+                }
+                message.channel.send(s);
+                break;
+
+            //What's Playing?
             case "!?":
                 if (args[1] == true){
                     if(args[1] == "" || args[1] == " "){
@@ -414,31 +419,31 @@ function playCongrats(connection, message){
 
             // list commands for public
             case "!h" :
-                    message.channel.send(
-                        "Things you could ask me:\n"
-                        + "----------------------------------------------\n"
-                        + "!p [youtube link] --> Plays YouTube video\n "
-                        + "!e --> Stops playing \n "
-                        + "!? --> Tells you what's playing \n"
-                        + "--- *Curated songs [Work in Progress]:* ---  \n"
-                        + "!key --> All the artist song tags (separated by a comma) \n"
-                        + "!d [key] --> Plays a song from the database \n"
-                        + "!a [song] [url] --> Adds a song to the database \n"
-                        + "!rm --> Removes a song from the database\n"
-                        +"**Or just say congrats to a friend. I will chime in too  :) **");
-            break;
+                message.channel.send(
+                    "Things you could ask me:\n"
+                    + "----------------------------------------------\n"
+                    + "!p [youtube link] --> Plays YouTube video\n "
+                    + "!e --> Stops playing \n "
+                    + "!? --> Tells you what's playing \n"
+                    + "--- *Curated songs [Work in Progress]:* ---  \n"
+                    + "!key --> All the artist song tags (separated by a comma) \n"
+                    + "!d [key] --> Plays a song from the database \n"
+                    + "!a [song] [url] --> Adds a song to the database \n"
+                    + "!rm --> Removes a song from the database\n"
+                    +"**Or just say congrats to a friend. I will chime in too! :) **");
+                break;
 
-            
+
             // prints out the version number
             case "!v" :
-            message.channel.send("version: " + version);
-            break;
+                message.channel.send("version: " + version);
+                break;
             // prints out the build number
             case "!vv" :
-            message.channel.send("version: " + buildNumber);
-            break;
-            
-            
+                message.channel.send("version: " + buildNumber);
+                break;
+
+
             // add to the databse
             case "!a":
                 if (!args[1] || !args[2]){
@@ -452,55 +457,55 @@ function playCongrats(connection, message){
                     if (linkZ.substring(linkZ.length - 1) == ",") {
                         linkZ = linkZ.substring(0,linkZ.length-1);
                     }
-                congratsDatabase.set(args[z], args[z+1]);
-                gsPushUpdate(client2, args[z], args[z+1]);
-                z = z+2;
-                songsAddedInt += 1;
-            }
-            if (songsAddedInt = 1){
-            message.channel.send("Song successfully added to the database.");
-            break;
-            } else if (songsAddedInt > 1) {
-                message.channel.send(songsAddedInt.toString() + " songs added to the database.");
-            }
-            break;
-            
-            
+                    congratsDatabase.set(args[z], args[z+1]);
+                    gsPushUpdate(client2, args[z], args[z+1]);
+                    z = z+2;
+                    songsAddedInt += 1;
+                }
+                if (songsAddedInt = 1){
+                    message.channel.send("Song successfully added to the database.");
+                    break;
+                } else if (songsAddedInt > 1) {
+                    message.channel.send(songsAddedInt.toString() + " songs added to the database.");
+                }
+                break;
+
+
             //removes databse entries
             case "!rm":
-            var successInDelete = congratsDatabase.delete(args[1]);
-            if (successInDelete == true){
-                message.channel.send("Song successfully removed from the database.");
-            } else {
-                message.channel.send("Could not find song tag within the database.");
-            }
-            break;
-          }
+                var successInDelete = congratsDatabase.delete(args[1]);
+                if (successInDelete == true){
+                    message.channel.send("Song successfully removed from the database.");
+                } else {
+                    message.channel.send("Could not find song tag within the database.");
+                }
+                break;
         }
-    })
+    }
+})
 
 
-    /**
-     * Prints the error to the testing channel.
-     * @param activationType the keyword that causes the error
-     * @param songKey the keyword of the song in the database
-     * @param e the error message
-     */
+/**
+ * Prints the error to the testing channel.
+ * @param activationType the keyword that causes the error
+ * @param songKey the keyword of the song in the database
+ * @param e the error message
+ */
 function printErrorToChannel(activationType, songKey, e) {
     bot.channels.cache.get("730239813403410619").send("ERROR: When called " + activationType +", song key: "+ songKey);
     bot.channels.cache.get("730239813403410619").send(e);
 }
 
-    /**
-     * Prints the error to the testing channel with no args.
-     */
+/**
+ * Prints the error to the testing channel with no args.
+ */
     //function printErrorToChannel() {
     //    bot.channels.cache.get("730239813403410619").send("There was an error!");
     //}
 
 
-   
- 
+
+
 var congratsDatabase = new Map();
 
 
@@ -521,80 +526,80 @@ var congratsDatabase = new Map();
 
 
 //Map for the database with [tag], [url]
- /*   
+/*
 var congratsDatabase = new Map([
-    ["karmaFieldsB", "https://www.youtube.com/watch?v=ijpgqchByuY"], 
-    ["karmaFieldsW", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
+   ["karmaFieldsB", "https://www.youtube.com/watch?v=ijpgqchByuY"],
+   ["karmaFieldsW", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
 
-    
-    ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
 
-    ["broken", "https://www.youtube.com/watch?v=A6ih1aKeETk"],
-    
-    
-    ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
-    
-    
-    ["everything", "https://www.youtube.com/watch?v=It6OTZD140E"],
-    
-    
-    ["tender", "https://www.youtube.com/watch?v=SN9IZ86evb4"],
-    
-    
-    ["rkcbV", "https://www.youtube.com/watch?v=tUwUenVk7zc"],
-    ["rkcbB", "https://www.youtube.com/watch?v=LYN4YPAFfuo"],
-    
-    
-    ["gorillaz", "https://www.youtube.com/watch?v=NDvlD3E7DWg"],
-    
-    
-    ["mrRobot", "https://www.youtube.com/watch?v=P0sAYxS03i0"],
-    
-    
-    ["glassanimalsY", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
-    ["glassanimalsT", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
+   ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
 
-    ["haddaway", "https://www.youtube.com/watch?v=HEXWRTEbj1I"],
-    
-    
-    ["brokenbells", "https://www.youtube.com/watch?v=Lkv2zF2Bgq0"],
-    
-    
-    ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
+   ["broken", "https://www.youtube.com/watch?v=A6ih1aKeETk"],
 
-    ["pMaloneNoOption", "https://www.youtube.com/watch?v=tdKBNT641V8"],
-    
-    
-    ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
-    
-    
-    ["banksG", "https://www.youtube.com/watch?v=rD85HZQwwWw"],
-    ["banksS", "https://www.youtube.com/watch?v=Zn4TnsWUpmU"],
-    ["banksA", "https://www.youtube.com/watch?v=nIVEAQfbI5w"],
-    ["banksH", "https://www.youtube.com/watch?v=Z5mNZ6B9ESk"],
-    
-    
-    ["bigdataE", "https://www.youtube.com/watch?v=tlbNZ_oGgdc"],
-    ["bigdataM", "https://www.youtube.com/watch?v=ZtZc4h-m8wQ"],
-    ["bigdataL", "https://www.youtube.com/watch?v=WAmCeYz9D90"],
-    
-    
-    ["glitch", "https://youtu.be/ezk_dD2Ia-w"],
-    
-    
-    ["ishome", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
 
-    ["toliverAp", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
-    
-    
-    ["zhuF", "https://www.youtube.com/watch?v=7373VBAN9eU"],
-    ["zhuO", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
-    ["zhuT", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
-    
-    ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"],
+   ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
 
-    ["snavesUs", "https://www.youtuWbe.com/watch?v=OjT1nqtlGGU"]
-    
+
+   ["everything", "https://www.youtube.com/watch?v=It6OTZD140E"],
+
+
+   ["tender", "https://www.youtube.com/watch?v=SN9IZ86evb4"],
+
+
+   ["rkcbV", "https://www.youtube.com/watch?v=tUwUenVk7zc"],
+   ["rkcbB", "https://www.youtube.com/watch?v=LYN4YPAFfuo"],
+
+
+   ["gorillaz", "https://www.youtube.com/watch?v=NDvlD3E7DWg"],
+
+
+   ["mrRobot", "https://www.youtube.com/watch?v=P0sAYxS03i0"],
+
+
+   ["glassanimalsY", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
+   ["glassanimalsT", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
+
+   ["haddaway", "https://www.youtube.com/watch?v=HEXWRTEbj1I"],
+
+
+   ["brokenbells", "https://www.youtube.com/watch?v=Lkv2zF2Bgq0"],
+
+
+   ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
+
+   ["pMaloneNoOption", "https://www.youtube.com/watch?v=tdKBNT641V8"],
+
+
+   ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
+
+
+   ["banksG", "https://www.youtube.com/watch?v=rD85HZQwwWw"],
+   ["banksS", "https://www.youtube.com/watch?v=Zn4TnsWUpmU"],
+   ["banksA", "https://www.youtube.com/watch?v=nIVEAQfbI5w"],
+   ["banksH", "https://www.youtube.com/watch?v=Z5mNZ6B9ESk"],
+
+
+   ["bigdataE", "https://www.youtube.com/watch?v=tlbNZ_oGgdc"],
+   ["bigdataM", "https://www.youtube.com/watch?v=ZtZc4h-m8wQ"],
+   ["bigdataL", "https://www.youtube.com/watch?v=WAmCeYz9D90"],
+
+
+   ["glitch", "https://youtu.be/ezk_dD2Ia-w"],
+
+
+   ["ishome", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
+
+   ["toliverAp", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
+
+
+   ["zhuF", "https://www.youtube.com/watch?v=7373VBAN9eU"],
+   ["zhuO", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
+   ["zhuT", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
+
+   ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"],
+
+   ["snavesUs", "https://www.youtuWbe.com/watch?v=OjT1nqtlGGU"]
+
 ]);
 */
 
