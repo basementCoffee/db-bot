@@ -172,11 +172,22 @@ function contentsContainCongrats(message) {
 function playCongrats(connection, message){
     var server = servers[message.guild.id];
     try {
-        server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
+        let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
             filter: "audioonly",
-            opusEncoded:true,
+            opusEncoded: true,
             encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-        }));
+        });
+        let dispatcher = connection.play(myStream, {
+            type: "opus"
+        })
+            .on("finish", () => {
+                connection.disconnect();
+            })
+        // server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
+        //     filter: "audioonly",
+        //     opusEncoded:true,
+        //     encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+        // }));
 
     } catch (e) {
         printErrorToChannel("congrats", "congratulations", e);
