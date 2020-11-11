@@ -428,31 +428,27 @@ bot.on('message', message=>{
 
             //!h returns all existing tags in the database
             case "!key" :
-                gsrun(client2);
+                setTimeout(function(){
+                    gsrun(client2);
+                }, 2000);
                 var keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 var s = "";
                 for (var key in keyArray) {
-                    if (key === 0) {
-                        s = keyArray[key];
-                    } else {
                         s = s + ", " + keyArray[key];
-                    }
                 }
                 message.channel.send(s);
                 break;
 
             case "!keys" :
-                gsrun(client2);
+                setTimeout(function(){
+                    gsrun(client2);
+                }, 2000);
                 var keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 var s = "";
                 for (var key in keyArray) {
-                    if (key == 0) {
-                        s = keyArray[key];
-                    } else {
                         s = s + ", " + keyArray[key];
-                    }
                 }
                 message.channel.send(s);
                 break;
