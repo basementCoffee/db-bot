@@ -262,12 +262,12 @@ bot.on('message', message=>{
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
-                    // let dispatcher = connection.play(stream, {
-                    //     type: "opus"
-                    // })
-                    // .on("finish", () => {
-                    //     msg.guild.me.voice.channel.leave();
-                    // })
+                    let dispatcher = connection.play(stream, {
+                        type: "opus"
+                    })
+                    .on("finish", () => {
+                        msg.guild.me.voice.channel.leave();
+                    })
                     try {
                         play(connection, message);
                         whatsp = args[1];
