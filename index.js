@@ -95,11 +95,11 @@ const ytdl = require("discord-ytdl-core");
 // }
 
 //const PREFIX = '!';
-var version = '3.2.1';
+var version = '3.2.2';
 var latestRelease = "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "321e";
+var buildNumber = "322a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
