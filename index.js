@@ -50,6 +50,7 @@ async function gsrun(cl){
         keyT = line[0];
         valueT = line[1];
         congratsDatabase.set(keyT, valueT);
+        referenceDatabase.set(keyT.toUpperCase(), valueT);
     }
 }
 
@@ -94,9 +95,10 @@ const ytdl = require("discord-ytdl-core");
 // }
 
 //const PREFIX = '!';
-var version = '3.1.1';
-var latestRelease = "-Added support for dev-add link to database\n-Keys update from database when called"
-var buildNumber = "311a";
+var version = '3.1.2';
+var latestRelease = "-Keys are no longer case specific" +
+    "-Added support for dev-add link to database\n-Keys update from database when called"
+var buildNumber = "312a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -339,7 +341,7 @@ bot.on('message', message=>{
                     return;
                 }
                 let dPhrase = args[1];
-                server.queue.push(congratsDatabase.get(args[1]));
+                server.queue.push(congratsDatabase.get(args[1].toUpperCase()));
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                     try {
                         let myStream = ytdl(whatsp, {
@@ -354,7 +356,7 @@ bot.on('message', message=>{
                                 connection.disconnect();
                             })
                     } catch(e) {
-                        console.log("Below is a caught error messong: (this broke:" + dPhrase+")");
+                        console.log("Below is a caught error message: (this broke:" + dPhrase+")");
                         console.log(e);
                         printErrorToChannel("!d", whatsp + " - probably a broken link?", e);
                         message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
@@ -495,7 +497,7 @@ bot.on('message', message=>{
                 break;
             // prints out the build number
             case "!vv" :
-                message.channel.send("version: " + buildNumber);
+                message.channel.send("build: " + buildNumber);
                 break;
             case "!devadd" :
                 message.channel.send("Here's link to add to the database:\n" +
@@ -564,6 +566,7 @@ function printErrorToChannel(activationType, songKey, e) {
 
 
 var congratsDatabase = new Map();
+var referenceDatabase = new Map();
 
 
 
