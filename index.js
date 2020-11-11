@@ -95,10 +95,11 @@ const ytdl = require("discord-ytdl-core");
 // }
 
 //const PREFIX = '!';
-var version = '3.1.2';
-var latestRelease = "-Keys are no longer case specific" +
-    "-Added support for dev-add link to database\n-Keys update from database when called"
-var buildNumber = "312a";
+var version = '3.2.1';
+var latestRelease = "-DB keys are no longer case specific\n" +
+    "-Added support for dev-add link to database\n" +
+    "-Keys update from database when called"
+var buildNumber = "321a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -341,7 +342,7 @@ bot.on('message', message=>{
                     return;
                 }
                 let dPhrase = args[1];
-                server.queue.push(congratsDatabase.get(args[1].toUpperCase()));
+                server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                     try {
                         let myStream = ytdl(whatsp, {
