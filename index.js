@@ -105,12 +105,6 @@ var whatsp = "";
 //ytpl test for youtube playlists
 //var ytpl = require('ytpl');
 
-let stream = fs.createReadStream("./music.mp4");
-ytdl.arbitraryStream(stream, {
-    fmt: "mp3",
-    encoderArgs: ["bass=g=5"]
-}).pipe(fs.createWriteStream("./music.mp3"))
-
 // parses message, provides a response
 bot.on('message', msg=>{
     if(msg.content.includes("hello" || "howdy" || "hey" || "Hello" || "sup" || "Hey")){
@@ -227,27 +221,26 @@ bot.on('message', message=>{
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
-            function play(connection, message){
-                var server = servers[message.guild.id];
-                let myStream = ytdl(server.queue[0], {
-                    filter: "audioonly",
-                    opusEncoded: true,
-                    encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-                });
-
-                server.dispatcher = connection.play();
-                server.queue.shift();
-                // server.dispatcher.on("end", function(){
-                //    //commment out if issues persist
-                //     //if(server.queue[0]){
-                //     //    play(connection, message);
-                //     //}else{
-                //     //    connection.disconnect();
-                //     //}
-                //     //comment in if issues persist
-                //      return;
-                // })
-            }
+            // function play(connection, message){
+            //     var server = servers[message.guild.id];
+            //     let myStream = ytdl(server.queue[0], {
+            //         filter: "audioonly",
+            //         opusEncoded: true,
+            //         encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+            //     });
+            //     server.dispatcher = connection.play();
+            //     server.queue.shift();
+            //     // server.dispatcher.on("end", function(){
+            //     //    //commment out if issues persist
+            //     //     //if(server.queue[0]){
+            //     //     //    play(connection, message);
+            //     //     //}else{
+            //     //     //    connection.disconnect();
+            //     //     //}
+            //     //     //comment in if issues persist
+            //     //      return;
+            //     // })
+            // }
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
                     return;
@@ -267,11 +260,16 @@ bot.on('message', message=>{
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
-                    let dispatcher = connection.play(stream, {
+                    let myStream = ytdl(server.queue[0], {
+                        filter: "audioonly",
+                        opusEncoded: true,
+                        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                    });
+                    let dispatcher = connection.play(myStream, {
                         type: "opus"
                     })
                     .on("finish", () => {
-                        msg.guild.me.voice.channel.leave();
+                        connection.disconnect();
                     })
                     try {
                         play(connection, message);
