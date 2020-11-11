@@ -339,7 +339,7 @@ bot.on('message', message=>{
                 server.queue.push(congratsDatabase.get(args[1]));
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                     try {
-                        let myStream = ytdl(args[1], {
+                        let myStream = ytdl(whatsp, {
                             filter: "audioonly",
                             opusEncoded: true,
                             encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
@@ -383,7 +383,7 @@ bot.on('message', message=>{
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                     try {
                         console.log("calling play method...");
-                        let myStream = ytdl(args[1], {
+                        let myStream = ytdl(whatsp, {
                             filter: "audioonly",
                             opusEncoded: true,
                             encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
