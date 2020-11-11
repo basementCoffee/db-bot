@@ -267,7 +267,6 @@ bot.on('message', message=>{
                     queue: []
                 }
 
-
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
@@ -339,7 +338,17 @@ bot.on('message', message=>{
                 server.queue.push(congratsDatabase.get(args[1]));
                 if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
                     try {
-                        play(connection, message);
+                        let myStream = ytdl(server.queue[0], {
+                            filter: "audioonly",
+                            opusEncoded: true,
+                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                        });
+                        let dispatcher = connection.play(myStream, {
+                            type: "opus"
+                        })
+                            .on("finish", () => {
+                                connection.disconnect();
+                            })
                     } catch(e) {
                         console.log("Below is a caught error messong: (this broke:" + dPhrase+")");
                         console.log(e);
