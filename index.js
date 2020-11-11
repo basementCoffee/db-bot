@@ -88,7 +88,7 @@ const {
 
 // initialization
 const bot = new Client();
-const ytdl = require('discord-ytdl-core');
+const ytdl = require("discord-ytdl-core");
 
 // async function play(connection, url) {
 //     connection.play(await ytdl(url), { type: 'opus' });
@@ -173,8 +173,12 @@ function contentsContainCongrats(message) {
 function playCongrats(connection, message){
     var server = servers[message.guild.id];
     try {
-        server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', { quality: 'highestaudio'}));
-        server.dispatcher.setVolume(1);
+        server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
+            filter: "audioonly",
+            opusEncoded:true,
+            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+        }));
+
     } catch (e) {
         printErrorToChannel("congrats", "congratulations", e);
     }
@@ -220,18 +224,24 @@ bot.on('message', message=>{
             case '!p':
             function play(connection, message){
                 var server = servers[message.guild.id];
-                server.dispatcher = connection.play(ytdl(server.queue[0], { quality: 'highestaudio'}));
+                let myStream = ytdl(server.queue[0], {
+                    filter: "audioonly",
+                    opusEncoded: true,
+                    encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                });
+
+                server.dispatcher = connection.play();
                 server.queue.shift();
-                server.dispatcher.on("end", function(){
-                    //commment out if issues persist
-                    //if(server.queue[0]){
-                    //    play(connection, message);
-                    //}else{
-                    //    connection.disconnect();
-                    //}
-                    //comment in if issues persist
-                    return;
-                })
+                // server.dispatcher.on("end", function(){
+                //    //commment out if issues persist
+                //     //if(server.queue[0]){
+                //     //    play(connection, message);
+                //     //}else{
+                //     //    connection.disconnect();
+                //     //}
+                //     //comment in if issues persist
+                //      return;
+                // })
             }
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
@@ -251,7 +261,13 @@ bot.on('message', message=>{
 
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
-                if(!message.guild.voiceChannel) message.member.voice.channel.join().then(function(connection){
+                if(!message.guild.voiceChannel) message.member.voice.channel.ajoin().then(function(connection){
+                    let dispatcher = connection.play(stream, {
+                        type: "opus"
+                    })
+                        .on("finish", () => {
+                            msg.guild.me.voice.channel.leave();
+                        })
                     try {
                         play(connection, message);
                         whatsp = args[1];
