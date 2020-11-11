@@ -95,8 +95,9 @@ const ytdl = require("discord-ytdl-core");
 // }
 
 const PREFIX = '!';
-var version = '3.0.0';
-var buildNumber = "3.0.b";
+var version = '3.1.0';
+var latestRelease = "-Added support for dev-add link to database\n-Keys update from database when called"
+var buildNumber = "310a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -422,6 +423,7 @@ bot.on('message', message=>{
 
             //!h returns all existing tags in the database
             case "!key" :
+                gsrun(client2);
                 var keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 var s = "";
@@ -436,6 +438,7 @@ bot.on('message', message=>{
                 break;
 
             case "!keys" :
+                gsrun(client2);
                 var keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 var s = "";
@@ -486,13 +489,15 @@ bot.on('message', message=>{
 
             // prints out the version number
             case "!v" :
-                message.channel.send("version: " + version);
+                message.channel.send("version: " + version + "\n"+ latestRelease);
                 break;
             // prints out the build number
             case "!vv" :
                 message.channel.send("version: " + buildNumber);
                 break;
-
+            case "!devadd" :
+                message.channel.send("Here's link to add to the database:\n" +
+                    "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622")
 
             // add to the databse
             case "!a":
