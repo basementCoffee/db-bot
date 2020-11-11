@@ -18,6 +18,11 @@ client2.authorize(function(err, tokens){
 
 var dataSize;
 
+/**
+ * Prints the error to the testing channel with no args.
+ */
+const congratsDatabase = new Map();
+
 async function gsrun(cl){
     const gsapi = google.sheets({version: 'v4', auth: cl});
 
@@ -80,7 +85,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
 
 
 
-//ABOVE IS GOOGLE API
+//ABOVE IS GOOGLE API --------------------------------------------------
 const {
     Client,
     Attachment
@@ -95,9 +100,9 @@ const ytdl = require("discord-ytdl-core");
 // }
 
 const PREFIX = '!';
-var version = '3.1.0';
+var version = '3.1.1';
 var latestRelease = "-Added support for dev-add link to database\n-Keys update from database when called"
-var buildNumber = "310a";
+var buildNumber = "311a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -109,14 +114,14 @@ var whatsp = "";
 // parses message, provides a response
 bot.on('message', msg=>{
     if(msg.content.includes("hello" || "howdy" || "hey" || "Hello" || "sup" || "Hey")){
-        let randomInt = Math.floor(Math.random() * 5);
+        let randomInt = Math.floor(Math.random() * 4);
         // section 1
-        if (randomInt == 0) {
+        if (randomInt === -1) {
             let randomInt2 = Math.floor(Math.random() * 3);
             // valorant responses
-            if (randomInt2 == 0) {
+            if (randomInt2 === 0) {
                 msg.reply("Sup, who's up for some Valorant?");
-            } else if(randomInt2 == 1) {
+            } else if(randomInt2 === 1) {
                 msg.reply("Hello my fellow Valorant gamer");
             } else {
                 msg.reply("Hey, just busy trying out this game called Valorant... it's not half bad");
@@ -124,13 +129,13 @@ bot.on('message', msg=>{
             // end valorant responses
 
             // section 2
-        } else if (randomInt == 1) {
+        } else if (randomInt === 1) {
             let randomInt3 = Math.floor(Math.random() * 4);
-            if (randomInt3 == 0) {
+            if (randomInt3 === 0) {
                 msg.reply("Howdy-.. I mean BKAWHH");
-            } else if (randomInt3 == 1) {
+            } else if (randomInt3 === 1) {
                 msg.reply("Quak quack (translation: sup my dude)");
-            } else if (randomInt3 == 2) {
+            } else if (randomInt3 === 2) {
                 msg.reply("Hi. How's it going.");
             }
             else {
@@ -138,11 +143,14 @@ bot.on('message', msg=>{
             }
 
             // section 3
-        } else if (randomInt == 2) {
+        } else if (randomInt === 2) {
             let randomInt4 = Math.floor(Math.random() * 2);
-            if (randomInt4 == 1){
+            if (randomInt4 === 1){
                 msg.reply("Hello friend!");
-            } else {
+            } else if (randomInt4 ===2) {
+                msg.reply("Hey! Why not listen to some music?");
+            }
+            else {
                 msg.reply("Hello to you too. Oh... that wasn't for me was it")
             }
         }
@@ -154,9 +162,9 @@ bot.on('message', msg=>{
 bot.on('message', msg=>{
     if(msg.content.includes("s down")){
         var randomIntForDown = Math.floor(Math.random() * 6);
-        if (randomIntForDown == 4) {
+        if (randomIntForDown === 4) {
             var randomIntForDown2 = Math.floor(Math.random() * 2);
-            if (randomIntForDown2 == 0){
+            if (randomIntForDown2 === 0){
                 msg.reply("I would be down but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
             } else {
                 msg.reply("You are a one player army... good luck!")
@@ -275,9 +283,9 @@ bot.on('message', message=>{
                     let myStream = ytdl(args[1], {
                         filter: "audioonly",
                         opusEncoded: true,
-                        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=150']
                     });
-                    let dispatcher = connection.play(myStream, {
+                    connection.play(myStream, {
                         type: "opus"
                     })
                     .on("finish", () => {
@@ -343,7 +351,7 @@ bot.on('message', message=>{
                         let myStream = ytdl(whatsp, {
                             filter: "audioonly",
                             opusEncoded: true,
-                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=150']
                         });
                         let dispatcher = connection.play(myStream, {
                             type: "opus"
@@ -387,7 +395,7 @@ bot.on('message', message=>{
                         let myStream = ytdl(whatsp, {
                             filter: "audioonly",
                             opusEncoded: true,
-                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=150']
                         });
                         let dispatcher = connection.play(myStream, {
                             type: "opus"
@@ -424,14 +432,14 @@ bot.on('message', message=>{
             //!h returns all existing tags in the database
             case "!key" :
                 gsrun(client2);
-                var keyArray = Array.from(congratsDatabase.keys());
+                let keyArray1 = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 var s = "";
-                for (var key in keyArray) {
+                for (var key in keyArray1) {
                     if (key == 0) {
-                        s = keyArray[key];
+                        s = keyArray1[key];
                     } else {
-                        s = s + ", " + keyArray[key];
+                        s = s + ", " + keyArray1[key];
                     }
                 }
                 message.channel.send(s);
@@ -439,14 +447,14 @@ bot.on('message', message=>{
 
             case "!keys" :
                 gsrun(client2);
-                var keyArray = Array.from(congratsDatabase.keys());
+                let keyArray2 = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 var s = "";
-                for (var key in keyArray) {
+                for (var key in keyArray2) {
                     if (key == 0) {
-                        s = keyArray[key];
+                        s = keyArray2[key];
                     } else {
-                        s = s + ", " + keyArray[key];
+                        s = s + ", " + keyArray2[key];
                     }
                 }
                 message.channel.send(s);
@@ -454,15 +462,15 @@ bot.on('message', message=>{
 
             //What's Playing?
             case "!?":
-                if (args[1] == true){
-                    if(args[1] == "" || args[1] == " "){
+                if (args[1] === true){
+                    if(args[1] === "" || args[1] === " "){
                         // intentionally left blank
                     }else {
                         message.channel.send(congratsDatabase.get(args[1]));
                         break;
                     }
                 }
-                if (whatsp != "") {
+                if (whatsp !== "") {
                     message.channel.send(whatsp);
                 } else {
                     message.channel.send("Nothing is playing right now");
@@ -498,7 +506,7 @@ bot.on('message', message=>{
             case "!devadd" :
                 message.channel.send("Here's link to add to the database:\n" +
                     "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622")
-
+                break;
             // add to the databse
             case "!a":
                 if (!args[1] || !args[2]){
@@ -509,7 +517,7 @@ bot.on('message', message=>{
                 var z = 1;
                 while (args[z] && args[z+1]){
                     var linkZ = args[z+1];
-                    if (linkZ.substring(linkZ.length - 1) == ",") {
+                    if (linkZ.substring(linkZ.length - 1) === ",") {
                         linkZ = linkZ.substring(0,linkZ.length-1);
                     }
                     congratsDatabase.set(args[z], args[z+1]);
@@ -517,7 +525,7 @@ bot.on('message', message=>{
                     z = z+2;
                     songsAddedInt += 1;
                 }
-                if (songsAddedInt = 1){
+                if (songsAddedInt === 1){
                     message.channel.send("Song successfully added to the database.");
                     break;
                 } else if (songsAddedInt > 1) {
@@ -529,7 +537,7 @@ bot.on('message', message=>{
             //removes databse entries
             case "!rm":
                 var successInDelete = congratsDatabase.delete(args[1]);
-                if (successInDelete == true){
+                if (successInDelete === true){
                     message.channel.send("Song successfully removed from the database.");
                 } else {
                     message.channel.send("Could not find song tag within the database.");
@@ -550,34 +558,6 @@ function printErrorToChannel(activationType, songKey, e) {
     bot.channels.cache.get("730239813403410619").send("ERROR: When called " + activationType +", song key: "+ songKey);
     bot.channels.cache.get("730239813403410619").send(e);
 }
-
-/**
- * Prints the error to the testing channel with no args.
- */
-    //function printErrorToChannel() {
-    //    bot.channels.cache.get("730239813403410619").send("There was an error!");
-    //}
-
-
-
-
-var congratsDatabase = new Map();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //Map for the database with [tag], [url]
