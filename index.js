@@ -80,7 +80,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
 
 
 
-//ABOVE IS GOOGLE API ------------------------------------
+//ABOVE IS GOOGLE API -------------------------------------------
 const {
     Client,
     Attachment
@@ -99,7 +99,7 @@ var version = '3.2.1';
 var latestRelease = "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "321h";
+var buildNumber = "321i";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -426,17 +426,20 @@ bot.on('message', message=>{
 
             //!h returns all existing tags in the database
             case "!key" :
-                gsrun(client2)
-                var keyArray = Array.from(congratsDatabase.keys());
-                keyArray.sort();
                 var s = "";
-                for (var key in keyArray) {
-                    if (key == 0) {
-                        s = keyArray[key];
-                    } else {
-                        s = s + ", " + keyArray[key];
+                gsrun(client2).then(() => {
+                    var keyArray = Array.from(congratsDatabase.keys());
+                    keyArray.sort();
+                    for (var key in keyArray) {
+                        if (key == 0) {
+                            s = keyArray[key];
+                        } else {
+                            s = s + ", " + keyArray[key];
+                        }
                     }
-                }
+                    message.channel.send(s);
+                    }
+                )
                 message.channel.send(s);
                 break;
 
