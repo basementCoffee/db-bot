@@ -96,12 +96,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE Before Git Push
-var version = '3.3.1';
+var version = '3.3.2';
 var latestRelease = "Added a new search feature for keys (!k search-starts-with)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "331a";
+var buildNumber = "332a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -426,9 +426,6 @@ bot.on('message', message=>{
             }
                 playRandom();
                 break;
-
-
-            //!h returns all existing tags in the database
             case "!key" :
                 gsrun(client2)
                 keyArray = Array.from(congratsDatabase.keys());
@@ -509,7 +506,7 @@ bot.on('message', message=>{
                 break;
 
 
-            // list commands for public
+            // list commands for public commands
             case "!h" :
                 message.channel.send(
                     "Things you could ask me:\n"
@@ -520,6 +517,7 @@ bot.on('message', message=>{
                     + "--- *Curated songs [Work in Progress]:* ---  \n"
                     + "!key --> All the artist song tags (separated by a comma) \n"
                     + "!d [key] --> Plays a song from the database \n"
+                    + "!k [phrase] --> finds keys with the same starting phrase"
                     + "!a [song] [url] --> Adds a song to the database \n"
                     + "!rm --> Removes a song from the database\n"
                     +"**Or just say congrats to a friend. I will chime in too! :) **");
