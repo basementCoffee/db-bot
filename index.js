@@ -80,7 +80,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
 
 
 
-//ABOVE IS GOOGLE API -------------------------------------------
+//ABOVE IS GOOGLE API -----------------------------------------
 const {
     Client,
     Attachment
@@ -95,11 +95,13 @@ const ytdl = require("discord-ytdl-core");
 // }
 
 //const PREFIX = '!';
-var version = '3.2.1';
-var latestRelease = "-DB keys are no longer case specific (ex: !d banksg)\n" +
+// UPDATE HERE
+var version = '3.3.0';
+var latestRelease = "Added a new search feature for keys (!k search-term)\n" +
+    "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
-    "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "321i";
+    "-Latest spreadsheet data is retrieved when calling keys (!keys)"
+var buildNumber = "330a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -426,23 +428,19 @@ bot.on('message', message=>{
 
             //!h returns all existing tags in the database
             case "!key" :
+                gsrun(client2)
+                var keyArray = Array.from(congratsDatabase.keys());
+                keyArray.sort();
                 var s = "";
-                gsrun(client2).then(() => {
-                    var keyArray = Array.from(congratsDatabase.keys());
-                    keyArray.sort();
-                    for (var key in keyArray) {
-                        if (key == 0) {
-                            s = keyArray[key];
-                        } else {
-                            s = s + ", " + keyArray[key];
-                        }
+                for (var key in keyArray) {
+                    if (key == 0) {
+                        s = keyArray[key];
+                    } else {
+                        s = s + ", " + keyArray[key];
                     }
-                    message.channel.send(s);
-                    }
-                )
+                }
                 message.channel.send(s);
                 break;
-
             case "!keys" :
                 gsrun(client2)
                     var keyArray = Array.from(congratsDatabase.keys());
@@ -456,6 +454,27 @@ bot.on('message', message=>{
                         }
                     }
                 message.channel.send(s);
+                break;
+            case "!k" :
+                if (args[1] === true){
+                    if(args[1] === "" || args[1] === " "){
+                        // intentionally left blank
+                    }
+                    else {
+                        var keyArray = Array.from(congratsDatabase.keys());
+                        var ik = 0;
+                        var s = "";
+                        for (var key in keyArray) {
+                            if (key == 0) {
+                                s = keyArray[key];
+                            } else {
+                                if (key.contains(args[1])) {
+                                 s = s + ", " + keyArray[key];
+                                }
+                            }
+                        }
+                    }
+                }
                 break;
 
             //What's Playing?
