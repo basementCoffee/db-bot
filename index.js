@@ -101,7 +101,7 @@ var latestRelease = "Added a new search feature for keys (!k search-term)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "330b";
+var buildNumber = "330c";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -456,19 +456,25 @@ bot.on('message', message=>{
                 message.channel.send(s);
                 break;
             case "!k" :
-                if (args[1] === true){
-                    if(args[1] === "" || args[1] === " "){
+                let givenS = args[1];
+                message.channel.send(givenS);
+                if (givenS === true){
+                    if(givenS === "" || givenS === " "){
                         // intentionally left blank
+                        message.channel.send("b1");
                     }
                     else {
+                        message.channel.send("b2");
                         var keyArray = Array.from(congratsDatabase.keys());
                         var ik = 0;
                         var s = "";
                         for (var key in keyArray) {
                             if (key == 0) {
                                 s = keyArray[key];
+                                message.channel.send("b3 - error" + s + " " + key);
                             } else {
                                 if (key.contains(args[1])) {
+                                    message.channel.send("added");
                                  s = s + ", " + keyArray[key];
                                 }
                             }
