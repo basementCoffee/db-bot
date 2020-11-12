@@ -101,7 +101,7 @@ var latestRelease = "Added a new search feature for keys (!k search-term)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "330a";
+var buildNumber = "330b";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -475,6 +475,7 @@ bot.on('message', message=>{
                         }
                     }
                 }
+                message.channel.send(s);
                 break;
 
             //What's Playing?
