@@ -96,12 +96,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE Before Git Push
-var version = '3.3.0';
+var version = '3.3.1';
 var latestRelease = "Added a new search feature for keys (!k search-starts-with)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "330zj";
+var buildNumber = "331a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -458,7 +458,7 @@ bot.on('message', message=>{
                 message.channel.send(s);
                 break;
             case "!k" :
-                message.channel.send(args[1]);
+                //message.channel.send(args[1]);
                 if (!args[1]) {
                     message.channel.send("No argument was given.");
                     return;
@@ -484,21 +484,10 @@ bot.on('message', message=>{
                         }
                     }
                 }
-                    //     message.channel.send("added");
-                    //     ss = ss + ", " + keyArray2[ik];
-                //     if (key == 0) {
-                //         ss = keyArray[key];
-                //         message.channel.send("b3 - error: s:" + ss + " key:" + key);
-                //     } else {
-                //         if (key.contains(args[1])) {
-                //             message.channel.send("added");
-                //             ss = ss + ", " + keyArray[key];
-                //         }
-                //     }
                 if (ss.length === 0) {
                     message.channel.send("Could not find any keys that start with the given letters.");
                 } else {
-                    message.channel.send(ss);
+                    message.channel.send("Keys found: " + ss);
                     //message.channel.send("--end--");
                 }
                 break;
