@@ -100,7 +100,7 @@ var latestRelease = "" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "334a";
+var buildNumber = "334b";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -112,9 +112,8 @@ var whatsp = "";
 // parses message, provides a response
 bot.on('message', msg => {
     if (msg.content.includes("hello friend")) {
-            msg.reply("Bonsoir "+ msg.author);
-    }
-    if (msg.content.includes("hello")) {
+            msg.reply("Bonsoir "+ msg.author.username);
+    } else if (msg.content.includes("hello")) {
         let randomInt = Math.floor(Math.random() * 4);
         // section 1
         if (randomInt === 5) {
