@@ -95,11 +95,10 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.3.7';
-var latestRelease = "" +
-    "-Added a new search feature for keys (!k search-starts-with)\n" +
-    "-DB keys are no longer case specific (ex: !d banksg)\n" +
-    "-Added support for dev-add link to database (!devadd)\n" +
-    "-Latest spreadsheet data is retrieved when calling keys (!keys)"
+var latestRelease = "Latest Release:\n" +
+    "- removed 'searching' phrase when calling !k\n" +
+    "-3.3.0 introduced-\n" +
+    "-Added a new search feature for keys (!k search-starts-with)\n";
 var buildNumber = "337a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
