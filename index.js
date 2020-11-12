@@ -80,7 +80,7 @@ async function gsPushUpdate(cl, providedKey, providedLink){
 
 
 
-//ABOVE IS GOOGLE API
+//ABOVE IS GOOGLE API ------------------------------------
 const {
     Client,
     Attachment
@@ -95,12 +95,11 @@ const ytdl = require("discord-ytdl-core");
 // }
 
 //const PREFIX = '!';
-var version = '3.2.2';
-var latestRelease = "bug fixes key(s)"
-var devNotes = "-DB keys are no longer case specific (ex: !d banksg)\n" +
+var version = '3.2.1';
+var latestRelease = "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "322d";
+var buildNumber = "321h";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -202,24 +201,8 @@ function playCongrats(connection, message){
 
 }
 
-function getKeys(message) {
-    gsrun(client2);
-    var keyArray = Array.from(congratsDatabase.keys());
-    keyArray.sort();
-    var s = "";
-    for (var key in keyArray) {
-        if (key == 0) {
-            s = keyArray[key];
-        } else {
-            s = s + ", " + keyArray[key];
-        }
-    }
-    message.channel.send(s);
-}
-
 // parses message, provides a response
 bot.on('message', message=>{
-    // congrats check
     var server;
     if (message.author.bot) return;
     if(contentsContainCongrats(message)) {
@@ -252,7 +235,7 @@ bot.on('message', message=>{
     } else {
         var args = message.content.split(" ");
         console.log(args);
-        // inner function
+
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
@@ -438,13 +421,38 @@ bot.on('message', message=>{
                 })
             }
                 playRandom();
+                break;
 
+
+            //!h returns all existing tags in the database
+            case "!key" :
+                gsrun(client2)
+                var keyArray = Array.from(congratsDatabase.keys());
+                keyArray.sort();
+                var s = "";
+                for (var key in keyArray) {
+                    if (key == 0) {
+                        s = keyArray[key];
+                    } else {
+                        s = s + ", " + keyArray[key];
+                    }
+                }
+                message.channel.send(s);
                 break;
-            case "keys" :
-                    getKeys(message);
-                break;
-            case "key" :
-                    getKeys(message);
+
+            case "!keys" :
+                gsrun(client2)
+                    var keyArray = Array.from(congratsDatabase.keys());
+                    keyArray.sort();
+                    var s = "";
+                    for (var key in keyArray) {
+                        if (key == 0) {
+                            s = keyArray[key];
+                        } else {
+                            s = s + ", " + keyArray[key];
+                        }
+                    }
+                message.channel.send(s);
                 break;
 
             //What's Playing?
@@ -465,7 +473,7 @@ bot.on('message', message=>{
                 break;
 
 
-            // list commands for public use
+            // list commands for public
             case "!h" :
                 message.channel.send(
                     "Things you could ask me:\n"
@@ -521,7 +529,7 @@ bot.on('message', message=>{
                 break;
 
 
-            //removes database entries
+            //removes databse entries
             case "!rm":
                 var successInDelete = congratsDatabase.delete(args[1]);
                 if (successInDelete === true){
