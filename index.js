@@ -99,7 +99,7 @@ var version = '3.2.1';
 var latestRelease = "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "321f";
+var buildNumber = "321g";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -408,7 +408,6 @@ bot.on('message', message=>{
                         if (numOfRetries > 2) {
                             message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
                             connection.disconnect();
-                            return;
                         } else {
                             if (numOfRetries > 1) {
                                 message.channel.send("Uh oh, hmm, lemme try that again...");
