@@ -100,7 +100,7 @@ var latestRelease = "bug fixes key(s)"
 var devNotes = "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "322c";
+var buildNumber = "322d";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -202,6 +202,20 @@ function playCongrats(connection, message){
 
 }
 
+function getKeys(message) {
+    gsrun(client2);
+    var keyArray = Array.from(congratsDatabase.keys());
+    keyArray.sort();
+    var s = "";
+    for (var key in keyArray) {
+        if (key == 0) {
+            s = keyArray[key];
+        } else {
+            s = s + ", " + keyArray[key];
+        }
+    }
+    message.channel.send(s);
+}
 
 // parses message, provides a response
 bot.on('message', message=>{
@@ -239,20 +253,6 @@ bot.on('message', message=>{
         var args = message.content.split(" ");
         console.log(args);
         // inner function
-        function getKeys() {
-            gsrun(client2);
-            var keyArray = Array.from(congratsDatabase.keys());
-            keyArray.sort();
-            var s = "";
-            for (var key in keyArray) {
-                if (key == 0) {
-                    s = keyArray[key];
-                } else {
-                    s = s + ", " + keyArray[key];
-                }
-            }
-            message.channel.send(s);
-        }
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
@@ -438,15 +438,13 @@ bot.on('message', message=>{
                 })
             }
                 playRandom();
+
                 break;
-
-
-
             case "keys" :
-                    getKeys();
+                    getKeys(message);
                 break;
             case "key" :
-                    getKeys();
+                    getKeys(message);
                 break;
 
             //What's Playing?
