@@ -96,12 +96,13 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE Before Git Push
-var version = '3.3.2';
-var latestRelease = "Added a new search feature for keys (!k search-starts-with)\n" +
+var version = '3.3.3';
+var latestRelease = "" +
+    "-Added a new search feature for keys (!k search-starts-with)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "332a";
+var buildNumber = "333a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -112,13 +113,17 @@ var whatsp = "";
 
 // parses message, provides a response
 bot.on('message', msg=>{
-    if(msg.content.includes("hello" || "howdy" || "hey" || "Hello" || "sup" || "Hey")){
+    if(msg.content.includes("hello") ||
+        message.content.includes("howdy") ||
+        message.content.includes("hey") ||
+        message.content.includes("Hello") ||
+        message.content.includes("sup") || message.content.includes("hey")){
         let randomInt = Math.floor(Math.random() * 4);
         // section 1
         if (randomInt === 5) {
             let randomInt2 = Math.floor(Math.random() * 3);
             // valorant responses
-            if (randomInt2 === 0) {
+            if (randomInt2 === -1) {
                 msg.reply("Sup, who's up for some Valorant?");
             } else if(randomInt2 === 1) {
                 msg.reply("Hello my fellow Valorant gamer");
@@ -131,7 +136,7 @@ bot.on('message', msg=>{
         } else if (randomInt === 1) {
             let randomInt3 = Math.floor(Math.random() * 4);
             if (randomInt3 === 0) {
-                msg.reply("Howdy-.. I mean BKAWHH");
+                msg.reply("Howdy pa-... I mean BAKAAWH");
             } else if (randomInt3 === 1) {
                 msg.reply("Quak quack (translation: sup my dude)");
             } else if (randomInt3 === 2) {
