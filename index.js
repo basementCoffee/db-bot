@@ -94,13 +94,13 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.4';
+var version = '3.3.5';
 var latestRelease = "" +
     "-Added a new search feature for keys (!k search-starts-with)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "334b";
+var buildNumber = "335b";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -111,9 +111,9 @@ var whatsp = "";
 
 // parses message, provides a response
 bot.on('message', msg => {
-    if (msg.content.includes("hello friend")) {
+    if (msg.content.toUpperCase().includes("HELLO FRIEND")) {
             msg.reply("Bonsoir "+ msg.author.username);
-    } else if (msg.content.includes("hello")) {
+    } else if (msg.content.toUpperCase().includes("HELLO")) {
         let randomInt = Math.floor(Math.random() * 4);
         // section 1
         if (randomInt === 5) {
