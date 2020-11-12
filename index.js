@@ -456,7 +456,8 @@ bot.on('message', message=>{
                 message.channel.send(s);
                 break;
             case "!k" :
-                let givenS = args[1];
+                message.channel.send("hello");
+                const givenS = args[1];
                 message.channel.send("b0: " + givenS);
                 if (givenS !== ""){
                     if(givenS === "" || givenS === " "){
@@ -474,7 +475,7 @@ bot.on('message', message=>{
                             } else {
                                 if (key.contains(args[1])) {
                                     message.channel.send("added");
-                                 ss = ss + ", " + keyArray[key];
+                                    ss = ss + ", " + keyArray[key];
                                 }
                             }
                         }
