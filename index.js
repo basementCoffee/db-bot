@@ -99,7 +99,7 @@ var latestRelease = "Added a new search feature for keys (!k search-starts-with)
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "333a";
+var buildNumber = "333c";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -110,7 +110,7 @@ var whatsp = "";
 
 // parses message, provides a response
 bot.on('message', msg => {
-    if (msg.content.includes("hello" || "howdy" || "hey" || "Hello" || "sup" || "Hey")) {
+    if (msg.content.includes("hello")) {
         let randomInt = Math.floor(Math.random() * 4);
         // section 1
         if (randomInt === 5) {
@@ -155,7 +155,7 @@ bot.on('message', msg => {
 
 //Who's down greeting
 bot.on('message', msg => {
-    if (msg.content.includes("s down")) {
+    if (msg.content.includes("who's down")) {
         var randomIntForDown = Math.floor(Math.random() * 6);
         if (randomIntForDown === 4) {
             var randomIntForDown2 = Math.floor(Math.random() * 2);
