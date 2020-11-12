@@ -99,7 +99,7 @@ var latestRelease = "Added a new search feature for keys (!k search-starts-with)
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "333c";
+var buildNumber = "333d";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -169,7 +169,7 @@ bot.on('message', msg => {
 })
 
 
-//aylmao the entire reason we built this damn bot
+// the entire reason we built this bot
 function contentsContainCongrats(message) {
     return message.content.includes("grats") || message.content.includes("gratz") || message.content.includes("ongratulations");
 }
