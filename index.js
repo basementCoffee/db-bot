@@ -101,7 +101,7 @@ var latestRelease = "Added a new search feature for keys (!k search-term)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "330k";
+var buildNumber = "330l";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -457,33 +457,32 @@ bot.on('message', message=>{
                 break;
             case "!k" :
                 message.channel.send(args[1]);
-                if (args[1] !== ""){
-                var givenS = args[1];
-                    message.channel.send("b0: " + givenS);
-                    if(givenS === "" || givenS === " "){
-                        // intentionally left blank
-                        message.channel.send("b1");
-                    }
-                    else {
-                        message.channel.send("b2");
-                        var keyArray = Array.from(congratsDatabase.keys());
-                        var ss = "";
-                        for (var key in keyArray) {
-                            if (key == 0) {
-                                ss = keyArray[key];
-                                message.channel.send("b3 - error: s:" + ss + " key:" + key);
-                            } else {
-                                if (key.contains(args[1])) {
-                                    message.channel.send("added");
-                                    ss = ss + ", " + keyArray[key];
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    message.channel.send("args empty");
+                if (!args[1]) {
+                    message.channel.send("No argument was given.");
                 }
-                message.channel.send(ss);
+                var givenS = args[1];
+                message.channel.send("b0: " + givenS);
+                //     if(givenS === "" || givenS === " "){
+                //         // intentionally left blank
+                //         message.channel.send("b1");
+                //     }
+                //     else {
+                //         message.channel.send("b2");
+                //         var keyArray = Array.from(congratsDatabase.keys());
+                //         var ss = "";
+                //         for (var key in keyArray) {
+                //             if (key == 0) {
+                //                 ss = keyArray[key];
+                //                 message.channel.send("b3 - error: s:" + ss + " key:" + key);
+                //             } else {
+                //                 if (key.contains(args[1])) {
+                //                     message.channel.send("added");
+                //                     ss = ss + ", " + keyArray[key];
+                //                 }
+                //             }
+                //         }
+                //     }
+                // message.channel.send(ss);
                 break;
             //What's Playing?
             case "!?":
