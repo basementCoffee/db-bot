@@ -96,10 +96,10 @@ const ytdl = require("discord-ytdl-core");
 // UPDATE HERE - Before Git Push
 var version = '3.3.7';
 var latestRelease = "Latest Release:\n" +
-    "- removed 'searching' phrase when calling !k\n" +
-    "-3.3.0 introduced-\n" +
+    "- removed 'searching' phrase when calling '!k'\n" +
+    "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "337a";
+var buildNumber = "337b";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
