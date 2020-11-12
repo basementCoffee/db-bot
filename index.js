@@ -96,11 +96,11 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 var version = '3.2.2';
-var latestRelease = "bug fixes for key(s) with async function and promise"
+var latestRelease = "bug fixes key(s)"
 var devNotes = "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "322a";
+var buildNumber = "322b";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -426,8 +426,8 @@ bot.on('message', message=>{
 
 
             //!h returns all existing tags in the database
-            case "!key" :
-                gsrun(client2).then(() => {
+            case "!key" || "keys" :
+                    gsrun(client2);
                     var keyArray = Array.from(congratsDatabase.keys());
                     keyArray.sort();
                     var s = "";
@@ -439,24 +439,6 @@ bot.on('message', message=>{
                         }
                     }
                     message.channel.send(s);
-                })
-                break;
-
-            case "!keys" :
-                gsrun(client2).then(() => {
-                    var keyArray = Array.from(congratsDatabase.keys());
-                    keyArray.sort();
-                    var s = "";
-                    for (var key in keyArray) {
-                        if (key == 0) {
-                            s = keyArray[key];
-                        } else {
-                            s = s + ", " + keyArray[key];
-                        }
-                    }
-                    message.channel.send(s);
-                }
-            )
                 break;
 
             //What's Playing?
