@@ -101,7 +101,7 @@ var latestRelease = "Added a new search feature for keys (!k search-starts-with)
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "330zb";
+var buildNumber = "330zc";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -461,26 +461,26 @@ bot.on('message', message=>{
                     message.channel.send("No argument was given.");
                     return;
                 }
-                var givenS = args[1];
+                let givenS = args[1];
                 let givenSLength = givenS.length;
-                message.channel.send("givenS: " + givenS);
-                message.channel.send("givenSLength: " + givenSLength);
-                var keyArray2 = Array.from(congratsDatabase.keys());
-                var ss = "";
-                message.channel.send("First item: " + keyArray2[0]);
+                //message.channel.send("givenS: " + givenS);
+                //message.channel.send("givenSLength: " + givenSLength);
+                let keyArray2 = Array.from(congratsDatabase.keys());
+                let ss = "";
+                //message.channel.send("First item: " + keyArray2[0]);
                 message.channel.send("searching...");
-                var ik = 0;
+                let ik = 0;
                 if (dataSize > 0 && givenS.toUpperCase() === keyArray2[0].substr(0,givenSLength).toUpperCase()) {
                     ss =  keyArray2[0];
                 }
-                for (ik= 1; ik < dataSize; ik++ ) {
-                    //message.channel.send(keyArray2[ik]);
-                    var searchKey = keyArray2[ik];
-                     //message.channel.send(searchKey);
-                    if (givenS.toUpperCase() === searchKey.substr(0,givenSLength).toUpperCase()) {
-                        ss += ", " + searchKey;
-                    }
-                }
+                // for (ik= 1; ik < dataSize; ik++ ) {
+                //     //message.channel.send(keyArray2[ik]);
+                //     let searchKey = keyArray2[ik];
+                //      //message.channel.send(searchKey);
+                //     if (givenS.toUpperCase() === searchKey.substr(0,givenSLength).toUpperCase()) {
+                //         ss += ", " + searchKey;
+                //     }
+                // }
                     //     message.channel.send("added");
                     //     ss = ss + ", " + keyArray2[ik];
                 //     if (key == 0) {
@@ -493,11 +493,11 @@ bot.on('message', message=>{
                 //         }
                 //     }
                 if (ss.length === 0) {
-                    message.channel.send("Could not find.");
+                    message.channel.send("Could not find any keys that start with the given letters.");
                 } else {
                     message.channel.send(ss);
+                    //message.channel.send("--end--");
                 }
-                message.channel.send("keyArray end");
                 break;
             //What's Playing?
             case "!?":
