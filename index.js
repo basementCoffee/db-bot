@@ -101,7 +101,7 @@ var latestRelease = "Added a new search feature for keys (!k search-term)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "330x";
+var buildNumber = "330y";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -467,7 +467,7 @@ bot.on('message', message=>{
                 var ss = "";
                 message.channel.send("searching...");
                 var ik = 0;
-                if (dataSize > 0) {
+                if (dataSize > 0 && keyArray2[0].toUpperCase() === givenS.toUpperCase()) {
                     ss =  keyArray2[0];
                 }
                 // for (ik= 1; ik < dataSize; ik++ ) {
@@ -489,7 +489,11 @@ bot.on('message', message=>{
                 //             ss = ss + ", " + keyArray[key];
                 //         }
                 //     }
-                message.channel.send(ss);
+                if (ss.length === 0) {
+                    message.channel.send("Could not find.");
+                } else {
+                    message.channel.send(ss);
+                }
                 message.channel.send("keyArray end");
                 break;
             //What's Playing?
@@ -626,7 +630,7 @@ var referenceDatabase = new Map();
 var congratsDatabase = new Map([
    ["karmaFieldsB", "https://www.youtube.com/watch?v=ijpgqchByuY"],
    ["karmaFieldsW", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
-   ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETk"],
+   ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETgit],
    ["broken", "https://www.youtube.com/watch?v=A6ih1aKeETk"],
    ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
    ["everything", "https://www.youtube.com/watch?v=It6OTZD140E"],
