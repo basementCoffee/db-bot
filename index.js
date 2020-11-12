@@ -94,13 +94,13 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.5';
+var version = '3.3.6';
 var latestRelease = "" +
     "-Added a new search feature for keys (!k search-starts-with)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "335b";
+var buildNumber = "336a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -471,7 +471,7 @@ bot.on('message', message => {
                 //message.channel.send("First item: " + keyArray2[0]);
                 message.channel.send("searching...");
                 var searchKey;
-                for (let ik = 1; ik < keyArray2.length; ik++) {
+                for (let ik = 0; ik < keyArray2.length; ik++) {
                     //message.channel.send(keyArray2[ik]);
                     searchKey = keyArray2[ik];
                     if (givenS.toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()) {
