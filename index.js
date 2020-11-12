@@ -100,7 +100,7 @@ var latestRelease = "bug fixes key(s)"
 var devNotes = "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys"
-var buildNumber = "322b";
+var buildNumber = "322c";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -202,8 +202,10 @@ function playCongrats(connection, message){
 
 }
 
+
 // parses message, provides a response
 bot.on('message', message=>{
+    // congrats check
     var server;
     if (message.author.bot) return;
     if(contentsContainCongrats(message)) {
@@ -236,7 +238,21 @@ bot.on('message', message=>{
     } else {
         var args = message.content.split(" ");
         console.log(args);
-
+        // inner function
+        function getKeys() {
+            gsrun(client2);
+            var keyArray = Array.from(congratsDatabase.keys());
+            keyArray.sort();
+            var s = "";
+            for (var key in keyArray) {
+                if (key == 0) {
+                    s = keyArray[key];
+                } else {
+                    s = s + ", " + keyArray[key];
+                }
+            }
+            message.channel.send(s);
+        }
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
@@ -425,20 +441,12 @@ bot.on('message', message=>{
                 break;
 
 
-            //!h returns all existing tags in the database
-            case "!key" || "keys" :
-                    gsrun(client2);
-                    var keyArray = Array.from(congratsDatabase.keys());
-                    keyArray.sort();
-                    var s = "";
-                    for (var key in keyArray) {
-                        if (key == 0) {
-                            s = keyArray[key];
-                        } else {
-                            s = s + ", " + keyArray[key];
-                        }
-                    }
-                    message.channel.send(s);
+
+            case "keys" :
+                    getKeys();
+                break;
+            case "key" :
+                    getKeys();
                 break;
 
             //What's Playing?
@@ -459,7 +467,7 @@ bot.on('message', message=>{
                 break;
 
 
-            // list commands for public
+            // list commands for public use
             case "!h" :
                 message.channel.send(
                     "Things you could ask me:\n"
@@ -515,7 +523,7 @@ bot.on('message', message=>{
                 break;
 
 
-            //removes databse entries
+            //removes database entries
             case "!rm":
                 var successInDelete = congratsDatabase.delete(args[1]);
                 if (successInDelete === true){
