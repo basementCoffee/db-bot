@@ -101,7 +101,7 @@ var latestRelease = "Added a new search feature for keys (!k search-term)\n" +
     "-DB keys are no longer case specific (ex: !d banksg)\n" +
     "-Added support for dev-add link to database (!devadd)\n" +
     "-Latest spreadsheet data is retrieved when calling keys (!keys)"
-var buildNumber = "330z";
+var buildNumber = "330za";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -462,13 +462,15 @@ bot.on('message', message=>{
                     return;
                 }
                 var givenS = args[1];
-                message.channel.send("b0: " + givenS);
+                let givenSLength = givenS.length;
+                message.channel.send("givenS: " + givenS);
+                message.channel.send("givenSLength: " + givenSLength);
                 var keyArray2 = Array.from(congratsDatabase.keys());
                 var ss = "";
                 message.channel.send("First item: " + keyArray2[0]);
                 message.channel.send("searching...");
                 var ik = 0;
-                if (dataSize > 0 && givenS.toUpperCase().includes(keyArray2[0].toUpperCase())) {
+                if (dataSize > 0 && givenS.toUpperCase() === keyArray2[0].substr(0,givenSLength).toUpperCase()) {
                     ss =  keyArray2[0];
                 }
                 // for (ik= 1; ik < dataSize; ik++ ) {
@@ -608,59 +610,3 @@ function printErrorToChannel(activationType, songKey, e) {
 
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//Map for the database with [tag], [url]
-/*
-var congratsDatabase = new Map([
-   ["karmaFieldsB", "https://www.youtube.com/watch?v=ijpgqchByuY"],
-   ["karmaFieldsW", "https://www.youtube.com/watch?v=9_Wl0NLl79g"],
-   ["tycho", "https://www.youtube.com/watch?v=Z6ih1aKeETgit],
-   ["broken", "https://www.youtube.com/watch?v=A6ih1aKeETk"],
-   ["brockhampton", "https://www.youtube.com/watch?v=7lKl_YvTizw&list=PLql5iS_v44478m2sWcIkTqO2YZLwC9vkQ&index=2"],
-   ["everything", "https://www.youtube.com/watch?v=It6OTZD140E"],
-   ["tender", "https://www.youtube.com/watch?v=SN9IZ86evb4"],
-   ["rkcbV", "https://www.youtube.com/watch?v=tUwUenVk7zc"],
-   ["rkcbB", "https://www.youtube.com/watch?v=LYN4YPAFfuo"],
-   ["gorillaz", "https://www.youtube.com/watch?v=NDvlD3E7DWg"],
-   ["mrRobot", "https://www.youtube.com/watch?v=P0sAYxS03i0"],
-   ["glassanimalsY", "https://www.youtube.com/watch?v=Ts--MxmAFkQ"],
-   ["glassanimalsT", "https://www.youtube.com/watch?v=R3QbZUekxjk"],
-   ["haddaway", "https://www.youtube.com/watch?v=HEXWRTEbj1I"],
-   ["brokenbells", "https://www.youtube.com/watch?v=Lkv2zF2Bgq0"],
-   ["lorn", "https://www.youtube.com/watch?v=tdKBNT641V8"],
-   ["pMaloneNoOption", "https://www.youtube.com/watch?v=tdKBNT641V8"],
-   ["alltta", "https://www.youtube.com/watch?v=7XEML-eYCjs"],
-   ["banksG", "https://www.youtube.com/watch?v=rD85HZQwwWw"],
-   ["banksS", "https://www.youtube.com/watch?v=Zn4TnsWUpmU"],
-   ["banksA", "https://www.youtube.com/watch?v=nIVEAQfbI5w"],
-   ["banksH", "https://www.youtube.com/watch?v=Z5mNZ6B9ESk"],
-   ["bigdataE", "https://www.youtube.com/watch?v=tlbNZ_oGgdc"],
-   ["bigdataM", "https://www.youtube.com/watch?v=ZtZc4h-m8wQ"],
-   ["bigdataL", "https://www.youtube.com/watch?v=WAmCeYz9D90"],
-   ["glitch", "https://youtu.be/ezk_dD2Ia-w"],
-   ["ishome", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
-   ["toliverAp", "https://www.youtube.com/watch?v=mc0BnfEMzSA"],
-   ["zhuF", "https://www.youtube.com/watch?v=7373VBAN9eU"],
-   ["zhuO", "https://www.youtube.com/watch?v=jaRsJvZgg2s"],
-   ["zhuT", "https://www.youtube.com/watch?v=qqLmXjx7Uzc"],
-   ["bebeRexha", "https://www.youtube.com/watch?v=fTNnwzXrVdg"],
-   ["snavesUs", "https://www.youtuWbe.com/watch?v=OjT1nqtlGGU"]
-]);
-*/
