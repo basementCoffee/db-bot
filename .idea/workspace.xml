@@ -68,7 +68,7 @@
       <workItem from="1605194535742" duration="558000" />
       <workItem from="1605219528788" duration="438000" />
       <workItem from="1605232790277" duration="11000" />
-      <workItem from="1605391095240" duration="468000" />
+      <workItem from="1605391095240" duration="1580000" />
     </task>
     <servers />
   </component>
@@ -104,5 +104,13 @@
       <screen x="0" y="23" width="1680" height="979" />
     </state>
     <state width="1379" height="251" key="GridCell.Tab.0.right/-1920.23.1920.1057/0.23.1680.979@0.23.1680.979" timestamp="1605076473286" />
+    <state x="541" y="99" width="597" height="822" key="find.popup" timestamp="1605392045242">
+      <screen x="0" y="25" width="1680" height="971" />
+    </state>
+    <state x="541" y="99" width="597" height="822" key="find.popup/-1920.25.1920.1055/0.25.1680.971@0.25.1680.971" timestamp="1605392045242" />
+    <state x="505" y="238" key="search.everywhere.popup" timestamp="1605392027247">
+      <screen x="0" y="25" width="1680" height="971" />
+    </state>
+    <state x="505" y="238" key="search.everywhere.popup/-1920.25.1920.1055/0.25.1680.971@0.25.1680.971" timestamp="1605392027247" />
   </component>
 </project>

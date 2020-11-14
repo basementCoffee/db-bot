@@ -94,12 +94,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.8';
+var version = '3.3.9';
 var latestRelease = "Latest Release:\n" +
-    "- removed 'searching' phrase when calling '!k'\n" +
+    "bug fixes, removed opus encoding for random\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "338b";
+var buildNumber = "339a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -111,7 +111,7 @@ var whatsp = "";
 // parses message, provides a response
 bot.on('message', msg => {
     if (msg.content.toUpperCase().includes("HELLO FRIEND")) {
-            msg.reply("Bonsoir "+ msg.author.username);
+        msg.reply("Bonsoir " + msg.author.username);
     } else if (msg.content.toUpperCase().includes("HELLO")) {
         let randomInt = Math.floor(Math.random() * 4);
         // section 1
@@ -181,7 +181,6 @@ function playCongrats(connection, message) {
     try {
         let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
             filter: "audioonly",
-            fmt: "mp3",
             opusEncoded: true,
             encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
         });
@@ -206,12 +205,11 @@ function playCongrats(connection, message) {
 var keyArray;
 var s;
 
-function play(message, whatsp, b) {
+function play(message, whatsp) {
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
-                fmt: "mp3",
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
             });
@@ -222,9 +220,9 @@ function play(message, whatsp, b) {
                     connection.disconnect();
                 })
         } catch (e) {
-            console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
+            //console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
             console.log(e);
-            printErrorToChannel("!d", whatsp + " - probably a broken link?", e);
+            printErrorToChannel("'play method'", whatsp + " - probably a broken link?", e);
             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
             connection.disconnect();
 
@@ -307,30 +305,7 @@ bot.on('message', message => {
 
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
-                if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                    let myStream = ytdl(args[1], {
-                        filter: "audioonly",
-                        fmt: "mp3",
-                        opusEncoded: true,
-                        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-                    });
-                    let dispatcher = connection.play(myStream, {
-                        type: "opus"
-                    })
-                        .on("finish", () => {
-                            connection.disconnect();
-                        })
-                    try {
-                        //play(connection, message);
-                        whatsp = args[1];
-                    } catch (e) {
-                        console.log("Below is a caught error, should not cause any issues.");
-                        console.log(e);
-                        whatsp = "";
-                        message.channel.send("Sorry buddy, couldn't find the video. uh... is the link a real youtube video?");
-                        //connection.disconnect();
-                    }
-                })
+                play(message, args[1]);
                 break;
 
 
@@ -374,7 +349,7 @@ bot.on('message', message => {
                 }
                 let dPhrase = args[1];
                 server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                play(message, whatsp, true);
+                play(message, whatsp);
                 break;
 
 
@@ -402,8 +377,9 @@ bot.on('message', message => {
                         console.log("calling play method...");
                         let myStream = ytdl(whatsp, {
                             filter: "audioonly",
-                            opusEncoded: true,
-                            encoderArgs: ['-af', 'bass=g=5,dynaudnorm=f=200']
+                            opusEncoded: false,
+                            fmt: "mp3",
+                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
                         });
                         let dispatcher = connection.play(myStream, {
                             type: "opus"
@@ -417,13 +393,14 @@ bot.on('message', message => {
                         //printErrorToChannel("!r", rk, e);
                         console.log(e);
                         if (numOfRetries > 2) {
-                            message.channel.send("Actually forget it, this problem is beyond my scope... sorry.");
+                            message.channel.send("Could not play random songs. Sorry.");
+                            printErrorToChannel("!r (third try)", rk, e);
                             connection.disconnect();
                         } else {
                             if (numOfRetries > 1) {
-                                message.channel.send("Uh oh, hmm, lemme try that again...");
+                                printErrorToChannel("!r", rk, e);
                             } else {
-                                message.channel.send("There was a slight problem but I think I got it, here's a random song.");
+                                printErrorToChannel("!r (second try)", rk, e);
                             }
                             //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
                             playRandom();
