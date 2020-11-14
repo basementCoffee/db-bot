@@ -222,9 +222,9 @@ function playSong(message, whatsp, isMp3) {
                     })
             } else { // video stream
                 let myStream = ytdl(whatsp, {
-                    filter: "videoandaudio",
-                    //filter: format => format.container === 'mp4'
+                    filter: "audioandvideo",
                      opusEncoded: false,
+                     fmt: "mp4",
                      encoderArgs: ['bass=g=10']
                 });
                 let dispatcher = connection.play(myStream, {
