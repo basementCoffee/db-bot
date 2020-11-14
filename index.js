@@ -204,6 +204,33 @@ function playCongrats(connection, message) {
 
 var keyArray;
 var s;
+
+function play(message, whatsp, b) {
+    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+        try {
+            let myStream = ytdl(whatsp, {
+                filter: "audioonly",
+                fmt: "mp3",
+                opusEncoded: true,
+                encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
+            });
+            let dispatcher = connection.play(myStream, {
+                type: "opus"
+            })
+                .on("finish", () => {
+                    connection.disconnect();
+                })
+        } catch (e) {
+            console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
+            console.log(e);
+            printErrorToChannel("!d", whatsp + " - probably a broken link?", e);
+            message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
+            connection.disconnect();
+
+        }
+    })
+}
+
 // parses message, provides a response
 bot.on('message', message => {
     var server;
@@ -282,6 +309,7 @@ bot.on('message', message => {
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                     let myStream = ytdl(args[1], {
                         filter: "audioonly",
+                        fmt: "mp3",
                         opusEncoded: true,
                         encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
                     });
@@ -345,28 +373,7 @@ bot.on('message', message => {
                 }
                 let dPhrase = args[1];
                 server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                    try {
-                        let myStream = ytdl(whatsp, {
-                            filter: "audioonly",
-                            opusEncoded: true,
-                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-                        });
-                        let dispatcher = connection.play(myStream, {
-                            type: "opus"
-                        })
-                            .on("finish", () => {
-                                connection.disconnect();
-                            })
-                    } catch (e) {
-                        console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
-                        console.log(e);
-                        printErrorToChannel("!d", whatsp + " - probably a broken link?", e);
-                        message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
-                        connection.disconnect();
-
-                    }
-                })
+                play(message, whatsp, true);
                 break;
 
 
