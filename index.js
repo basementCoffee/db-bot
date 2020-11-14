@@ -99,7 +99,7 @@ var latestRelease = "Latest Release:\n" +
     "WIP: support for video streams\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "3312d";
+var buildNumber = "3312e";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -222,11 +222,11 @@ function playSong(message, whatsp, isMp3) {
                     })
             } else { // video stream
                 let myStream = ytdl(whatsp, {
-                    filter: "audioandvideo"
+                    filter: "audioandvideo",
                     //filter: format => format.container === 'mp4'
-                    // opusEncoded: false,
-                    // fmt: "mp4",
-                    // encoderArgs: ['bass=g=10']
+                     opusEncoded: false,
+                     fmt: "mp4",
+                     encoderArgs: ['bass=g=10']
                 });
                 let dispatcher = connection.play(myStream, {
                     type: "opus"
