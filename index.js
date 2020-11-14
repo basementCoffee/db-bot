@@ -99,7 +99,7 @@ var latestRelease = "Latest Release:\n" +
     "WIP: support for video streams\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "3312e";
+var buildNumber = "3312f";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -225,7 +225,6 @@ function playSong(message, whatsp, isMp3) {
                     filter: "audioandvideo",
                     //filter: format => format.container === 'mp4'
                      opusEncoded: false,
-                     fmt: "mp4",
                      encoderArgs: ['bass=g=10']
                 });
                 let dispatcher = connection.play(myStream, {
