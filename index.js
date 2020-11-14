@@ -94,12 +94,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.10';
+var version = '3.3.11';
 var latestRelease = "Latest Release:\n" +
-    "bug fixes, removed opus encoding for random\n" +
+    "WIP: support for video streams\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "3310a";
+var buildNumber = "3311a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -224,7 +224,7 @@ function playSong(message, whatsp, isMp3) {
                 let myStream = ytdl(whatsp, {
                     filter: "video",
                     opusEncoded: true,
-                    encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
+                    encoderArgs: ['bass=g=10']
                 });
                 let dispatcher = connection.play(myStream, {
                     type: "opus"
@@ -282,26 +282,6 @@ bot.on('message', message => {
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
-                // function play(connection, message){
-                //     var server = servers[message.guild.id];
-                //     let myStream = ytdl(server.queue[0], {
-                //         filter: "audioonly",
-                //         opusEncoded: true,
-                //         encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-                //     });
-                //     server.dispatcher = connection.play();
-                //     server.queue.shift();
-                //     // server.dispatcher.on("end", function(){
-                //     //    //commment out if issues persist
-                //     //     //if(server.queue[0]){
-                //     //     //    play(connection, message);
-                //     //     //}else{
-                //     //     //    connection.disconnect();
-                //     //     //}
-                //     //     //comment in if issues persist
-                //     //      return;
-                //     // })
-                // }
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
                     return;
@@ -320,6 +300,27 @@ bot.on('message', message => {
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
                 playSong(message, args[1], true);
+                break;
+
+            case '!pv':
+                if (!args[1]) {
+                    message.channel.send("Where's the link? I can't read your mind... unfortunately.");
+                    return;
+                }
+                if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
+                    message.channel.send("There's something wrong with what you put there.");
+                    return;
+                }
+                if (!message.member.voice.channel) {
+                    return;
+                }
+                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
+
+                server = servers[message.guild.id];
+                server.queue.push(args[1]);
+                playSong(message, args[1], false);
                 break;
 
 
