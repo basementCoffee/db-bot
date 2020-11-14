@@ -94,12 +94,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.11';
+var version = '3.3.12';
 var latestRelease = "Latest Release:\n" +
     "WIP: support for video streams\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "3311a";
+var buildNumber = "3312a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -220,10 +220,11 @@ function playSong(message, whatsp, isMp3) {
                     .on("finish", () => {
                         connection.disconnect();
                     })
-            } else {
+            } else { // video stream
                 let myStream = ytdl(whatsp, {
                     filter: "video",
-                    opusEncoded: true,
+                    opusEncoded: false,
+                    //fmt: "mp4",
                     encoderArgs: ['bass=g=10']
                 });
                 let dispatcher = connection.play(myStream, {
