@@ -94,12 +94,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.9';
+var version = '3.3.10';
 var latestRelease = "Latest Release:\n" +
     "bug fixes, removed opus encoding for random\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "339a";
+var buildNumber = "3310a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -205,20 +205,34 @@ function playCongrats(connection, message) {
 var keyArray;
 var s;
 
-function play(message, whatsp) {
+function playSong(message, whatsp, isMp3) {
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
-            let myStream = ytdl(whatsp, {
-                filter: "audioonly",
-                opusEncoded: true,
-                encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
-            });
-            let dispatcher = connection.play(myStream, {
-                type: "opus"
-            })
-                .on("finish", () => {
-                    connection.disconnect();
+            if (isMp3) {
+                let myStream = ytdl(whatsp, {
+                    filter: "audioonly",
+                    opusEncoded: true,
+                    encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
+                });
+                let dispatcher = connection.play(myStream, {
+                    type: "opus"
                 })
+                    .on("finish", () => {
+                        connection.disconnect();
+                    })
+            } else {
+                let myStream = ytdl(whatsp, {
+                    filter: "video",
+                    opusEncoded: true,
+                    encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
+                });
+                let dispatcher = connection.play(myStream, {
+                    type: "opus"
+                })
+                    .on("finish", () => {
+                        connection.disconnect();
+                    })
+            }
         } catch (e) {
             //console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
             console.log(e);
@@ -305,7 +319,7 @@ bot.on('message', message => {
 
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
-                play(message, args[1]);
+                playSong(message, args[1], true);
                 break;
 
 
@@ -349,7 +363,31 @@ bot.on('message', message => {
                 }
                 let dPhrase = args[1];
                 server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                play(message, whatsp);
+                playSong(message, whatsp, true);
+                break;
+
+                case "!dv":
+                if (!args[1]) {
+                    message.channel.send("N-NANI? There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+                    return;
+                }
+                if (!message.member.voice.channel) {
+                    return;
+                }
+                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
+
+                server = servers[message.guild.id];
+                try {
+                    whatsp = referenceDatabase.get(args[1].toUpperCase());
+                } catch (e) {
+                    message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
+                    return;
+                }
+                //let dPhrase = args[1];
+                server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                playSong(message, whatsp, false);
                 break;
 
 
@@ -377,8 +415,7 @@ bot.on('message', message => {
                         console.log("calling play method...");
                         let myStream = ytdl(whatsp, {
                             filter: "audioonly",
-                            opusEncoded: false,
-                            fmt: "mp3",
+                            opusEncoded: true,
                             encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
                         });
                         let dispatcher = connection.play(myStream, {
