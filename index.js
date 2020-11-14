@@ -94,12 +94,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.7';
+var version = '3.3.8';
 var latestRelease = "Latest Release:\n" +
     "- removed 'searching' phrase when calling '!k'\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "337b";
+var buildNumber = "338b";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -181,6 +181,7 @@ function playCongrats(connection, message) {
     try {
         let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
             filter: "audioonly",
+            fmt: "mp3",
             opusEncoded: true,
             encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
         });
