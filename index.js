@@ -400,55 +400,7 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                var numOfRetries = 0;
-                server = servers[message.guild.id];
-                let rKeyArray = Array.from(congratsDatabase.keys());
-
-            function playRandom() {
-                numOfRetries += 1;
-                let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
-                let rk = rKeyArray[rn];
-                console.log("attempting to play key:" + rk);
-                whatsp = congratsDatabase.get(rk);
-                server.queue.push(congratsDatabase.get(rk));
-                if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                    try {
-                        console.log("calling play method...");
-                        let myStream = ytdl(whatsp, {
-                            filter: "audioonly",
-                            opusEncoded: true,
-                            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-                        });
-                        let dispatcher = connection.play(myStream, {
-                            type: "opus"
-                        })
-                            .on("finish", () => {
-                                connection.disconnect();
-                            })
-                    } catch (e) {
-                        // Error catching - fault with the database yt link?
-                        console.log("Below is a caught error message. (this broke:" + rk + ")");
-                        //printErrorToChannel("!r", rk, e);
-                        console.log(e);
-                        if (numOfRetries > 2) {
-                            message.channel.send("Could not play random songs. Sorry.");
-                            printErrorToChannel("!r (third try)", rk, e);
-                            connection.disconnect();
-                        } else {
-                            if (numOfRetries > 1) {
-                                printErrorToChannel("!r", rk, e);
-                            } else {
-                                printErrorToChannel("!r (second try)", rk, e);
-                            }
-                            //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                            playRandom();
-                        }
-
-                    }
-                })
-            }
-
-                playRandom();
+                playRandom(message);
                 break;
             case "!key" :
                 gsrun(client2)
@@ -594,6 +546,52 @@ bot.on('message', message => {
     }
 })
 
+function playRandom(message) {
+    var numOfRetries = 0;
+    server = servers[message.guild.id];
+    let rKeyArray = Array.from(congratsDatabase.keys());
+    numOfRetries += 1;
+    let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
+    let rk = rKeyArray[rn];
+    console.log("attempting to play key:" + rk);
+    whatsp = congratsDatabase.get(rk);
+    server.queue.push(congratsDatabase.get(rk));
+    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+        try {
+            console.log("calling play method...");
+            let myStream = ytdl(whatsp, {
+                filter: "audioonly",
+                opusEncoded: true,
+                encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+            });
+            let dispatcher = connection.play(myStream, {
+                type: "opus"
+            })
+                .on("finish", () => {
+                    connection.disconnect();
+                })
+        } catch (e) {
+            // Error catching - fault with the database yt link?
+            console.log("Below is a caught error message. (this broke:" + rk + ")");
+            //printErrorToChannel("!r", rk, e);
+            console.log(e);
+            if (numOfRetries > 2) {
+                message.channel.send("Could not play random songs. Sorry.");
+                printErrorToChannel("!r (third try)", rk, e);
+                connection.disconnect();
+            } else {
+                if (numOfRetries > 1) {
+                    printErrorToChannel("!r", rk, e);
+                } else {
+                    printErrorToChannel("!r (second try)", rk, e);
+                }
+                //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
+                playRandom();
+            }
+
+        }
+    })
+}
 
 /**
  * Prints the error to the testing channel.
