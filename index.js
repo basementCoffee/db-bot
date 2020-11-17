@@ -14,7 +14,6 @@ client2.authorize(function (err, tokens) {
     }
 });
 
-
 var dataSize;
 
 async function gsrun(cl) {
@@ -96,6 +95,7 @@ const ytdl = require("discord-ytdl-core");
 // UPDATE HERE - Before Git Push
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var version = '3.4.0';
 var latestRelease = "Latest Release:\n" +
     "New queue for random (ex: !r 5)\n" +
@@ -125,6 +125,15 @@ var buildNumber = "342c";
 =======
 var buildNumber = "342e";
 >>>>>>> 12c72170cfa656a5d38ea3c7d3a6ed1bc4228588
+=======
+var version = '3.5.0';
+var latestRelease = "Latest Release:\n" +
+    "- Counter for random queue (ex: !r 10 -> !?)\n" +
+    "---3.4.0 introduced---\n" +
+    "-New queue for play (ex (twice): !p link)\n" +
+    "-New queue for random (ex: !r 5)\n";
+var buildNumber = "342o";
+>>>>>>> f207de867be83a8a1238c0b6ac92087149dfc0e3
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -229,8 +238,13 @@ function playCongrats(connection, message) {
 
 var keyArray;
 var s;
+var totalRandomInt; // total number of random songs to play
+var currentRandomInt; // current random song index
 
 function playSong(message, whatsp, isMp3) {
+    let server = servers[message.guild.id]
+    console.log("server queue: " + server.queue);
+    whatsp = server.queue.shift();
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
@@ -243,10 +257,10 @@ function playSong(message, whatsp, isMp3) {
                     type: "opus"
                 })
                     .on("finish", () => {
-                        let server = servers[message.guild.id]
-                        console.log(server)
-                        if (server.length > 0) {
-                            playSong(message, server.elements.shift(), true)
+
+
+                        if (server.queue.length > 0) {
+                            playSong(message, whatsp, true)
                         } else {
                             connection.disconnect();
                         }
@@ -278,7 +292,6 @@ function playSong(message, whatsp, isMp3) {
 
 // parses message, provides a response
 bot.on('message', message => {
-    let server;
     if (message.author.bot) return;
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
@@ -287,8 +300,7 @@ bot.on('message', message => {
             if (!servers[message.guild.id]) servers[message.guild.id] = {
                 queue: []
             }
-            server = servers[message.guild.id];
-            server.queue.push(args[1]);
+            //servers[message.guild.id].queue.push(args[1]);
             let word = messageArray[i];
             console.log(word);
             if ((word.includes("grats") || word.includes("gratz") || word.includes("ongratulations")) && !(word.substring(0, 1).includes("!"))) {
@@ -328,9 +340,11 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                server = servers[message.guild.id];
-                server.queue.push(args[1]);
-                if (server.length < 2 || !message.guild.voice === undefined) {
+                servers[message.guild.id].queue.push(args[1]);
+                //server.queue.push(args[1]);
+                console.log("b1: "+ servers[message.guild.id].queue);
+                //console.log("b2: " + servers[message.guild.id]);
+                if (servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === null) {
                     playSong(message, args[1], true);
                 }
 
@@ -440,6 +454,8 @@ bot.on('message', message => {
                 } else {
                     try {
                         let num = parseInt(args[1])
+                        totalRandomInt = num;
+                        currentRandomInt = 0;
                         playRandom(message, num)
                     } catch (e) {
                         playRandom(message, 1);
@@ -518,7 +534,11 @@ bot.on('message', message => {
                     if (args[1] === "" || args[1] === " ") {
                         // intentionally left blank
                     } else {
-                        message.channel.send(congratsDatabase.get(args[1]));
+                        if (totalRandomInt === 0) {
+                            message.channel.send(congratsDatabase.get(args[1]));
+                        } else {
+                            message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + congratsDatabase.get(args[1]));
+                        }
                         break;
                     }
                 }
@@ -601,6 +621,7 @@ bot.on('message', message => {
 })
 
 function playRandom(message, numOfTimes) {
+    currentRandomInt++;
     var numOfRetries = 0;
     server = servers[message.guild.id];
     let rKeyArray = Array.from(congratsDatabase.keys());
@@ -624,6 +645,8 @@ function playRandom(message, numOfTimes) {
                 .on("finish", () => {
                     numOfTimes -= 1;
                     if (numOfTimes === 0) {
+                        totalRandomInt = 0;
+                        currentRandomInt = 0;
                         connection.disconnect();
                     } else {
                         playRandom(message, numOfTimes)
