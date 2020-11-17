@@ -113,6 +113,7 @@ var latestRelease = "Latest Release:\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var buildNumber = "342a";
 >>>>>>> 995f3877d8c393043bb2e768af9b326d66316db6
 =======
@@ -121,6 +122,9 @@ var buildNumber = "342b";
 =======
 var buildNumber = "342c";
 >>>>>>> f5a02d98a1b333fceef7ab3015beb407a4c37b40
+=======
+var buildNumber = "342e";
+>>>>>>> 12c72170cfa656a5d38ea3c7d3a6ed1bc4228588
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -326,7 +330,7 @@ bot.on('message', message => {
                 }
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
-                if (server.length < 1 || !message.guild.voice.channel) {
+                if (server.length < 2 || !message.guild.voice === undefined) {
                     playSong(message, args[1], true);
                 }
 
