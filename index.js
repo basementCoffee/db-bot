@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.1';
-var buildNumber = "351f";
+var buildNumber = "351g";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -310,9 +310,9 @@ bot.on('message', message => {
                 servers[message.guild.id].queue.push(args[1]);
                 //server.queue.push(args[1]);
                 console.log("b1: "+ servers[message.guild.id].queue);
-                console.log("connection:" + message.guild.voice.connection)
+                //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
-                if (servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === undefined) {
+                if (servers[message.guild.id].queue.length < 2) {
                     playSong(message, args[1], true);
                 }
 
