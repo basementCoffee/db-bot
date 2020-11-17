@@ -36,7 +36,7 @@ async function gsrun(cl) {
 
     let dataSO = await gsapi.spreadsheets.values.get(songObjects);
     var arrayOfSpreadsheetValues = dataSO.data.values;
-    console.log(arrayOfSpreadsheetValues);
+    //console.log(arrayOfSpreadsheetValues);
 
     console.log(dataSize);
 
@@ -217,7 +217,7 @@ var currentRandomInt = 0; // current random song index
 var firstSong = true;
 function playSong(message, whatsp, isMp3) {
     let server = servers[message.guild.id]
-    console.log("server queue: " + server.queue);
+    //console.log("server queue: " + server.queue);
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
@@ -320,7 +320,7 @@ bot.on('message', message => {
                 let serverP = servers[message.guild.id];
                 serverP.queue.push(args[1]);
                 //server.queue.push(args[1]);
-                console.log("server queue: "+ serverP.queue);
+                //console.log("server queue: "+ serverP.queue);
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
                 if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
@@ -356,7 +356,7 @@ bot.on('message', message => {
                 server = servers[message.guild.id];
                 while (server.queue.length > 0) {
                     server.queue.shift();
-                    console.log(server.queue.length);
+                    //console.log(server.queue.length);
                 }
                 totalRandomInt = 0;
                 currentRandomInt = 0;
@@ -641,12 +641,12 @@ function playRandom(message, numOfTimes) {
     numOfRetries += 1;
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
-    console.log("attempting to play key:" + rk);
+    //console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
-            console.log("calling play method...");
+            //console.log("calling play method...");
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
                 opusEncoded: true,
