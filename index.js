@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.3';
-var buildNumber = "353b";
+var buildNumber = "353c";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -316,6 +316,7 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
+                enumPlayingFunction = "playing";
                 let serverP = servers[message.guild.id];
                 serverP.queue.push(args[1]);
                 //server.queue.push(args[1]);
