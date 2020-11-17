@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.1';
-var buildNumber = "351d";
+var buildNumber = "351e";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -528,7 +528,7 @@ bot.on('message', message => {
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
             case "!skip" :
-                if (currentRandomInt === totalRandomInt){
+                if (currentRandomInt === totalRandomInt || totalRandomInt === 0){
                     totalRandomInt = 0;
                     currentRandomInt = 0;
                     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
