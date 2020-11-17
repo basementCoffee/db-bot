@@ -205,8 +205,8 @@ function playCongrats(connection, message) {
 
 var keyArray;
 var s;
-var totalRandomInt; // total number of random songs to play
-var currentRandomInt; // current random song index
+var totalRandomInt = 0; // total number of random songs to play
+var currentRandomInt = 0; // current random song index
 
 function playSong(message, whatsp, isMp3) {
     let server = servers[message.guild.id]
@@ -343,11 +343,6 @@ bot.on('message', message => {
             case "!e" :
                 totalRandomInt = 0;
                 currentRandomInt = 0;
-                server = servers[message.guild.id];
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
-                    queue: []
-                }
-
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                     server.dispatcher = connection.disconnect();
                 })
@@ -533,9 +528,15 @@ bot.on('message', message => {
                 break;
             case "!skip" :
                 if (currentRandomInt === totalRandomInt){
-                    return;
+                    totalRandomInt = 0;
+                    currentRandomInt = 0;
+                    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                        server.dispatcher = connection.disconnect();
+                    })
+                    whatsp = "";
+                } else {
+                    playRandom(message, totalRandomInt);
                 }
-                playRandom(message, totalRandomInt);
                 break;
             // prints out the version number
             case "!v" :
