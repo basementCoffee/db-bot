@@ -310,7 +310,7 @@ bot.on('message', message => {
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
                 if (servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === null) {
-                    whatsp = server.queue.shift();
+                    whatsp = servers[message.guild.id].queue.shift();
                     playSong(message, whatsp, true);
                 }
 
