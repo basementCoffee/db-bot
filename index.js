@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.2';
-var buildNumber = "352a";
+var buildNumber = "352b";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -554,7 +554,7 @@ bot.on('message', message => {
                         playRandom(message, totalRandomInt);
                     }
                 } else {
-                    server = servers[message.guild.id];
+                    let server = servers[message.guild.id];
                     if (server.queue.length > 1) {
                         whatsp = server.queue.shift();
                         playSong(message, whatsp, true);
