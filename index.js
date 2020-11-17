@@ -100,7 +100,7 @@ var latestRelease = "Latest Release:\n" +
     "New queue for random (ex: !r 5)\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "342f";
+var buildNumber = "342h";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -254,7 +254,6 @@ function playSong(message, whatsp, isMp3) {
 
 // parses message, provides a response
 bot.on('message', message => {
-    let server;
     if (message.author.bot) return;
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
@@ -263,8 +262,7 @@ bot.on('message', message => {
             if (!servers[message.guild.id]) servers[message.guild.id] = {
                 queue: []
             }
-            server = servers[message.guild.id];
-            server.queue.push(args[1]);
+            //servers[message.guild.id].queue.push(args[1]);
             let word = messageArray[i];
             console.log(word);
             if ((word.includes("grats") || word.includes("gratz") || word.includes("ongratulations")) && !(word.substring(0, 1).includes("!"))) {
@@ -304,11 +302,11 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                server = servers[message.guild.id];
+                servers[message.guild.id].queue.push(args[1]);
                 server.queue.push(args[1]);
-                console.log("b1: " + message.guild.voice);
-                console.log("b2: " + message.guild.voice.channel);
-                if (server.length < 2 || message.guild.voice === null) {
+                console.log("b1: "+ servers[message.guild.id].queue);
+                console.log("b2: " + servers[message.guild.id]);
+                if (servers[message.guild.id].queue.length < 2) {
                     playSong(message, args[1], true);
                 }
 
