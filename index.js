@@ -14,7 +14,6 @@ client2.authorize(function (err, tokens) {
     }
 });
 
-
 var dataSize;
 
 async function gsrun(cl) {
@@ -100,7 +99,7 @@ var latestRelease = "Latest Release:\n" +
     "New queue for random (ex: !r 5)\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "342i";
+var buildNumber = "342j";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -207,6 +206,7 @@ var keyArray;
 var s;
 
 function playSong(message, whatsp, isMp3) {
+    //message.guild.voice.setSelfDeaf(true);
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
@@ -306,7 +306,7 @@ bot.on('message', message => {
                 //server.queue.push(args[1]);
                 console.log("b1: "+ servers[message.guild.id].queue);
                 //console.log("b2: " + servers[message.guild.id]);
-                if (servers[message.guild.id].queue.length < 2) {
+                if (servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === null) {
                     playSong(message, args[1], true);
                 }
 
