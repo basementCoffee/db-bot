@@ -419,7 +419,11 @@ bot.on('message', message => {
                 } else {
                     try {
                         let num = parseInt(args[1])
-                        totalRandomInt = num;
+                        if (num === null || num === undefined) {
+                            totalRandomInt = 0;
+                        } else {
+                            totalRandomInt = num;
+                        }
                         currentRandomInt = 0;
                         playRandom(message, num)
                     } catch (e) {
@@ -600,7 +604,7 @@ function playRandom(message, numOfTimes) {
     let rk = rKeyArray[rn];
     console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
-    server.queue.push(congratsDatabase.get(rk));
+    //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             console.log("calling play method...");
