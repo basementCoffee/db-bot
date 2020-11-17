@@ -93,12 +93,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.4.2';
+var version = '3.5.0';
 var latestRelease = "Latest Release:\n" +
-    "New queue for play (ex (twice): !p link)\n" +
-    "New queue for random (ex: !r 5)\n" +
-    "---3.3.0 introduced---\n" +
-    "-Added a new search feature for keys (!k search-starts-with)\n";
+    "- Counter for random queue (ex: !r 10 -> !?)\n" +
+    "---3.4.0 introduced---\n" +
+    "-New queue for play (ex (twice): !p link)\n" +
+    "-New queue for random (ex: !r 5)\n";
 var buildNumber = "342o";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
@@ -204,6 +204,8 @@ function playCongrats(connection, message) {
 
 var keyArray;
 var s;
+var totalRandomInt; // total number of random songs to play
+var currentRandomInt; // current random song index
 
 function playSong(message, whatsp, isMp3) {
     let server = servers[message.guild.id]
@@ -418,6 +420,8 @@ bot.on('message', message => {
                 } else {
                     try {
                         let num = parseInt(args[1])
+                        totalRandomInt = num;
+                        currentRandomInt = 0;
                         playRandom(message, num)
                     } catch (e) {
                         playRandom(message, 1);
@@ -488,7 +492,11 @@ bot.on('message', message => {
                     if (args[1] === "" || args[1] === " ") {
                         // intentionally left blank
                     } else {
-                        message.channel.send(congratsDatabase.get(args[1]));
+                        if (totalRandomInt === 0) {
+                            message.channel.send(congratsDatabase.get(args[1]));
+                        } else {
+                            message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + congratsDatabase.get(args[1]));
+                        }
                         break;
                     }
                 }
@@ -571,6 +579,7 @@ bot.on('message', message => {
 })
 
 function playRandom(message, numOfTimes) {
+    currentRandomInt++;
     var numOfRetries = 0;
     server = servers[message.guild.id];
     let rKeyArray = Array.from(congratsDatabase.keys());
@@ -594,6 +603,8 @@ function playRandom(message, numOfTimes) {
                 .on("finish", () => {
                     numOfTimes -= 1;
                     if (numOfTimes === 0) {
+                        totalRandomInt = 0;
+                        currentRandomInt = 0;
                         connection.disconnect();
                     } else {
                         playRandom(message, numOfTimes)
