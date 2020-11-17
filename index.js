@@ -556,8 +556,11 @@ bot.on('message', message => {
                 } else {
                     let server = servers[message.guild.id];
                     if (server.queue.length > 1) {
-                        firstSong = true;
+                        if (firstSong) {
+                            server.queue.shift();
+                        }
                         whatsp = server.queue.shift();
+                        firstSong = true;
                         playSong(message, whatsp, true);
                     } else {
                         firstSong = true;
