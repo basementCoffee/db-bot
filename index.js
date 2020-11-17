@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.1';
-var buildNumber = "351a";
+var buildNumber = "351b";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -106,7 +106,7 @@ var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
 bot.login(process.env.token);
 var whatsp = "";
-//ytpl test for youtube playlists
+//ytpl test for youtube playlists!
 //var ytpl = require('ytpl');
 
 // parses message, provides a response
@@ -491,18 +491,18 @@ bot.on('message', message => {
                 break;
             //What's Playing?
             case "!?":
-                // if (args[1] === true) {
-                //     if (args[1] === "" || args[1] === " ") {
-                //         // intentionally left blank
-                //     } else {
-                //         if (totalRandomInt === 0) {
-                //             message.channel.send(congratsDatabase.get(args[1]));
-                //         } else {
-                //             message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + congratsDatabase.get(args[1]));
-                //         }
-                //         break;
-                //     }
-                // }
+                if (args[1] === true) {
+                    if (args[1] === "" || args[1] === " ") {
+                        // intentionally left blank
+                    } else {
+                        if (totalRandomInt === 0) {
+                            message.channel.send(congratsDatabase.get(args[1]));
+                        } else {
+                            message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + congratsDatabase.get(args[1]));
+                        }
+                        break;
+                    }
+                }
                 if (whatsp !== "") {
                     if (totalRandomInt === 0) {
                         message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatsp);
@@ -535,7 +535,7 @@ bot.on('message', message => {
                 if (currentRandomInt === totalRandomInt){
                     return;
                 }
-                play(message, currentRandomInt)
+                playRandom(message, totalRandomInt);
                 break;
             // prints out the version number
             case "!v" :
