@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.4';
-var buildNumber = "354a";
+var buildNumber = "354b";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -330,9 +330,9 @@ bot.on('message', message => {
     } else {
         var args = message.content.split(" ");
         console.log(args);
-        if (args[0].substr(0,1) !== "!") {
-            return;
-        }
+        // if (args[0].substr(0,1) !== "!") {
+        //     return;
+        // }
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
@@ -585,14 +585,14 @@ bot.on('message', message => {
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
             case "!skip" :
-                
+
                 skipSong(message);
-                
-                break; 
+
+                break;
             case "!sk" :
-                
+
                 skipSong(message);
-                
+
                 break;
             // prints out the version number
             case "!v" :
