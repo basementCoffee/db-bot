@@ -99,7 +99,7 @@ var latestRelease = "Latest Release:\n" +
     "---3.4.0 introduced---\n" +
     "-New queue for play (ex (twice): !p link)\n" +
     "-New queue for random (ex: !r 5)\n";
-var buildNumber = "342o";
+var buildNumber = "350c";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -501,7 +501,7 @@ bot.on('message', message => {
                     }
                 }
                 if (whatsp !== "") {
-                    message.channel.send(whatsp);
+                    message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + whatsp);
                 } else {
                     message.channel.send("Nothing is playing right now");
                 }
