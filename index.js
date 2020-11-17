@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.1';
-var buildNumber = "351h";
+var buildNumber = "351i";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -310,7 +310,7 @@ bot.on('message', message => {
                 console.log("b1: "+ servers[message.guild.id].queue);
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
-                if (servers[message.guild.id].queue.length < 2) {
+                if (servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === null) {
                     playSong(message, args[1], true);
                 }
 
@@ -340,6 +340,11 @@ bot.on('message', message => {
 
             //!e is the Stop feature
             case "!e" :
+                server = servers[message.guild.id];
+                while (server.queue.length > 0) {
+                    server.queue.shift();
+                    console.log(server.queue.length);
+                }
                 totalRandomInt = 0;
                 currentRandomInt = 0;
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
