@@ -555,7 +555,7 @@ bot.on('message', message => {
                     }
                 } else {
                     let server = servers[message.guild.id];
-                    if (server.queue.length > 1) {
+                    if (server.queue.length > 0) {
                         if (firstSong) {
                             server.queue.shift();
                         }
