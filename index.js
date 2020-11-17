@@ -93,8 +93,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.5.1';
-var buildNumber = "351m";
+var version = '3.5.2';
+var buildNumber = "352a";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -232,6 +232,7 @@ function playSong(message, whatsp, isMp3) {
                             playSong(message, whatsp , true);
                         } else {
                             connection.disconnect();
+                            firstSong = true;
                         }
 
                     })
@@ -254,7 +255,6 @@ function playSong(message, whatsp, isMp3) {
             printErrorToChannel("'play method'", whatsp + " - probably a broken link?", e);
             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
             connection.disconnect();
-
         }
     })
 }
@@ -310,15 +310,12 @@ bot.on('message', message => {
                     queue: []
                 }
                 let serverP = servers[message.guild.id];
-                if (serverP.queue.length === 0) {
-                    firstSong = true;
-                }
                 serverP.queue.push(args[1]);
                 //server.queue.push(args[1]);
                 console.log("server queue: "+ serverP.queue);
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
-                if (serverP.queue.length < 2 || message.guild.voice.connection === null) {
+                if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
                     playSong(message, args[1], true);
                 }
 
@@ -355,6 +352,7 @@ bot.on('message', message => {
                 }
                 totalRandomInt = 0;
                 currentRandomInt = 0;
+                firstSong = true;
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                     server.dispatcher = connection.disconnect();
                 })
@@ -544,16 +542,32 @@ bot.on('message', message => {
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
             case "!skip" :
-                if (currentRandomInt === totalRandomInt || totalRandomInt === 0){
-                    totalRandomInt = 0;
-                    currentRandomInt = 0;
-                    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                        server.dispatcher = connection.disconnect();
-                    })
-                    whatsp = "";
+                if (enumPlayingFunction === "random") {
+                    if (currentRandomInt === totalRandomInt || totalRandomInt === 0){
+                        totalRandomInt = 0;
+                        currentRandomInt = 0;
+                        if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                            server.dispatcher = connection.disconnect();
+                        })
+                        whatsp = "";
+                    } else {
+                        playRandom(message, totalRandomInt);
+                    }
                 } else {
-                    playRandom(message, totalRandomInt);
+                    server = servers[message.guild.id];
+                    if (server.queue.length > 1) {
+                        whatsp = server.queue.shift();
+                        playSong(message, whatsp, true);
+                    } else {
+                        firstSong = true;
+                        if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                            server.dispatcher = connection.disconnect();
+                        })
+                        whatsp = "";
+                    }
+
                 }
+
                 break;
             // prints out the version number
             case "!v" :
@@ -605,9 +619,10 @@ bot.on('message', message => {
         }
     }
 })
-
+var enumPlayingFunction;
 function playRandom(message, numOfTimes) {
     currentRandomInt++;
+    enumPlayingFunction = "random";
     var numOfRetries = 0;
     server = servers[message.guild.id];
     let rKeyArray = Array.from(congratsDatabase.keys());
