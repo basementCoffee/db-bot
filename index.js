@@ -112,7 +112,6 @@ var whatsp = "";
 // parses message, provides a response
 bot.on('message', msg => {
     try {
-        console.log("person: " + msg.member.displayName);
         if (msg.member.displayName === "Congratz Ambassador") {
             return;
         }
