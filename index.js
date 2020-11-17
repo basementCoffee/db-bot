@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.1';
-var buildNumber = "351j";
+var buildNumber = "351k";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -224,8 +224,7 @@ function playSong(message, whatsp, isMp3) {
                 })
                     .on("finish", () => {
                         if (server.queue.length > 0) {
-                            whatsp = server.queue.shift();
-                            playSong(message, whatsp, true);
+                            playSong(message, server.queue.shift(), true);
                         } else {
                             connection.disconnect();
                         }
