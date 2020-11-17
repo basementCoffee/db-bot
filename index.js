@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.3';
-var buildNumber = "353a";
+var buildNumber = "353b";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -111,8 +111,12 @@ var whatsp = "";
 
 // parses message, provides a response
 bot.on('message', msg => {
-    console.log("person: " + msg.member.displayName);
-    if (msg.member.displayName === "Congratz Ambassador") {
+    try {
+        console.log("person: " + msg.member.displayName);
+        if (msg.member.displayName === "Congratz Ambassador") {
+            return;
+        }
+    } catch (e) {
         return;
     }
     if (msg.content.toUpperCase().includes("HELLO FRIEND")) {
