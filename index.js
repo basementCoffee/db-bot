@@ -100,7 +100,7 @@ var latestRelease = "Latest Release:\n" +
     "New queue for random (ex: !r 5)\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "342e";
+var buildNumber = "342f";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -306,7 +306,9 @@ bot.on('message', message => {
                 }
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
-                if (server.length < 2 || !message.guild.voice === undefined) {
+                console.log("b1: " + message.guild.voice);
+                console.log("b2: " + message.guild.voice.channel);
+                if (server.length < 2 || message.guild.voice === null) {
                     playSong(message, args[1], true);
                 }
 
