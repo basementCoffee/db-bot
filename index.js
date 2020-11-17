@@ -99,7 +99,7 @@ var latestRelease = "Latest Release:\n" +
     "New queue for random (ex: !r 5)\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "342k";
+var buildNumber = "342l";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -206,7 +206,7 @@ var keyArray;
 var s;
 
 function playSong(message, whatsp, isMp3) {
-    //message.guild.voice.setSelfDeaf(true);
+    messa
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
@@ -222,7 +222,7 @@ function playSong(message, whatsp, isMp3) {
                         let server = servers[message.guild.id]
                         console.log(server)
                         if (server.queue.length > 0) {
-                            playSong(message, server.elements.shift(), true)
+                            playSong(message, server.shift(), true)
                         } else {
                             connection.disconnect();
                         }
