@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.1';
-var buildNumber = "351g";
+var buildNumber = "351h";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -211,7 +211,6 @@ var currentRandomInt = 0; // current random song index
 function playSong(message, whatsp, isMp3) {
     let server = servers[message.guild.id]
     console.log("server queue: " + server.queue);
-    whatsp = server.queue.shift();
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
@@ -224,9 +223,8 @@ function playSong(message, whatsp, isMp3) {
                     type: "opus"
                 })
                     .on("finish", () => {
-
-
                         if (server.queue.length > 0) {
+                            whatsp = server.queue.shift();
                             playSong(message, whatsp, true)
                         } else {
                             connection.disconnect();
