@@ -95,6 +95,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 <<<<<<< HEAD
+<<<<<<< HEAD
 var version = '3.4.0';
 var latestRelease = "Latest Release:\n" +
     "New queue for random (ex: !r 5)\n" +
@@ -102,14 +103,20 @@ var latestRelease = "Latest Release:\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
 var buildNumber = "340a";
 =======
+=======
+>>>>>>> 0b88a481aa5d6db33dcc8e413494ee004d15bd28
 var version = '3.4.2';
 var latestRelease = "Latest Release:\n" +
     "New queue for play (ex (twice): !p link)\n" +
     "New queue for random (ex: !r 5)\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
+<<<<<<< HEAD
 var buildNumber = "342a";
 >>>>>>> 995f3877d8c393043bb2e768af9b326d66316db6
+=======
+var buildNumber = "342b";
+>>>>>>> 0b88a481aa5d6db33dcc8e413494ee004d15bd28
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -314,7 +321,10 @@ bot.on('message', message => {
                 }
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
-                playSong(message, args[1], true);
+                if (server.length < 1 || !message.guild.voiceChannel) {
+                    playSong(message, args[1], true);
+                }
+
                 break;
 
             case '!pv':
@@ -426,10 +436,14 @@ bot.on('message', message => {
                         playRandom(message, 1);
                     }
 <<<<<<< HEAD
+<<<<<<< HEAD
                     
 =======
 
 >>>>>>> 995f3877d8c393043bb2e768af9b326d66316db6
+=======
+
+>>>>>>> 0b88a481aa5d6db33dcc8e413494ee004d15bd28
                 }
                 break;
 
@@ -606,10 +620,14 @@ function playRandom(message, numOfTimes) {
                         playRandom(message, numOfTimes)
                     }
 <<<<<<< HEAD
+<<<<<<< HEAD
                     
 =======
 
 >>>>>>> 995f3877d8c393043bb2e768af9b326d66316db6
+=======
+
+>>>>>>> 0b88a481aa5d6db33dcc8e413494ee004d15bd28
                 })
         } catch (e) {
             // Error catching - fault with the database yt link?
