@@ -94,12 +94,13 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.12';
+var version = '3.4.2';
 var latestRelease = "Latest Release:\n" +
-    "WIP: support for video streams\n" +
+    "New queue for play (ex (twice): !p link)\n" +
+    "New queue for random (ex: !r 5)\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "3312i";
+var buildNumber = "342a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -218,13 +219,19 @@ function playSong(message, whatsp, isMp3) {
                     type: "opus"
                 })
                     .on("finish", () => {
-                        connection.disconnect();
+                        let server = servers[message.guild.id]
+                        if (server.length > 0) {
+                            playSong(message, server.elements.shift(), true)
+                        } else {
+                            connection.disconnect();
+                        }
+
                     })
             } else { // video stream
                 let myStream = ytdl(whatsp, {
                     filter: "audioandvideo",
-                     opusEncoded: false,
-                     encoderArgs: ['bass=g=10']
+                    opusEncoded: false,
+                    encoderArgs: ['bass=g=10']
                 });
                 let dispatcher = connection.play(myStream, {
                     type: "unknown"
@@ -246,7 +253,7 @@ function playSong(message, whatsp, isMp3) {
 
 // parses message, provides a response
 bot.on('message', message => {
-    var server;
+    let server;
     if (message.author.bot) return;
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
@@ -256,8 +263,8 @@ bot.on('message', message => {
                 queue: []
             }
             server = servers[message.guild.id];
-            //server.queue.push(args[1]);
-            var word = messageArray[i];
+            server.queue.push(args[1]);
+            let word = messageArray[i];
             console.log(word);
             if ((word.includes("grats") || word.includes("gratz") || word.includes("ongratulations")) && !(word.substring(0, 1).includes("!"))) {
                 if ((i + 1) === messageArray.length) {
@@ -296,7 +303,6 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-
                 server = servers[message.guild.id];
                 server.queue.push(args[1]);
                 playSong(message, args[1], true);
@@ -367,7 +373,7 @@ bot.on('message', message => {
                 playSong(message, whatsp, true);
                 break;
 
-                case "!dv":
+            case "!dv":
                 if (!args[1]) {
                     message.channel.send("N-NANI? There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
                     return;
@@ -400,8 +406,20 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                playRandom(message);
+
+                if (!args[1]) {
+                    playRandom(message, 1);
+                } else {
+                    try {
+                        let num = parseInt(args[1])
+                        playRandom(message, num)
+                    } catch (e) {
+                        playRandom(message, 1);
+                    }
+
+                }
                 break;
+
             case "!key" :
                 gsrun(client2)
                 keyArray = Array.from(congratsDatabase.keys());
@@ -546,7 +564,7 @@ bot.on('message', message => {
     }
 })
 
-function playRandom(message) {
+function playRandom(message, numOfTimes) {
     var numOfRetries = 0;
     server = servers[message.guild.id];
     let rKeyArray = Array.from(congratsDatabase.keys());
@@ -568,7 +586,13 @@ function playRandom(message) {
                 type: "opus"
             })
                 .on("finish", () => {
-                    connection.disconnect();
+                    numOfTimes -= 1;
+                    if (numOfTimes === 0) {
+                        connection.disconnect();
+                    } else {
+                        playRandom(message, numOfTimes)
+                    }
+
                 })
         } catch (e) {
             // Error catching - fault with the database yt link?
