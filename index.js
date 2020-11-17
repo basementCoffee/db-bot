@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.1';
-var buildNumber = "351k";
+var buildNumber = "351l";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -207,7 +207,7 @@ var keyArray;
 var s;
 var totalRandomInt = 0; // total number of random songs to play
 var currentRandomInt = 0; // current random song index
-
+var firstSong = true;
 function playSong(message, whatsp, isMp3) {
     let server = servers[message.guild.id]
     console.log("server queue: " + server.queue);
@@ -224,7 +224,12 @@ function playSong(message, whatsp, isMp3) {
                 })
                     .on("finish", () => {
                         if (server.queue.length > 0) {
-                            playSong(message, server.queue.shift(), true);
+                            if (firstSong) {
+                                server.queue.shift();
+                                firstSong = false;
+                            }
+                            whatsp = server.queue.shift();
+                            playSong(message, whatsp , true);
                         } else {
                             connection.disconnect();
                         }
@@ -304,13 +309,16 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                servers[message.guild.id].queue.push(args[1]);
+                let serverP = servers[message.guild.id];
+                if (serverP.queue.length === 0) {
+                    firstSong = true;
+                }
+                serverP.queue.push(args[1]);
                 //server.queue.push(args[1]);
-                console.log("b1: "+ servers[message.guild.id].queue);
+                console.log("server queue: "+ serverP.queue);
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
-                if (servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === null) {
-                    whatsp = servers[message.guild.id].queue.shift();
+                if (serverP.queue.length < 2 || message.guild.voice.connection === null) {
                     playSong(message, whatsp, true);
                 }
 
