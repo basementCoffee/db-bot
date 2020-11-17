@@ -94,12 +94,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.3.12';
+var version = '3.4.0';
 var latestRelease = "Latest Release:\n" +
-    "WIP: support for video streams\n" +
+    "New queue for random (ex: !r 5)\n" +
     "---3.3.0 introduced---\n" +
     "-Added a new search feature for keys (!k search-starts-with)\n";
-var buildNumber = "3312i";
+var buildNumber = "340a";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -400,8 +400,20 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                playRandom(message);
+
+                if (!args[1]) {
+                    playRandom(message, 1);
+                } else {
+                    try {
+                        let num = parseInt(args[1])
+                        playRandom(message, num)
+                    } catch (e) {
+                        playRandom(message, 1);
+                    }
+                    
+                }
                 break;
+
             case "!key" :
                 gsrun(client2)
                 keyArray = Array.from(congratsDatabase.keys());
@@ -546,7 +558,7 @@ bot.on('message', message => {
     }
 })
 
-function playRandom(message) {
+function playRandom(message, numOfTimes) {
     var numOfRetries = 0;
     server = servers[message.guild.id];
     let rKeyArray = Array.from(congratsDatabase.keys());
@@ -568,7 +580,13 @@ function playRandom(message) {
                 type: "opus"
             })
                 .on("finish", () => {
-                    connection.disconnect();
+                    numOfTimes -= 1;
+                    if (numOfTimes === 0) {
+                        connection.disconnect();
+                    } else {
+                        playRandom(message, numOfTimes)
+                    }
+                    
                 })
         } catch (e) {
             // Error catching - fault with the database yt link?
