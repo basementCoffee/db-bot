@@ -94,7 +94,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.1';
-var buildNumber = "351e";
+var buildNumber = "351f";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -310,8 +310,9 @@ bot.on('message', message => {
                 servers[message.guild.id].queue.push(args[1]);
                 //server.queue.push(args[1]);
                 console.log("b1: "+ servers[message.guild.id].queue);
+                console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
-                if (servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === null) {
+                if (servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === undefined) {
                     playSong(message, args[1], true);
                 }
 
@@ -375,7 +376,7 @@ bot.on('message', message => {
                     return;
                 }
                 let dPhrase = args[1];
-                server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
                 playSong(message, whatsp, true);
                 break;
 
@@ -399,7 +400,7 @@ bot.on('message', message => {
                     return;
                 }
                 //let dPhrase = args[1];
-                server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
                 playSong(message, whatsp, false);
                 break;
 
