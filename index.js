@@ -93,8 +93,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.5.3';
-var buildNumber = "353c";
+var version = '3.5.4';
+var buildNumber = "354a";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -266,6 +266,38 @@ function playSong(message, whatsp, isMp3) {
     })
 }
 
+function skipSong(message) {
+    if (enumPlayingFunction === "random") {
+        if (currentRandomInt === totalRandomInt || totalRandomInt === 0){
+            totalRandomInt = 0;
+            currentRandomInt = 0;
+            if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                connection.disconnect();
+            })
+            whatsp = "";
+        } else {
+            playRandom(message, totalRandomInt);
+        }
+    } else {
+        let server = servers[message.guild.id];
+        if (server.queue.length > 0) {
+            if (firstSong) {
+                server.queue.shift();
+            }
+            whatsp = server.queue.shift();
+            firstSong = false;
+            playSong(message, whatsp, true);
+        } else {
+            firstSong = true;
+            if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                connection.disconnect();
+            })
+            whatsp = "";
+        }
+
+    }
+}
+
 // parses message, provides a response
 bot.on('message', message => {
     if (message.author.bot) return;
@@ -298,7 +330,9 @@ bot.on('message', message => {
     } else {
         var args = message.content.split(" ");
         console.log(args);
-
+        if (args[0].substr(0,1) !== "!") {
+            return;
+        }
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
@@ -362,7 +396,8 @@ bot.on('message', message => {
                 currentRandomInt = 0;
                 firstSong = true;
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                    server.dispatcher = connection.disconnect();
+                    //server.dispatcher = connection.disconnect();
+                    connection.disconnect();
                 })
                 whatsp = "";
                 break;
@@ -550,36 +585,14 @@ bot.on('message', message => {
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
             case "!skip" :
-                if (enumPlayingFunction === "random") {
-                    if (currentRandomInt === totalRandomInt || totalRandomInt === 0){
-                        totalRandomInt = 0;
-                        currentRandomInt = 0;
-                        if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                            server.dispatcher = connection.disconnect();
-                        })
-                        whatsp = "";
-                    } else {
-                        playRandom(message, totalRandomInt);
-                    }
-                } else {
-                    let server = servers[message.guild.id];
-                    if (server.queue.length > 0) {
-                        if (firstSong) {
-                            server.queue.shift();
-                        }
-                        whatsp = server.queue.shift();
-                        firstSong = false;
-                        playSong(message, whatsp, true);
-                    } else {
-                        firstSong = true;
-                        if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                            server.dispatcher = connection.disconnect();
-                        })
-                        whatsp = "";
-                    }
-
-                }
-
+                
+                skipSong(message);
+                
+                break; 
+            case "!sk" :
+                
+                skipSong(message);
+                
                 break;
             // prints out the version number
             case "!v" :
