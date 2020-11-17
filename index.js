@@ -93,13 +93,14 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.5.0';
+var version = '3.5.1';
+var buildNumber = "351a";
 var latestRelease = "Latest Release:\n" +
-    "- Counter for random queue (ex: !r 10 -> !?)\n" +
+    "-added skip feature (ex: !skip)\n" +
+    "-Counter for random queue (ex: !r 10 -> !?)\n" +
     "---3.4.0 introduced---\n" +
     "-New queue for play (ex (twice): !p link)\n" +
     "-New queue for random (ex: !r 5)\n";
-var buildNumber = "350c";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -340,6 +341,8 @@ bot.on('message', message => {
 
             //!e is the Stop feature
             case "!e" :
+                totalRandomInt = 0;
+                currentRandomInt = 0;
                 server = servers[message.guild.id];
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
@@ -488,20 +491,24 @@ bot.on('message', message => {
                 break;
             //What's Playing?
             case "!?":
-                if (args[1] === true) {
-                    if (args[1] === "" || args[1] === " ") {
-                        // intentionally left blank
-                    } else {
-                        if (totalRandomInt === 0) {
-                            message.channel.send(congratsDatabase.get(args[1]));
-                        } else {
-                            message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + congratsDatabase.get(args[1]));
-                        }
-                        break;
-                    }
-                }
+                // if (args[1] === true) {
+                //     if (args[1] === "" || args[1] === " ") {
+                //         // intentionally left blank
+                //     } else {
+                //         if (totalRandomInt === 0) {
+                //             message.channel.send(congratsDatabase.get(args[1]));
+                //         } else {
+                //             message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + congratsDatabase.get(args[1]));
+                //         }
+                //         break;
+                //     }
+                // }
                 if (whatsp !== "") {
-                    message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + whatsp);
+                    if (totalRandomInt === 0) {
+                        message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatsp);
+                    } else {
+                        message.channel.send(congratsDatabase.get(args[1]));
+                    }
                 } else {
                     message.channel.send("Nothing is playing right now");
                 }
@@ -524,8 +531,12 @@ bot.on('message', message => {
                     + "!rm --> Removes a song from the database\n"
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
-
-
+            case "!skip" :
+                if (currentRandomInt === totalRandomInt){
+                    return;
+                }
+                play(message, currentRandomInt)
+                break;
             // prints out the version number
             case "!v" :
                 message.channel.send("version: " + version + "\n" + latestRelease);
@@ -563,7 +574,6 @@ bot.on('message', message => {
                     message.channel.send(songsAddedInt.toString() + " songs added to the temporary database.");
                 }
                 break;
-
 
             //removes databse entries
             case "!rm":
