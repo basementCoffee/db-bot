@@ -21,7 +21,7 @@ async function gsrun(cl) {
 
 
     const spreadsheetSizeObjects = {
-        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+        spreadsheetId: process.env.stoken,
         range: 'entries!C2'
     }
     let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
@@ -29,16 +29,16 @@ async function gsrun(cl) {
 
 
     const songObjects = {
-        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+        spreadsheetId: process.env.stoken,
         range: "entries!A2:B" + dataSize.toString()
 
     };
 
     let dataSO = await gsapi.spreadsheets.values.get(songObjects);
     var arrayOfSpreadsheetValues = dataSO.data.values;
-    console.log(arrayOfSpreadsheetValues);
+    //console.log(arrayOfSpreadsheetValues);
 
-    console.log(dataSize);
+    console.log("Database size: " + dataSize);
 
     var line;
     var keyT
@@ -57,7 +57,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
     dataSize += 1;
     var aProvKey = new Array(providedKey);
     const updateOptions = {
-        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+        spreadsheetId: process.env.stoken,
         range: "entries!A:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
         resource: {values: aProvKey}
@@ -67,7 +67,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
 
     var aProvLink = new Array(providedLink);
     const updateOptions2 = {
-        spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+        spreadsheetId: process.env.stoken,
         range: "entries!B:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
         resource: {values: aProvLink}
@@ -93,8 +93,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.5.1';
-var buildNumber = "351g";
+var version = '3.5.4';
+var buildNumber = "354a";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -111,6 +111,13 @@ var whatsp = "";
 
 // parses message, provides a response
 bot.on('message', msg => {
+    try {
+        if (msg.member.displayName === "Congratz Ambassador") {
+            return;
+        }
+    } catch (e) {
+        return;
+    }
     if (msg.content.toUpperCase().includes("HELLO FRIEND")) {
         msg.reply("Bonsoir " + msg.author.username);
     } else if (msg.content.toUpperCase().includes("HELLO")) {
@@ -207,11 +214,10 @@ var keyArray;
 var s;
 var totalRandomInt = 0; // total number of random songs to play
 var currentRandomInt = 0; // current random song index
-
+var firstSong = true;
 function playSong(message, whatsp, isMp3) {
     let server = servers[message.guild.id]
-    console.log("server queue: " + server.queue);
-    whatsp = server.queue.shift();
+    //console.log("server queue: " + server.queue);
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
@@ -224,12 +230,16 @@ function playSong(message, whatsp, isMp3) {
                     type: "opus"
                 })
                     .on("finish", () => {
-
-
                         if (server.queue.length > 0) {
-                            playSong(message, whatsp, true)
+                            if (firstSong) {
+                                server.queue.shift();
+                                firstSong = false;
+                            }
+                            whatsp = server.queue.shift();
+                            playSong(message, whatsp , true);
                         } else {
                             connection.disconnect();
+                            firstSong = true;
                         }
 
                     })
@@ -252,9 +262,40 @@ function playSong(message, whatsp, isMp3) {
             printErrorToChannel("'play method'", whatsp + " - probably a broken link?", e);
             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
             connection.disconnect();
-
         }
     })
+}
+
+function skipSong(message) {
+    if (enumPlayingFunction === "random") {
+        if (currentRandomInt === totalRandomInt || totalRandomInt === 0){
+            totalRandomInt = 0;
+            currentRandomInt = 0;
+            if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                connection.disconnect();
+            })
+            whatsp = "";
+        } else {
+            playRandom(message, totalRandomInt);
+        }
+    } else {
+        let server = servers[message.guild.id];
+        if (server.queue.length > 0) {
+            if (firstSong) {
+                server.queue.shift();
+            }
+            whatsp = server.queue.shift();
+            firstSong = false;
+            playSong(message, whatsp, true);
+        } else {
+            firstSong = true;
+            if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                connection.disconnect();
+            })
+            whatsp = "";
+        }
+
+    }
 }
 
 // parses message, provides a response
@@ -289,7 +330,9 @@ bot.on('message', message => {
     } else {
         var args = message.content.split(" ");
         console.log(args);
-
+        if (args[0].substr(0,1) !== "!") {
+            return;
+        }
         switch (args[0]) {
             //!p is just the basic rythm bot
             case '!p':
@@ -307,12 +350,14 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                servers[message.guild.id].queue.push(args[1]);
+                enumPlayingFunction = "playing";
+                let serverP = servers[message.guild.id];
+                serverP.queue.push(args[1]);
                 //server.queue.push(args[1]);
-                console.log("b1: "+ servers[message.guild.id].queue);
+                //console.log("server queue: "+ serverP.queue);
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
-                if (servers[message.guild.id].queue.length < 2) {
+                if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
                     playSong(message, args[1], true);
                 }
 
@@ -342,10 +387,17 @@ bot.on('message', message => {
 
             //!e is the Stop feature
             case "!e" :
+                server = servers[message.guild.id];
+                while (server.queue.length > 0) {
+                    server.queue.shift();
+                    //console.log(server.queue.length);
+                }
                 totalRandomInt = 0;
                 currentRandomInt = 0;
+                firstSong = true;
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                    server.dispatcher = connection.disconnect();
+                    //server.dispatcher = connection.disconnect();
+                    connection.disconnect();
                 })
                 whatsp = "";
                 break;
@@ -533,16 +585,14 @@ bot.on('message', message => {
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
             case "!skip" :
-                if (currentRandomInt === totalRandomInt || totalRandomInt === 0){
-                    totalRandomInt = 0;
-                    currentRandomInt = 0;
-                    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                        server.dispatcher = connection.disconnect();
-                    })
-                    whatsp = "";
-                } else {
-                    playRandom(message, totalRandomInt);
-                }
+
+                skipSong(message);
+
+                break;
+            case "!sk" :
+
+                skipSong(message);
+
                 break;
             // prints out the version number
             case "!v" :
@@ -594,21 +644,22 @@ bot.on('message', message => {
         }
     }
 })
-
+var enumPlayingFunction;
 function playRandom(message, numOfTimes) {
     currentRandomInt++;
+    enumPlayingFunction = "random";
     var numOfRetries = 0;
     server = servers[message.guild.id];
     let rKeyArray = Array.from(congratsDatabase.keys());
     numOfRetries += 1;
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
-    console.log("attempting to play key:" + rk);
+    //console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
-            console.log("calling play method...");
+            //console.log("calling play method...");
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
                 opusEncoded: true,
