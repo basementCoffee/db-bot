@@ -29,7 +29,7 @@ async function gsrun(cl) {
 
 
     const songObjects = {
-        spreadsheetId: 'process.env.spreadsheettoken',
+        spreadsheetId: process.env.spreadsheettoken,
         range: "entries!A2:B" + dataSize.toString()
 
     };
@@ -38,7 +38,7 @@ async function gsrun(cl) {
     var arrayOfSpreadsheetValues = dataSO.data.values;
     //console.log(arrayOfSpreadsheetValues);
 
-    console.log(dataSize);
+    console.log("Database size: " + dataSize);
 
     var line;
     var keyT
@@ -57,7 +57,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
     dataSize += 1;
     var aProvKey = new Array(providedKey);
     const updateOptions = {
-        spreadsheetId: 'process.env.spreadsheettoken',
+        spreadsheetId: process.env.spreadsheettoken,
         range: "entries!A:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
         resource: {values: aProvKey}
@@ -67,7 +67,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
 
     var aProvLink = new Array(providedLink);
     const updateOptions2 = {
-        spreadsheetId: 'process.env.spreadsheettoken',
+        spreadsheetId: process.env.spreadsheettoken,
         range: "entries!B:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
         resource: {values: aProvLink}
