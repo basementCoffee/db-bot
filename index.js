@@ -21,7 +21,7 @@ async function gsrun(cl) {
 
 
     const spreadsheetSizeObjects = {
-        spreadsheetId: 'process.env.spreadsheettoken',
+        spreadsheetId: process.env.stoken,
         range: 'entries!C2'
     }
     let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
@@ -29,7 +29,7 @@ async function gsrun(cl) {
 
 
     const songObjects = {
-        spreadsheetId: process.env.spreadsheettoken,
+        spreadsheetId: process.env.stoken,
         range: "entries!A2:B" + dataSize.toString()
 
     };
@@ -57,7 +57,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
     dataSize += 1;
     var aProvKey = new Array(providedKey);
     const updateOptions = {
-        spreadsheetId: process.env.spreadsheettoken,
+        spreadsheetId: process.env.stoken,
         range: "entries!A:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
         resource: {values: aProvKey}
@@ -67,7 +67,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
 
     var aProvLink = new Array(providedLink);
     const updateOptions2 = {
-        spreadsheetId: process.env.spreadsheettoken,
+        spreadsheetId: process.env.stoken,
         range: "entries!B:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
         resource: {values: aProvLink}
@@ -585,14 +585,14 @@ bot.on('message', message => {
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
             case "!skip" :
-                
+
                 skipSong(message);
-                
-                break; 
+
+                break;
             case "!sk" :
-                
+
                 skipSong(message);
-                
+
                 break;
             // prints out the version number
             case "!v" :
