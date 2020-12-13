@@ -188,7 +188,7 @@ function playCongrats(connection, message) {
     var server = servers[message.guild.id];
     try {
         let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
-            filter: "audioonly",
+            filter: "audio",
             opusEncoded: true,
             
         });
