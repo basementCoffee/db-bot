@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/opus": "^0.3.2",
+    "@discordjs/opus": "^0.3.3",
     "discord-ytdl-core": "^4.1.5",
     "discord.js": "^12.2.0",
     "ffmpeg-static": "^4.2.5",
@@ -22,7 +22,7 @@
     "npm-start-command": "^1.0.1",
     "opusscript": "0.0.7",
     "sqlite3": "^5.0.0",
-    "ytdl-core": "^3.3.0",
+    "ytdl-core": "^3.4.2",
     "ytpl": "^0.3.0"
   }
 }

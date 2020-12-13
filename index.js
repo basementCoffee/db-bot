@@ -93,8 +93,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.5.4';
-var buildNumber = "354a";
+var version = '3.5.5';
+var buildNumber = "355a";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
@@ -190,7 +190,7 @@ function playCongrats(connection, message) {
         let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
             filter: "audioonly",
             opusEncoded: true,
-            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+            
         });
         let dispatcher = connection.play(myStream, {
             type: "opus"
