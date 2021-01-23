@@ -53,6 +53,31 @@ async function gsrun(cl) {
     }
 }
 
+function gsUpdate() {
+    gsapi.client.sheets.spreadsheets.values.append({
+        "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+        "range": "A50:B50",
+        "includeValuesInResponse": true,
+        "insertDataOption": "INSERT_ROWS",
+        "responseDateTimeRenderOption": "FORMATTED_STRING",
+        "responseValueRenderOption": "FORMATTED_VALUE",
+        "valueInputOption": "USER_ENTERED",
+        "resource": {
+            "values": [
+                [
+                    "testing5",
+                    "testing6"
+                ]
+            ]
+        }
+    })
+        .then(function(response) {
+                // Handle the results here (response.result has the parsed body).
+                console.log("Response", response);
+            },
+            function(err) { console.error("Execute error", err); });
+}
+
 async function gsPushUpdate(cl, providedKey, providedLink) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     //dataSize += 1;
@@ -119,7 +144,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.0';
-var buildNumber = "360l";
+var buildNumber = "360m";
 var latestRelease = "Latest Release:\n" +
     "WIP: Add songs to google sheets" +
     "---3.5.0 introduced---\n" +
@@ -433,7 +458,8 @@ bot.on('message', message => {
 
             case "!tt" :
                 message.channel.send("Testing sheet add");
-                gsPushUpdate(client2, "testing1", "testing2");
+                gsUpdate();
+                // gsPushUpdate(client2, "testing1", "testing2");
                 break;
 
             // to run database songs
