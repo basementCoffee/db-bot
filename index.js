@@ -45,18 +45,14 @@ async function gsrun(cl) {
     var line;
     var keyT
     var valueT;
+    congratsDatabase.clear();
+    referenceDatabase.clear();
     for (let i = 0; i < dataSize; i++) {
         line = arrayOfSpreadsheetValues[i];
         keyT = line[0];
         valueT = line[1];
-        congratsDatabase.clear().then(
-            congratsDatabase.set(keyT, valueT)
-        )
-        referenceDatabase.clear().then(
-            referenceDatabase.set(keyT.toUpperCase(), valueT)
-        )
-
-
+        congratsDatabase.set(keyT, valueT);
+        referenceDatabase.set(keyT.toUpperCase(), valueT);
     }
 }
 
@@ -189,8 +185,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.8';
-var buildNumber = "368b";
+var version = '3.6.9';
+var buildNumber = "369a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
