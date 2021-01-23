@@ -28,6 +28,7 @@ async function gsrun(cl) {
     let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
     dataSize = dataSizeFromSheets.data.values;
 
+    console.log("Data Size: " + dataSize);
 
     const songObjects = {
         spreadsheetId: process.env.stoken,
@@ -53,7 +54,7 @@ async function gsrun(cl) {
     }
 }
 
-function gsUpdateAdd(cl, key, link) {
+function gsUpdateAdd(msg, cl, key, link) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.append({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
@@ -78,12 +79,18 @@ function gsUpdateAdd(cl, key, link) {
             },
             function(err) { console.error("Execute error", err); });
 
-    gsUpdateOverwrite(cl, dataSize);
+    gsUpdateOverwrite(msg, cl, dataSize);
 }
 
-function gsUpdateOverwrite(cl, value) {
+function gsUpdateOverwrite(msg, cl, value) {
 
-    value += 1;
+    try {
+        value = parseInt(dataSize) + 1;
+    } catch (e) {
+        msg.channel.send("There's been a fatal error. Check debug log.");
+        console.log(e);
+    }
+
 
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
@@ -176,8 +183,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.6';
-var buildNumber = "366";
+var version = '3.6.7';
+var buildNumber = "367a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -702,7 +709,7 @@ bot.on('message', message => {
                         linkZ = linkZ.substring(0, linkZ.length - 1);
                     }
                     congratsDatabase.set(args[z], args[z + 1]);
-                    gsUpdateAdd(client2, args[z], args[z + 1]);
+                    gsUpdateAdd(message,client2, args[z], args[z + 1]);
                     // gsPushUpdate(client2, args[z], args[z + 1]);
                     z = z + 2;
                     songsAddedInt += 1;
