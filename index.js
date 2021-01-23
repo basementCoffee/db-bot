@@ -53,7 +53,7 @@ async function gsrun(cl) {
     }
 }
 
-function gsUpdate() {
+function gsUpdate(cl) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.append({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
@@ -145,7 +145,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.0';
-var buildNumber = "360n";
+var buildNumber = "360o";
 var latestRelease = "Latest Release:\n" +
     "WIP: Add songs to google sheets" +
     "---3.5.0 introduced---\n" +
@@ -459,7 +459,7 @@ bot.on('message', message => {
 
             case "!tt" :
                 message.channel.send("Testing sheet add");
-                gsUpdate();
+                gsUpdate(client2);
                 // gsPushUpdate(client2, "testing1", "testing2");
                 break;
 
