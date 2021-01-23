@@ -59,7 +59,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
     var aProvKey = new Array(providedKey);
     const updateOptions = {
         spreadsheetId: process.env.stoken,
-        range: "entries!A:" + dataSize.toString(),
+        range: "entries!A50",
         valueInputOption: 'USER_ENTERED',
         //resource: {values: aProvKey}
     };
@@ -103,7 +103,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.0';
-var buildNumber = "360c";
+var buildNumber = "360d";
 var latestRelease = "Latest Release:\n" +
     "WIP: Add songs to google sheets" +
     "---3.5.0 introduced---\n" +
