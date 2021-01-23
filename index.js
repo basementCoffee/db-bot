@@ -61,7 +61,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
         spreadsheetId: process.env.stoken,
         range: "entries!A:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
-        resource: providedKey
+        resource: providedKey.toString()
         //resource: {values: aProvKey}
     };
 
@@ -72,7 +72,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
         spreadsheetId: process.env.stoken,
         range: "entries!B:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
-        resource: providedLink
+        resource: providedLink.toString()
         //resource: {values: aProvLink}
     };
 
@@ -96,14 +96,13 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.5.6';
-var buildNumber = "356c";
+var version = '3.6.0';
+var buildNumber = "360a";
 var latestRelease = "Latest Release:\n" +
+    "WIP: Add songs to google sheets" +
+    "---3.5.0 introduced---\n" +
     "-added skip feature (ex: !skip)\n" +
-    "-Counter for random queue (ex: !r 10 -> !?)\n" +
-    "---3.4.0 introduced---\n" +
-    "-New queue for play (ex (twice): !p link)\n" +
-    "-New queue for random (ex: !r 5)\n";
+    "-Counter for random queue (ex: !r 10 -> !?)\n";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
