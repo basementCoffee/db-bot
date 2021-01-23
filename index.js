@@ -92,7 +92,7 @@ function gsUpdateOverwrite(cl, value) {
         "resource": {
             "values": [
                 [
-                    value.toString()
+                    value.toJSON()
                 ]
             ]
         }
@@ -172,7 +172,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.5';
-var buildNumber = "365a";
+var buildNumber = "365b";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
