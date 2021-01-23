@@ -83,8 +83,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
 
     };
 
-    // removed sheets call
-    const request = await gsapi.client.spreadsheets.values.batchUpdate(params, batchUpdateValuesRequestBody);
+    const request = gsapi.client.sheets.spreadsheets.values.batchUpdate(params, batchUpdateValuesRequestBody);
 
     // const valueRange2 = {
     //     values: ['testing']
@@ -120,7 +119,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.0';
-var buildNumber = "360i";
+var buildNumber = "360j";
 var latestRelease = "Latest Release:\n" +
     "WIP: Add songs to google sheets" +
     "---3.5.0 introduced---\n" +
