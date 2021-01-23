@@ -24,6 +24,7 @@ async function gsrun(cl) {
         spreadsheetId: process.env.stoken,
         range: 'entries!C2'
     }
+
     let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
     dataSize = dataSizeFromSheets.data.values;
 
@@ -43,13 +44,24 @@ async function gsrun(cl) {
     var line;
     var keyT
     var valueT;
-    for (i = 0; i < dataSize; i++) {
+    for (let i = 0; i < dataSize; i++) {
         line = arrayOfSpreadsheetValues[i];
         keyT = line[0];
         valueT = line[1];
         congratsDatabase.set(keyT, valueT);
         referenceDatabase.set(keyT.toUpperCase(), valueT);
     }
+}
+
+function gsupdate(cl) {
+    const gsapi = google.sheets({version: 'v4', auth: cl});
+    const updateParams = {
+        spreadsheetId: process.env.stoken,
+        range: "entries!A71:B71",
+        valueInputOption: "hello"
+
+    };
+    gsapi.spreadsheets.values.update(updateParams)
 }
 
 async function gsPushUpdate(cl, providedKey, providedLink) {
@@ -93,7 +105,7 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.5.5';
+var version = '3.5.6';
 var buildNumber = "355a";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
@@ -405,6 +417,11 @@ bot.on('message', message => {
             // prints out the database size
             case "!s" :
                 message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
+                break;
+
+            case "!tt" :
+                message.channel.send("Testing sheet add");
+                gsupdate(client2);
                 break;
 
             // to run database songs
