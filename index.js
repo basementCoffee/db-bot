@@ -61,7 +61,8 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
         spreadsheetId: process.env.stoken,
         range: "entries!A:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
-        resource: {values: aProvKey}
+        resource: providedKey
+        //resource: {values: aProvKey}
     };
 
     let response = await gsapi.spreadsheets.values.update(updateOptions);
@@ -71,7 +72,8 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
         spreadsheetId: process.env.stoken,
         range: "entries!B:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
-        resource: {values: aProvLink}
+        resource: providedLink
+        //resource: {values: aProvLink}
     };
 
     let response2 = await gsapi.spreadsheets.values.update(updateOptions2);
@@ -95,7 +97,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.5.6';
-var buildNumber = "356b";
+var buildNumber = "356c";
 var latestRelease = "Latest Release:\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n" +
