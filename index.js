@@ -77,7 +77,35 @@ function gsUpdateAdd(cl, key, link) {
                 console.log("Response", response);
             },
             function(err) { console.error("Execute error", err); });
+
+    gsUpdateOverwrite(cl, dataSize+1)
 }
+
+function gsUpdateOverwrite(cl, value) {
+    const gsapi = google.sheets({version: 'v4', auth: cl});
+    gsapi.spreadsheets.values.update({
+        "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+        "range": "C1",
+        "includeValuesInResponse": true,
+        "insertDataOption": "INSERT_ROWS",
+        "responseDateTimeRenderOption": "FORMATTED_STRING",
+        "responseValueRenderOption": "FORMATTED_VALUE",
+        "valueInputOption": "USER_ENTERED",
+        "resource": {
+            "values": [
+                [
+                    value
+                ]
+            ]
+        }
+    })
+        .then(function(response) {
+                // Handle the results here (response.result has the parsed body).
+                console.log("Response", response);
+            },
+            function(err) { console.error("Execute error", err); });
+}
+
 
 async function gsPushUpdate(cl, providedKey, providedLink) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
@@ -144,8 +172,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.2';
-var buildNumber = "362a";
+var version = '3.6.3';
+var buildNumber = "363a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
