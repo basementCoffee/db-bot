@@ -87,14 +87,12 @@ function gsUpdateOverwrite(cl, value) {
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
         "range": "C1",
         "includeValuesInResponse": true,
-        "insertDataOption": "INSERT_ROWS",
         "responseDateTimeRenderOption": "FORMATTED_STRING",
-        "responseValueRenderOption": "FORMATTED_VALUE",
         "valueInputOption": "USER_ENTERED",
         "resource": {
             "values": [
                 [
-                    value
+                    value.toString()
                 ]
             ]
         }
@@ -173,8 +171,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.4';
-var buildNumber = "364a";
+var version = '3.6.5';
+var buildNumber = "365a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
