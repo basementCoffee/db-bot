@@ -55,19 +55,19 @@ async function gsrun(cl) {
 
 async function gsPushUpdate(cl, providedKey, providedLink) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
-    dataSize += 1;
-    var aProvKey = new Array(providedKey);
-    const updateOptions = {
-        spreadsheetId: process.env.stoken,
-        range: 'sheets!A51:B51',
-        valueInputOption: 'USER_ENTERED',
-        //resource: {values: aProvKey}
-    };
-
-    const valueRange = {
-        values: ['testing', '1']
-    };
-    let response = await gsapi.spreadsheets.values.update(updateOptions, valueRange);
+    //dataSize += 1;
+    // var aProvKey = new Array(providedKey);
+    // const updateOptions = {
+    //     spreadsheetId: process.env.stoken,
+    //     range: 'sheets!A51:B51',
+    //     valueInputOption: 'USER_ENTERED',
+    //     //resource: {values: aProvKey}
+    // };
+    //
+    // const valueRange = {
+    //     values: ['testing', '1']
+    // };
+    // let response = await gsapi.spreadsheets.values.update(updateOptions, valueRange);
 
     const params = {
         // The ID of the spreadsheet to update.
@@ -83,22 +83,23 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
 
     };
 
-    const request = gsapi.client.sheets.spreadsheets.values.batchUpdate(params, batchUpdateValuesRequestBody);
+    // removed sheets call
+    const request = await gsapi.client.spreadsheets.values.batchUpdate(params, batchUpdateValuesRequestBody);
 
-    const valueRange2 = {
-        values: ['testing']
-    };
-
-    var aProvLink = new Array(providedLink);
-    const updateOptions2 = {
-        spreadsheetId: process.env.stoken,
-        range: 'entries!B50:C50' ,
-        valueInputOption: 'USER_ENTERED',
-        // resource: providedLink.toString()
-        //resource: {values: aProvLink}
-    };
-
-    let response2 = await gsapi.spreadsheets.values.update(updateOptions2, valueRange2);
+    // const valueRange2 = {
+    //     values: ['testing']
+    // };
+    //
+    // var aProvLink = new Array(providedLink);
+    // const updateOptions2 = {
+    //     spreadsheetId: process.env.stoken,
+    //     range: 'entries!B50:C50' ,
+    //     valueInputOption: 'USER_ENTERED',
+    //     // resource: providedLink.toString()
+    //     //resource: {values: aProvLink}
+    // };
+    //
+    // let response2 = await gsapi.spreadsheets.values.update(updateOptions2, valueRange2);
 }
 
 
@@ -119,7 +120,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.0';
-var buildNumber = "360h";
+var buildNumber = "360i";
 var latestRelease = "Latest Release:\n" +
     "WIP: Add songs to google sheets" +
     "---3.5.0 introduced---\n" +
