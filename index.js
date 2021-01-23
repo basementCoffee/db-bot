@@ -61,21 +61,28 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
         spreadsheetId: process.env.stoken,
         range: "entries!A:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
-        values: aProvKey
+        //resource: {values: aProvKey}
     };
 
-    let response = await gsapi.spreadsheets.values.update(updateOptions);
+    const valueRange = {
+        values: ["testing"]
+    };
+    let response = await gsapi.spreadsheets.values.update(updateOptions, valueRange);
+
+    const valueRange2 = {
+        values: ["testing"]
+    };
 
     var aProvLink = new Array(providedLink);
     const updateOptions2 = {
         spreadsheetId: process.env.stoken,
         range: "entries!B:" + dataSize.toString(),
         valueInputOption: 'USER_ENTERED',
-        resource: providedLink.toString()
-        values: aProvLink
+        // resource: providedLink.toString()
+        //resource: {values: aProvLink}
     };
 
-    let response2 = await gsapi.spreadsheets.values.update(updateOptions2);
+    let response2 = await gsapi.spreadsheets.values.update(updateOptions2, valueRange2);
 }
 
 
@@ -96,7 +103,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.0';
-var buildNumber = "360b";
+var buildNumber = "360c";
 var latestRelease = "Latest Release:\n" +
     "WIP: Add songs to google sheets" +
     "---3.5.0 introduced---\n" +
