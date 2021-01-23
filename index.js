@@ -53,11 +53,11 @@ async function gsrun(cl) {
     }
 }
 
-function gsUpdate(cl) {
+function gsUpdateAdd(cl, key, link) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.append({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": "A50:B50",
+        "range": "A10:B10",
         "includeValuesInResponse": true,
         "insertDataOption": "INSERT_ROWS",
         "responseDateTimeRenderOption": "FORMATTED_STRING",
@@ -66,8 +66,8 @@ function gsUpdate(cl) {
         "resource": {
             "values": [
                 [
-                    "testing5",
-                    "testing6"
+                    key,
+                    link
                 ]
             ]
         }
@@ -144,10 +144,10 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.0';
-var buildNumber = "360o";
+var version = '3.6.1';
+var buildNumber = "361a";
 var latestRelease = "Latest Release:\n" +
-    "WIP: Add songs to google sheets" +
+    "- Add songs to google sheets (!a name, link)" +
     "---3.5.0 introduced---\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n";
@@ -457,12 +457,6 @@ bot.on('message', message => {
                 message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
                 break;
 
-            case "!tt" :
-                message.channel.send("Testing sheet add");
-                gsUpdate(client2);
-                // gsPushUpdate(client2, "testing1", "testing2");
-                break;
-
             // to run database songs
             case "!d":
                 if (!args[1]) {
@@ -676,7 +670,8 @@ bot.on('message', message => {
                         linkZ = linkZ.substring(0, linkZ.length - 1);
                     }
                     congratsDatabase.set(args[z], args[z + 1]);
-                    gsPushUpdate(client2, args[z], args[z + 1]);
+                    gsUpdateAdd(client2, args[z], args[z + 1]);
+                    // gsPushUpdate(client2, args[z], args[z + 1]);
                     z = z + 2;
                     songsAddedInt += 1;
                 }
