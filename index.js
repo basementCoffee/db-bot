@@ -144,11 +144,11 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.1';
-var buildNumber = "361a";
-var latestRelease = "Latest Release:\n" +
+var version = '3.6.2';
+var buildNumber = "362a";
+var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
-    "---3.5.0 introduced---\n" +
+    "---3.5.x introduced---\n" +
     "-added skip feature (ex: !skip)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n";
 var servers = {};
@@ -659,7 +659,7 @@ bot.on('message', message => {
             // add to the databse
             case "!a":
                 if (!args[1] || !args[2]) {
-                    message.channel.send("Could not add to the databse. Put a song key followed by a link.");
+                    message.channel.send("Could not add to the database. Put a song key followed by a link.");
                     break;
                 }
                 var songsAddedInt = 0;
@@ -676,10 +676,10 @@ bot.on('message', message => {
                     songsAddedInt += 1;
                 }
                 if (songsAddedInt === 1) {
-                    message.channel.send("Song successfully added to the TEMP database.");
+                    message.channel.send("Song successfully added to the database.");
                     break;
                 } else if (songsAddedInt > 1) {
-                    message.channel.send(songsAddedInt.toString() + " songs added to the temporary database.");
+                    message.channel.send(songsAddedInt.toString() + " songs added to the database.");
                 }
                 break;
 
