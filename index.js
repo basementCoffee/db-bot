@@ -49,6 +49,7 @@ async function gsrun(cl) {
         line = arrayOfSpreadsheetValues[i];
         keyT = line[0];
         valueT = line[1];
+        congratsDatabase.clear();
         congratsDatabase.set(keyT, valueT);
         referenceDatabase.set(keyT.toUpperCase(), valueT);
     }
@@ -183,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.7';
-var buildNumber = "367a";
+var version = '3.6.8';
+var buildNumber = "368";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -576,7 +577,7 @@ bot.on('message', message => {
                 break;
 
             case "!key" :
-                gsrun(client2)
+                gsrun(client2);
                 keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 s = "";
@@ -590,7 +591,7 @@ bot.on('message', message => {
                 message.channel.send(s);
                 break;
             case "!keys" :
-                gsrun(client2)
+                gsrun(client2);
                 keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 s = "";
