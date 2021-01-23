@@ -578,32 +578,36 @@ bot.on('message', message => {
                 break;
 
             case "!key" :
-                gsrun(client2);
-                keyArray = Array.from(congratsDatabase.keys());
-                keyArray.sort();
-                s = "";
-                for (let key in keyArray) {
-                    if (key == 0) {
-                        s = keyArray[key];
-                    } else {
-                        s = s + ", " + keyArray[key];
+                gsrun(client2).then(() => {
+                    keyArray = Array.from(congratsDatabase.keys());
+                    keyArray.sort();
+                    s = "";
+                    for (let key in keyArray) {
+                        if (key == 0) {
+                            s = keyArray[key];
+                        } else {
+                            s = s + ", " + keyArray[key];
+                        }
                     }
-                }
-                message.channel.send(s);
+                    message.channel.send(s);
+                    }
+                )
+
                 break;
             case "!keys" :
-                gsrun(client2);
-                keyArray = Array.from(congratsDatabase.keys());
-                keyArray.sort();
-                s = "";
-                for (let key in keyArray) {
-                    if (key == 0) {
-                        s = keyArray[key];
-                    } else {
-                        s = s + ", " + keyArray[key];
+                gsrun(client2).then(()=> {
+                    keyArray = Array.from(congratsDatabase.keys());
+                    keyArray.sort();
+                    s = "";
+                    for (let key in keyArray) {
+                        if (key == 0) {
+                            s = keyArray[key];
+                        } else {
+                            s = s + ", " + keyArray[key];
+                        }
                     }
-                }
-                message.channel.send(s);
+                    message.channel.send(s);
+                })
                 break;
             case "!k" :
                 //message.channel.send(args[1]);
