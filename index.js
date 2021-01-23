@@ -56,33 +56,49 @@ async function gsrun(cl) {
 async function gsPushUpdate(cl, providedKey, providedLink) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     dataSize += 1;
-    var aProvKey = new Array(providedKey);
-    const updateOptions = {
-        spreadsheetId: process.env.stoken,
-        range: "entries!A50:B50",
+    // var aProvKey = new Array(providedKey);
+    // const updateOptions = {
+    //     spreadsheetId: process.env.stoken,
+    //     range: "entries!A50:B50",
+    //     valueInputOption: 'USER_ENTERED',
+    //     //resource: {values: aProvKey}
+    // };
+    //
+    // const valueRange = {
+    //     values: ["testing", "1"]
+    // };
+    // let response = await gsapi.spreadsheets.values.update(updateOptions, valueRange);
+
+    const params = {
+        // The ID of the spreadsheet to update.
+        spreadsheetId: 'process.env.stoken',
+    };
+
+    const batchUpdateValuesRequestBody = {
+        // How the input data should be interpreted.
         valueInputOption: 'USER_ENTERED',
-        //resource: {values: aProvKey}
+
+        // The new values to apply to the spreadsheet.
+        data: ['testing', '1'],
+
     };
 
-    const valueRange = {
-        values: ["testing", "1"]
-    };
-    let response = await gsapi.spreadsheets.values.update(updateOptions, valueRange);
+    const request = gsapi.client.sheets.spreadsheets.values.batchUpdate(params, batchUpdateValuesRequestBody);
 
-    const valueRange2 = {
-        values: ["testing"]
-    };
-
-    var aProvLink = new Array(providedLink);
-    const updateOptions2 = {
-        spreadsheetId: process.env.stoken,
-        range: "entries!B50" ,
-        valueInputOption: 'USER_ENTERED',
-        // resource: providedLink.toString()
-        //resource: {values: aProvLink}
-    };
-
-    let response2 = await gsapi.spreadsheets.values.update(updateOptions2, valueRange2);
+    // const valueRange2 = {
+    //     values: ["testing"]
+    // };
+    //
+    // var aProvLink = new Array(providedLink);
+    // const updateOptions2 = {
+    //     spreadsheetId: process.env.stoken,
+    //     range: "entries!B50" ,
+    //     valueInputOption: 'USER_ENTERED',
+    //     // resource: providedLink.toString()
+    //     //resource: {values: aProvLink}
+    // };
+    //
+    // let response2 = await gsapi.spreadsheets.values.update(updateOptions2, valueRange2);
 }
 
 
@@ -103,7 +119,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.0';
-var buildNumber = "360f";
+var buildNumber = "360g";
 var latestRelease = "Latest Release:\n" +
     "WIP: Add songs to google sheets" +
     "---3.5.0 introduced---\n" +
