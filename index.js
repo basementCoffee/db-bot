@@ -185,8 +185,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.9';
-var buildNumber = "369a";
+var version = '3.6.10';
+var buildNumber = "3610a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -728,7 +728,7 @@ bot.on('message', message => {
                 }
                 break;
 
-            //removes databse entries
+            //removes database entries
             case "!rm":
                 var successInDelete = congratsDatabase.delete(args[1]);
                 if (successInDelete === true) {
