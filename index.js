@@ -185,8 +185,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.10';
-var buildNumber = "3610a";
+var version = '3.6.11';
+var buildNumber = "3611a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -389,6 +389,21 @@ function skipSong(message) {
     }
 }
 
+async function sendKeys() {
+    await gsrun(client2);
+    keyArray = Array.from(congratsDatabase.keys());
+    keyArray.sort();
+    s = "";
+    for (let key in keyArray) {
+        if (key == 0) {
+            s = keyArray[key];
+        } else {
+            s = s + ", " + keyArray[key];
+        }
+    }
+    message.channel.send(s);
+}
+
 // parses message, provides a response
 bot.on('message', message => {
     if (message.author.bot) return;
@@ -578,36 +593,22 @@ bot.on('message', message => {
                 break;
 
             case "!key" :
-                gsrun(client2).then(() => {
-                    keyArray = Array.from(congratsDatabase.keys());
-                    keyArray.sort();
-                    s = "";
-                    for (let key in keyArray) {
-                        if (key == 0) {
-                            s = keyArray[key];
-                        } else {
-                            s = s + ", " + keyArray[key];
-                        }
+                gsrun(client2);
+                keyArray = Array.from(congratsDatabase.keys());
+                keyArray.sort();
+                s = "";
+                for (let key in keyArray) {
+                    if (key == 0) {
+                        s = keyArray[key];
+                    } else {
+                        s = s + ", " + keyArray[key];
                     }
-                    message.channel.send(s);
-                    }
-                )
+                }
+                message.channel.send(s);
 
                 break;
             case "!keys" :
-                gsrun(client2).then(()=> {
-                    keyArray = Array.from(congratsDatabase.keys());
-                    keyArray.sort();
-                    s = "";
-                    for (let key in keyArray) {
-                        if (key == 0) {
-                            s = keyArray[key];
-                        } else {
-                            s = s + ", " + keyArray[key];
-                        }
-                    }
-                    message.channel.send(s);
-                })
+                sendKeys();
                 break;
             case "!k" :
                 //message.channel.send(args[1]);
