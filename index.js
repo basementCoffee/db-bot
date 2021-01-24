@@ -185,8 +185,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.11';
-var buildNumber = "3611d";
+var version = '3.6.12';
+var buildNumber = "3612a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -314,7 +314,7 @@ function playSong(message, whatsp, isMp3) {
             if (isMp3) {
                 let myStream = ytdl(whatsp, {
                     filter: "audioonly",
-                    opusEncoded: false,
+                    opusEncoded: true,
                     encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
                 });
                 let dispatcher = connection.play(myStream, {
@@ -763,7 +763,7 @@ function playRandom(message, numOfTimes) {
             //console.log("calling play method...");
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
-                opusEncoded: false,
+                opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
             });
             let dispatcher = connection.play(myStream, {
