@@ -54,7 +54,6 @@ async function gsrun(cl) {
             congratsDatabase.set(keyT, valueT);
             referenceDatabase.set(keyT.toUpperCase(), valueT);
         }
-    return new Promise(() => {})
 }
 
 function gsUpdateAdd(msg, cl, key, link) {
@@ -187,7 +186,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.11';
-var buildNumber = "3611c";
+var buildNumber = "3611d";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -390,21 +389,6 @@ function skipSong(message) {
     }
 }
 
-async function sendKeys(message) {
-    await gsrun(client2);
-    keyArray = Array.from(congratsDatabase.keys());
-    keyArray.sort();
-    s = "";
-    for (let key in keyArray) {
-        if (key == 0) {
-            s = keyArray[key];
-        } else {
-            s = s + ", " + keyArray[key];
-        }
-    }
-    message.channel.send(s);
-}
-
 // parses message, provides a response
 bot.on('message', message => {
     if (message.author.bot) return;
@@ -595,6 +579,10 @@ bot.on('message', message => {
 
             case "!key" :
                 gsrun(client2);
+                console.log('before');
+                setTimeout(function(){
+                    console.log('after');
+                },500);
                 keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 s = "";
@@ -609,7 +597,22 @@ bot.on('message', message => {
 
                 break;
             case "!keys" :
-                sendKeys(message);
+                gsrun(client2);
+                console.log('before');
+                setTimeout(function(){
+                    console.log('after');
+                },500);
+                keyArray = Array.from(congratsDatabase.keys());
+                keyArray.sort();
+                s = "";
+                for (let key in keyArray) {
+                    if (key == 0) {
+                        s = keyArray[key];
+                    } else {
+                        s = s + ", " + keyArray[key];
+                    }
+                }
+                message.channel.send(s);
                 break;
             case "!k" :
                 //message.channel.send(args[1]);
