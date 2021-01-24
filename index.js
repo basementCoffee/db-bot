@@ -171,8 +171,7 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
 
 //ABOVE IS GOOGLE API -----------------------------------------------
 const {
-    Client,
-    Attachment
+    Client
 } = require('discord.js');
 
 // initialization
@@ -185,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.12';
-var buildNumber = "3612b";
+var version = '3.6.13';
+var buildNumber = "3613";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -280,7 +279,6 @@ function playCongrats(connection, message) {
     try {
         let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
             filter: "audio",
-            fmt: "mp3",
             opusEncoded: true,
             
         });
@@ -315,7 +313,6 @@ function playSong(message, whatsp, isMp3) {
             if (isMp3) {
                 let myStream = ytdl(whatsp, {
                     filter: "audioonly",
-                    fmt: "mp3",
                     opusEncoded: true,
                     encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
                 });
@@ -426,9 +423,10 @@ bot.on('message', message => {
         if (args[0].substr(0,1) !== "!") {
             return;
         }
-        switch (args[0]) {
-            //!p is just the basic rythm bot
-            case '!p':
+        let statement = args[0].substr(1);
+        switch (statement) {
+            //!p is just the basic rhythm bot
+            case 'p':
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
                     return;
@@ -456,30 +454,30 @@ bot.on('message', message => {
 
                 break;
 
-            case '!pv':
-                if (!args[1]) {
-                    message.channel.send("Where's the link? I can't read your mind... unfortunately.");
-                    return;
-                }
-                if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
-                    message.channel.send("There's something wrong with what you put there.");
-                    return;
-                }
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
-                    queue: []
-                }
-
-                server = servers[message.guild.id];
-                server.queue.push(args[1]);
-                playSong(message, args[1], false);
-                break;
+            // case '!pv':
+            //     if (!args[1]) {
+            //         message.channel.send("Where's the link? I can't read your mind... unfortunately.");
+            //         return;
+            //     }
+            //     if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
+            //         message.channel.send("There's something wrong with what you put there.");
+            //         return;
+            //     }
+            //     if (!message.member.voice.channel) {
+            //         return;
+            //     }
+            //     if (!servers[message.guild.id]) servers[message.guild.id] = {
+            //         queue: []
+            //     }
+            //
+            //     server = servers[message.guild.id];
+            //     server.queue.push(args[1]);
+            //     playSong(message, args[1], false);
+            //     break;
 
 
             //!e is the Stop feature
-            case "!e" :
+            case "e" :
                 server = servers[message.guild.id];
                 while (server.queue.length > 0) {
                     server.queue.shift();
@@ -496,12 +494,12 @@ bot.on('message', message => {
                 break;
 
             // prints out the database size
-            case "!s" :
+            case "s" :
                 message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
                 break;
 
             // to run database songs
-            case "!d":
+            case "d":
                 if (!args[1]) {
                     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
                     return;
@@ -525,33 +523,33 @@ bot.on('message', message => {
                 playSong(message, whatsp, true);
                 break;
 
-            case "!dv":
-                if (!args[1]) {
-                    message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
-                    return;
-                }
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
-                    queue: []
-                }
-
-                server = servers[message.guild.id];
-                try {
-                    whatsp = referenceDatabase.get(args[1].toUpperCase());
-                } catch (e) {
-                    message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
-                    return;
-                }
-                //let dPhrase = args[1];
-                //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                playSong(message, whatsp, false);
-                break;
+            // case "dv":
+            //     if (!args[1]) {
+            //         message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+            //         return;
+            //     }
+            //     if (!message.member.voice.channel) {
+            //         return;
+            //     }
+            //     if (!servers[message.guild.id]) servers[message.guild.id] = {
+            //         queue: []
+            //     }
+            //
+            //     server = servers[message.guild.id];
+            //     try {
+            //         whatsp = referenceDatabase.get(args[1].toUpperCase());
+            //     } catch (e) {
+            //         message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
+            //         return;
+            //     }
+            //     //let dPhrase = args[1];
+            //     //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
+            //     playSong(message, whatsp, false);
+            //     break;
 
 
             //Randomizer
-            case "!r" :
+            case "r" :
                 if (!message.member.voice.channel) {
                     return;
                 }
@@ -579,7 +577,7 @@ bot.on('message', message => {
                 }
                 break;
 
-            case "!key" :
+            case "key" :
                 gsrun(client2);
                 console.log('before');
                 setTimeout(function(){
@@ -598,7 +596,7 @@ bot.on('message', message => {
                 message.channel.send(s);
 
                 break;
-            case "!keys" :
+            case "keys" :
                 gsrun(client2);
                 console.log('before');
                 setTimeout(function(){
@@ -616,7 +614,7 @@ bot.on('message', message => {
                 }
                 message.channel.send(s);
                 break;
-            case "!k" :
+            case "k" :
                 //message.channel.send(args[1]);
                 if (!args[1]) {
                     message.channel.send("No argument was given.");
@@ -645,7 +643,7 @@ bot.on('message', message => {
                 }
                 break;
             //What's Playing?
-            case "!?":
+            case "?":
                 if (args[1] === true) {
                     if (args[1] === "" || args[1] === " ") {
                         // intentionally left blank
@@ -671,7 +669,7 @@ bot.on('message', message => {
 
 
             // list commands for public commands
-            case "!h" :
+            case "h" :
                 message.channel.send(
                     "Things you could ask me:\n"
                     + "----------------------------------------------\n"
@@ -686,30 +684,30 @@ bot.on('message', message => {
                     + "!rm --> Removes a song from the database\n"
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
-            case "!skip" :
+            case "skip" :
 
                 skipSong(message);
 
                 break;
-            case "!sk" :
+            case "sk" :
 
                 skipSong(message);
 
                 break;
             // prints out the version number
-            case "!v" :
+            case "v" :
                 message.channel.send("version: " + version + "\n" + latestRelease);
                 break;
             // prints out the build number
-            case "!vv" :
+            case "vv" :
                 message.channel.send("build: " + buildNumber);
                 break;
-            case "!devadd" :
+            case "devadd" :
                 message.channel.send("Here's link to add to the database:\n" +
                     "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622")
                 break;
             // add to the databse
-            case "!a":
+            case "a":
                 if (!args[1] || !args[2]) {
                     message.channel.send("Could not add to the database. Put a song key followed by a link.");
                     break;
@@ -736,7 +734,7 @@ bot.on('message', message => {
                 break;
 
             //removes database entries
-            case "!rm":
+            case "rm":
                 var successInDelete = congratsDatabase.delete(args[1]);
                 if (successInDelete === true) {
                     message.channel.send("Song successfully removed from the database.");
@@ -765,7 +763,6 @@ function playRandom(message, numOfTimes) {
             //console.log("calling play method...");
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
-                fmt: "mp3",
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
             });
