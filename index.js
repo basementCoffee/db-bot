@@ -314,7 +314,7 @@ function playSong(message, whatsp, isMp3) {
             if (isMp3) {
                 let myStream = ytdl(whatsp, {
                     filter: "audioonly",
-                    opusEncoded: true,
+                    opusEncoded: false,
                     encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
                 });
                 let dispatcher = connection.play(myStream, {
@@ -501,7 +501,7 @@ bot.on('message', message => {
             // to run database songs
             case "!d":
                 if (!args[1]) {
-                    message.channel.send("N-NANI? There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+                    message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
                     return;
                 }
                 if (!message.member.voice.channel) {
@@ -525,7 +525,7 @@ bot.on('message', message => {
 
             case "!dv":
                 if (!args[1]) {
-                    message.channel.send("N-NANI? There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+                    message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
                     return;
                 }
                 if (!message.member.voice.channel) {
@@ -763,7 +763,7 @@ function playRandom(message, numOfTimes) {
             //console.log("calling play method...");
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
-                opusEncoded: true,
+                opusEncoded: false,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
             });
             let dispatcher = connection.play(myStream, {
