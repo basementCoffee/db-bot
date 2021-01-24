@@ -186,11 +186,11 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.12';
-var buildNumber = "3612a";
+var buildNumber = "3612b";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
-    "-added skip feature (ex: !skip)\n" +
+    "-added skip feature (ex: !skip / !sk)\n" +
     "-Counter for random queue (ex: !r 10 -> !?)\n";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
@@ -280,6 +280,7 @@ function playCongrats(connection, message) {
     try {
         let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
             filter: "audio",
+            fmt: "mp3",
             opusEncoded: true,
             
         });
@@ -314,6 +315,7 @@ function playSong(message, whatsp, isMp3) {
             if (isMp3) {
                 let myStream = ytdl(whatsp, {
                     filter: "audioonly",
+                    fmt: "mp3",
                     opusEncoded: true,
                     encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
                 });
@@ -679,7 +681,7 @@ bot.on('message', message => {
                     + "--- *Curated songs [Work in Progress]:* ---  \n"
                     + "!key --> All the artist song tags (separated by a comma) \n"
                     + "!d [key] --> Plays a song from the database \n"
-                    + "!k [phrase] --> finds keys with the same starting phrase"
+                    + "!k [phrase] --> search keys with the same starting phrase"
                     + "!a [song] [url] --> Adds a song to the database \n"
                     + "!rm --> Removes a song from the database\n"
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
@@ -763,6 +765,7 @@ function playRandom(message, numOfTimes) {
             //console.log("calling play method...");
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
+                fmt: "mp3",
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
             });
