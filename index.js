@@ -17,43 +17,44 @@ client2.authorize(function (err, tokens) {
 var dataSize;
 
 async function gsrun(cl) {
-    const gsapi = google.sheets({version: 'v4', auth: cl});
+        const gsapi = google.sheets({version: 'v4', auth: cl});
 
 
-    const spreadsheetSizeObjects = {
-        spreadsheetId: process.env.stoken,
-        range: 'entries!C2'
-    }
+        const spreadsheetSizeObjects = {
+            spreadsheetId: process.env.stoken,
+            range: 'entries!C2'
+        }
 
-    let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
-    dataSize = dataSizeFromSheets.data.values;
+        let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
+        dataSize = dataSizeFromSheets.data.values;
 
-    console.log("Data Size: " + dataSize);
+        console.log("Data Size: " + dataSize);
 
-    const songObjects = {
-        spreadsheetId: process.env.stoken,
-        range: "entries!A2:B" + dataSize.toString()
+        const songObjects = {
+            spreadsheetId: process.env.stoken,
+            range: "entries!A2:B" + dataSize.toString()
 
-    };
+        };
 
-    let dataSO = await gsapi.spreadsheets.values.get(songObjects);
-    var arrayOfSpreadsheetValues = dataSO.data.values;
-    //console.log(arrayOfSpreadsheetValues);
+        let dataSO = await gsapi.spreadsheets.values.get(songObjects);
+        var arrayOfSpreadsheetValues = dataSO.data.values;
+        //console.log(arrayOfSpreadsheetValues);
 
-    console.log("Database size: " + dataSize);
+        console.log("Database size: " + dataSize);
 
-    var line;
-    var keyT
-    var valueT;
-    congratsDatabase.clear();
-    referenceDatabase.clear();
-    for (let i = 0; i < dataSize; i++) {
-        line = arrayOfSpreadsheetValues[i];
-        keyT = line[0];
-        valueT = line[1];
-        congratsDatabase.set(keyT, valueT);
-        referenceDatabase.set(keyT.toUpperCase(), valueT);
-    }
+        var line;
+        var keyT
+        var valueT;
+        congratsDatabase.clear();
+        referenceDatabase.clear();
+        for (let i = 0; i < dataSize; i++) {
+            line = arrayOfSpreadsheetValues[i];
+            keyT = line[0];
+            valueT = line[1];
+            congratsDatabase.set(keyT, valueT);
+            referenceDatabase.set(keyT.toUpperCase(), valueT);
+        }
+    return new Promise(() => {})
 }
 
 function gsUpdateAdd(msg, cl, key, link) {
@@ -186,7 +187,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.11';
-var buildNumber = "3611b";
+var buildNumber = "3611c";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
