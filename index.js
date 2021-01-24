@@ -186,7 +186,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.11';
-var buildNumber = "3611a";
+var buildNumber = "3611b";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -389,7 +389,7 @@ function skipSong(message) {
     }
 }
 
-async function sendKeys() {
+async function sendKeys(message) {
     await gsrun(client2);
     keyArray = Array.from(congratsDatabase.keys());
     keyArray.sort();
@@ -608,7 +608,7 @@ bot.on('message', message => {
 
                 break;
             case "!keys" :
-                sendKeys();
+                sendKeys(message);
                 break;
             case "!k" :
                 //message.channel.send(args[1]);
