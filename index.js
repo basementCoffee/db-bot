@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.13';
-var buildNumber = "3613";
+var version = '3.6.14';
+var buildNumber = "3614";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -598,10 +598,9 @@ bot.on('message', message => {
                 if (args[1]){
                     const numToCheck = parseInt(args[1]);
                     let randomInt2 = Math.floor(Math.random() * numToCheck);
-                    console.log(randomInt2);
+                    message.channel.send(randomInt2);
                 } else {
-                    console.log("You need to input a upper limit");
-
+                    message.channel.send("You need to input a upper limit");
                 }
             break;
                 break;
