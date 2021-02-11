@@ -594,7 +594,16 @@ bot.on('message', message => {
                     }
                 }
                 message.channel.send(s);
+            case "rand" :
+                if (args[1]){
+                    const numToCheck = parseInt(args[1]);
+                    let randomInt2 = Math.floor(Math.random() * numToCheck);
+                    console.log(randomInt2);
+                } else {
+                    console.log("You need to input a upper limit");
 
+                }
+            break;
                 break;
             case "keys" :
                 gsrun(client2);
