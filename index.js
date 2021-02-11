@@ -597,15 +597,15 @@ bot.on('message', message => {
             case "rand" :
                 if (args[1]){
                     const numToCheck = parseInt(args[1]);
-                    let randomInt2 = Math.floor(Math.random() * numToCheck);
+                    let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
                     message.channel.send(randomInt2);
                 } else {
                     const numToCheck = message.member.voice.channel.members.size;
                     if (numToCheck == 0) {
                         message.channel.send("Upper limit required.");
                     }
-                    let randomInt2 = Math.floor(Math.random() * numToCheck);
-                    message.channel.send("Assuming " + numToCheck + "people. Your number is " + randomInt2);
+                    let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
+                    message.channel.send("Assuming " + numToCheck + " people. Your number is " + randomInt2);
                     // message.channel.send("You need to input a upper limit");
                 }
             break;
