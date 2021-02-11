@@ -253,20 +253,20 @@ bot.on('message', msg => {
 })
 
 
-//Who's down greeting
-bot.on('message', msg => {
-    if (msg.content.includes("who's down")) {
-        var randomIntForDown = Math.floor(Math.random() * 6);
-        if (randomIntForDown === 4) {
-            var randomIntForDown2 = Math.floor(Math.random() * 2);
-            if (randomIntForDown2 === 0) {
-                msg.reply("I would be down to play some game but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
-            } else {
-                msg.reply("You are a one player army... good luck!")
-            }
-        }
-    }
-})
+// //Who's down greeting
+// bot.on('message', msg => {
+//     if (msg.content.includes("who's down")) {
+//         var randomIntForDown = Math.floor(Math.random() * 6);
+//         if (randomIntForDown === 4) {
+//             var randomIntForDown2 = Math.floor(Math.random() * 2);
+//             if (randomIntForDown2 === 0) {
+//                 msg.reply("I would be down to play some game but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
+//             } else {
+//                 msg.reply("You are a one player army... good luck!")
+//             }
+//         }
+//     }
+// })
 
 
 // the entire reason we built this bot
@@ -595,6 +595,7 @@ bot.on('message', message => {
                     }
                 }
                 message.channel.send(s);
+                break;
             case "rand" :
                 if (args[1]){
                     const numToCheck = parseInt(args[1]);
