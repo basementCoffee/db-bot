@@ -600,10 +600,12 @@ bot.on('message', message => {
                     let randomInt2 = Math.floor(Math.random() * numToCheck);
                     message.channel.send(randomInt2);
                 } else {
-                    message.channel.send("You need to input a upper limit");
+                    const numToCheck = message.member.voice.channel.members.size();
+                    let randomInt2 = Math.floor(Math.random() * numToCheck);
+                    message.channel.send("Assuming " + numToCheck + "people. Your number is " + randomInt2);
+                    // message.channel.send("You need to input a upper limit");
                 }
             break;
-                break;
             case "keys" :
                 gsrun(client2);
                 console.log('before');
