@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.14';
-var buildNumber = "3614";
+var version = '3.6.15';
+var buildNumber = "3615";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -600,7 +600,10 @@ bot.on('message', message => {
                     let randomInt2 = Math.floor(Math.random() * numToCheck);
                     message.channel.send(randomInt2);
                 } else {
-                    const numToCheck = message.member.voice.channel.members.size();
+                    const numToCheck = message.member.voice.channel.members.size;
+                    if (numToCheck == 0) {
+                        message.channel.send("Upper limit required.");
+                    }
                     let randomInt2 = Math.floor(Math.random() * numToCheck);
                     message.channel.send("Assuming " + numToCheck + "people. Your number is " + randomInt2);
                     // message.channel.send("You need to input a upper limit");
