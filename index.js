@@ -597,6 +597,9 @@ bot.on('message', message => {
             case "rand" :
                 if (args[1]){
                     const numToCheck = parseInt(args[1]);
+                    if (numToCheck < 1){
+                        message.channel.send("Number has to be positive.");
+                    }
                     let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
                     message.channel.send(randomInt2);
                 } else {
