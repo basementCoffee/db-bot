@@ -288,7 +288,7 @@ job.start();
 // This runs every day at 10:30:00, you can do anything you want
 // let channel = yourGuild.channels.get('id');
 //    channel.send('You message');
-});
+//});
     
 // When you want to start it, use:
 //job.start(playCongrats);
