@@ -272,12 +272,18 @@ bot.on('message', msg => {
 var CronJob = require('cron').CronJob;
 
 console.log('Before job instantiation');
-const job = new CronJob('0 */05 * * * *', function() {
+const job = new CronJob('0 */04 * * * *', 
+                        function() {
+                            playCongrats(connection, message);
+                        },
+                        null, 
+                        true,
+                        'America/New_York'
+                    );   
 	const d = new Date();
 	console.log('Every Tenth Minute:', d);
-    playCongrats(connection, message);
+    
 
-});
 console.log('After job instantiation');
 job.start();
 
