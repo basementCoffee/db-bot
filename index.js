@@ -269,7 +269,7 @@ bot.on('message', msg => {
 // })
 
 
-const CronJob = require('../lib/cron.js').CronJob;
+var CronJob = require('cron').CronJob;
 
 console.log('Before job instantiation');
 const job = new CronJob('0 */05 * * * *', function() {
