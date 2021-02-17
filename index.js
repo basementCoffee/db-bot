@@ -420,7 +420,8 @@ bot.on('message', message => {
     } else {
         var args = message.content.split(" ");
         console.log(args);
-        if (args[0].substr(0,1) !== "!") {
+        const prefix = args[0].substr(0,1);  
+        if (prefix !== "!" && prefix !== "~") {
             return;
         }
         let statement = args[0].substr(1);
