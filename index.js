@@ -280,7 +280,7 @@ let scheduledMessage = new cron.CronJob('00 30 20 * * *', () => {
 });
     
 // When you want to start it, use:
-scheduledMessage.start(playHappy(connection, message));
+cron.job.start(playHappy(connection, message));
 // You could also make a command to pause and resume the job
 
 
