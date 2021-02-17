@@ -269,17 +269,7 @@ bot.on('message', msg => {
 // })
 
 
-var CronJob = require('cron').CronJob;
 
-console.log('Before job instantiation');
-const job = new CronJob('0 */05 * * * *', function() {
-	const d = new Date();
-	console.log('Every Tenth Minute:', d);
-    playCongrats(connection, message);
-
-});
-console.log('After job instantiation');
-job.start();
 
 
 //client.on('message', ...); // You don't need to add anything to the message event listener
