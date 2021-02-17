@@ -273,7 +273,7 @@ const cron = require('cron');
 
 //client.on('message', ...); // You don't need to add anything to the message event listener
     
-let scheduledMessage = new cron.CronJob('00 15 20 * * *', () => {
+let scheduledMessage = new cron.CronJob('00 30 20 * * *', () => {
 // This runs every day at 10:30:00, you can do anything you want
 // let channel = yourGuild.channels.get('id');
 //    channel.send('You message');
