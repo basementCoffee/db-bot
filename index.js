@@ -273,14 +273,14 @@ const cron = require('cron');
 
 //client.on('message', ...); // You don't need to add anything to the message event listener
     
-let scheduledMessage = new cron.CronJob('00 30 20 * * *', () => {
+let scheduledMessage = new cron.CronJob('00 37 20 * * *', () => {
 // This runs every day at 10:30:00, you can do anything you want
 // let channel = yourGuild.channels.get('id');
 //    channel.send('You message');
 });
     
 // When you want to start it, use:
-cron.job.start(playHappy(connection, message));
+cron.job.start(playCongrats(connection, message));
 // You could also make a command to pause and resume the job
 
 
@@ -292,32 +292,6 @@ function contentsContainCongrats(message) {
 }
 
 function playCongrats(connection, message) {
-    var server = servers[message.guild.id];
-    try {
-        let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
-            filter: "audio",
-            opusEncoded: true,
-            
-        });
-        let dispatcher = connection.play(myStream, {
-            type: "opus"
-        })
-            .on("finish", () => {
-                connection.disconnect();
-            })
-        // server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
-        //     filter: "audioonly",
-        //     opusEncoded:true,
-        //     encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-        // }));
-
-    } catch (e) {
-        printErrorToChannel("congrats", "congratulations", e);
-    }
-
-}
-
-function playHappy(connection, message) {
     var server = servers[message.guild.id];
     try {
         let myStream = ytdl('https://www.youtube.com/watch?v=sPtc6P9xvbg', {
@@ -342,6 +316,8 @@ function playHappy(connection, message) {
     }
 
 }
+
+
 
 var keyArray;
 var s;
