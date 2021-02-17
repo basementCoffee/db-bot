@@ -320,7 +320,7 @@ function playCongrats(connection, message) {
 function playHappy(connection, message) {
     var server = servers[message.guild.id];
     try {
-        let myStream = ytdl('https://www.youtube.com/watch?v=_Yrpd4l1N9E&t=12s', {
+        let myStream = ytdl('https://www.youtube.com/watch?v=sPtc6P9xvbg', {
             filter: "audio",
             opusEncoded: true,
             
