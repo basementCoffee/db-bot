@@ -269,11 +269,22 @@ bot.on('message', msg => {
 // })
 
 
-const cron = require('cron');
+const CronJob = require('../lib/cron.js').CronJob;
+
+console.log('Before job instantiation');
+const job = new CronJob('0 */05 * * * *', function() {
+	const d = new Date();
+	console.log('Every Tenth Minute:', d);
+    playCongrats(connection, message);
+
+});
+console.log('After job instantiation');
+job.start();
+
 
 //client.on('message', ...); // You don't need to add anything to the message event listener
     
-let scheduledMessage = new cron.CronJob('00 42 20 * * *', () => {
+//let scheduledMessage = new cron.CronJob('00 51 20 * * *', () => {
 // This runs every day at 10:30:00, you can do anything you want
 // let channel = yourGuild.channels.get('id');
 //    channel.send('You message');
