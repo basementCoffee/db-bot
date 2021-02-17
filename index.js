@@ -269,6 +269,23 @@ bot.on('message', msg => {
 // })
 
 
+const cron = require('cron');
+
+//client.on('message', ...); // You don't need to add anything to the message event listener
+    
+let scheduledMessage = new cron.CronJob('00 15 20 * * *', () => {
+// This runs every day at 10:30:00, you can do anything you want
+// let channel = yourGuild.channels.get('id');
+//    channel.send('You message');
+});
+    
+// When you want to start it, use:
+scheduledMessage.start(playCongrats(connection, message));
+// You could also make a command to pause and resume the job
+
+
+
+
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
     return message.content.includes("grats") || message.content.includes("gratz") || message.content.includes("ongratulations");
@@ -278,6 +295,32 @@ function playCongrats(connection, message) {
     var server = servers[message.guild.id];
     try {
         let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
+            filter: "audio",
+            opusEncoded: true,
+            
+        });
+        let dispatcher = connection.play(myStream, {
+            type: "opus"
+        })
+            .on("finish", () => {
+                connection.disconnect();
+            })
+        // server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
+        //     filter: "audioonly",
+        //     opusEncoded:true,
+        //     encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+        // }));
+
+    } catch (e) {
+        printErrorToChannel("congrats", "congratulations", e);
+    }
+
+}
+
+function playHappy(connection, message) {
+    var server = servers[message.guild.id];
+    try {
+        let myStream = ytdl('https://www.youtube.com/watch?v=_Yrpd4l1N9E&t=12s', {
             filter: "audio",
             opusEncoded: true,
             
@@ -839,6 +882,7 @@ function printErrorToChannel(activationType, songKey, e) {
     //function printErrorToChannel() {
     //    bot.channels.cache.get("730239813403410619").send("There was an error!");
     //}
+
 
 
 var congratsDatabase = new Map();
