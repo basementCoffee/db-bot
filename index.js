@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.15';
-var buildNumber = "3615k";
+var buildNumber = "3615l";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -308,12 +308,15 @@ var currentRandomInt = 0; // current random song index
 var firstSong = true;
 function playSong(message, whatsp, isMp3) {
     let server = servers[message.guild.id];
+    let whatToPlay = whatsp;
+    if (whatToPlay == undefined) {
+        return;
+    }
     //console.log("server queue: " + server.queue);
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
-                console.log("HERE IS THE LINK whatsp: " + whatsp);
-                let myStream = ytdl(whatsp, {
+                let myStream = ytdl(whatToPlay, {
                     filter: "audioonly",
                     opusEncoded: true,
                     encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
@@ -599,6 +602,7 @@ bot.on('message', message => {
                     }
                 }
                 message.channel.send(s);
+                break;
             case "rand" :
                 if (args[1]){
                     const numToCheck = parseInt(args[1]);
