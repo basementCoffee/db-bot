@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.19';
-var buildNumber = "3619";
+var buildNumber = "3619c";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -373,16 +373,17 @@ bot.on('message', message => {
                 }
                 console.log("b2");
                 enumPlayingFunction = "playing";
-                let serverP = servers[message.guild.id];
-                serverP.queue.push(args[1]);
+                // let serverP = servers[message.guild.id];
+                // serverP.queue.push(args[1]);
+
                 //server.queue.push(args[1]);
                 //console.log("server queue: "+ serverP.queue);
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
-                if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
+                // if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
                     console.log("playing " + args[1]);
                     playRandoms(message, 1, args[1]);
-                }
+                // }
                 break;
 
             // case '!pv':
@@ -768,7 +769,6 @@ function playRandoms(message, numOfTimes, whatToPlay) {
     whatspMap[message.member.voice.channel] = whatToPlayS;
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
-            //console.log("calling play method...");
             let myStream = ytdl(whatToPlayS, {
                 filter: "audioonly",
                 opusEncoded: true,
