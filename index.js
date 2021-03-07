@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.4';
-var buildNumber = "3704b";
+var buildNumber = "3704c";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -212,23 +212,10 @@ bot.on('message', msg => {
     } else if (msg.content.toUpperCase().includes("HELLO")) {
         let randomInt = Math.floor(Math.random() * 4);
         // section 1
-        if (randomInt === 5) {
-            let randomInt2 = Math.floor(Math.random() * 3);
-            // valorant responses
-            if (randomInt2 === 0) {
-                msg.reply("Sup, who's up for some Valorant?");
-            } else if (randomInt2 === 1) {
-                msg.reply("Hello my fellow Valorant gamer");
-            } else {
-                msg.reply("Hey, just busy trying out this game called Valorant... it's not half bad");
-            }
-            // end valorant responses
-
-            // section 2
-        } else if (randomInt === 1) {
+        if (randomInt === 1) {
             let randomInt3 = Math.floor(Math.random() * 4);
             if (randomInt3 === 0) {
-                msg.reply("Howdy-.. I mean BKAWHH");
+                msg.reply("Howdy-.. I mean bkawhh");
             } else if (randomInt3 === 1) {
                 msg.reply("Quak quack (translation: sup my dude)");
             } else if (randomInt3 === 2) {
