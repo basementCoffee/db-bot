@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.4';
-var buildNumber = "3704d";
+var buildNumber = "3704e";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -632,11 +632,11 @@ bot.on('message', message => {
                     + prefixString
                     + "p [youtube link]  -->  Plays YouTube video\n"
                     + prefixString
-                    + "?  -->  Tells you what's playing \n"
+                    + "?  -->  What's playing\n"
                     + prefixString
-                    + "sk  -->  Skips the current item in queue \n"
+                    + "sk  -->  Skip the current song\n"
                     + prefixString
-                    + "e  -->  Stops playing and clears queue \n"
+                    + "e  -->  Stops playing and clears queue\n"
                     + prefixString
                     + "changeprefix  -->  changes the prefix for all commands \n"
                     + "\n--------  Curated songs [Work in Progress] --------  \n"
