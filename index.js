@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.3';
-var buildNumber = "3703b";
+var buildNumber = "3703c";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -375,10 +375,13 @@ bot.on('message', message => {
                 }
                 console.log("b2");
                 enumPlayingFunction = "playing";
-                if (servers[message.guild.id] && servers[message.guild.id].queue > 0){
-                    servers[message.guild.id].queue.push(args[1]);
-                } else {
+                // push to queue
+                servers[message.guild.id].queue.push(args[1]);
+                // if queue has only 1 song then play
+                if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
                     playSongToVC(message, args[1]);
+                } else {
+                    message.channel.send("Added to queue.");
                 }
                     
                 break;
@@ -455,10 +458,13 @@ bot.on('message', message => {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
                 }
-                if (servers[message.guild.id] && servers[message.guild.id].queue.length > 0){
-                    servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                } else {
+                // push to queue
+                servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                // if queue has only 1 song then play
+                if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
                     playSongToVC(message, referenceDatabase.get(args[1].toUpperCase()));
+                } else {
+                    message.channel.send("Added to queue.");
                 }
                 break;
 
