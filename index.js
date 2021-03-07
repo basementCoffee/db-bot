@@ -49,6 +49,9 @@ async function gsrun(cl) {
         referenceDatabase.clear();
         for (let i = 0; i < dataSize; i++) {
             line = arrayOfSpreadsheetValues[i];
+            if (!line) {
+                continue;
+            }
             keyT = line[0];
             valueT = line[1];
             congratsDatabase.set(keyT, valueT);
