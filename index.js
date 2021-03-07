@@ -629,24 +629,24 @@ bot.on('message', message => {
                 message.channel.send(
                     "Things you could ask me:\n"
                     + "----------------------------------------------\n"
-                    + prefixString 
-                    + "p [youtube link] --> Plays YouTube video\n "
-                    + prefixString 
-                    + "e --> Stops playing \n "
-                    + prefixString 
+                    + prefixString
+                    + "p [youtube link] --> Plays YouTube video\n"
+                    + prefixString
+                    + "e --> Stops playing \n"
+                    + prefixString
                     + "? --> Tells you what's playing \n"
-                    + prefixString 
+                    + prefixString
                     + "changeprefix --> changes the prefix for all commands \n"
                     + "--- *Curated songs [Work in Progress]:* ---  \n"
-                    + prefixString 
+                    + prefixString
                     + "key --> All the artist song tags (separated by a comma) \n"
-                    + prefixString 
+                    + prefixString
                     + "d [key] --> Plays a song from the database \n"
-                    + prefixString 
+                    + prefixString
                     + "k [phrase] --> search keys with the same starting phrase"
-                    + prefixString 
+                    + prefixString
                     + "a [song] [url] --> Adds a song to the database \n"
-                    + prefixString 
+                    + prefixString
                     + "rm --> Removes a song from the database\n"
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
