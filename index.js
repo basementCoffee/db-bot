@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.17';
-var buildNumber = "3617b";
+var buildNumber = "3617d";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -523,7 +523,7 @@ bot.on('message', message => {
             //!e is the Stop feature
             case "e" :
                 server = servers[message.guild.id];
-                while (server.queue && server.queue.length > 0) {
+                while (server && server.queue && server.queue.length > 0) {
                     server.queue.shift();
                     //console.log(server.queue.length);
                 }
