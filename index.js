@@ -373,8 +373,8 @@ function skipSong(message) {
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
-            whatsp = "";
-            whatspMap[message.member.voice.channel] = "";
+            whatsp = "Last Played:\n" + whatsp;
+            whatspMap[message.member.voice.channel] = whatsp;
         } else {
             playRandom(message, totalRandomInt);
         }
@@ -393,8 +393,8 @@ function skipSong(message) {
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
-            whatsp = "";
-            whatspMap[message.member.voice.channel] = "";
+            whatsp = "Last Played:\n" + whatsp;
+            whatspMap[message.member.voice.channel] = whatsp;
         }
 
     }
@@ -469,7 +469,7 @@ bot.on('message', message => {
                 }
                 break;
 
-                case 'pp': // play with playSongs
+                case 'pt': // play test with playSongs
                 console.log("b1");
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
@@ -534,8 +534,8 @@ bot.on('message', message => {
                     //server.dispatcher = connection.disconnect();
                     connection.disconnect();
                 })
-                whatsp = "";
-                whatspMap[message.member.voice.channel] = "";
+                whatsp = "Last Played:\n" + whatsp;
+                whatspMap[message.member.voice.channel] = whatsp;
                 break;
 
             // prints out the database size
