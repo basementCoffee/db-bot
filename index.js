@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.16';
-var buildNumber = "3616a";
+var buildNumber = "3616b";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -382,7 +382,7 @@ function skipSong(message) {
                 server.queue.shift();
             }
             whatsp = server.queue.shift();
-            whatspMap[message.member.voice.channel] = server.queue.shift();
+            whatspMap[message.member.voice.channel] = whatsp;
             firstSong = false;
             playSong(message, whatsp, true);
         } else {
@@ -534,7 +534,7 @@ bot.on('message', message => {
                 }
                 let dPhrase = args[1];
                 //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                playSong(message, whatspMap[message.member.voice.channel], true);
+                //playSong(message, whatspMap[message.member.voice.channel], true);
                 playRandoms(message, 1, args[1]);
                 break;
 
@@ -794,7 +794,7 @@ function playRandom(message, numOfTimes) {
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             //console.log("calling play method...");
-            let myStream = ytdl(whatspMap[message.member.voice.channel], {
+            let myStream = ytdl(whatsp, {
                 filter: "audioonly",
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
@@ -840,10 +840,11 @@ function playRandoms(message, numOfTimes, whatToPlay) {
     enumPlayingFunction = "random";
     var numOfRetries = 0;
     server = servers[message.guild.id];
-    let whatToPlayS = whatToPlay.toString();
+    let whatToPlayS = "";
+    whatToPlayS = whatToPlay.toString();
     //console.log("attempting to play key:" + rk);
     whatsp = whatToPlayS;
-    whatspMap[message.member.voice.channel] = whatsp;
+    whatspMap[message.member.voice.channel] = whatToPlayS;
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
