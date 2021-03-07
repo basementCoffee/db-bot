@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.6';
-var buildNumber = "3706b";
+var buildNumber = "3706c";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -262,7 +262,6 @@ function contentsContainCongrats(message) {
 
 var keyArray;
 var s;
-var firstSong = true;
 
 function skipSong(message) {
     if (enumPlayingFunction === "random") {
@@ -286,7 +285,7 @@ function skipSong(message) {
             whatspMap[message.member.voice.channel] = servers[message.guild.id].queue[0];
             playSongToVC(message, whatspMap[message.member.voice.channel]);
         }
-     } else {
+      else {
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
@@ -294,6 +293,7 @@ function skipSong(message) {
                 whatspMap[message.member.voice.channel] = "Last Played:\n" + whatspMap[message.member.voice.channel];
             }
         }
+    }
 
     }
 }
@@ -431,7 +431,7 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-
+                enumPlayingFunction = "playing";
                 server = servers[message.guild.id];
 
                 // no need to update what's playing on command call (should be inside play function)
