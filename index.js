@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.4';
-var buildNumber = "3704a";
+var buildNumber = "3704b";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -640,16 +640,25 @@ bot.on('message', message => {
                 message.channel.send(
                     "Things you could ask me:\n"
                     + "----------------------------------------------\n"
-                    + "!p [youtube link] --> Plays YouTube video\n "
-                    + "!e --> Stops playing \n "
-                    + "!? --> Tells you what's playing \n"
-                    + "!changeprefix --> changes the prefix for all commands \n"
+                    + prefix[message.member.voice.channel] +
+                    + "p [youtube link] --> Plays YouTube video\n "
+                    + prefix[message.member.voice.channel] +
+                    + "e --> Stops playing \n "
+                    + prefix[message.member.voice.channel] +
+                    + "? --> Tells you what's playing \n"
+                    + prefix[message.member.voice.channel] +
+                    + "changeprefix --> changes the prefix for all commands \n"
                     + "--- *Curated songs [Work in Progress]:* ---  \n"
-                    + "!key --> All the artist song tags (separated by a comma) \n"
-                    + "!d [key] --> Plays a song from the database \n"
-                    + "!k [phrase] --> search keys with the same starting phrase"
-                    + "!a [song] [url] --> Adds a song to the database \n"
-                    + "!rm --> Removes a song from the database\n"
+                    + prefix[message.member.voice.channel] +
+                    + "key --> All the artist song tags (separated by a comma) \n"
+                    + prefix[message.member.voice.channel] +
+                    + "d [key] --> Plays a song from the database \n"
+                    + prefix[message.member.voice.channel] +
+                    + "k [phrase] --> search keys with the same starting phrase"
+                    + prefix[message.member.voice.channel] +
+                    + "a [song] [url] --> Adds a song to the database \n"
+                    + prefix[message.member.voice.channel] +
+                    + "rm --> Removes a song from the database\n"
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
             case "skip" :
