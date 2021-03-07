@@ -413,12 +413,11 @@ bot.on('message', message => {
                 if (!message.member || !message.member.voice || !message.member.voice.channel) {
                     return;
                 }
-                // not as efficient as below
-                // while (server && server.queue && server.queue.length > 0) {
-                //     server.queue.shift();
-                //     //console.log(server.queue.length);
-                // }
 
+
+                while (servers[message.guild.id] && servers[message.guild.id].queue.length > 0) {
+                    server.queue.shift();
+                }
                 // should do same as above
                 servers[message.guild.id].queue = [];
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
@@ -448,6 +447,7 @@ bot.on('message', message => {
                 }
 
                 server = servers[message.guild.id];
+
                 // no need to update what's playing on command call (should be inside play function)
                 // try {
                 //     whatsp = referenceDatabase.get(args[1].toUpperCase());
