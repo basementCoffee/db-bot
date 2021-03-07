@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.15';
-var buildNumber = "3615o";
+var version = '3.6.16';
+var buildNumber = "3616a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -331,6 +331,7 @@ function playSong(message, whatsp, isMp3) {
                                 firstSong = false;
                             }
                             whatsp = server.queue.shift();
+                            whatspMap[message.member.voice.channel] = whatsp;
                             playSong(message, whatsp , true);
                         } else {
                             connection.disconnect();
@@ -354,7 +355,7 @@ function playSong(message, whatsp, isMp3) {
         } catch (e) {
             //console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
             console.log(e);
-            printErrorToChannel("'play method'", whatsp + " - probably a broken link?", e);
+            printErrorToChannel("'play method'", whatspMap[message.member.voice.channel] = + " - probably a broken link?", e);
             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
             connection.disconnect();
         }
@@ -370,6 +371,7 @@ function skipSong(message) {
                 connection.disconnect();
             })
             whatsp = "";
+            whatspMap[message.member.voice.channel] = "";
         } else {
             playRandom(message, totalRandomInt);
         }
@@ -380,6 +382,7 @@ function skipSong(message) {
                 server.queue.shift();
             }
             whatsp = server.queue.shift();
+            whatspMap[message.member.voice.channel] = server.queue.shift();
             firstSong = false;
             playSong(message, whatsp, true);
         } else {
@@ -388,6 +391,7 @@ function skipSong(message) {
                 connection.disconnect();
             })
             whatsp = "";
+            whatspMap[message.member.voice.channel] = "";
         }
 
     }
@@ -499,6 +503,7 @@ bot.on('message', message => {
                     connection.disconnect();
                 })
                 whatsp = "";
+                whatspMap[message.member.voice.channel] = "";
                 break;
 
             // prints out the database size
@@ -522,13 +527,14 @@ bot.on('message', message => {
                 server = servers[message.guild.id];
                 try {
                     whatsp = referenceDatabase.get(args[1].toUpperCase());
+                    whatspMap[message.member.voice.channel] = whatsp;
                 } catch (e) {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
                 }
                 let dPhrase = args[1];
                 //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                playSong(message, whatsp, true);
+                playSong(message, whatspMap[message.member.voice.channel], true);
                 playRandoms(message, 1, args[1]);
                 break;
 
@@ -682,11 +688,11 @@ bot.on('message', message => {
                         break;
                     }
                 }
-                if (whatsp !== "") {
+                if (whatspMap[message.member.voice.channel] !== "") {
                     if (totalRandomInt !== 0) {
-                        message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatsp);
+                        message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatspMap[message.member.voice.channel]);
                     } else {
-                        message.channel.send(whatsp);
+                        message.channel.send(whatspMap[message.member.voice.channel]);
                     }
                 } else {
                     message.channel.send("Nothing is playing right now");
@@ -783,11 +789,12 @@ function playRandom(message, numOfTimes) {
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
+    whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             //console.log("calling play method...");
-            let myStream = ytdl(whatsp, {
+            let myStream = ytdl(whatspMap[message.member.voice.channel], {
                 filter: "audioonly",
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
@@ -833,13 +840,10 @@ function playRandoms(message, numOfTimes, whatToPlay) {
     enumPlayingFunction = "random";
     var numOfRetries = 0;
     server = servers[message.guild.id];
-    let rKeyArray = Array.from(congratsDatabase.keys());
-    numOfRetries += 1;
-    let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
-    let rk = rKeyArray[rn];
     let whatToPlayS = whatToPlay.toString();
     //console.log("attempting to play key:" + rk);
-    whatsp = congratsDatabase.get(rk);
+    whatsp = whatToPlayS;
+    whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
@@ -854,13 +858,9 @@ function playRandoms(message, numOfTimes, whatToPlay) {
             })
                 .on("finish", () => {
                     numOfTimes -= 1;
-                    if (numOfTimes === 0) {
                         totalRandomInt = 0;
                         currentRandomInt = 0;
                         connection.disconnect();
-                    } else {
-                        playRandom(message, numOfTimes)
-                    }
 
                 })
         } catch (e) {
@@ -904,6 +904,6 @@ function printErrorToChannel(activationType, songKey, e) {
     //    bot.channels.cache.get("730239813403410619").send("There was an error!");
     //}
 
-
+var whatspMap = new Map();
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
