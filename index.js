@@ -423,6 +423,9 @@ bot.on('message', message => {
                 totalRandomInt = 0;
                 currentRandomInt = 0;
                 firstSong = true;
+                if (!message.member || !message.member.voice || !message.member.voice.channel) {
+                    return;
+                }
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                     //server.dispatcher = connection.disconnect();
                     connection.disconnect();
