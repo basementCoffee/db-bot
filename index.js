@@ -457,9 +457,9 @@ bot.on('message', message => {
                 //console.log("b2: " + servers[message.guild.id]);
                 if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
                     console.log("playing " + args[1]);
-                    playSong(message, args[1], true);
+                    // playSong(message, args[1], true);
+                    playRandoms(message, 1, args[1]);
                 }
-
                 break;
 
             // case '!pv':
@@ -529,6 +529,7 @@ bot.on('message', message => {
                 let dPhrase = args[1];
                 //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
                 playSong(message, whatsp, true);
+                playRandoms(message, 1, args[1]);
                 break;
 
             // case "dv":
@@ -772,6 +773,62 @@ bot.on('message', message => {
 })
 var enumPlayingFunction;
 function playRandom(message, numOfTimes) {
+    currentRandomInt++;
+    enumPlayingFunction = "random";
+    var numOfRetries = 0;
+    server = servers[message.guild.id];
+    let rKeyArray = Array.from(congratsDatabase.keys());
+    numOfRetries += 1;
+    let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
+    let rk = rKeyArray[rn];
+    //console.log("attempting to play key:" + rk);
+    whatsp = congratsDatabase.get(rk);
+    //server.queue.push(congratsDatabase.get(rk));
+    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+        try {
+            //console.log("calling play method...");
+            let myStream = ytdl(whatsp, {
+                filter: "audioonly",
+                opusEncoded: true,
+                encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+            });
+            let dispatcher = connection.play(myStream, {
+                type: "opus"
+            })
+                .on("finish", () => {
+                    numOfTimes -= 1;
+                    if (numOfTimes === 0) {
+                        totalRandomInt = 0;
+                        currentRandomInt = 0;
+                        connection.disconnect();
+                    } else {
+                        playRandom(message, numOfTimes)
+                    }
+
+                })
+        } catch (e) {
+            // Error catching - fault with the database yt link?
+            console.log("Below is a caught error message. (this broke:" + rk + ")");
+            //printErrorToChannel("!r", rk, e);
+            console.log(e);
+            if (numOfRetries > 2) {
+                message.channel.send("Could not play random songs. Sorry.");
+                printErrorToChannel("!r (third try)", rk, e);
+                connection.disconnect();
+            } else {
+                if (numOfRetries > 1) {
+                    printErrorToChannel("!r", rk, e);
+                } else {
+                    printErrorToChannel("!r (second try)", rk, e);
+                }
+                //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
+                playRandom();
+            }
+
+        }
+    })
+}
+function playRandoms(message, numOfTimes, whatToPlay) {
     currentRandomInt++;
     enumPlayingFunction = "random";
     var numOfRetries = 0;
