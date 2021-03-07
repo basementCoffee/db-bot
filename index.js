@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.3';
-var buildNumber = "3703a";
+var buildNumber = "3703b";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -716,6 +716,7 @@ bot.on('message', message => {
 var enumPlayingFunction;
 function playRandom(message, numOfTimes) {
     currentRandomInt++;
+    currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "random";
     var numOfRetries = 0;
     server = servers[message.guild.id];
