@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.6';
-var buildNumber = "3706a";
+var buildNumber = "3706b";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -281,10 +281,12 @@ function skipSong(message) {
         // if server queue is not empty then skip
         if (servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
             servers[message.guild.id].queue.shift();
+            // if there is still items in the queue then play next song
         if (servers[message.guild.id].queue.length > 0) {
             whatspMap[message.member.voice.channel] = servers[message.guild.id].queue[0];
             playSongToVC(message, whatspMap[message.member.voice.channel]);
-        } else {
+        }
+     } else {
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
