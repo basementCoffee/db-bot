@@ -188,8 +188,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.6';
-var buildNumber = "3706e";
+var version = '3.7.7';
+var buildNumber = "3707a";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -601,24 +601,26 @@ bot.on('message', message => {
                     //message.channel.send("--end--");
                 }
                 break;
-            //What's Playing?
+            // !? is the command for what's playing?
             case "?":
-                if (args[1] === true) {
+                if (args[1]) {
                     if (args[1] === "" || args[1] === " ") {
                         // intentionally left blank
                     } else {
-                        if (totalRandomIntMap[message.member.voice.channel] === 0) {
+                        if (totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] === 0) {
                             message.channel.send(congratsDatabase.get(args[1]));
-                        } else {
+                        } else if (currentRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] ) {
                             message.channel.send("("+ currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + congratsDatabase.get(args[1]));
                         }
-                        break;
                     }
                 }
                 if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
                     if (totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] !== 0) {
                         message.channel.send("(" + currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + whatspMap[message.member.voice.channel]);
-                    } else {
+                    } else if (servers[message.guild.id] && servers[message.guild.id].queue && servers[message.guild.id].queue.length > 1) {
+                        message.channel.send("(1/" + servers[message.guild.id].queue.length + ") " + whatspMap[message.member.voice.channel]);
+                    } 
+                    else {
                         message.channel.send(whatspMap[message.member.voice.channel]);
                     }
                 } else {
