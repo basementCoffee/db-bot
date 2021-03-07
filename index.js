@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.1';
-var buildNumber = "3701a";
+var buildNumber = "3701b";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -376,7 +376,7 @@ bot.on('message', message => {
                 if (servers[message.guild.id] && servers[message.guild.id].queue){
                     servers[message.guild.id].queue.push(args[1]);
                 } else {
-                    playSongToVC(message, 1, args[1]);
+                    playSongToVC(message, args[1]);
                 }
                     
                 break;
@@ -450,7 +450,11 @@ bot.on('message', message => {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
                 }
-                playSongToVC(message, referenceDatabase.get(args[1].toUpperCase()));
+                if (servers[message.guild.id] && servers[message.guild.id].queue){
+                    servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                } else {
+                    playSongToVC(message, referenceDatabase.get(args[1].toUpperCase()));
+                }
                 break;
 
             // case "dv":
