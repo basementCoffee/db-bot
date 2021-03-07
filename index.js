@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.3';
-var buildNumber = "3703c";
+var buildNumber = "3703d";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -411,10 +411,7 @@ bot.on('message', message => {
             //!e is the Stop feature
             case "e" :
                 server = servers[message.guild.id];
-                while (server && server.queue && server.queue.length > 0) {
-                    server.queue.shift();
-                    //console.log(server.queue.length);
-                }
+                
                 totalRandomInt = 0;
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomInt = 0;
@@ -423,6 +420,13 @@ bot.on('message', message => {
                 if (!message.member || !message.member.voice || !message.member.voice.channel) {
                     return;
                 }
+                // not as efficient as below
+                // while (server && server.queue && server.queue.length > 0) {
+                //     server.queue.shift();
+                //     //console.log(server.queue.length);
+                // }
+
+                // should do same as above
                 servers[message.guild.id].queue = [];
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                     //server.dispatcher = connection.disconnect();
