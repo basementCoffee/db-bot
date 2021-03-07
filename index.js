@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.15';
-var buildNumber = "3615j";
+var buildNumber = "3615k";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -454,9 +454,7 @@ bot.on('message', message => {
                 //console.log("b2: " + servers[message.guild.id]);
                 if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
                     console.log("playing " + args[1]);
-                    // playSong(message, args[1], true);
-                    let toPlay = args[1];
-                    playRandomNotRandom(message, 5, toPlay);
+                    playSong(message, args[1], true);
                 }
 
                 break;
@@ -820,45 +818,6 @@ function playRandom(message, numOfTimes) {
                 }
                 //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
                 playRandom();
-            }
-
-        }
-    })
-}
-
-function playRandomNotRandom(message, numOfTimes, whatToPlay) {
-    enumPlayingFunction = "random";
-    //console.log("attempting to play key:" + rk);
-    whatsp = whatToPlay;
-    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-        try {
-            //console.log("calling play method...");
-            let myStream = ytdl(whatToPlay, {
-                filter: "audioonly",
-                opusEncoded: true,
-                encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-            });
-            let dispatcher = connection.play(myStream, {
-                type: "opus"
-            })
-                .on("finish", () => {
-                        connection.disconnect();
-                })
-        } catch (e) {
-            // Error catching - fault with the database yt link?
-            console.log("Below is a caught error message. (this broke:" + rk + ")");
-            //printErrorToChannel("!r", rk, e);
-            console.log(e);
-            if (numOfRetries > 2) {
-                message.channel.send("Could not play random songs. Sorry.");
-                printErrorToChannel("!r (third try)", rk, e);
-                connection.disconnect();
-            } else {
-                if (numOfRetries > 1) {
-                    printErrorToChannel("!r", rk, e);
-                } else {
-                    printErrorToChannel("!r (second try)", rk, e);
-                }
             }
 
         }
