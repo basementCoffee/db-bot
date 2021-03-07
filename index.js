@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.19';
-var buildNumber = "3619c";
+var version = '3.6.20';
+var buildNumber = "3620a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -611,7 +611,7 @@ bot.on('message', message => {
                         break;
                     }
                 }
-                if (whatspMap[message.member.voice.channel] !== "") {
+                if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
                     if (totalRandomInt !== 0) {
                         message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatspMap[message.member.voice.channel]);
                     } else {
