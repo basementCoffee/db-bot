@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.15';
-var buildNumber = "3615d";
+var version = '3.6.16';
+var buildNumber = "3616a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -277,10 +277,10 @@ function contentsContainCongrats(message) {
 function playCongrats(connection, message) {
     var server = servers[message.guild.id];
     try {
-        let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
-            filter: "audio",
+        let myStream = ytdl("https://www.youtube.com/watch?v=oyFQVZ2h0V8", {
+            filter: "audioonly",
             opusEncoded: true,
-            
+            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
         });
         let dispatcher = connection.play(myStream, {
             type: "opus"
