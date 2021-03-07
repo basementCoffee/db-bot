@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.17';
-var buildNumber = "3617d";
+var buildNumber = "3617e";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -272,33 +272,6 @@ bot.on('message', msg => {
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
     return message.content.includes("grats") || message.content.includes("gratz") || message.content.includes("ongratulations");
-}
-
-function playCongrats(connection, message) {
-    var server = servers[message.guild.id];
-    try {
-        let myStream = ytdl("https://www.youtube.com/watch?v=oyFQVZ2h0V8", {
-            filter: "audioonly",
-            opusEncoded: true,
-            encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
-            
-        });
-        let dispatcher = connection.play(myStream, {
-            type: "opus"
-        })
-            .on("finish", () => {
-                connection.disconnect();
-            })
-        // server.dispatcher = connection.play(ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
-        //     filter: "audioonly",
-        //     opusEncoded:true,
-        //     encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-        // }));
-
-    } catch (e) {
-        printErrorToChannel("congrats", "congratulations", e);
-    }
-
 }
 
 var keyArray;
@@ -417,13 +390,15 @@ bot.on('message', message => {
                 if ((i + 1) === messageArray.length) {
                     message.channel.send("Congratulations!");
                     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                        playCongrats(connection, message);
+                        // playCongrats(connection, message);
+                        playRandoms(message,1,"https://www.youtube.com/watch?v=oyFQVZ2h0V8");
                     })
                     return;
                 } else {
                     message.channel.send("Congratulations " + messageArray[i + 1] + "!");
                     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                        playCongrats(connection, message);
+                        playRandoms(message,1,"https://www.youtube.com/watch?v=oyFQVZ2h0V8");
+                        // playCongrats(connection, message);
                     })
                     return;
                 }
