@@ -795,7 +795,7 @@ function playSongToVC(message, whatToPlay) {
                 type: "opus"
             })
             .on("finish", () => {
-                if (server.queue.length > 0) {
+                if (server.queue.length > 1) {
                     whatsp = server.queue.shift();
                     whatspMap[message.member.voice.channel] = whatsp;
                     if (!whatsp) {
