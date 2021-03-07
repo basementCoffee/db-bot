@@ -189,7 +189,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.8';
-var buildNumber = "3708a";
+var buildNumber = "3708b";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -424,7 +424,7 @@ bot.on('message', message => {
                 }
                 break;
 
-            // prints out the database size
+            // !s prints out the database size
             case "s" :
                 message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
                 break;
@@ -491,7 +491,7 @@ bot.on('message', message => {
             //     break;
 
 
-            //Randomizer
+            // !r plays a random song from the database
             case "r" :
                 if (!message.member.voice.channel) {
                     return;
@@ -519,7 +519,7 @@ bot.on('message', message => {
                     }
                 }
                 break;
-
+            // !key 
             case "key" :
                 gsrun(client2);
                 console.log('before');
@@ -538,6 +538,7 @@ bot.on('message', message => {
                 }
                 message.channel.send(s);
                 break;
+            // !rand gets a random number
             case "rand" :
                 if (args[1]){
                     const numToCheck = parseInt(args[1]);
@@ -556,6 +557,7 @@ bot.on('message', message => {
                     // message.channel.send("You need to input a upper limit");
                 }
             break;
+            // !keys is keys
             case "keys" :
                 gsrun(client2);
                 console.log('before');
@@ -574,6 +576,7 @@ bot.on('message', message => {
                 }
                 message.channel.send(s);
                 break;
+            // !k is the search
             case "k" :
                 //message.channel.send(args[1]);
                 if (!args[1]) {
@@ -666,29 +669,28 @@ bot.on('message', message => {
                     + "rm  -->  Removes a song from the database\n"
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
                 break;
+            // !skip
             case "skip" :
-
                 skipSong(message);
-
                 break;
+            // !sk
             case "sk" :
-
                 skipSong(message);
-
                 break;
-            // prints out the version number
+            // !v prints out the version number
             case "v" :
                 message.channel.send("version: " + version + "\n" + latestRelease);
                 break;
-            // prints out the build number
+            // !vv prints out the build number
             case "vv" :
                 message.channel.send("build: " + buildNumber);
                 break;
+            // !devadd
             case "devadd" :
                 message.channel.send("Here's link to add to the database:\n" +
                     "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622")
                 break;
-            // add to the databse
+            // !a adds to the databse
             case "a":
                 if (!args[1] || !args[2]) {
                     message.channel.send("Could not add to the database. Put a song key followed by a link.");
@@ -715,11 +717,11 @@ bot.on('message', message => {
                 }
                 break;
 
-            //removes database entries
+            // !rm removes database entries
             case "rm":
                 var successInDelete = congratsDatabase.delete(args[1]);
                 if (successInDelete === true) {
-                    message.channel.send("Song successfully removed from the database.");
+                    message.channel.send("Song successfully removed from the temp database.");
                 } else {
                     message.channel.send("Could not find song tag within the database.");
                 }
