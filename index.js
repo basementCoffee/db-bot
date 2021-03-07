@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.17';
-var buildNumber = "3617e";
+var version = '3.6.18';
+var buildNumber = "3618";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -279,63 +279,6 @@ var s;
 var totalRandomInt = 0; // total number of random songs to play
 var currentRandomInt = 0; // current random song index
 var firstSong = true;
-function playSong(message, whatsp, isMp3) {
-    server = servers[message.guild.id];
-    let whatToPlayS = "";
-    whatsp = whatToPlayS;
-    whatspMap[message.member.voice.channel] = whatToPlayS;
-    if (whatToPlay == undefined || whatToPlay.length < 1) {
-        return;
-    }
-    //console.log("server queue: " + server.queue);
-    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-        try {
-            if (isMp3) {
-                let myStream = ytdl(whatToPlayS, {
-                    filter: "audioonly",
-                    opusEncoded: true,
-                    encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
-                });
-                let dispatcher = connection.play(myStream, {
-                    type: "opus"
-                })
-                    .on("finish", () => {
-                        if (server.queue.length > 0) {
-                            if (firstSong) {
-                                server.queue.shift();
-                                firstSong = false;
-                            }
-                            whatsp = server.queue.shift();
-                            whatspMap[message.member.voice.channel] = whatsp;
-                            playSong(message, whatsp , true);
-                        } else {
-                            connection.disconnect();
-                            firstSong = true;
-                        }
-
-                    })
-            } else { // video stream
-                let myStream = ytdl(whatsp, {
-                    filter: "audioandvideo",
-                    opusEncoded: false,
-                    encoderArgs: ['bass=g=10']
-                });
-                let dispatcher = connection.play(myStream, {
-                    type: "unknown"
-                })
-                    .on("finish", () => {
-                        connection.disconnect();
-                    })
-            }
-        } catch (e) {
-            //console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
-            console.log(e);
-            printErrorToChannel("'play method'", whatspMap[message.member.voice.channel] = + " - probably a broken link?", e);
-            message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
-            connection.disconnect();
-        }
-    })
-}
 
 function skipSong(message) {
     if (enumPlayingFunction === "random") {
@@ -440,35 +383,6 @@ bot.on('message', message => {
                     console.log("playing " + args[1]);
                     // playSong(message, args[1], true);
                     playRandoms(message, 1, args[1]);
-                }
-                break;
-
-                case 'pt': // play test with playSongs
-                console.log("b1");
-                if (!args[1]) {
-                    message.channel.send("Where's the link? I can't read your mind... unfortunately.");
-                    return;
-                }
-                if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
-                    message.channel.send("There's something wrong with what you put there.");
-                    return;
-                }
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
-                    queue: []
-                }
-                console.log("b2");
-                enumPlayingFunction = "playing";
-                servers[message.guild.id].queue.push(args[1]);
-                //server.queue.push(args[1]);
-                //console.log("server queue: "+ serverP.queue);
-                //console.log("connection:" + message.guild.voice.connection)
-                //console.log("b2: " + servers[message.guild.id]);
-                if ((servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
-                    console.log("playing " + args[1]);
-                    playSong(message, args[1], true);
                 }
                 break;
 
@@ -876,7 +790,7 @@ function playRandoms(message, numOfTimes, whatToPlay) {
                     }
                     whatsp = server.queue.shift();
                     whatspMap[message.member.voice.channel] = whatsp;
-                    playSong(message, whatsp , true);
+                    playRandoms(message, 1 , whatsp);
                 } else {
                     connection.disconnect();
                     firstSong = true;
