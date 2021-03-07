@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.16';
-var buildNumber = "3616b";
+var buildNumber = "3616c";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -491,7 +491,7 @@ bot.on('message', message => {
             //!e is the Stop feature
             case "e" :
                 server = servers[message.guild.id];
-                while (server.queue.length > 0) {
+                while (server.queue && server.queue.length > 0) {
                     server.queue.shift();
                     //console.log(server.queue.length);
                 }
@@ -533,9 +533,9 @@ bot.on('message', message => {
                     return;
                 }
                 let dPhrase = args[1];
-                //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
                 //playSong(message, whatspMap[message.member.voice.channel], true);
-                playRandoms(message, 1, args[1]);
+                playRandoms(message, 1, referenceDatabase.get(args[1].toUpperCase()));
                 break;
 
             // case "dv":
