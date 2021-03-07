@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.15';
-var buildNumber = "3615l";
+var buildNumber = "3615m";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -308,8 +308,8 @@ var currentRandomInt = 0; // current random song index
 var firstSong = true;
 function playSong(message, whatsp, isMp3) {
     let server = servers[message.guild.id];
-    let whatToPlay = whatsp;
-    if (whatToPlay == undefined) {
+    let whatToPlay = whatsp.toString();
+    if (whatToPlay == undefined || whatToPlay.length < 1) {
         return;
     }
     //console.log("server queue: " + server.queue);
