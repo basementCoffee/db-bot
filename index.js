@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.5';
-var buildNumber = "3705a";
+var version = '3.7.6';
+var buildNumber = "3706a";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -278,22 +278,19 @@ function skipSong(message) {
             playRandom(message, totalRandomIntMap[message.member.voice.channel]);
         }
     } else {
-        let server = servers[message.guild.id];
-        if (server.queue.length > 0) {
-            if (server.queue.length > 1 && firstSong) {
-                server.queue.shift();
-            }
-            whatsp = server.queue.shift();
-            whatspMap[message.member.voice.channel] = whatsp;
-            firstSong = false;
+        // if server queue is not empty then skip
+        if (servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
+            servers[message.guild.id].queue.shift();
+        if (servers[message.guild.id].queue.length > 0) {
+            whatspMap[message.member.voice.channel] = servers[message.guild.id].queue[0];
             playSongToVC(message, whatspMap[message.member.voice.channel]);
         } else {
-            firstSong = true;
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
-            whatsp = "Last Played:\n" + whatsp;
-            whatspMap[message.member.voice.channel] = whatsp;
+            if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
+                whatspMap[message.member.voice.channel] = "Last Played:\n" + whatspMap[message.member.voice.channel];
+            }
         }
 
     }
