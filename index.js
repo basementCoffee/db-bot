@@ -645,7 +645,7 @@ bot.on('message', message => {
                     + prefixString
                     + "d [key]  -->  Plays a song from the database \n"
                     + prefixString
-                    + "k [phrase]  -->  search keys with the same starting phrase"
+                    + "k [phrase]  -->  search keys with the same starting phrase\n"
                     + prefixString
                     + "a [song] [url]  -->  Adds a song to the database \n"
                     + prefixString
