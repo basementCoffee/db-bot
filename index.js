@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.4';
-var buildNumber = "3704e";
+var version = '3.7.5';
+var buildNumber = "3705a";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -627,7 +627,7 @@ bot.on('message', message => {
                 let prefixString = ""; 
                 prefixString = prefix[message.member.voice.channel].toString();
                 message.channel.send(
-                    "Things you could ask me:\n"
+                    "Help list:\n"
                     + "-------------- Core Commands  -----------------\n"
                     + prefixString
                     + "p [youtube link]  -->  Plays YouTube video\n"
