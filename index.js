@@ -354,7 +354,7 @@ function skipSong(message) {
     } else {
         let server = servers[message.guild.id];
         if (server.queue.length > 0) {
-            if (firstSong) {
+            if (server.queue.length > 1 && firstSong) {
                 server.queue.shift();
             }
             whatsp = server.queue.shift();
@@ -842,6 +842,12 @@ function playRandom(message, numOfTimes) {
         }
     })
 }
+/**
+ *  New play song function.
+ * @param {*} message the message with channel info
+ * @param {*} numOfTimes should be 1.
+ * @param {*} whatToPlay the link of the song to play
+ */
 function playRandoms(message, numOfTimes, whatToPlay) {
     currentRandomInt++;
     enumPlayingFunction = "random";
@@ -863,13 +869,21 @@ function playRandoms(message, numOfTimes, whatToPlay) {
             let dispatcher = connection.play(myStream, {
                 type: "opus"
             })
-                .on("finish", () => {
-                    numOfTimes -= 1;
-                        totalRandomInt = 0;
-                        currentRandomInt = 0;
-                        connection.disconnect();
+            .on("finish", () => {
+                if (server.queue.length > 0) {
+                    if (firstSong) {
+                        server.queue.shift();
+                        firstSong = false;
+                    }
+                    whatsp = server.queue.shift();
+                    whatspMap[message.member.voice.channel] = whatsp;
+                    playSong(message, whatsp , true);
+                } else {
+                    connection.disconnect();
+                    firstSong = true;
+                }
 
-                })
+            })
         } catch (e) {
             // Error catching - fault with the database yt link?
             console.log("Below is a caught error message. (this broke:" + rk + ")");
