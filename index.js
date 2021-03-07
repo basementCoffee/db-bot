@@ -628,7 +628,7 @@ bot.on('message', message => {
                 prefixString = prefix[message.member.voice.channel].toString();
                 message.channel.send(
                     "Things you could ask me:\n"
-                    + "----------------------------------------------\n"
+                    + "-------------- Core Commands  -----------------\n"
                     + prefixString
                     + "p [youtube link]  -->  Plays YouTube video\n"
                     + prefixString
@@ -637,7 +637,7 @@ bot.on('message', message => {
                     + "?  -->  Tells you what's playing \n"
                     + prefixString
                     + "changeprefix  -->  changes the prefix for all commands \n"
-                    + "\n--- *Curated songs [Work in Progress]:* ---  \n"
+                    + "\n--------  Curated songs [Work in Progress] --------  \n"
                     + prefixString
                     + "key  -->  All the artist song tags (separated by a comma) \n"
                     + prefixString
