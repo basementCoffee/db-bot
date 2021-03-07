@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.3';
-var buildNumber = "3703e";
+var buildNumber = "3703f";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -275,16 +275,12 @@ function contentsContainCongrats(message) {
 
 var keyArray;
 var s;
-var totalRandomInt = 0; // total number of random songs to play
-var currentRandomInt = 0; // current random song index
 var firstSong = true;
 
 function skipSong(message) {
     if (enumPlayingFunction === "random") {
         if (currentRandomIntMap[message.member.voice.channel] === totalRandomIntMap[message.member.voice.channel] || totalRandomIntMap[message.member.voice.channel] === 0){
-            totalRandomInt = 0;
             totalRandomIntMap[message.member.voice.channel] = 0;
-            currentRandomInt = 0;
             currentRandomIntMap[message.member.voice.channel] = 0;
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
@@ -411,10 +407,7 @@ bot.on('message', message => {
             //!e is the Stop feature
             case "e" :
                 server = servers[message.guild.id];
-                
-                totalRandomInt = 0;
                 totalRandomIntMap[message.member.voice.channel] = 0;
-                currentRandomInt = 0;
                 currentRandomInt[message.member.voice.channel] = 0;
                 firstSong = true;
                 if (!message.member || !message.member.voice || !message.member.voice.channel) {
@@ -507,9 +500,7 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                totalRandomInt = 0;
                 totalRandomIntMap[message.member.voice.channel] = 0;
-                currentRandomInt = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
                 if (!args[1]) {
@@ -518,13 +509,10 @@ bot.on('message', message => {
                     try {
                         let num = parseInt(args[1])
                         if (num === null || num === undefined) {
-                            totalRandomInt = 0;
                             totalRandomIntMap[message.member.voice.channel] = 0;
                         } else {
-                            totalRandomInt = num;
                             totalRandomIntMap[message.member.voice.channel] = num;
                         }
-                        currentRandomInt = 0;
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         playRandom(message, num)
                     } catch (e) {
@@ -727,7 +715,6 @@ bot.on('message', message => {
 })
 var enumPlayingFunction;
 function playRandom(message, numOfTimes) {
-    currentRandomInt++;
     currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "random";
     var numOfRetries = 0;
@@ -754,9 +741,7 @@ function playRandom(message, numOfTimes) {
                 .on("finish", () => {
                     numOfTimes -= 1;
                     if (numOfTimes === 0) {
-                        totalRandomInt = 0;
                         totalRandomIntMap[message.member.voice.channel] = 0;
-                        currentRandomInt = 0;
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
                     } else {
@@ -793,8 +778,6 @@ function playRandom(message, numOfTimes) {
  * @param {*} whatToPlay the link of the song to play
  */
 function playSongToVC(message, whatToPlay) {
-    currentRandomInt++;
-    currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "playing";
     server = servers[message.guild.id];
     let whatToPlayS = "";
@@ -813,10 +796,6 @@ function playSongToVC(message, whatToPlay) {
             })
             .on("finish", () => {
                 if (server.queue.length > 0) {
-                    if (firstSong) {
-                        server.queue.shift();
-                        firstSong = false;
-                    }
                     whatsp = server.queue.shift();
                     whatspMap[message.member.voice.channel] = whatsp;
                     if (!whatsp) {
@@ -825,7 +804,6 @@ function playSongToVC(message, whatToPlay) {
                     playSongToVC(message, whatsp);
                 } else {
                     connection.disconnect();
-                    firstSong = true;
                 }
 
             })
