@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.3';
-var buildNumber = "3703d";
+var buildNumber = "3703e";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -455,13 +455,15 @@ bot.on('message', message => {
                 }
 
                 server = servers[message.guild.id];
-                try {
-                    whatsp = referenceDatabase.get(args[1].toUpperCase());
-                    whatspMap[message.member.voice.channel] = whatsp;
-                } catch (e) {
-                    message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
-                    return;
-                }
+                // no need to update what's playing on command call (should be inside play function)
+                // try {
+                //     whatsp = referenceDatabase.get(args[1].toUpperCase());
+                //     whatspMap[message.member.voice.channel] = whatsp;
+                // } catch (e) {
+                //     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
+                //     return;
+                // }
+
                 // push to queue
                 servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
                 // if queue has only 1 song then play
@@ -628,7 +630,7 @@ bot.on('message', message => {
                     }
                 }
                 if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
-                    if (totalRandomIntMap[message.member.voice.channel] !== 0) {
+                    if (totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] !== 0) {
                         message.channel.send("(" + currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + whatspMap[message.member.voice.channel]);
                     } else {
                         message.channel.send(whatspMap[message.member.voice.channel]);
