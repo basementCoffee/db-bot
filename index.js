@@ -184,13 +184,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.20';
-var buildNumber = "3620a";
-var latestRelease = "Latest Release (3.6.x):\n" +
-    "- Add songs to google sheets (!a name, link)" +
-    "---3.5.x introduced---\n" +
-    "-added skip feature (ex: !skip / !sk)\n" +
-    "-Counter for random queue (ex: !r 10 -> !?)\n";
+var version = '3.7.0';
+var buildNumber = "3700a";
+var latestRelease = "Latest Release (3.7.x):\n" +
+    "- Can now change the prefix of the bot (!changeprefix)\n" +
+    "---3.6.x introduced---\n" +
+    "- Add songs to google sheets (!a name, link)";
 var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
@@ -636,6 +635,7 @@ bot.on('message', message => {
                     + "!p [youtube link] --> Plays YouTube video\n "
                     + "!e --> Stops playing \n "
                     + "!? --> Tells you what's playing \n"
+                    + "!changeprefix --> changes the prefix for all commands \n"
                     + "--- *Curated songs [Work in Progress]:* ---  \n"
                     + "!key --> All the artist song tags (separated by a comma) \n"
                     + "!d [key] --> Plays a song from the database \n"
