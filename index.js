@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.18';
-var buildNumber = "3618";
+var version = '3.6.19';
+var buildNumber = "3619";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -381,7 +381,6 @@ bot.on('message', message => {
                 //console.log("b2: " + servers[message.guild.id]);
                 if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
                     console.log("playing " + args[1]);
-                    // playSong(message, args[1], true);
                     playRandoms(message, 1, args[1]);
                 }
                 break;
@@ -452,9 +451,6 @@ bot.on('message', message => {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
                 }
-                let dPhrase = args[1];
-                server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                //playSong(message, whatspMap[message.member.voice.channel], true);
                 playRandoms(message, 1, referenceDatabase.get(args[1].toUpperCase()));
                 break;
 
@@ -763,14 +759,13 @@ function playRandom(message, numOfTimes) {
  */
 function playRandoms(message, numOfTimes, whatToPlay) {
     currentRandomInt++;
-    enumPlayingFunction = "random";
+    enumPlayingFunction = "playing";
     var numOfRetries = 0;
     server = servers[message.guild.id];
     let whatToPlayS = "";
-    whatToPlayS = whatToPlay.toString();
+    whatToPlayS = whatToPlay;
     whatsp = whatToPlayS;
     whatspMap[message.member.voice.channel] = whatToPlayS;
-    //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             //console.log("calling play method...");
@@ -790,6 +785,9 @@ function playRandoms(message, numOfTimes, whatToPlay) {
                     }
                     whatsp = server.queue.shift();
                     whatspMap[message.member.voice.channel] = whatsp;
+                    if (!whatsp) {
+                        return;
+                    }
                     playRandoms(message, 1 , whatsp);
                 } else {
                     connection.disconnect();
@@ -813,7 +811,6 @@ function playRandoms(message, numOfTimes, whatToPlay) {
                     printErrorToChannel("!r (second try)", rk, e);
                 }
                 //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                playRandom();
             }
 
         }
