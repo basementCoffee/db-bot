@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.2';
-var buildNumber = "3702a";
+var version = '3.7.3';
+var buildNumber = "3703a";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -375,7 +375,7 @@ bot.on('message', message => {
                 }
                 console.log("b2");
                 enumPlayingFunction = "playing";
-                if (servers[message.guild.id] && servers[message.guild.id].queue){
+                if (servers[message.guild.id] && servers[message.guild.id].queue > 0){
                     servers[message.guild.id].queue.push(args[1]);
                 } else {
                     playSongToVC(message, args[1]);
@@ -420,6 +420,7 @@ bot.on('message', message => {
                 if (!message.member || !message.member.voice || !message.member.voice.channel) {
                     return;
                 }
+                servers[message.guild.id].queue = [];
                 if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                     //server.dispatcher = connection.disconnect();
                     connection.disconnect();
@@ -454,7 +455,7 @@ bot.on('message', message => {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
                 }
-                if (servers[message.guild.id] && servers[message.guild.id].queue){
+                if (servers[message.guild.id] && servers[message.guild.id].queue.length > 0){
                     servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
                 } else {
                     playSongToVC(message, referenceDatabase.get(args[1].toUpperCase()));
@@ -498,6 +499,7 @@ bot.on('message', message => {
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomInt = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
+                servers[message.guild.id].queue = [];
                 if (!args[1]) {
                     playRandom(message, 1);
                 } else {
@@ -516,7 +518,6 @@ bot.on('message', message => {
                     } catch (e) {
                         playRandom(message, 1);
                     }
-
                 }
                 break;
 
