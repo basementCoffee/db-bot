@@ -282,7 +282,6 @@ var firstSong = true;
 function playSong(message, whatsp, isMp3) {
     server = servers[message.guild.id];
     let whatToPlayS = "";
-    whatToPlayS = whatToPlay.toString();
     whatsp = whatToPlayS;
     whatspMap[message.member.voice.channel] = whatToPlayS;
     if (whatToPlay == undefined || whatToPlay.length < 1) {
