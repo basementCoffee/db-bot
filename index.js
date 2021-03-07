@@ -632,9 +632,11 @@ bot.on('message', message => {
                     + prefixString
                     + "p [youtube link]  -->  Plays YouTube video\n"
                     + prefixString
-                    + "e  -->  Stops playing \n"
-                    + prefixString
                     + "?  -->  Tells you what's playing \n"
+                    + prefixString
+                    + "sk  -->  Skips the current item in queue \n"
+                    + prefixString
+                    + "e  -->  Stops playing and clears queue \n"
                     + prefixString
                     + "changeprefix  -->  changes the prefix for all commands \n"
                     + "\n--------  Curated songs [Work in Progress] --------  \n"
