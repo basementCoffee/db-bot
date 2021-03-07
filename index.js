@@ -189,7 +189,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.6';
-var buildNumber = "3706d";
+var buildNumber = "3706e";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -428,7 +428,7 @@ bot.on('message', message => {
                 message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
                 break;
 
-            // to run database songs
+            // !d is to run database songs
             case "d":
                 if (!args[1]) {
                     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
@@ -451,7 +451,10 @@ bot.on('message', message => {
                 //     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                 //     return;
                 // }
-
+                if (!referenceDatabase.get(args[1].toUpperCase())){
+                    message.channel.send("Could not find name in database.");
+                    return;
+                }
                 // push to queue
                 servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
                 // if queue has only 1 song then play
