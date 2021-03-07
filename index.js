@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.16';
-var buildNumber = "3616c";
+var version = '3.6.17';
+var buildNumber = "3617a";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -277,7 +277,7 @@ function contentsContainCongrats(message) {
 function playCongrats(connection, message) {
     var server = servers[message.guild.id];
     try {
-        let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
+        let myStream = ytdl("https://www.youtube.com/watch?v=oyFQVZ2h0V8", {
             filter: "audioonly",
             opusEncoded: true,
             encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
@@ -307,8 +307,11 @@ var totalRandomInt = 0; // total number of random songs to play
 var currentRandomInt = 0; // current random song index
 var firstSong = true;
 function playSong(message, whatsp, isMp3) {
-    let server = servers[message.guild.id];
-    let whatToPlay = whatsp.toString();
+    server = servers[message.guild.id];
+    let whatToPlayS = "";
+    whatToPlayS = whatToPlay.toString();
+    whatsp = whatToPlayS;
+    whatspMap[message.member.voice.channel] = whatToPlayS;
     if (whatToPlay == undefined || whatToPlay.length < 1) {
         return;
     }
@@ -316,7 +319,7 @@ function playSong(message, whatsp, isMp3) {
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
-                let myStream = ytdl(whatToPlay, {
+                let myStream = ytdl(whatToPlayS, {
                     filter: "audioonly",
                     opusEncoded: true,
                     encoderArgs: ['-af', 'bass=g=10, dynaudnorm=f=200']
@@ -463,6 +466,36 @@ bot.on('message', message => {
                     console.log("playing " + args[1]);
                     // playSong(message, args[1], true);
                     playRandoms(message, 1, args[1]);
+                }
+                break;
+
+                case 'pp': // play with playSongs
+                console.log("b1");
+                if (!args[1]) {
+                    message.channel.send("Where's the link? I can't read your mind... unfortunately.");
+                    return;
+                }
+                if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
+                    message.channel.send("There's something wrong with what you put there.");
+                    return;
+                }
+                if (!message.member.voice.channel) {
+                    return;
+                }
+                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
+                console.log("b2");
+                enumPlayingFunction = "playing";
+                let serverP = servers[message.guild.id];
+                serverP.queue.push(args[1]);
+                //server.queue.push(args[1]);
+                //console.log("server queue: "+ serverP.queue);
+                //console.log("connection:" + message.guild.voice.connection)
+                //console.log("b2: " + servers[message.guild.id]);
+                if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
+                    console.log("playing " + args[1]);
+                    playSong(message, args[1], true);
                 }
                 break;
 
@@ -842,7 +875,6 @@ function playRandoms(message, numOfTimes, whatToPlay) {
     server = servers[message.guild.id];
     let whatToPlayS = "";
     whatToPlayS = whatToPlay.toString();
-    //console.log("attempting to play key:" + rk);
     whatsp = whatToPlayS;
     whatspMap[message.member.voice.channel] = whatToPlayS;
     //server.queue.push(congratsDatabase.get(rk));
