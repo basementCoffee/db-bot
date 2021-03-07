@@ -48,6 +48,7 @@ async function gsrun(cl) {
         congratsDatabase.clear();
         referenceDatabase.clear();
         for (let i = 0; i < dataSize; i++) {
+            // the array of rows (has two columns)
             line = arrayOfSpreadsheetValues[i];
             if (!line) {
                 continue;
