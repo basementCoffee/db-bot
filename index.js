@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.1';
-var buildNumber = "3701b";
+var version = '3.7.2';
+var buildNumber = "3702a";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -281,16 +281,18 @@ var firstSong = true;
 
 function skipSong(message) {
     if (enumPlayingFunction === "random") {
-        if (currentRandomInt === totalRandomInt || totalRandomInt === 0){
+        if (currentRandomIntMap[message.member.voice.channel] === totalRandomIntMap[message.member.voice.channel] || totalRandomIntMap[message.member.voice.channel] === 0){
             totalRandomInt = 0;
+            totalRandomIntMap[message.member.voice.channel] = 0;
             currentRandomInt = 0;
+            currentRandomIntMap[message.member.voice.channel] = 0;
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
             whatsp = "Last Played:\n" + whatsp;
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
-            playRandom(message, totalRandomInt);
+            playRandom(message, totalRandomIntMap[message.member.voice.channel]);
         }
     } else {
         let server = servers[message.guild.id];
@@ -411,7 +413,9 @@ bot.on('message', message => {
                     //console.log(server.queue.length);
                 }
                 totalRandomInt = 0;
+                totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomInt = 0;
+                currentRandomInt[message.member.voice.channel] = 0;
                 firstSong = true;
                 if (!message.member || !message.member.voice || !message.member.voice.channel) {
                     return;
@@ -491,7 +495,9 @@ bot.on('message', message => {
                     queue: []
                 }
                 totalRandomInt = 0;
+                totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomInt = 0;
+                currentRandomIntMap[message.member.voice.channel] = 0;
                 if (!args[1]) {
                     playRandom(message, 1);
                 } else {
@@ -499,10 +505,13 @@ bot.on('message', message => {
                         let num = parseInt(args[1])
                         if (num === null || num === undefined) {
                             totalRandomInt = 0;
+                            totalRandomIntMap[message.member.voice.channel] = 0;
                         } else {
                             totalRandomInt = num;
+                            totalRandomIntMap[message.member.voice.channel] = num;
                         }
                         currentRandomInt = 0;
+                        currentRandomIntMap[message.member.voice.channel] = 0;
                         playRandom(message, num)
                     } catch (e) {
                         playRandom(message, 1);
@@ -599,17 +608,17 @@ bot.on('message', message => {
                     if (args[1] === "" || args[1] === " ") {
                         // intentionally left blank
                     } else {
-                        if (totalRandomInt === 0) {
+                        if (totalRandomIntMap[message.member.voice.channel] === 0) {
                             message.channel.send(congratsDatabase.get(args[1]));
                         } else {
-                            message.channel.send("("+currentRandomInt + "/" + totalRandomInt + ")  " + congratsDatabase.get(args[1]));
+                            message.channel.send("("+ currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + congratsDatabase.get(args[1]));
                         }
                         break;
                     }
                 }
                 if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
-                    if (totalRandomInt !== 0) {
-                        message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatspMap[message.member.voice.channel]);
+                    if (totalRandomIntMap[message.member.voice.channel] !== 0) {
+                        message.channel.send("(" + currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + whatspMap[message.member.voice.channel]);
                     } else {
                         message.channel.send(whatspMap[message.member.voice.channel]);
                     }
@@ -732,7 +741,9 @@ function playRandom(message, numOfTimes) {
                     numOfTimes -= 1;
                     if (numOfTimes === 0) {
                         totalRandomInt = 0;
+                        totalRandomIntMap[message.member.voice.channel] = 0;
                         currentRandomInt = 0;
+                        currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
                     } else {
                         playRandom(message, numOfTimes)
@@ -769,6 +780,7 @@ function playRandom(message, numOfTimes) {
  */
 function playSongToVC(message, whatToPlay) {
     currentRandomInt++;
+    currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "playing";
     server = servers[message.guild.id];
     let whatToPlayS = "";
@@ -835,3 +847,5 @@ var whatspMap = new Map();
 var prefix = new Map();
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
+var currentRandomIntMap = new Map();
+var totalRandomIntMap = new Map();
