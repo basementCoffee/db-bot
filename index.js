@@ -349,7 +349,13 @@ bot.on('message', message => {
     } else {
         var args = message.content.split(" ");
         console.log(args);
-        if (args[0].substr(0,1) !== "!") {
+        if (!prefix[message.channel.voice.channel]) {
+            prefix[message.channel.voice.channel] = "!";
+        }
+        if (args[0].substr(0,1) !== prefix[message.channel.voice.channel]) {
+            if (args[0] == "!changeprefix") {
+                message.channel.send("Use prefix to change. Prefix is: " + prefix[message.channel.voice.channel])
+            }
             return;
         }
         let statement = args[0].substr(1);
@@ -615,8 +621,13 @@ bot.on('message', message => {
                     message.channel.send("Nothing is playing right now");
                 }
                 break;
-
-
+            case "changeprefix":
+                if (!args[1]) {
+                    message.channel.send("No argument was given. Enter the new prefix after the command.");
+                    return;
+                }
+                prefix[message.member.voice.channel] = args[1];
+            break;
             // list commands for public commands
             case "h" :
                 message.channel.send(
@@ -836,5 +847,6 @@ function printErrorToChannel(activationType, songKey, e) {
     //}
 
 var whatspMap = new Map();
+var prefix = new Map();
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
