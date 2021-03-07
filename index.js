@@ -306,7 +306,7 @@ var totalRandomInt = 0; // total number of random songs to play
 var currentRandomInt = 0; // current random song index
 var firstSong = true;
 function playSong(message, whatsp, isMp3) {
-    let server = servers[message.guild.id]
+    let server = servers[message.guild.id];
     //console.log("server queue: " + server.queue);
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
@@ -427,6 +427,7 @@ bot.on('message', message => {
         switch (statement) {
             //!p is just the basic rhythm bot
             case 'p':
+                console.log("b1");
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
                     return;
@@ -441,6 +442,7 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
+                console.log("b2");
                 enumPlayingFunction = "playing";
                 let serverP = servers[message.guild.id];
                 serverP.queue.push(args[1]);
@@ -449,6 +451,7 @@ bot.on('message', message => {
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
                 if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
+                    console.log("playing " + args[1]);
                     playSong(message, args[1], true);
                 }
 
