@@ -638,7 +638,7 @@ bot.on('message', message => {
             // list commands for public commands
             case "h" :
                 let prefixString = ""; 
-                prefixString = prefix[message.member.voice.channel].toString();
+                prefixString = prefix[message.member.voice.channel];
                 message.channel.send(
                     "Things you could ask me:\n"
                     + "----------------------------------------------\n"
