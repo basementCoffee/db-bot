@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.15';
-var buildNumber = "3615m";
+var buildNumber = "3615o";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -837,13 +837,14 @@ function playRandoms(message, numOfTimes, whatToPlay) {
     numOfRetries += 1;
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
+    let whatToPlayS = whatToPlay.toString();
     //console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             //console.log("calling play method...");
-            let myStream = ytdl(whatsp, {
+            let myStream = ytdl(whatToPlayS, {
                 filter: "audioonly",
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
