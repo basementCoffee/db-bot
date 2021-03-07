@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.15';
-var buildNumber = "3615h";
+var buildNumber = "3615i";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -312,6 +312,7 @@ function playSong(message, whatsp, isMp3) {
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             if (isMp3) {
+                console.log("HERE IS THE LINK whatsp: " + whatsp);
                 let myStream = ytdl(whatsp, {
                     filter: "audioonly",
                     opusEncoded: true,
