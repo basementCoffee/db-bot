@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.16';
-var buildNumber = "3616a";
+var version = '3.6.15';
+var buildNumber = "3615f";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -253,20 +253,20 @@ bot.on('message', msg => {
 })
 
 
-// //Who's down greeting
-// bot.on('message', msg => {
-//     if (msg.content.includes("who's down")) {
-//         var randomIntForDown = Math.floor(Math.random() * 6);
-//         if (randomIntForDown === 4) {
-//             var randomIntForDown2 = Math.floor(Math.random() * 2);
-//             if (randomIntForDown2 === 0) {
-//                 msg.reply("I would be down to play some game but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
-//             } else {
-//                 msg.reply("You are a one player army... good luck!")
-//             }
-//         }
-//     }
-// })
+//Who's down greeting
+bot.on('message', msg => {
+    if (msg.content.includes("who's down")) {
+        var randomIntForDown = Math.floor(Math.random() * 6);
+        if (randomIntForDown === 4) {
+            var randomIntForDown2 = Math.floor(Math.random() * 2);
+            if (randomIntForDown2 === 0) {
+                msg.reply("I would be down to play some game but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
+            } else {
+                msg.reply("You are a one player army... good luck!")
+            }
+        }
+    }
+})
 
 
 // the entire reason we built this bot
@@ -277,10 +277,10 @@ function contentsContainCongrats(message) {
 function playCongrats(connection, message) {
     var server = servers[message.guild.id];
     try {
-        let myStream = ytdl("https://www.youtube.com/watch?v=oyFQVZ2h0V8", {
-            filter: "audioonly",
+        let myStream = ytdl('https://www.youtube.com/watch?v=oyFQVZ2h0V8', {
+            filter: "audio",
             opusEncoded: true,
-            encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+            
         });
         let dispatcher = connection.play(myStream, {
             type: "opus"
@@ -420,8 +420,7 @@ bot.on('message', message => {
     } else {
         var args = message.content.split(" ");
         console.log(args);
-        const prefix = args[0].substr(0,1);  
-        if (prefix !== "!" && prefix !== "~") {
+        if (args[0].substr(0,1) !== "!") {
             return;
         }
         let statement = args[0].substr(1);
@@ -487,11 +486,10 @@ bot.on('message', message => {
                 totalRandomInt = 0;
                 currentRandomInt = 0;
                 firstSong = true;
-                message.member.voice.channel.leave();
-                // if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                //     //server.dispatcher = connection.disconnect();
-                //     connection.disconnect();
-                // })
+                if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                    //server.dispatcher = connection.disconnect();
+                    connection.disconnect();
+                })
                 whatsp = "";
                 break;
 
@@ -596,7 +594,6 @@ bot.on('message', message => {
                     }
                 }
                 message.channel.send(s);
-                break;
             case "rand" :
                 if (args[1]){
                     const numToCheck = parseInt(args[1]);
