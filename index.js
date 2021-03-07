@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.6.16';
-var buildNumber = "3616a";
+var version = '3.6.15';
+var buildNumber = "3615d";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -195,6 +195,7 @@ var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
 bot.login(process.env.token);
+var whatsp = "";
 //ytpl test for youtube playlists!
 //var ytpl = require('ytpl');
 
@@ -268,24 +269,6 @@ bot.on('message', msg => {
 // })
 
 
-
-
-
-//client.on('message', ...); // You don't need to add anything to the message event listener
-    
-//let scheduledMessage = new cron.CronJob('00 51 20 * * *', () => {
-// This runs every day at 10:30:00, you can do anything you want
-// let channel = yourGuild.channels.get('id');
-//    channel.send('You message');
-//});
-    
-// When you want to start it, use:
-//job.start(playCongrats);
-// You could also make a command to pause and resume the job
-
-
-
-
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
     return message.content.includes("grats") || message.content.includes("gratz") || message.content.includes("ongratulations");
@@ -343,7 +326,7 @@ function playSong(message, whatsp, isMp3) {
                                 firstSong = false;
                             }
                             whatsp = server.queue.shift();
-                            playSong(message, whatspMap[message.member.voice.channel] , true);
+                            playSong(message, whatsp , true);
                         } else {
                             connection.disconnect();
                             firstSong = true;
@@ -366,7 +349,7 @@ function playSong(message, whatsp, isMp3) {
         } catch (e) {
             //console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
             console.log(e);
-            printErrorToChannel("'play method'", whatspMap[message.member.voice.channel] + " - probably a broken link?", e);
+            printErrorToChannel("'play method'", whatsp + " - probably a broken link?", e);
             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
             connection.disconnect();
         }
@@ -381,7 +364,7 @@ function skipSong(message) {
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
-            whatspMap[message.member.voice.channel] = "";
+            whatsp = "";
         } else {
             playRandom(message, totalRandomInt);
         }
@@ -391,15 +374,15 @@ function skipSong(message) {
             if (firstSong) {
                 server.queue.shift();
             }
-            whatspMap[message.member.voice.channel] = server.queue.shift();
+            whatsp = server.queue.shift();
             firstSong = false;
-            playSong(message, whatspMap[message.member.voice.channel], true);
+            playSong(message, whatsp, true);
         } else {
             firstSong = true;
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
-            whatspMap[message.member.voice.channel] = "";
+            whatsp = "";
         }
 
     }
@@ -509,7 +492,7 @@ bot.on('message', message => {
                 //     //server.dispatcher = connection.disconnect();
                 //     connection.disconnect();
                 // })
-                whatspMap[message.member.voice.channel] = "";
+                whatsp = "";
                 break;
 
             // prints out the database size
@@ -532,14 +515,14 @@ bot.on('message', message => {
 
                 server = servers[message.guild.id];
                 try {
-                    whatspMap[message.member.voice.channel] = referenceDatabase.get(args[1].toUpperCase());
+                    whatsp = referenceDatabase.get(args[1].toUpperCase());
                 } catch (e) {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
                 }
                 let dPhrase = args[1];
                 //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                playSong(message, whatspMap[message.member.voice.channel], true);
+                playSong(message, whatsp, true);
                 break;
 
             // case "dv":
@@ -692,11 +675,11 @@ bot.on('message', message => {
                         break;
                     }
                 }
-                if (whatspMap[message.member.voice.channel] !== "") {
+                if (whatsp !== "") {
                     if (totalRandomInt !== 0) {
-                        message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatspMap[message.member.voice.channel]);
+                        message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatsp);
                     } else {
-                        message.channel.send(whatspMap[message.member.voice.channel]);
+                        message.channel.send(whatsp);
                     }
                 } else {
                     message.channel.send("Nothing is playing right now");
@@ -792,7 +775,7 @@ function playRandom(message, numOfTimes) {
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
-    whatspMap[message.member.voice.channel] = congratsDatabase.get(rk);
+    whatsp = congratsDatabase.get(rk);
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
@@ -858,7 +841,5 @@ function printErrorToChannel(activationType, songKey, e) {
     //}
 
 
-
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
-var whatspMap = new Map; // a map for what's playing (channel id, string of what's playing)
