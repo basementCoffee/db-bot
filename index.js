@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.3';
-var buildNumber = "3703f";
+var version = '3.7.4';
+var buildNumber = "3704a";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -797,7 +797,8 @@ function playSongToVC(message, whatToPlay) {
             .on("finish", () => {
                 server.queue.shift();
                 if (server.queue.length > 0) {
-                    whatsp = server.queue[1];
+                    whatsp = server.queue[0];
+                    console.log("On finish, playing; " + whatsp);
                     whatspMap[message.member.voice.channel] = whatsp;
                     if (!whatsp) {
                         return;
