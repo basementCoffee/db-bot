@@ -184,8 +184,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.0';
-var buildNumber = "3700a";
+var version = '3.7.1';
+var buildNumber = "3701a";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -301,7 +301,7 @@ function skipSong(message) {
             whatsp = server.queue.shift();
             whatspMap[message.member.voice.channel] = whatsp;
             firstSong = false;
-            playRandoms(message, 1, whatspMap[message.member.voice.channel]);
+            playSongToVC(message, whatspMap[message.member.voice.channel]);
         } else {
             firstSong = true;
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
@@ -330,19 +330,14 @@ bot.on('message', message => {
             if ((word.includes("grats") || word.includes("gratz") || word.includes("ongratulations")) && !(word.substring(0, 1).includes("!"))) {
                 if ((i + 1) === messageArray.length) {
                     message.channel.send("Congratulations!");
-                    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                        // playCongrats(connection, message);
-                        playRandoms(message,1,"https://www.youtube.com/watch?v=oyFQVZ2h0V8");
-                    })
-                    return;
+                    
                 } else {
                     message.channel.send("Congratulations " + messageArray[i + 1] + "!");
-                    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                        playRandoms(message,1,"https://www.youtube.com/watch?v=oyFQVZ2h0V8");
-                        // playCongrats(connection, message);
-                    })
-                    return;
                 }
+                if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                    playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8");
+                })
+                return;
             }
         }
     } else {
@@ -378,17 +373,12 @@ bot.on('message', message => {
                 }
                 console.log("b2");
                 enumPlayingFunction = "playing";
-                // let serverP = servers[message.guild.id];
-                // serverP.queue.push(args[1]);
-
-                //server.queue.push(args[1]);
-                //console.log("server queue: "+ serverP.queue);
-                //console.log("connection:" + message.guild.voice.connection)
-                //console.log("b2: " + servers[message.guild.id]);
-                // if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
-                    console.log("playing " + args[1]);
-                    playRandoms(message, 1, args[1]);
-                // }
+                if (servers[message.guild.id] && servers[message.guild.id].queue){
+                    servers[message.guild.id].queue.push(args[1]);
+                } else {
+                    playSongToVC(message, 1, args[1]);
+                }
+                    
                 break;
 
             // case '!pv':
@@ -460,7 +450,7 @@ bot.on('message', message => {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
                 }
-                playRandoms(message, 1, referenceDatabase.get(args[1].toUpperCase()));
+                playSongToVC(message, referenceDatabase.get(args[1].toUpperCase()));
                 break;
 
             // case "dv":
@@ -629,6 +619,7 @@ bot.on('message', message => {
                     return;
                 }
                 prefix[message.member.voice.channel] = args[1];
+                message.channel.send("Prefix successfully changed to " + args[1]);
             break;
             // list commands for public commands
             case "h" :
@@ -772,10 +763,9 @@ function playRandom(message, numOfTimes) {
  * @param {*} numOfTimes should be 1.
  * @param {*} whatToPlay the link of the song to play
  */
-function playRandoms(message, numOfTimes, whatToPlay) {
+function playSongToVC(message, whatToPlay) {
     currentRandomInt++;
     enumPlayingFunction = "playing";
-    var numOfRetries = 0;
     server = servers[message.guild.id];
     let whatToPlayS = "";
     whatToPlayS = whatToPlay;
@@ -802,7 +792,7 @@ function playRandoms(message, numOfTimes, whatToPlay) {
                     if (!whatsp) {
                         return;
                     }
-                    playRandoms(message, 1 , whatsp);
+                    playSongToVC(message, whatsp);
                 } else {
                     connection.disconnect();
                     firstSong = true;
@@ -810,24 +800,12 @@ function playRandoms(message, numOfTimes, whatToPlay) {
 
             })
         } catch (e) {
-            // Error catching - fault with the database yt link?
-            console.log("Below is a caught error message. (this broke:" + rk + ")");
-            //printErrorToChannel("!r", rk, e);
-            console.log(e);
-            if (numOfRetries > 2) {
-                message.channel.send("Could not play random songs. Sorry.");
-                printErrorToChannel("!r (third try)", rk, e);
+            // Error catching - fault with the yt link?
+                console.log("Below is a caught error message. (tried to play:" + whatToPlayS + ")");
+                console.log("Error:", e);
+                message.channel.send("Could not play song.");
                 connection.disconnect();
-            } else {
-                if (numOfRetries > 1) {
-                    printErrorToChannel("!r", rk, e);
-                } else {
-                    printErrorToChannel("!r (second try)", rk, e);
-                }
-                //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
             }
-
-        }
     })
 }
 
