@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.6';
-var buildNumber = "3706c";
+var buildNumber = "3706d";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -406,12 +406,17 @@ bot.on('message', message => {
                 }
                 // should do same as above
                 servers[message.guild.id].queue = [];
-                if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                    //server.dispatcher = connection.disconnect();
-                    connection.disconnect();
-                })
-                whatsp = "Last Played:\n" + whatsp;
-                whatspMap[message.member.voice.channel] = whatsp;
+                if (message.member.voice && message.member.voice.channel) {
+                    message.member.voice.channel.leave();
+                }
+                // alternative to above code
+                // if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                //     //server.dispatcher = connection.disconnect();
+                //     connection.disconnect();
+                // })
+                if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
+                whatspMap[message.member.voice.channel] = "Last Played:\n" + whatspMap[message.member.voice.channel];
+                }
                 break;
 
             // prints out the database size
