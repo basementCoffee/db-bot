@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.6.17';
-var buildNumber = "3617a";
+var buildNumber = "3617b";
 var latestRelease = "Latest Release (3.6.x):\n" +
     "- Add songs to google sheets (!a name, link)" +
     "---3.5.x introduced---\n" +
@@ -487,13 +487,12 @@ bot.on('message', message => {
                 }
                 console.log("b2");
                 enumPlayingFunction = "playing";
-                let serverP = servers[message.guild.id];
-                serverP.queue.push(args[1]);
+                servers[message.guild.id].queue.push(args[1]);
                 //server.queue.push(args[1]);
                 //console.log("server queue: "+ serverP.queue);
                 //console.log("connection:" + message.guild.voice.connection)
                 //console.log("b2: " + servers[message.guild.id]);
-                if ((serverP.queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
+                if ((servers[message.guild.id].queue.length < 2 || message.guild.voice.connection === null) && firstSong === true) {
                     console.log("playing " + args[1]);
                     playSong(message, args[1], true);
                 }
