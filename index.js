@@ -407,7 +407,10 @@ bot.on('message', message => {
                     server.queue.shift();
                 }
                 // should do same as above
-                servers[message.guild.id].queue = [];
+                if (servers[message.guild.id] && servers[message.guild.id].queue) {
+                    servers[message.guild.id].queue = [];
+                }
+                
                 if (message.member.voice && message.member.voice.channel) {
                     message.member.voice.channel.leave();
                 }
