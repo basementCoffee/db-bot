@@ -360,7 +360,7 @@ function skipSong(message) {
             whatsp = server.queue.shift();
             whatspMap[message.member.voice.channel] = whatsp;
             firstSong = false;
-            playSong(message, whatsp, true);
+            playRandoms(message, 1, whatspMap[message.member.voice.channel]);
         } else {
             firstSong = true;
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
