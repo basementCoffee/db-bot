@@ -349,12 +349,12 @@ bot.on('message', message => {
     } else {
         var args = message.content.split(" ");
         console.log(args);
-        if (!prefix[message.channel.voice.channel]) {
-            prefix[message.channel.voice.channel] = "!";
+        if (!prefix[message.member.voice.channel]) {
+            prefix[message.member.voice.channel] = "!";
         }
-        if (args[0].substr(0,1) !== prefix[message.channel.voice.channel]) {
+        if (args[0].substr(0,1) !== prefix[message.member.voice.channel]) {
             if (args[0] == "!changeprefix") {
-                message.channel.send("Use prefix to change. Prefix is: " + prefix[message.channel.voice.channel])
+                message.channel.send("Use prefix to change. Prefix is: " + prefix[message.member.voice.channel])
             }
             return;
         }
