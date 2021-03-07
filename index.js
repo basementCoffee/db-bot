@@ -185,7 +185,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.4';
-var buildNumber = "3704c";
+var buildNumber = "3704d";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -395,7 +395,7 @@ bot.on('message', message => {
             case "e" :
                 server = servers[message.guild.id];
                 totalRandomIntMap[message.member.voice.channel] = 0;
-                currentRandomInt[message.member.voice.channel] = 0;
+                currentRandomIntMap[message.member.voice.channel] = 0;
                 firstSong = true;
                 if (!message.member || !message.member.voice || !message.member.voice.channel) {
                     return;
