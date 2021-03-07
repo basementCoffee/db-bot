@@ -188,8 +188,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.7';
-var buildNumber = "3707b";
+var version = '3.7.8';
+var buildNumber = "3708a";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -322,9 +322,7 @@ bot.on('message', message => {
                 } else {
                     message.channel.send("Congratulations " + messageArray[i + 1] + "!");
                 }
-                if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                     playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8");
-                })
                 return;
             }
         }
@@ -742,6 +740,7 @@ function playRandom(message, numOfTimes) {
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
+            connection.voice.setSelfDeaf(true);
             //console.log("calling play method...");
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
@@ -799,6 +798,7 @@ function playSongToVC(message, whatToPlay) {
     whatspMap[message.member.voice.channel] = whatToPlayS;
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
+            connection.voice.setSelfDeaf(true);
             let myStream = ytdl(whatToPlayS, {
                 filter: "audioonly",
                 opusEncoded: true,
