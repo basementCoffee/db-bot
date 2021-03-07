@@ -195,7 +195,6 @@ var servers = {};
 var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
 bot.login(process.env.token);
-var whatsp = "";
 //ytpl test for youtube playlists!
 //var ytpl = require('ytpl');
 
@@ -318,8 +317,6 @@ function playCongrats(connection, message) {
 
 }
 
-
-
 var keyArray;
 var s;
 var totalRandomInt = 0; // total number of random songs to play
@@ -346,7 +343,7 @@ function playSong(message, whatsp, isMp3) {
                                 firstSong = false;
                             }
                             whatsp = server.queue.shift();
-                            playSong(message, whatsp , true);
+                            playSong(message, whatspMap[message.member.voice.channel] , true);
                         } else {
                             connection.disconnect();
                             firstSong = true;
@@ -369,7 +366,7 @@ function playSong(message, whatsp, isMp3) {
         } catch (e) {
             //console.log("Below is a caught error message: (this broke:" + dPhrase + ")");
             console.log(e);
-            printErrorToChannel("'play method'", whatsp + " - probably a broken link?", e);
+            printErrorToChannel("'play method'", whatspMap[message.member.voice.channel] + " - probably a broken link?", e);
             message.channel.send("Sorry buddy, couldn't find the video. uh... idk what else to tell ya");
             connection.disconnect();
         }
@@ -384,7 +381,7 @@ function skipSong(message) {
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
-            whatsp = "";
+            whatspMap[message.member.voice.channel] = "";
         } else {
             playRandom(message, totalRandomInt);
         }
@@ -394,15 +391,15 @@ function skipSong(message) {
             if (firstSong) {
                 server.queue.shift();
             }
-            whatsp = server.queue.shift();
+            whatspMap[message.member.voice.channel] = server.queue.shift();
             firstSong = false;
-            playSong(message, whatsp, true);
+            playSong(message, whatspMap[message.member.voice.channel], true);
         } else {
             firstSong = true;
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
             })
-            whatsp = "";
+            whatspMap[message.member.voice.channel] = "";
         }
 
     }
@@ -512,7 +509,7 @@ bot.on('message', message => {
                 //     //server.dispatcher = connection.disconnect();
                 //     connection.disconnect();
                 // })
-                whatsp = "";
+                whatspMap[message.member.voice.channel] = "";
                 break;
 
             // prints out the database size
@@ -535,14 +532,14 @@ bot.on('message', message => {
 
                 server = servers[message.guild.id];
                 try {
-                    whatsp = referenceDatabase.get(args[1].toUpperCase());
+                    whatspMap[message.member.voice.channel] = referenceDatabase.get(args[1].toUpperCase());
                 } catch (e) {
                     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                     return;
                 }
                 let dPhrase = args[1];
                 //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-                playSong(message, whatsp, true);
+                playSong(message, whatspMap[message.member.voice.channel], true);
                 break;
 
             // case "dv":
@@ -695,11 +692,11 @@ bot.on('message', message => {
                         break;
                     }
                 }
-                if (whatsp !== "") {
+                if (whatspMap[message.member.voice.channel] !== "") {
                     if (totalRandomInt !== 0) {
-                        message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatsp);
+                        message.channel.send("(" + currentRandomInt + "/" + totalRandomInt + ")  " + whatspMap[message.member.voice.channel]);
                     } else {
-                        message.channel.send(whatsp);
+                        message.channel.send(whatspMap[message.member.voice.channel]);
                     }
                 } else {
                     message.channel.send("Nothing is playing right now");
@@ -795,7 +792,7 @@ function playRandom(message, numOfTimes) {
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
-    whatsp = congratsDatabase.get(rk);
+    whatspMap[message.member.voice.channel] = congratsDatabase.get(rk);
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
@@ -864,3 +861,4 @@ function printErrorToChannel(activationType, songKey, e) {
 
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
+var whatspMap = new Map; // a map for what's playing (channel id, string of what's playing)
