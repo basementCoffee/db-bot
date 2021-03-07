@@ -811,8 +811,8 @@ function playSongToVC(message, whatToPlay) {
             })
         } catch (e) {
             // Error catching - fault with the yt link?
-                // console.log("Below is a caught error message. (tried to play:" + whatToPlayS + ")");
-                // console.log("Error:", e);
+                console.log("Below is a caught error message. (tried to play:" + whatToPlayS + ")");
+                console.log("Error:", e);
                 server.queue.shift();
                 message.channel.send("Could not play song.");
                 connection.disconnect();
