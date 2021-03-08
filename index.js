@@ -10,13 +10,13 @@ client2.authorize(function (err, tokens) {
         console.log(err);
     } else {
         console.log("Connected to google apis.")
-        gsrun(client2);
+        gsrun(client2, "A", "B");
     }
 });
 
 var dataSize;
 
-async function gsrun(cl) {
+async function gsrun(cl, columnToRun, secondColumn) {
         const gsapi = google.sheets({version: 'v4', auth: cl});
 
 
@@ -24,7 +24,7 @@ async function gsrun(cl) {
             spreadsheetId: process.env.stoken,
             range: 'entries!C2'
         }
-
+        // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         dataSize = dataSizeFromSheets.data.values;
 
@@ -32,7 +32,7 @@ async function gsrun(cl) {
 
         const songObjects = {
             spreadsheetId: process.env.stoken,
-            range: "entries!A2:B" + dataSize.toString()
+            range: "entries!" + columnToRun+ "2:" + secondColumn + "B" + dataSize.toString()
 
         };
 
@@ -60,11 +60,20 @@ async function gsrun(cl) {
         }
 }
 
-function gsUpdateAdd(msg, cl, key, link) {
+/**
+ * Adds the entry into the column
+ * @param {*} msg 
+ * @param {*} cl 
+ * @param {*} key 
+ * @param {*} link 
+ * @param {*} firstColumnLetter The key column letter, should be uppercase
+ * @param {*} secondColumnLetter The link column letter, should be uppercase
+ */
+function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.append({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": "A10:B10",
+        "range": firstColumnLetter + "2:" + secondColumnLetter +  "2",
         "includeValuesInResponse": true,
         "insertDataOption": "INSERT_ROWS",
         "responseDateTimeRenderOption": "FORMATTED_STRING",
@@ -85,10 +94,17 @@ function gsUpdateAdd(msg, cl, key, link) {
             },
             function(err) { console.error("Execute error", err); });
 
-    gsUpdateOverwrite(msg, cl, dataSize);
+    gsUpdateOverwrite(msg, cl, dataSize, "C");
 }
 
-function gsUpdateOverwrite(msg, cl, value) {
+/**
+ *  Runs and overwrites the database cell
+ * @param {*} msg 
+ * @param {*} cl 
+ * @param {*} value 
+ * @param {*} databaseSizeCell 
+ */
+function gsUpdateOverwrite(msg, cl, value, databaseSizeCell) {
 
     try {
         value = parseInt(dataSize) + 1;
@@ -97,11 +113,11 @@ function gsUpdateOverwrite(msg, cl, value) {
         console.log(e);
     }
 
-
+    databaseSizeCell += "2";
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": "C2",
+        "range": databaseSizeCell,
         "includeValuesInResponse": true,
         "responseDateTimeRenderOption": "FORMATTED_STRING",
         "valueInputOption": "USER_ENTERED",
@@ -118,7 +134,7 @@ function gsUpdateOverwrite(msg, cl, value) {
                 console.log("Response", response);
             },
             function(err) { console.error("Execute error", err); });
-    gsrun(cl).then(
+    gsrun(cl, "A", "B").then(
         r => console.log(r)
     );
 }
@@ -188,8 +204,8 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.8';
-var buildNumber = "3708b";
+var version = '3.7.9';
+var buildNumber = "3709";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -521,7 +537,7 @@ bot.on('message', message => {
                 break;
             // !key 
             case "key" :
-                gsrun(client2);
+                gsrun(client2, "A", "B");
                 console.log('before');
                 setTimeout(function(){
                     console.log('after');
@@ -559,7 +575,7 @@ bot.on('message', message => {
             break;
             // !keys is keys
             case "keys" :
-                gsrun(client2);
+                gsrun(client2, "A", "B");
                 console.log('before');
                 setTimeout(function(){
                     console.log('after');
@@ -704,7 +720,7 @@ bot.on('message', message => {
                         linkZ = linkZ.substring(0, linkZ.length - 1);
                     }
                     congratsDatabase.set(args[z], args[z + 1]);
-                    gsUpdateAdd(message,client2, args[z], args[z + 1]);
+                    gsUpdateAdd(message,client2, args[z], args[z + 1], "A", "B");
                     // gsPushUpdate(client2, args[z], args[z + 1]);
                     z = z + 2;
                     songsAddedInt += 1;
