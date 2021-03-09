@@ -595,9 +595,9 @@ bot.on('message', message => {
                         } else {
                             totalRandomIntMap[message.member.voice.channel] = num;
                         }
-                        playRandom2(message, xdb.congratsDatabase);
+                        playRandom2(message, num, xdb.congratsDatabase);
                     } catch (e) {
-                        playRandom2(message, xdb.congratsDatabase);
+                        playRandom2(message, 1, xdb.congratsDatabase);
                     }
                 }
             });
