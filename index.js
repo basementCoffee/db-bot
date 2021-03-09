@@ -666,7 +666,7 @@ bot.on('message', message => {
                             s = s + ", " + keyArray[key];
                         }
                     }
-                    message.channel.send("**Keys:** (use '!d' to play)\n" + s);
+                    message.channel.send("*(use '!d' to play)*\n **Keys:** " + s);
                     if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
                         gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
                             keyArray = Array.from(cdb.keys());
