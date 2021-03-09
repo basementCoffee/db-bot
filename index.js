@@ -100,14 +100,11 @@ function createSheet(nameOfSheet) {
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
  */
-function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, shouldVerify) {
-    if (shouldVerify) {
-
-    } else {
+function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, nameOfSheet) {
         const gsapi = google.sheets({version: 'v4', auth: cl});
         gsapi.spreadsheets.values.append({
             "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-            "range": firstColumnLetter + "2:" + secondColumnLetter +  "2",
+            "range": nameOfSheet + "!" + firstColumnLetter + "2:" + secondColumnLetter +  "2",
             "includeValuesInResponse": true,
             "insertDataOption": "INSERT_ROWS",
             "responseDateTimeRenderOption": "FORMATTED_STRING",
@@ -128,8 +125,7 @@ function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, shoul
                 },
                 function(err) { console.error("Execute error", err); });
     
-        gsUpdateOverwrite(cl, dataSize, "C", "entries");
-    }
+        gsUpdateOverwrite(cl, dataSize, "C", nameOfSheet);
     
 }
 
@@ -152,7 +148,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": "entries!C2",
+        "range": nameOfSheet + "!C2",
         "includeValuesInResponse": true,
         "responseDateTimeRenderOption": "FORMATTED_STRING",
         "valueInputOption": "USER_ENTERED",
@@ -694,7 +690,9 @@ bot.on('message', message => {
                         linkZ = linkZ.substring(0, linkZ.length - 1);
                     }
                     congratsDatabase.set(args[z], args[z + 1]);
-                    gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", false);
+                    // let currentBotGuildId = "";
+                    // currentBotGuildId = bot.guild.id;
+                    gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", "entries");
                     // gsPushUpdate(client2, args[z], args[z + 1]);
                     z = z + 2;
                     songsAddedInt += 1;
@@ -719,7 +717,9 @@ bot.on('message', message => {
                             linkZ = linkZ.substring(0, linkZ.length - 1);
                         }
                         congratsDatabase.set(args[z], args[z + 1]);
-                        gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", true);
+                        let currentBotGuildId = "";
+                        currentBotGuildId = bot.guild.id;
+                        gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
                         // gsPushUpdate(client2, args[z], args[z + 1]);
                         z = z + 2;
                         songsAddedInt += 1;
