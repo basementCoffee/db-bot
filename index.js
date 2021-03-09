@@ -778,9 +778,9 @@ bot.on('message', message => {
                 sendHelp(message, prefixString);
                 break;
             case "help" :
-                let prefixString = ""; 
-                prefixString = prefix[message.member.voice.channel].toString();
-                sendHelp(message, prefixString);
+                let prefixString2 = ""; 
+                prefixString2 = prefix[message.member.voice.channel].toString();
+                sendHelp(message, prefixString2);
             break;
             // !skip
             case "skip" :
