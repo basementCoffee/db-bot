@@ -834,7 +834,7 @@ bot.on('message', message => {
                     var z = 1;
                     if (!dataSize.get(message.guild.id.toString())) {
                         gsUpdateAdd2(client2, 1,"D", nameOfSheet);
-                        message.channel.send("Run '!keys' once more to finish initialization.");
+                        message.channel.send("Run '!keys' to finish initialization.");
                     }
                     else if (dataSize.get(message.guild.id.toString()) < 1) {
                         gsUpdateAdd2(client2, 1,"D", nameOfSheet);
