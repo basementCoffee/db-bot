@@ -30,7 +30,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
             dataSize.set(nameOfSheet,0);
         } else {
-            dataSize.set(nameOfSheet,dataSizeFromSheets.data.values); 
+            dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
@@ -89,7 +89,6 @@ function createSheet(nameOfSheet) {
         if (err) console.log('The API returned an error: ' + err);
         console.log("success: ", response);
 });
-gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
 }
 
 
