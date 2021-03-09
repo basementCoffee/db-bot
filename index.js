@@ -775,32 +775,13 @@ bot.on('message', message => {
             case "h" :
                 let prefixString = ""; 
                 prefixString = prefix[message.member.voice.channel].toString();
-                message.channel.send(
-                    "Help list:\n"
-                    + "-------------- Core Commands  -----------------\n"
-                    + prefixString
-                    + "p [youtube link]  -->  Plays YouTube video\n"
-                    + prefixString
-                    + "?  -->  What's playing\n"
-                    + prefixString
-                    + "sk  -->  Skip the current song\n"
-                    + prefixString
-                    + "e  -->  Stops playing and clears queue\n"
-                    + prefixString
-                    + "changeprefix  -->  changes the prefix for all commands \n"
-                    + "\n--------  Curated songs --------  \n"
-                    + prefixString
-                    + "key  -->  All the artist song tags (separated by a comma) \n"
-                    + prefixString
-                    + "a [song] [url]  -->  Adds a song to the database \n"
-                    + prefixString
-                    + "d [key]  -->  Plays a song from the database \n"
-                    + prefixString
-                    + "k [phrase]  -->  search keys with the same starting phrase\n"
-                    + prefixString
-                    + "rm  -->  Removes a song from the database\n"
-                    + "**Or just say congrats to a friend. I will chime in too! :) **");
+                sendHelp(message, prefixString);
                 break;
+            case "help" :
+                let prefixString = ""; 
+                prefixString = prefix[message.member.voice.channel].toString();
+                sendHelp(message, prefixString);
+            break;
             // !skip
             case "skip" :
                 skipSong(message);
@@ -950,6 +931,39 @@ function playRandom(message, numOfTimes) {
 
         }
     })
+}
+
+/**
+ * Function to display help list
+ * @param {*} message 
+ * @param {*} prefixString 
+ */
+function sendHelp(message, prefixString){
+    message.channel.send(
+        "Help list:\n"
+        + "-------------- Core Commands  -----------------\n"
+        + prefixString
+        + "p [youtube link]  -->  Plays YouTube video\n"
+        + prefixString
+        + "?  -->  What's playing\n"
+        + prefixString
+        + "sk  -->  Skip the current song\n"
+        + prefixString
+        + "e  -->  Stops playing and clears queue\n"
+        + prefixString
+        + "changeprefix  -->  changes the prefix for all commands \n"
+        + "\n--------  Curated songs --------  \n"
+        + prefixString
+        + "key  -->  All the artist song tags (separated by a comma) \n"
+        + prefixString
+        + "a [song] [url]  -->  Adds a song to the database \n"
+        + prefixString
+        + "d [key]  -->  Plays a song from the database \n"
+        + prefixString
+        + "k [phrase]  -->  search keys with the same starting phrase\n"
+        + prefixString
+        + "rm  -->  Removes a song from the database\n"
+        + "**Or just say congrats to a friend. I will chime in too! :) **");
 }
 // the specific version of play random
 function playRandom2(message, numOfTimes, cdb) {
