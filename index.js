@@ -28,7 +28,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             console.log("NO DATA SIZE FOUND");
-            gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            gsUpdateOverwrite(cl, 0, "D", nameOfSheet);
             dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
@@ -44,7 +44,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 
         const songObjects = {
             spreadsheetId: process.env.stoken,
-            range: nameOfSheet + "!" + columnToRun+ "2:" + secondColumn + "B" + dataSize.get(nameOfSheet).toString()
+            range: nameOfSheet + "!" + columnToRun + "2:" + secondColumn + "B" + dataSize.get(nameOfSheet).toString()
         };
 
         let dataSO = await gsapi.spreadsheets.values.get(songObjects);
@@ -96,7 +96,7 @@ function createSheet(message, nameOfSheet) {
         if (err){
             console.log('The API returned an error: ' + err);
         } else {
-            gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            gsUpdateOverwrite(cl, 0, "D", nameOfSheet);
             gsrun(client2, "A", "B", message.guild.id).then(() => {
             });
         }
