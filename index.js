@@ -28,7 +28,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
-            dataSize.set(nameOfSheet,0);
+            dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
         }
@@ -37,7 +37,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 
         const songObjects = {
             spreadsheetId: process.env.stoken,
-            range: nameOfSheet + "!" + columnToRun+ "2:" + secondColumn + "B" + dataSize.get(nameOfSheet)
+            range: nameOfSheet + "!" + columnToRun+ "2:" + secondColumn + "B" + dataSize.get(nameOfSheet).toString()
         };
 
         let dataSO = await gsapi.spreadsheets.values.get(songObjects);
