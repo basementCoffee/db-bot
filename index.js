@@ -22,7 +22,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 
         const spreadsheetSizeObjects = {
             spreadsheetId: process.env.stoken,
-            range: nameOfSheet + nameOfSheet+ "!C1"
+            range: nameOfSheet + "!C1"
         }
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
