@@ -281,7 +281,20 @@ function skipSong(message) {
         } else {
             playRandom(message, totalRandomIntMap[message.member.voice.channel], true);
         }
-    } else {
+    } else if (enumPlayingFunction === "randomS") {
+        if (currentRandomIntMap[message.member.voice.channel] === totalRandomIntMap[message.member.voice.channel] || totalRandomIntMap[message.member.voice.channel] === 0){
+            totalRandomIntMap[message.member.voice.channel] = 0;
+            currentRandomIntMap[message.member.voice.channel] = 0;
+            if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+                connection.disconnect();
+            })
+            whatsp = "Last Played:\n" + whatsp;
+            whatspMap[message.member.voice.channel] = whatsp;
+        } else {
+            playRandom(message, totalRandomIntMap[message.member.voice.channel], false);
+        }
+    } 
+    else {
         // if server queue is not empty then skip
         if (servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
             servers[message.guild.id].queue.shift();
@@ -502,6 +515,7 @@ bot.on('message', message => {
                 }
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
+                enumPlayingFunction = "random";
                 servers[message.guild.id].queue = [];
                 if (!args[1]) {
                     playRandom(message, 1, true);
@@ -527,6 +541,7 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
+                enumPlayingFunction = "randomS"
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
