@@ -37,7 +37,8 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         console.log("Data Size: " + dataSize.get(nameOfSheet));
         if (!dataSize || !dataSize.get(nameOfSheet)){
             dataSize.set(nameOfSheet,1);
-            gsUpdateAdd2(cl, 1,"D",nameOfSheet);
+            await gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            // gsUpdateAdd2(cl, 1,"D",nameOfSheet);
             console.log("Data Size prev undef: " + dataSize.get(nameOfSheet));
         }
         
@@ -92,11 +93,11 @@ function createSheet(nameOfSheet) {
             ],
         }
     },
-    async function(err, response) {
+    function(err, response) {
         if (err){
             console.log('The API returned an error: ' + err);
         } else {
-            await gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
         }
          
         console.log("success: ", response);
@@ -825,6 +826,7 @@ bot.on('message', message => {
                     message.channel.send(songsAddedInt.toString() + " songs added to the database.");
                 }
                 break;
+                // !a
                 case "a":
                     if (!args[1] || !args[2]) {
                         message.channel.send("Could not add to the database. Put a song key followed by a link.");
