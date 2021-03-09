@@ -481,6 +481,43 @@ bot.on('message', message => {
                     message.channel.send("Added to queue.");
                 }
                 break;
+            case "d2":
+                if (!args[1]) {
+                    message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+                    return;
+                }
+                if (!message.member.voice.channel) {
+                    return;
+                }
+                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
+                enumPlayingFunction = "playing";
+                server = servers[message.guild.id];
+
+                // no need to update what's playing on command call (should be inside play function)
+                // try {
+                //     whatsp = referenceDatabase.get(args[1].toUpperCase());
+                //     whatspMap[message.member.voice.channel] = whatsp;
+                // } catch (e) {
+                //     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
+                //     return;
+                // }
+                gsrun(client2,"A","B", message.guild.id).then((cd) => {
+                if (!referenceDatabase.get(args[1].toUpperCase())){
+                    message.channel.send("Could not find name in database.");
+                    return;
+                }
+                // push to queue
+                servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                // if queue has only 1 song then play
+                if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
+                    playSongToVC(message, referenceDatabase.get(args[1].toUpperCase()));
+                } else {
+                    message.channel.send("Added to queue.");
+                }
+            });
+                break;
 
             // case "dv":
             //     if (!args[1]) {
