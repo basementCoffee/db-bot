@@ -69,7 +69,10 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             congratsDatabase.set(keyT, valueT);
             referenceDatabase.set(keyT.toUpperCase(), valueT);
         }
-        return congratsDatabase;
+        return {
+            congratsDatabase: congratsDatabase,
+            referenceDatabase: referenceDatabase
+        }
 }
 
 function createSheet(message, nameOfSheet) {
@@ -239,8 +242,6 @@ var servers = {};
 //bot.login(token);
 bot.login(process.env.token);
 var whatsp = "";
-//ytpl test for youtube playlists!
-//var ytpl = require('ytpl');
 
 
 // //Who's down and algo greeting
@@ -496,7 +497,6 @@ bot.on('message', message => {
                     queue: []
                 }
                 enumPlayingFunction = "playing";
-                server = servers[message.guild.id];
 
                 // no need to update what's playing on command call (should be inside play function)
                 // try {
@@ -506,18 +506,20 @@ bot.on('message', message => {
                 //     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                 //     return;
                 // }
-                if (!referenceDatabase.get(args[1].toUpperCase())){
+                gsrun(client2,"A","B", "entries").then((xdb) => {
+                if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
                     return;
                 }
                 // push to queue
-                servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
                 // if queue has only 1 song then play
                 if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
-                    playSongToVC(message, referenceDatabase.get(args[1].toUpperCase()));
+                    playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
                 } else {
                     message.channel.send("Added to queue.");
                 }
+            });
                 break;
             case "d":
                 if (!args[1]) {
@@ -541,16 +543,16 @@ bot.on('message', message => {
                 //     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                 //     return;
                 // }
-                gsrun(client2,"A","B", message.guild.id).then((cd) => {
-                if (!referenceDatabase.get(args[1].toUpperCase())){
+                gsrun(client2,"A","B", message.guild.id).then((xdb) => {
+                if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
                     return;
                 }
                 // push to queue
-                servers[message.guild.id].queue.push(referenceDatabase.get(args[1].toUpperCase()));
+                servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
                 // if queue has only 1 song then play
                 if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
-                    playSongToVC(message, referenceDatabase.get(args[1].toUpperCase()));
+                    playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
                 } else {
                     message.channel.send("Added to queue.");
                 }
@@ -623,9 +625,9 @@ bot.on('message', message => {
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
-                gsrun(client2,"A","B", message.guild.id).then((cd) => {
+                gsrun(client2,"A","B", message.guild.id).then((xdb) => {
                     if (!args[1]) {
-                        playRandom2(message, 1, cd);
+                        playRandom2(message, 1, xdb.congratsDatabase);
                     } else {
                         try {
                             let num = parseInt(args[1])
@@ -635,9 +637,9 @@ bot.on('message', message => {
                                 totalRandomIntMap[message.member.voice.channel] = num;
                             }
                             currentRandomIntMap[message.member.voice.channel] = 0;
-                            playRandom2(message, num, cd);
+                            playRandom2(message, num, xdb.congratsDatabase);
                         } catch (e) {
-                            playRandom2(message, 1, cd);
+                            playRandom2(message, 1, xdb.congratsDatabase);
                         }
                     }
                 });
@@ -652,8 +654,8 @@ bot.on('message', message => {
                     sheetString = message.guild.id;
                     createSheet(message, sheetString);
                     // console.log("done with create sheet...", message.guild.id);
-                    gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
-                    keyArray = Array.from(cdb.keys());
+                    gsrun(client2, "A", "B", message.guild.id).then((xdb) => {
+                    keyArray = Array.from(xdb.congratsDatabase.keys());
                     keyArray.sort();
                     s = "";
                     for (let key in keyArray) {
@@ -665,8 +667,8 @@ bot.on('message', message => {
                     }
                     message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
                     if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
-                        gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
-                            keyArray = Array.from(cdb.keys());
+                        gsrun(client2, "A", "B", message.guild.id).then((xdb) => {
+                            keyArray = Array.from(xdb.congratsDatabase.keys());
                             keyArray.sort();
                             s = "";
                             for (let key in keyArray) {
@@ -831,13 +833,13 @@ bot.on('message', message => {
                             createSheet(message, currentBotGuildId);
                             gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
                     }
-                    gsrun(client2,"A","B", message.guild.id).then((cdb) => {
+                    gsrun(client2,"A","B", message.guild.id).then((xdb) => {
                     while (args[z] && args[z + 1]) {
                         var linkZ = args[z + 1];
                         if (linkZ.substring(linkZ.length - 1) === ",") {
                             linkZ = linkZ.substring(0, linkZ.length - 1);
                         }
-                        cdb.set(args[z], args[z + 1]);
+                        xdb.congratsDatabase.set(args[z], args[z + 1]);
                         gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
                         z = z + 2;
                         songsAddedInt += 1;
@@ -868,7 +870,6 @@ function playRandom(message, numOfTimes) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "random";
     var numOfRetries = 0;
-    server = servers[message.guild.id];
     let rKeyArray = Array.from(congratsDatabase.keys());
     numOfRetries += 1;
     let rn = Math.floor((Math.random() * (rKeyArray.length)));
