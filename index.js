@@ -869,6 +869,7 @@ function playRandom2(message, numOfTimes, cdb) {
     //console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
     if (!whatsp) {
+        gsrun(client2, "A", "B", tempStringRandom);
         message.channel.send("It appears your database is empty.\nTry running !_keys or add a song to the database.");
         console.log("Play random whatsp is empty.");
         return;
