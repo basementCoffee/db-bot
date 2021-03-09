@@ -182,6 +182,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     try {
         value = parseInt(dataSize.get(nameOfSheet)) + 1;
     } catch (e) {
+        console.log("Error caught gsUpdateOverview", value);
         value = 1;
         console.log(e);
     }
@@ -824,7 +825,7 @@ bot.on('message', message => {
                     message.channel.send(songsAddedInt.toString() + " songs added to the database.");
                 }
                 break;
-                // !a
+                // !a is normal add
                 case "a":
                     if (!args[1] || !args[2]) {
                         message.channel.send("Could not add to the database. Put a song key followed by a link.");
@@ -841,7 +842,6 @@ bot.on('message', message => {
                         let currentBotGuildId = "";
                         currentBotGuildId = message.guild.id.toString();
                         gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
-                        // gsPushUpdate(client2, args[z], args[z + 1]);
                         z = z + 2;
                         songsAddedInt += 1;
                     }
