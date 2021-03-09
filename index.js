@@ -691,7 +691,7 @@ bot.on('message', message => {
                     }
                     congratsDatabase.set(args[z], args[z + 1]);
                     // let currentBotGuildId = "";
-                    // currentBotGuildId = bot.guild.id;
+                    // currentBotGuildId = message.guild.id;
                     gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", "entries");
                     // gsPushUpdate(client2, args[z], args[z + 1]);
                     z = z + 2;
@@ -718,7 +718,7 @@ bot.on('message', message => {
                         }
                         congratsDatabase.set(args[z], args[z + 1]);
                         let currentBotGuildId = "";
-                        currentBotGuildId = bot.guild.id;
+                        currentBotGuildId = message.guild.id;
                         gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
                         // gsPushUpdate(client2, args[z], args[z + 1]);
                         z = z + 2;
