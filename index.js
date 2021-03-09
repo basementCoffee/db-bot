@@ -807,7 +807,7 @@ function playRandom(message, numOfTimes) {
     if (!whatsp){
         let tempStringRandom = "";
         tempStringRandom = message.guild.id;
-        gsrun(client2, "A", "B", tempStringRandom);
+        gsrun(client2, "A", "B", "entries");
     } 
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
