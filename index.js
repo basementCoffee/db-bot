@@ -141,6 +141,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     try {
         value = parseInt(dataSize) + 1;
     } catch (e) {
+        value = 1;
         console.log(e);
     }
 
