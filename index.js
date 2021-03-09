@@ -833,12 +833,13 @@ bot.on('message', message => {
                     }
                     var songsAddedInt = 0;
                     var z = 1;
+                    gsrun(client2,"A","B", message.guild.id).then((cdb) => {
                     while (args[z] && args[z + 1]) {
                         var linkZ = args[z + 1];
                         if (linkZ.substring(linkZ.length - 1) === ",") {
                             linkZ = linkZ.substring(0, linkZ.length - 1);
                         }
-                        congratsDatabase.set(args[z], args[z + 1]);
+                        cdb.set(args[z], args[z + 1]);
                         let currentBotGuildId = "";
                         currentBotGuildId = message.guild.id.toString();
                         gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
@@ -851,6 +852,7 @@ bot.on('message', message => {
                     } else if (songsAddedInt > 1) {
                         message.channel.send(songsAddedInt.toString() + " songs added to the database.");
                     }
+                });
                     break;
             // !rm removes database entries
             case "rm":
