@@ -28,9 +28,11 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
-            dataSizeFromSheets = 0;
+            dataSize = 0;
+        } else {
+            dataSize = dataSizeFromSheets.data.values;
         }
-        dataSize = dataSizeFromSheets.data.values;
+        
         console.log("Data Size: " + dataSize);
 
         const songObjects = {
@@ -551,25 +553,6 @@ bot.on('message', message => {
                 
                 
                 break;
-            // !rand gets a random number
-            case "rand" :
-                if (args[1]){
-                    const numToCheck = parseInt(args[1]);
-                    if (numToCheck < 1){
-                        message.channel.send("Number has to be positive.");
-                    }
-                    let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-                    message.channel.send(randomInt2);
-                } else {
-                    const numToCheck = message.member.voice.channel.members.size - 1;
-                    if (numToCheck <= 0) {
-                        message.channel.send("Upper limit required.");
-                    }
-                    let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-                    message.channel.send("Assuming " + numToCheck + " people. Your number is " + randomInt2 + ".");
-                    // message.channel.send("You need to input a upper limit");
-                }
-            break;
             // !keys is keys
             case "keys" :
                 gsrun(client2, "A", "B", "entries").then(() => {
@@ -691,10 +674,6 @@ bot.on('message', message => {
             // !v prints out the version number
             case "v" :
                 message.channel.send("version: " + version + "\n" + latestRelease);
-                break;
-            // !vv prints out the build number
-            case "vv" :
-                message.channel.send("build: " + buildNumber);
                 break;
             // !devadd
             case "devadd" :
