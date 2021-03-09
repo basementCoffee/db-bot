@@ -82,6 +82,7 @@ function createSheet(nameOfSheet) {
     function(err, response) {
         if (err) return callback('The API returned an error: ' + err);
         console.log("success: ", response);
+});
 }
 
 
