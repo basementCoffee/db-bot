@@ -739,9 +739,7 @@ bot.on('message', message => {
                     }
                 }
                 if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
-                    if (totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] !== 0) {
-                        message.channel.send("(" + currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + whatspMap[message.member.voice.channel]);
-                    } else if (servers[mgid] && servers[mgid].queue && servers[mgid].queue.length > 1) {
+                     if (servers[mgid] && servers[mgid].queue && servers[mgid].queue.length > 1) {
                         message.channel.send("(1/" + servers[mgid].queue.length + ")  " + whatspMap[message.member.voice.channel]);
                     } 
                     else {
