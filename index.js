@@ -22,7 +22,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         nameOfSheet = nameOfSheet.toString();
         const spreadsheetSizeObjects = {
             spreadsheetId: process.env.stoken,
-            range: nameOfSheet + "!D2"
+            range: nameOfSheet + "!D1"
         }
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
@@ -141,7 +141,7 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.append({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": nameOfSheet + "!" + firstColumnLetter + "2",
+        "range": nameOfSheet + "!" + firstColumnLetter + "1",
         "includeValuesInResponse": true,
         "insertDataOption": "INSERT_ROWS",
         "responseDateTimeRenderOption": "FORMATTED_STRING",
