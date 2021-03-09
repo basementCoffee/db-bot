@@ -10,7 +10,6 @@ client2.authorize(function (err, tokens) {
         console.log(err);
     } else {
         console.log("Connected to google apis.");
-        console.log(bot.guilds);
         gsrun(client2, "A", "B", "entries");
     }
 });
@@ -197,7 +196,9 @@ async function gsPushUpdate(cl, providedKey, providedLink) {
 }
 
 
-//ABOVE IS GOOGLE API -----------------------------------------------
+//ABOVE IS GOOGLE API -------------------------------------------------------------
+//ABOVE IS GOOGLE API -------------------------------------------------------------
+
 const {
     Client
 } = require('discord.js');
@@ -213,7 +214,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709d";
+var buildNumber = "3709e";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -275,17 +276,22 @@ function createSheet(message) {
       });
 }
 
-//Who's down greeting
+//Who's down and algo greeting
 bot.on('message', msg => {
     if (msg.content.includes("who's down")) {
-        var randomIntForDown = Math.floor(Math.random() * 6);
+        let randomIntForDown = Math.floor(Math.random() * 6);
         if (randomIntForDown === 4) {
-            var randomIntForDown2 = Math.floor(Math.random() * 2);
+            let randomIntForDown2 = Math.floor(Math.random() * 2);
             if (randomIntForDown2 === 0) {
                 msg.reply("I would be down to play some game but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
             } else {
                 msg.reply("You are a one player army... good luck!")
             }
+        }
+    } else if (msg.content.includes("@algo")){
+        let randomIntForDown3 = Math.floor(Math.random() * 4);
+        if (randomIntForDown3 === 0) {
+            msg.reply("Thanks for the call. I'm here, reporting for algo duty.")
         }
     }
 })
@@ -590,12 +596,8 @@ bot.on('message', message => {
             break;
             // !keys is keys
             case "keys" :
-                gsrun(client2, "A", "B", "entries");
-                console.log('before');
-                setTimeout(function(){
-                    console.log('after');
-                },500);
-                keyArray = Array.from(congratsDatabase.keys());
+                gsrun(client2, "A", "B", "entries").then(() => {
+                    keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 s = "";
                 for (let key in keyArray) {
@@ -606,6 +608,8 @@ bot.on('message', message => {
                     }
                 }
                 message.channel.send(s);
+                }
+                )
                 break;
             // !k is the search
             case "k" :
