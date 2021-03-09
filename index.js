@@ -66,8 +66,8 @@ function createSheet(nameOfSheet) {
     console.log("within create sheets");
     const gsapi = google.sheets({version: 'v4', auth: client2});
     gsapi.spreadsheets.create({
-        properties: {
-          "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+        "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+        "properties": {
           "title": nameOfSheet,
         }
       }).then((response) => {
