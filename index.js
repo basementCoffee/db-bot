@@ -34,6 +34,11 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
+        if (!dataSize){
+            dataSize.set(nameOfSheet,1);
+            console.log("Data Size prev undef: " + dataSize.get(nameOfSheet));
+        }
+        
 
         const songObjects = {
             spreadsheetId: process.env.stoken,
