@@ -836,7 +836,7 @@ bot.on('message', message => {
                         currentBotGuildId = message.guild.id.toString();
                     if (!dataSize.get(message.guild.id.toString()) || dataSize.get(message.guild.id.toString()) < 1) {
                         console.log("BREAK 1");
-                            gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
+                            // gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
                             // message.channel.send("Run '!keys' to finish initialization.");
                     }
                     gsrun(client2,"A","B", message.guild.id).then((cdb) => {
