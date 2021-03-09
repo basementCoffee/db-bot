@@ -669,7 +669,7 @@ bot.on('message', message => {
                     message.channel.send(s);
                     }
                     );
-                    if (!dataSize.get(message.guild.id)) {
+                    if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
                         gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
                             keyArray = Array.from(cdb.keys());
                             keyArray.sort();
@@ -681,7 +681,6 @@ bot.on('message', message => {
                                     s = s + ", " + keyArray[key];
                                 }
                             }
-                            message.channel.send(s);
                             }
                             );
                     }
