@@ -834,14 +834,15 @@ bot.on('message', message => {
                     var z = 1;
                     let currentBotGuildId = "";
                         currentBotGuildId = message.guild.id.toString();
-                    if (!dataSize.get(message.guild.id.toString())) {
-                        gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
-                        message.channel.send("Run '!keys' to finish initialization.");
-                    }
-                    else if (dataSize.get(message.guild.id.toString()) < 1) {
-                        gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
-                    }
+                    
                     gsrun(client2,"A","B", message.guild.id).then((cdb) => {
+                        if (!dataSize.get(message.guild.id.toString())) {
+                            gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
+                            message.channel.send("Run '!keys' to finish initialization.");
+                        }
+                        else if (dataSize.get(message.guild.id.toString()) < 1) {
+                            gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
+                        }
                     while (args[z] && args[z + 1]) {
                         var linkZ = args[z + 1];
                         if (linkZ.substring(linkZ.length - 1) === ",") {
