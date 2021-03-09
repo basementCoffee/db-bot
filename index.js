@@ -65,14 +65,23 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 function createSheet(nameOfSheet) {
     console.log("within create sheets");
     const gsapi = google.sheets({version: 'v4', auth: client2});
-    gsapi.spreadsheets.create({
+    gsapi.spreadsheets.batchUpdate({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "properties": {
-          "title": nameOfSheet,
+        resource: {
+            requests: [
+                {
+                    'addSheet':{
+                        'properties':{
+                            'title': nameOfSheet
+                        }
+                    } 
+                }
+            ],
         }
-      }).then((response) => {
-          console.log("response create sheet", response)
-      });
+    },
+    function(err, response) {
+        if (err) return callback('The API returned an error: ' + err);
+        console.log("success: ", response);
 }
 
 
@@ -179,7 +188,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709i";
+var buildNumber = "3709j";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
