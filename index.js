@@ -167,6 +167,7 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
             },
             function(err) { console.error("Execute error", err); });
             console.log("UPDATE ADD 2");
+            dataSize.set(nameOfSheet, givenValue);
     gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
 
 }
