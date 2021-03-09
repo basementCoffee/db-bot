@@ -165,7 +165,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709e";
+var buildNumber = "3709f";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -179,10 +179,10 @@ var whatsp = "";
 //var ytpl = require('ytpl');
 
 
-function createSheet(message) {
+function createSheet(nameOfSheet) {
     gapi.client.sheets.spreadsheets.create({
         properties: {
-          title: message.guild.id
+          title: nameOfSheet
         }
       }).then((response) => {
       });
@@ -507,20 +507,26 @@ bot.on('message', message => {
                 break;
             // !key 
             case "key" :
-                gsrun(client2, "A", "B", message.guild.id.toString()).then(() => {
-                    keyArray = Array.from(congratsDatabase.keys());
-                keyArray.sort();
-                s = "";
-                for (let key in keyArray) {
-                    if (key == 0) {
-                        s = keyArray[key];
-                    } else {
-                        s = s + ", " + keyArray[key];
+                try {
+                    gsrun(client2, "A", "B", message.guild.id.toString()).then(() => {
+                        keyArray = Array.from(congratsDatabase.keys());
+                    keyArray.sort();
+                    s = "";
+                    for (let key in keyArray) {
+                        if (key == 0) {
+                            s = keyArray[key];
+                        } else {
+                            s = s + ", " + keyArray[key];
+                        }
                     }
+                    message.channel.send(s);
+                    }
+                    )
+                } catch (e) {
+                    console.log("running create sheet...");
+                    createSheet(message.guild.id.toString());
                 }
-                message.channel.send(s);
-                }
-                )
+                
                 
                 break;
             // !rand gets a random number
