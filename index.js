@@ -16,13 +16,13 @@ client2.authorize(function (err, tokens) {
 
 var dataSize;
 
-async function gsrun(cl, columnToRun, secondColumn) {
+async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         const gsapi = google.sheets({version: 'v4', auth: cl});
 
 
         const spreadsheetSizeObjects = {
             spreadsheetId: process.env.stoken,
-            range: 'entries!C2'
+            range: nameOfSheet + "!C2"
         }
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
@@ -32,7 +32,7 @@ async function gsrun(cl, columnToRun, secondColumn) {
 
         const songObjects = {
             spreadsheetId: process.env.stoken,
-            range: "entries!" + columnToRun+ "2:" + secondColumn + "B" + dataSize.toString()
+            range: nameOfSheet + "!" + columnToRun+ "2:" + secondColumn + "B" + dataSize.toString()
 
         };
 
@@ -69,32 +69,37 @@ async function gsrun(cl, columnToRun, secondColumn) {
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
  */
-function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter) {
-    const gsapi = google.sheets({version: 'v4', auth: cl});
-    gsapi.spreadsheets.values.append({
-        "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": firstColumnLetter + "2:" + secondColumnLetter +  "2",
-        "includeValuesInResponse": true,
-        "insertDataOption": "INSERT_ROWS",
-        "responseDateTimeRenderOption": "FORMATTED_STRING",
-        "responseValueRenderOption": "FORMATTED_VALUE",
-        "valueInputOption": "USER_ENTERED",
-        "resource": {
-            "values": [
-                [
-                    key,
-                    link
-                ]
-            ]
-        }
-    })
-        .then(function(response) {
-                // Handle the results here (response.result has the parsed body).
-                console.log("Response", response);
-            },
-            function(err) { console.error("Execute error", err); });
+function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter, shouldVerify) {
+    if (shouldVerify) {
 
-    gsUpdateOverwrite(msg, cl, dataSize, "C");
+    } else {
+        const gsapi = google.sheets({version: 'v4', auth: cl});
+        gsapi.spreadsheets.values.append({
+            "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+            "range": firstColumnLetter + "2:" + secondColumnLetter +  "2",
+            "includeValuesInResponse": true,
+            "insertDataOption": "INSERT_ROWS",
+            "responseDateTimeRenderOption": "FORMATTED_STRING",
+            "responseValueRenderOption": "FORMATTED_VALUE",
+            "valueInputOption": "USER_ENTERED",
+            "resource": {
+                "values": [
+                    [
+                        key,
+                        link
+                    ]
+                ]
+            }
+        })
+            .then(function(response) {
+                    // Handle the results here (response.result has the parsed body).
+                    console.log("Response", response);
+                },
+                function(err) { console.error("Execute error", err); });
+    
+        gsUpdateOverwrite(msg, cl, dataSize, "C");
+    }
+    
 }
 
 /**
@@ -134,7 +139,7 @@ function gsUpdateOverwrite(msg, cl, value, databaseSizeCell) {
                 console.log("Response", response);
             },
             function(err) { console.error("Execute error", err); });
-    gsrun(cl, "A", "B").then(
+    gsrun(cl, "A", "B", "entries").then(
         r => console.log(r)
     );
 }
@@ -205,7 +210,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709";
+var buildNumber = "3709b";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -258,6 +263,14 @@ bot.on('message', msg => {
     }
 })
 
+function createSheet(message) {
+    gapi.client.sheets.spreadsheets.create({
+        properties: {
+          title: message.guild.id
+        }
+      }).then((response) => {
+      });
+}
 
 //Who's down greeting
 bot.on('message', msg => {
@@ -537,7 +550,7 @@ bot.on('message', message => {
                 break;
             // !key 
             case "key" :
-                gsrun(client2, "A", "B");
+                gsrun(client2, "A", "B", "entries");
                 console.log('before');
                 setTimeout(function(){
                     console.log('after');
@@ -575,7 +588,7 @@ bot.on('message', message => {
             break;
             // !keys is keys
             case "keys" :
-                gsrun(client2, "A", "B");
+                gsrun(client2, "A", "B", "entries");
                 console.log('before');
                 setTimeout(function(){
                     console.log('after');
@@ -720,7 +733,7 @@ bot.on('message', message => {
                         linkZ = linkZ.substring(0, linkZ.length - 1);
                     }
                     congratsDatabase.set(args[z], args[z + 1]);
-                    gsUpdateAdd(message,client2, args[z], args[z + 1], "A", "B");
+                    gsUpdateAdd(message,client2, args[z], args[z + 1], "A", "B", false);
                     // gsPushUpdate(client2, args[z], args[z + 1]);
                     z = z + 2;
                     songsAddedInt += 1;
@@ -732,7 +745,31 @@ bot.on('message', message => {
                     message.channel.send(songsAddedInt.toString() + " songs added to the database.");
                 }
                 break;
-
+                case "a2":
+                    if (!args[1] || !args[2]) {
+                        message.channel.send("Could not add to the database. Put a song key followed by a link.");
+                        break;
+                    }
+                    var songsAddedInt = 0;
+                    var z = 1;
+                    while (args[z] && args[z + 1]) {
+                        var linkZ = args[z + 1];
+                        if (linkZ.substring(linkZ.length - 1) === ",") {
+                            linkZ = linkZ.substring(0, linkZ.length - 1);
+                        }
+                        congratsDatabase.set(args[z], args[z + 1]);
+                        gsUpdateAdd(message,client2, args[z], args[z + 1], "A", "B", true);
+                        // gsPushUpdate(client2, args[z], args[z + 1]);
+                        z = z + 2;
+                        songsAddedInt += 1;
+                    }
+                    if (songsAddedInt === 1) {
+                        message.channel.send("Song successfully added to the database.");
+                        break;
+                    } else if (songsAddedInt > 1) {
+                        message.channel.send(songsAddedInt.toString() + " songs added to the database.");
+                    }
+                    break;
             // !rm removes database entries
             case "rm":
                 var successInDelete = congratsDatabase.delete(args[1]);
