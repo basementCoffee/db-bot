@@ -668,7 +668,23 @@ bot.on('message', message => {
                     }
                     message.channel.send(s);
                     }
-                    )
+                    );
+                    if (!dataSize.get(message.guild.id)) {
+                        gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
+                            keyArray = Array.from(cdb.keys());
+                            keyArray.sort();
+                            s = "";
+                            for (let key in keyArray) {
+                                if (key == 0) {
+                                    s = keyArray[key];
+                                } else {
+                                    s = s + ", " + keyArray[key];
+                                }
+                            }
+                            message.channel.send(s);
+                            }
+                            );
+                    }
                 }
                  catch (e) {
                     console.log("!key Error: ", e);
