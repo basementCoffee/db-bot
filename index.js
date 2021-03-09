@@ -744,7 +744,7 @@ bot.on('message', message => {
     }
 })
 var enumPlayingFunction;
-function playRandom(message, numOfTimes) {
+function playRandom(message, numOfTimes, isglobal) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "random";
     var numOfRetries = 0;
@@ -754,7 +754,12 @@ function playRandom(message, numOfTimes) {
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
-    whatsp = congratsDatabase.get(rk);
+    if (isglobal) {
+        whatsp = congratsDatabase.get(rk);
+    } else {
+        currentCD = mapOfCongratsDatabase.get(message.guild.id); 
+        whatsp = currentCD.get(rk);
+    }
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
