@@ -731,15 +731,17 @@ bot.on('message', message => {
                     if (args[1] === "" || args[1] === " ") {
                         // intentionally left blank
                     } else {
-                        if (enumPlayingFunction != "playing" && totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] === 0) {
+                        if (totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] === 0) {
                             message.channel.send(congratsDatabase.get(args[1]));
-                        } else if (currentRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] ) {
+                        } else if (enumPlayingFunction !== "playing" && currentRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] ) {
                             message.channel.send("("+ currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + congratsDatabase.get(args[1]));
                         }
                     }
                 }
                 if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
-                     if (servers[mgid] && servers[mgid].queue && servers[mgid].queue.length > 1) {
+                    if (enumPlayingFunction !== "playing" && totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] !== 0) {
+                        message.channel.send("(" + currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + whatspMap[message.member.voice.channel]);
+                    } else if (servers[mgid] && servers[mgid].queue && servers[mgid].queue.length > 1) {
                         message.channel.send("(1/" + servers[mgid].queue.length + ")  " + whatspMap[message.member.voice.channel]);
                     } 
                     else {
