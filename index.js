@@ -167,7 +167,6 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
             },
             function(err) { console.error("Execute error", err); });
             console.log("UPDATE ADD 2");
-            console.log(response);
     gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
 
 }
@@ -666,7 +665,7 @@ bot.on('message', message => {
                             s = s + ", " + keyArray[key];
                         }
                     }
-                    if (!s || s.length < 1) {
+                    if (!s || s == "") {
                         message.channel.send("Your database is empty, try adding a song with '!a'.");
                     } else {
                         message.channel.send(s);
