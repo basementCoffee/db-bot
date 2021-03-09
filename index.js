@@ -187,7 +187,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
         console.log(e);
     }
 
-    databaseSizeCell += "2";
+    databaseSizeCell += "1";
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
@@ -848,7 +848,6 @@ bot.on('message', message => {
                     }
                     if (songsAddedInt === 1) {
                         message.channel.send("Song successfully added to the database.");
-                        break;
                     } else if (songsAddedInt > 1) {
                         message.channel.send(songsAddedInt.toString() + " songs added to the database.");
                     }
