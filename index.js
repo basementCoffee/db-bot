@@ -10,7 +10,7 @@ client2.authorize(function (err, tokens) {
         console.log(err);
     } else {
         console.log("Connected to google apis.")
-        gsrun(client2, "A", "B");
+        gsrun(client2, "A", "B", "entries");
     }
 });
 
@@ -210,7 +210,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709b";
+var buildNumber = "3709c";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
