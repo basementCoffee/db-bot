@@ -30,7 +30,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
             dataSize.set(nameOfSheet,0);
         } else {
-            dataSize.set(dataSizeFromSheets.data.values,0); 
+            dataSize.set(nameOfSheet,dataSizeFromSheets.data.values); 
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
