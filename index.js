@@ -666,7 +666,12 @@ bot.on('message', message => {
                             s = s + ", " + keyArray[key];
                         }
                     }
-                    message.channel.send(s);
+                    if (!s || s.length < 1) {
+                        message.channel.send("Your database is empty, try adding a song with '!a'.");
+                    } else {
+                        message.channel.send(s);
+                    }
+                    
                     }
                     );
                     if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
