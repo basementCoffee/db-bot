@@ -165,7 +165,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709f";
+var buildNumber = "3709g";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -508,8 +508,9 @@ bot.on('message', message => {
             // !key 
             case "key" :
                 try {
-                    gsrun(client2, "A", "B", message.guild.id.toString()).then(() => {
-                        keyArray = Array.from(congratsDatabase.keys());
+                    gsrun(client2, "A", "B", message.guild.id.toString()).then((x) => {
+                    console.log("THIS IS X: ", x);
+                    keyArray = Array.from(congratsDatabase.keys());
                     keyArray.sort();
                     s = "";
                     for (let key in keyArray) {
