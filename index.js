@@ -19,7 +19,7 @@ var dataSize;
 async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         const gsapi = google.sheets({version: 'v4', auth: cl});
 
-
+        nameOfSheet = nameOfSheet.toString();
         const spreadsheetSizeObjects = {
             spreadsheetId: process.env.stoken,
             range: nameOfSheet + "!C1"
@@ -535,7 +535,7 @@ bot.on('message', message => {
                     }
                 }
                 break;
-                case "r2" :
+            case "r2" :
                 if (!message.member.voice.channel) {
                     return;
                 }
@@ -546,22 +546,44 @@ bot.on('message', message => {
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
-                if (!args[1]) {
-                    playRandom(message, 1);
-                } else {
-                    try {
-                        let num = parseInt(args[1])
-                        if (num === null || num === undefined) {
-                            totalRandomIntMap[message.member.voice.channel] = 0;
+                if (!mapOfCongratsDatabase[message.guild.id]){
+                    gsrun(cl,"A","B", message.guild.id).then(() => {
+                        if (!args[1]) {
+                            playRandom2(message, 1);
                         } else {
-                            totalRandomIntMap[message.member.voice.channel] = num;
+                            try {
+                                let num = parseInt(args[1])
+                                if (num === null || num === undefined) {
+                                    totalRandomIntMap[message.member.voice.channel] = 0;
+                                } else {
+                                    totalRandomIntMap[message.member.voice.channel] = num;
+                                }
+                                currentRandomIntMap[message.member.voice.channel] = 0;
+                                playRandom2(message, num);
+                            } catch (e) {
+                                playRandom2(message, 1);
+                            }
                         }
-                        currentRandomIntMap[message.member.voice.channel] = 0;
-                        playRandom(message, num);
-                    } catch (e) {
-                        playRandom(message, 1);
+                    })
+                } else {
+                    if (!args[1]) {
+                        playRandom2(message, 1);
+                    } else {
+                        try {
+                            let num = parseInt(args[1])
+                            if (num === null || num === undefined) {
+                                totalRandomIntMap[message.member.voice.channel] = 0;
+                            } else {
+                                totalRandomIntMap[message.member.voice.channel] = num;
+                            }
+                            currentRandomIntMap[message.member.voice.channel] = 0;
+                            playRandom2(message, num);
+                        } catch (e) {
+                            playRandom2(message, 1);
+                        }
                     }
-                }
+                } 
+                
                 break;
             // !key 
             case "key" :
@@ -845,6 +867,71 @@ function playRandom(message, numOfTimes) {
         }
     })
 }
+// the specific version of play random
+function playRandom2(message, numOfTimes) {
+    currentRandomIntMap[message.member.voice.channel] += 1;
+    enumPlayingFunction = "randomS";
+    var numOfRetries = 0;
+    server = servers[message.guild.id];
+    let rKeyArray = Array.from(congratsDatabase.keys());
+    numOfRetries += 1;
+    let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
+    let rk = rKeyArray[rn];
+    //console.log("attempting to play key:" + rk);
+    congratsDatabaseTemp = mapOfCongratsDatabase[message.guild.id];
+    whatsp = congratsDatabaseTemp.get(rk);
+    if (!whatsp) {
+        console.log("Play random whatsp is empty.");
+        return;
+    }
+    whatspMap[message.member.voice.channel] = whatsp;
+    //server.queue.push(congratsDatabase.get(rk));
+    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+        try {
+            connection.voice.setSelfDeaf(true);
+            //console.log("calling play method...");
+            let myStream = ytdl(whatsp, {
+                filter: "audioonly",
+                opusEncoded: true,
+                encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+            });
+            let dispatcher = connection.play(myStream, {
+                type: "opus"
+            })
+                .on("finish", () => {
+                    numOfTimes -= 1;
+                    if (numOfTimes === 0) {
+                        totalRandomIntMap[message.member.voice.channel] = 0;
+                        currentRandomIntMap[message.member.voice.channel] = 0;
+                        connection.disconnect();
+                    } else {
+                        playRandom(message, numOfTimes);
+                    }
+
+                })
+        } catch (e) {
+            // Error catching - fault with the database yt link?
+            console.log("Below is a caught error message. (this broke:" + rk + ")");
+            //printErrorToChannel("!r", rk, e);
+            console.log(e);
+            if (numOfRetries > 2) {
+                message.channel.send("Could not play random songs. Sorry.");
+                printErrorToChannel("!r (third try)", rk, e);
+                connection.disconnect();
+            } else {
+                if (numOfRetries > 1) {
+                    printErrorToChannel("!r", rk, e);
+                } else {
+                    printErrorToChannel("!r (second try)", rk, e);
+                }
+                //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
+                playRandom(message, numOfTimes);
+            }
+
+        }
+    })
+}
+
 /**
  *  New play song function.
  * @param {*} message the message with channel info
