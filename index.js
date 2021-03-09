@@ -95,11 +95,7 @@ function createSheet(nameOfSheet) {
     function(err, response) {
         if (err){
             console.log('The API returned an error: ' + err);
-        } else {
-            // gsUpdateAdd2(cl, 1, "D", nameOfSheet);
-            // gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
         }
-         
         console.log("success: ", response);
 });
 }
@@ -192,7 +188,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": nameOfSheet + "!D2",
+        "range": nameOfSheet + "!D1",
         "includeValuesInResponse": true,
         "responseDateTimeRenderOption": "FORMATTED_STRING",
         "valueInputOption": "USER_ENTERED",
