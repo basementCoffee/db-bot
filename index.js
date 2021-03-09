@@ -879,7 +879,7 @@ function playRandom2(message, numOfTimes) {
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
-    congratsDatabaseTemp = mapOfCongratsDatabase[message.guild.id];
+    congratsDatabaseTemp = mapOfCongratsDatabase.get(message.guild.id.toString());
     whatsp = congratsDatabaseTemp.get(rk);
     if (!whatsp) {
         console.log("Play random whatsp is empty.");
