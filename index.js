@@ -167,6 +167,7 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
             },
             function(err) { console.error("Execute error", err); });
             console.log("UPDATE ADD 2");
+            console.log(response);
     gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
 
 }
@@ -665,12 +666,7 @@ bot.on('message', message => {
                             s = s + ", " + keyArray[key];
                         }
                     }
-                    if (!s || s == "") {
-                        message.channel.send("Your database is empty, try adding a song with '!a'.");
-                    } else {
-                        message.channel.send(s);
-                    }
-                    
+                    message.channel.send(s);
                     }
                     );
                     if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
@@ -837,11 +833,11 @@ bot.on('message', message => {
                     var songsAddedInt = 0;
                     var z = 1;
                     if (!dataSize.get(message.guild.id.toString())) {
-                        gsUpdateAdd2(client2, 1,"D", message.guild.id);
+                        gsUpdateAdd2(client2, 1,"D", nameOfSheet);
                         message.channel.send("Run '!keys' to finish initialization.");
                     }
                     else if (dataSize.get(message.guild.id.toString()) < 1) {
-                        gsUpdateAdd2(client2, 1,"D", message.guild.id);
+                        gsUpdateAdd2(client2, 1,"D", nameOfSheet);
                     }
                     gsrun(client2,"A","B", message.guild.id).then((cdb) => {
                     while (args[z] && args[z + 1]) {
