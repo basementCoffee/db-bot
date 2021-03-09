@@ -63,10 +63,12 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 }
 
 function createSheet(nameOfSheet) {
+    console.log("within create sheets");
     const gsapi = google.sheets({version: 'v4', auth: client2});
     gsapi.spreadsheets.create({
         properties: {
-          title: nameOfSheet
+          "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+          "title": nameOfSheet,
         }
       }).then((response) => {
           console.log("response create sheet", response)
