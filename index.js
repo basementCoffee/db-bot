@@ -97,7 +97,7 @@ function createSheet(nameOfSheet) {
         if (err){
             console.log('The API returned an error: ' + err);
         } else {
-            gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            gsupdateAdd2(cl, 1, "D", nameOfSheet);
         }
          
         console.log("success: ", response);
