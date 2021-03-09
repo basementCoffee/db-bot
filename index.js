@@ -611,8 +611,8 @@ bot.on('message', message => {
                     sheetString = message.guild.id;
                     createSheet(sheetString);
                     console.log("done with create sheet...", sheetString);
-                    gsrun(client2, "A", "B", sheetString).then(() => {
-                    keyArray = Array.from(congratsDatabase.keys());
+                    gsrun(client2, "A", "B", sheetString).then((cdb) => {
+                    keyArray = Array.from(cdb.keys());
                     keyArray.sort();
                     s = "";
                     for (let key in keyArray) {
