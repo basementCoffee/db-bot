@@ -27,8 +27,8 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
-            gsUpdateAdd(cl, 1, 0, "D","D",nameOfSheet);
-            gsUpdateOverwrite(cl, 0, "D", nameOfSheet);
+            gsUpdateAdd2(cl, 1, "D",nameOfSheet);
+            // gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
             dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
@@ -135,6 +135,34 @@ function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, nameO
     
         gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
     
+}
+
+function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
+    const gsapi = google.sheets({version: 'v4', auth: cl});
+    gsapi.spreadsheets.values.append({
+        "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+        "range": nameOfSheet + "!" + firstColumnLetter + "2",
+        "includeValuesInResponse": true,
+        "insertDataOption": "INSERT_ROWS",
+        "responseDateTimeRenderOption": "FORMATTED_STRING",
+        "responseValueRenderOption": "FORMATTED_VALUE",
+        "valueInputOption": "USER_ENTERED",
+        "resource": {
+            "values": [
+                [
+                   givenValue
+                ]
+            ]
+        }
+    })
+        .then(function(response) {
+                // Handle the results here (response.result has the parsed body).
+                console.log("Response", response);
+            },
+            function(err) { console.error("Execute error", err); });
+
+    gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
+
 }
 
 /**
