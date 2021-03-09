@@ -755,7 +755,9 @@ function playRandom(message, numOfTimes, isglobal) {
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
     if (isglobal) {
-        whatsp = congratsDatabase.get(rk);
+        gsrun(client2, "A", "B", "entries").then(() => {
+            whatsp = congratsDatabase.get(rk);
+        });
     } else {
         currentCD = mapOfCongratsDatabase.get(message.guild.id); 
         whatsp = currentCD.get(rk);
