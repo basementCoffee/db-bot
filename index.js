@@ -100,7 +100,7 @@ function createSheet(nameOfSheet) {
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
  */
-function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter, shouldVerify) {
+function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, shouldVerify) {
     if (shouldVerify) {
 
     } else {
@@ -128,7 +128,7 @@ function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter, 
                 },
                 function(err) { console.error("Execute error", err); });
     
-        gsUpdateOverwrite(msg, cl, dataSize, "C", "entries");
+        gsUpdateOverwrite(cl, dataSize, "C", "entries");
     }
     
 }
@@ -152,7 +152,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": databaseSizeCell + "2",
+        "range": "C2",
         "includeValuesInResponse": true,
         "responseDateTimeRenderOption": "FORMATTED_STRING",
         "valueInputOption": "USER_ENTERED",
@@ -694,7 +694,7 @@ bot.on('message', message => {
                         linkZ = linkZ.substring(0, linkZ.length - 1);
                     }
                     congratsDatabase.set(args[z], args[z + 1]);
-                    gsUpdateAdd(message,client2, args[z], args[z + 1], "A", "B", false);
+                    gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", false);
                     // gsPushUpdate(client2, args[z], args[z + 1]);
                     z = z + 2;
                     songsAddedInt += 1;
@@ -719,7 +719,7 @@ bot.on('message', message => {
                             linkZ = linkZ.substring(0, linkZ.length - 1);
                         }
                         congratsDatabase.set(args[z], args[z + 1]);
-                        gsUpdateAdd(message,client2, args[z], args[z + 1], "A", "B", true);
+                        gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", true);
                         // gsPushUpdate(client2, args[z], args[z + 1]);
                         z = z + 2;
                         songsAddedInt += 1;
