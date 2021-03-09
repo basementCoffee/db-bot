@@ -64,7 +64,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 
 function createSheet(nameOfSheet) {
     const gsapi = google.sheets({version: 'v4', auth: client2});
-    gsapi.client.sheets.spreadsheets.create({
+    gsapi.spreadsheets.create({
         properties: {
           title: nameOfSheet
         }
@@ -176,7 +176,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709h";
+var buildNumber = "3709i";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
