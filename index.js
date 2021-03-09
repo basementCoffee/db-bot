@@ -28,16 +28,16 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             gsUpdateAdd2(cl, 1, "D",nameOfSheet);
-            // gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            //gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
             dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
-        if (!dataSize){
+        if (!dataSize || !dataSize.get(nameOfSheet)){
             dataSize.set(nameOfSheet,1);
-            gsUpdateAdd(cl, 1, 0, "C","D",nameOfSheet);
+            gsUpdateAdd2(cl, 1,"D",nameOfSheet);
             console.log("Data Size prev undef: " + dataSize.get(nameOfSheet));
         }
         
@@ -160,7 +160,8 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
                 console.log("Response", response);
             },
             function(err) { console.error("Execute error", err); });
-
+            console.log("UPDATE ADD 2");
+            console.log(response);
     gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
 
 }
