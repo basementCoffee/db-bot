@@ -614,11 +614,9 @@ bot.on('message', message => {
             case "keys" :
                 console.log("running create sheet...");
                 try {
-                    let sheetString = "";
-                    sheetString = message.guild.id;
                     createSheet(sheetString);
-                    console.log("done with create sheet...", sheetString);
-                    gsrun(client2, "A", "B", sheetString).then((cdb) => {
+                    console.log("done with create sheet...", message.guild.id);
+                    gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
                     keyArray = Array.from(cdb.keys());
                     keyArray.sort();
                     s = "";
@@ -766,7 +764,7 @@ bot.on('message', message => {
                 message.channel.send("Here's link to add to the database:\n" +
                     "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622")
                 break;
-            // !a adds to the databse
+            // !ag adds to the databse
             case "ag":
                 if (!args[1] || !args[2]) {
                     message.channel.send("Could not add to the database. Put a song key followed by a link.");
@@ -805,7 +803,7 @@ bot.on('message', message => {
                         }
                         congratsDatabase.set(args[z], args[z + 1]);
                         let currentBotGuildId = "";
-                        currentBotGuildId = message.guild.id;
+                        currentBotGuildId = message.guild.id.toString();
                         gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
                         // gsPushUpdate(client2, args[z], args[z + 1]);
                         z = z + 2;
