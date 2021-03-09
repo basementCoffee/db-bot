@@ -588,13 +588,13 @@ bot.on('message', message => {
                     playRandom2(message, 1, xdb.congratsDatabase);
                 } else {
                     try {
-                        let num = parseInt(args[1])
+                        let num = parseInt(args[1]);
+                        currentRandomIntMap[message.member.voice.channel] = 0;
                         if (num === null || num === undefined) {
                             totalRandomIntMap[message.member.voice.channel] = 0;
                         } else {
                             totalRandomIntMap[message.member.voice.channel] = num;
                         }
-                        currentRandomIntMap[message.member.voice.channel] = 0;
                         playRandom2(message, xdb.congratsDatabase);
                     } catch (e) {
                         playRandom2(message, xdb.congratsDatabase);
