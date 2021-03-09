@@ -852,6 +852,8 @@ bot.on('message', message => {
                         message.channel.send("Song successfully added to the database.");
                     } else if (songsAddedInt > 1) {
                         message.channel.send(songsAddedInt.toString() + " songs added to the database.");
+                    } else {
+                        message.channel.send("Please call '!keys' to initialize the database.");
                     }
                 });
                     break;
