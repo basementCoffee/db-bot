@@ -27,8 +27,8 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
-            gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
-            // gsUpdateAdd(cl, 1, 0, "C","D",nameOfSheet);
+            gsUpdateAdd(cl, 1, 0, "D","D",nameOfSheet);
+            gsUpdateOverwrite(cl, 0, "D", nameOfSheet);
             dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
@@ -133,7 +133,7 @@ function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, nameO
                 },
                 function(err) { console.error("Execute error", err); });
     
-        gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "C", nameOfSheet);
+        gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
     
 }
 
