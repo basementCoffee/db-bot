@@ -69,6 +69,7 @@ function createSheet(nameOfSheet) {
           title: nameOfSheet
         }
       }).then((response) => {
+          console.log("response create sheet", response)
       });
 }
 
@@ -511,7 +512,9 @@ bot.on('message', message => {
             case "key" :
                 console.log("running create sheet...");
                 try {
-                    createSheet(message.guild.id.toString());
+                    let sheetString = "";
+                    sheetString = message.guild.id;
+                    createSheet(sheetString);
                     console.log("done with create sheet...");
                     gsrun(client2, "A", "B", message.guild.id.toString()).then(() => {
                     keyArray = Array.from(congratsDatabase.keys());
