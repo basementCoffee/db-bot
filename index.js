@@ -585,7 +585,7 @@ bot.on('message', message => {
             //     break;
 
 
-            // !r plays a random song from the database
+            // !rg plays a random song from the database
             case "rg" :
                 if (!message.member.voice.channel) {
                     return;
@@ -614,6 +614,7 @@ bot.on('message', message => {
                     }
                 }
                 break;
+            // !r is the normal random
             case "r" :
                 if (!message.member.voice.channel) {
                     return;
@@ -948,7 +949,11 @@ function playRandom2(message, numOfTimes, cdb) {
         let tempStringRandom = "";
         tempStringRandom = message.guild.id;
         gsrun(client2, "A", "B", tempStringRandom);
-        message.channel.send("It appears your database is empty.\nTry running '!keys' or add a song to the database.");
+        if (cdb.size() < 2) {
+            message.channel.send("Your database needs at least two items to randomize.");
+        } else {
+            message.channel.send("It appears your database is empty.\nTry running '!keys' or add a song to the database.");
+        }
         console.log("Play random whatsp is empty.");
         return;
     }
