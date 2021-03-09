@@ -147,55 +147,6 @@ function gsUpdateOverwrite(msg, cl, value, databaseSizeCell) {
 }
 
 
-async function gsPushUpdate(cl, providedKey, providedLink) {
-    const gsapi = google.sheets({version: 'v4', auth: cl});
-    //dataSize += 1;
-    // var aProvKey = new Array(providedKey);
-    // const updateOptions = {
-    //     spreadsheetId: process.env.stoken,
-    //     range: 'entries!A51:B51',
-    //     valueInputOption: 'USER_ENTERED',
-    //     //resource: {values: aProvKey}
-    // };
-    //
-    // const valueRange = {
-    //     values: ['testing', '1']
-    // };
-    // let response = await gsapi.spreadsheets.values.update(updateOptions, valueRange);
-
-    const params = {
-        // The ID of the spreadsheet to update.
-        spreadsheetId: 'process.env.stoken',
-    };
-
-    const batchUpdateValuesRequestBody = {
-        // How the input data should be interpreted.
-        valueInputOption: 'USER_ENTERED',
-        range: 'entries!A50:B50',
-        // The new values to apply to the spreadsheet.
-        data: ['testing', '1'],
-
-    };
-
-    const request = gsapi.spreadsheets.values.batchUpdate(params, batchUpdateValuesRequestBody);
-
-    // const valueRange2 = {
-    //     values: ['testing']
-    // };
-    //
-    // var aProvLink = new Array(providedLink);
-    // const updateOptions2 = {
-    //     spreadsheetId: process.env.stoken,
-    //     range: 'entries!B50:C50' ,
-    //     valueInputOption: 'USER_ENTERED',
-    //     // resource: providedLink.toString()
-    //     //resource: {values: aProvLink}
-    // };
-    //
-    // let response2 = await gsapi.spreadsheets.values.update(updateOptions2, valueRange2);
-}
-
-
 //ABOVE IS GOOGLE API -------------------------------------------------------------
 //ABOVE IS GOOGLE API -------------------------------------------------------------
 
@@ -227,7 +178,17 @@ var whatsp = "";
 //ytpl test for youtube playlists!
 //var ytpl = require('ytpl');
 
-// parses message, provides a response
+
+function createSheet(message) {
+    gapi.client.sheets.spreadsheets.create({
+        properties: {
+          title: message.guild.id
+        }
+      }).then((response) => {
+      });
+}
+
+//Who's down and algo greeting
 bot.on('message', msg => {
     try {
         if (msg.member.displayName === "Congratz Ambassador") {
@@ -265,19 +226,6 @@ bot.on('message', msg => {
             }
         }
     }
-})
-
-function createSheet(message) {
-    gapi.client.sheets.spreadsheets.create({
-        properties: {
-          title: message.guild.id
-        }
-      }).then((response) => {
-      });
-}
-
-//Who's down and algo greeting
-bot.on('message', msg => {
     if (msg.content.includes("who's down")) {
         let randomIntForDown = Math.floor(Math.random() * 6);
         if (randomIntForDown === 4) {
@@ -559,7 +507,7 @@ bot.on('message', message => {
                 break;
             // !key 
             case "key" :
-                gsrun(client2, "A", "B", "entries").then(() => {
+                gsrun(client2, "A", "B", message.guild.id.toString()).then(() => {
                     keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 s = "";
