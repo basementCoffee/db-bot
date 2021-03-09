@@ -63,7 +63,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 }
 
 function createSheet(nameOfSheet) {
-    const gsapi = google.sheets({version: 'v4', auth: cl});
+    const gsapi = google.sheets({version: 'v4', auth: client2});
     gsapi.client.sheets.spreadsheets.create({
         properties: {
           title: nameOfSheet
