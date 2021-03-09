@@ -309,8 +309,8 @@ function contentsContainCongrats(message) {
 var keyArray;
 var s;
 
-function skipSong(message) {
-    if (enumPlayingFunction === "random") {
+function skipSong(message, cdb) {
+    if (enumPlayingFunction === "random" || enumPlayingFunction === "randomS") {
         if (currentRandomIntMap[message.member.voice.channel] === totalRandomIntMap[message.member.voice.channel] || totalRandomIntMap[message.member.voice.channel] === 0){
             totalRandomIntMap[message.member.voice.channel] = 0;
             currentRandomIntMap[message.member.voice.channel] = 0;
@@ -320,21 +320,9 @@ function skipSong(message) {
             whatsp = "Last Played:\n" + whatsp;
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
-            playRandom(message, totalRandomIntMap[message.member.voice.channel]);
+            playRandom2(message, totalRandomIntMap[message.member.voice.channel], cdb);
         }
-    } else if (enumPlayingFunction === "randomS") {
-        if (currentRandomIntMap[message.member.voice.channel] === totalRandomIntMap[message.member.voice.channel] || totalRandomIntMap[message.member.voice.channel] === 0){
-            totalRandomIntMap[message.member.voice.channel] = 0;
-            currentRandomIntMap[message.member.voice.channel] = 0;
-            if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                connection.disconnect();
-            })
-            whatsp = "Last Played:\n" + whatsp;
-            whatspMap[message.member.voice.channel] = whatsp;
-        } else {
-            playRandom(message, totalRandomIntMap[message.member.voice.channel]);
-        }
-    } 
+    }
     else {
         // if server queue is not empty then skip
         if (servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
@@ -596,8 +584,9 @@ bot.on('message', message => {
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 enumPlayingFunction = "random";
                 servers[message.guild.id].queue = [];
+                gsrun(client2,"A","B", "entries").then((xdb) => {
                 if (!args[1]) {
-                    playRandom(message, 1);
+                    playRandom2(message, 1, xdb.congratsDatabase);
                 } else {
                     try {
                         let num = parseInt(args[1])
@@ -607,11 +596,12 @@ bot.on('message', message => {
                             totalRandomIntMap[message.member.voice.channel] = num;
                         }
                         currentRandomIntMap[message.member.voice.channel] = 0;
-                        playRandom(message, num);
+                        playRandom2(message, xdb.congratsDatabase);
                     } catch (e) {
-                        playRandom(message, 1);
+                        playRandom2(message, xdb.congratsDatabase);
                     }
                 }
+            });
                 break;
             // !r is the normal random
             case "r" :
@@ -779,11 +769,27 @@ bot.on('message', message => {
             break;
             // !skip
             case "skip" :
-                skipSong(message);
+                let mgid = "";
+                if (enumPlayingFunction === "random") {
+                    mgid = "entries";
+                } else {
+                    mgid = message.guild.id;
+                }
+                gsrun(client2, "A", "B", mgid).then((xdb) => {
+                skipSong(message, xdb.congratsDatabase);
+                });
                 break;
             // !sk
             case "sk" :
-                skipSong(message);
+                let mgid = "";
+                if (enumPlayingFunction === "random") {
+                    mgid = "entries";
+                } else {
+                    mgid = message.guild.id;
+                }
+                gsrun(client2, "A", "B", mgid).then((xdb) => {
+                skipSong(message, xdb.congratsDatabase);
+                });
                 break;
             // !v prints out the version number
             case "v" :
@@ -866,68 +872,6 @@ bot.on('message', message => {
     }
 })
 var enumPlayingFunction;
-function playRandom(message, numOfTimes) {
-    currentRandomIntMap[message.member.voice.channel] += 1;
-    enumPlayingFunction = "random";
-    var numOfRetries = 0;
-    let rKeyArray = Array.from(congratsDatabase.keys());
-    numOfRetries += 1;
-    let rn = Math.floor((Math.random() * (rKeyArray.length)));
-    let rk = rKeyArray[rn];
-    //console.log("attempting to play key:" + rk);
-    whatsp = congratsDatabase.get(rk);
-    if (!whatsp){
-        gsrun(client2, "A", "B", "entries");
-        return;
-    }
-    whatspMap[message.member.voice.channel] = whatsp;
-    //server.queue.push(congratsDatabase.get(rk));
-    let myStream = ytdl(whatsp, {
-        filter: "audioonly",
-        opusEncoded: true,
-        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-    })
-    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-        try {
-            connection.voice.setSelfDeaf(true);
-            //console.log("calling play method...");
-                connection.play(myStream, {
-                    type: "opus"
-                })
-                    .on("finish", () => {
-                        numOfTimes -= 1;
-                        if (numOfTimes === 0) {
-                            totalRandomIntMap[message.member.voice.channel] = 0;
-                            currentRandomIntMap[message.member.voice.channel] = 0;
-                            connection.disconnect();
-                        } else {
-                            playRandom(message, numOfTimes);
-                        }
-    
-                    })
-
-        } catch (e) {
-            // Error catching - fault with the database yt link?
-            console.log("Below is a caught error message. (this broke:" + rk + ")");
-            //printErrorToChannel("!r", rk, e);
-            console.log(e);
-            if (numOfRetries > 2) {
-                message.channel.send("Could not play random songs. Sorry.");
-                printErrorToChannel("!r (third try)", rk, e);
-                connection.disconnect();
-            } else {
-                if (numOfRetries > 1) {
-                    printErrorToChannel("!r", rk, e);
-                } else {
-                    printErrorToChannel("!r (second try)", rk, e);
-                }
-                //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                playRandom(message, numOfTimes);
-            }
-
-        }
-    })
-}
 
 /**
  * Function to display help list
@@ -964,7 +908,6 @@ function sendHelp(message, prefixString){
 // the specific version of play random
 function playRandom2(message, numOfTimes, cdb) {
     currentRandomIntMap[message.member.voice.channel] += 1;
-    enumPlayingFunction = "randomS";
     var numOfRetries = 0;
     server = servers[message.guild.id];
     let rKeyArray = Array.from(cdb.keys());
