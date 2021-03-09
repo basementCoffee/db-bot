@@ -835,6 +835,9 @@ bot.on('message', message => {
                     if (!dataSize.get(message.guild.id.toString())) {
                         message.channel.send("Run '!keys' once more to finish initialization.");
                     }
+                    else if (dataSize.get(message.guild.id.toString()) < 1) {
+                        gsUpdateOverwrite(client2,0,"D", message.guild.id);
+                    }
                     gsrun(client2,"A","B", message.guild.id).then((cdb) => {
                     while (args[z] && args[z + 1]) {
                         var linkZ = args[z + 1];
