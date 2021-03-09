@@ -280,7 +280,7 @@ function skipSong(message) {
             whatsp = "Last Played:\n" + whatsp;
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
-            playRandom(message, totalRandomIntMap[message.member.voice.channel], true);
+            playRandom(message, totalRandomIntMap[message.member.voice.channel]);
         }
     } else if (enumPlayingFunction === "randomS") {
         if (currentRandomIntMap[message.member.voice.channel] === totalRandomIntMap[message.member.voice.channel] || totalRandomIntMap[message.member.voice.channel] === 0){
@@ -292,7 +292,7 @@ function skipSong(message) {
             whatsp = "Last Played:\n" + whatsp;
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
-            playRandom(message, totalRandomIntMap[message.member.voice.channel], false);
+            playRandom(message, totalRandomIntMap[message.member.voice.channel]);
         }
     } 
     else {
@@ -519,7 +519,7 @@ bot.on('message', message => {
                 enumPlayingFunction = "random";
                 servers[message.guild.id].queue = [];
                 if (!args[1]) {
-                    playRandom(message, 1, true);
+                    playRandom(message, 1);
                 } else {
                     try {
                         let num = parseInt(args[1])
@@ -529,9 +529,9 @@ bot.on('message', message => {
                             totalRandomIntMap[message.member.voice.channel] = num;
                         }
                         currentRandomIntMap[message.member.voice.channel] = 0;
-                        playRandom(message, num, true);
+                        playRandom(message, num);
                     } catch (e) {
-                        playRandom(message, 1, true);
+                        playRandom(message, 1);
                     }
                 }
                 break;
@@ -547,7 +547,7 @@ bot.on('message', message => {
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
                 if (!args[1]) {
-                    playRandom(message, 1, false);
+                    playRandom(message, 1);
                 } else {
                     try {
                         let num = parseInt(args[1])
@@ -557,9 +557,9 @@ bot.on('message', message => {
                             totalRandomIntMap[message.member.voice.channel] = num;
                         }
                         currentRandomIntMap[message.member.voice.channel] = 0;
-                        playRandom(message, num, false);
+                        playRandom(message, num);
                     } catch (e) {
-                        playRandom(message, 1, false);
+                        playRandom(message, 1);
                     }
                 }
                 break;
@@ -787,7 +787,7 @@ bot.on('message', message => {
     }
 })
 var enumPlayingFunction;
-async function playRandom(message, numOfTimes, isglobal) {
+function playRandom(message, numOfTimes) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "random";
     var numOfRetries = 0;
@@ -797,17 +797,7 @@ async function playRandom(message, numOfTimes, isglobal) {
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
-    if (isglobal) {
-        await gsrun(client2, "A", "B", "entries").then(() => {
-            whatsp = congratsDatabase.get(rk);
-        });
-    } else {
-        let pRguildIdString = "";
-        pRguildIdString = message.guild.id;
-        await gsrun(client2, "A", "B", pRguildIdString).then(() => {
-            whatsp = congratsDatabase.get(rk);
-        });
-    }
+    whatsp = congratsDatabase.get(rk);
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
@@ -829,7 +819,7 @@ async function playRandom(message, numOfTimes, isglobal) {
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
                     } else {
-                        playRandom(message, numOfTimes, isglobal);
+                        playRandom(message, numOfTimes);
                     }
 
                 })
@@ -849,7 +839,7 @@ async function playRandom(message, numOfTimes, isglobal) {
                     printErrorToChannel("!r (second try)", rk, e);
                 }
                 //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                playRandom(message, numOfTimes, isglobal);
+                playRandom(message, numOfTimes);
             }
 
         }
