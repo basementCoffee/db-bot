@@ -614,6 +614,8 @@ bot.on('message', message => {
             case "keys" :
                 console.log("running create sheet...");
                 try {
+                    let sheetString = "";
+                    sheetString = message.guild.id;
                     createSheet(sheetString);
                     console.log("done with create sheet...", message.guild.id);
                     gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
