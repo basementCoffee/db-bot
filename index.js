@@ -26,10 +26,10 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         }
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
-        dataSize = dataSizeFromSheets.data.values;
-        if(!dataSize) {
-            gsUpdateOverwrite(cl, 0, "C");
+        if(!dataSizeFromSheets) {
+            gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
         }
+        dataSize = dataSizeFromSheets.data.values;
         console.log("Data Size: " + dataSize);
 
         const songObjects = {
@@ -125,7 +125,7 @@ function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter, 
                 },
                 function(err) { console.error("Execute error", err); });
     
-        gsUpdateOverwrite(msg, cl, dataSize, "C");
+        gsUpdateOverwrite(msg, cl, dataSize, "C", nameOfSheet);
     }
     
 }
@@ -137,7 +137,7 @@ function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter, 
  * @param {*} value 
  * @param {*} databaseSizeCell 
  */
-function gsUpdateOverwrite(cl, value, databaseSizeCell) {
+function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
 
     try {
         value = parseInt(dataSize) + 1;
@@ -149,7 +149,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": databaseSizeCell,
+        "range": nameOfSheet + "!" + databaseSizeCell,
         "includeValuesInResponse": true,
         "responseDateTimeRenderOption": "FORMATTED_STRING",
         "valueInputOption": "USER_ENTERED",
