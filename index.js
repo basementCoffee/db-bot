@@ -547,7 +547,7 @@ bot.on('message', message => {
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
                 if (!mapOfCongratsDatabase[message.guild.id]){
-                    gsrun(cl,"A","B", message.guild.id).then(() => {
+                    gsrun(client2,"A","B", message.guild.id).then(() => {
                         if (!args[1]) {
                             playRandom2(message, 1);
                         } else {
