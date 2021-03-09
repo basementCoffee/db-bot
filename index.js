@@ -152,7 +152,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": nameOfSheet + "!" + databaseSizeCell,
+        "range": nameOfSheet + "!" + databaseSizeCell + "2",
         "includeValuesInResponse": true,
         "responseDateTimeRenderOption": "FORMATTED_STRING",
         "valueInputOption": "USER_ENTERED",
