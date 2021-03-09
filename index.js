@@ -877,8 +877,6 @@ function playRandom(message, numOfTimes) {
     //console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
     if (!whatsp){
-        let tempStringRandom = "";
-        tempStringRandom = message.guild.id;
         gsrun(client2, "A", "B", "entries");
         return;
     }
@@ -1007,7 +1005,7 @@ function playRandom2(message, numOfTimes, cdb) {
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
                     } else {
-                        playRandom(message, numOfTimes);
+                        playRandom2(message, numOfTimes, cdb);
                     }
 
                 })
@@ -1027,7 +1025,7 @@ function playRandom2(message, numOfTimes, cdb) {
                     printErrorToChannel("!r (second try)", rk, e);
                 }
                 //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                playRandom(message, numOfTimes);
+                playRandom2(message, numOfTimes, cdb);
             }
 
         }
