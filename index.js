@@ -833,10 +833,11 @@ bot.on('message', message => {
                     var songsAddedInt = 0;
                     var z = 1;
                     if (!dataSize.get(message.guild.id.toString())) {
+                        gsUpdateAdd2(cl, 1,"D", nameOfSheet);
                         message.channel.send("Run '!keys' once more to finish initialization.");
                     }
                     else if (dataSize.get(message.guild.id.toString()) < 1) {
-                        gsUpdateOverwrite(client2,0,"D", message.guild.id);
+                        gsUpdateAdd2(cl, 1,"D", nameOfSheet);
                     }
                     gsrun(client2,"A","B", message.guild.id).then((cdb) => {
                     while (args[z] && args[z + 1]) {
