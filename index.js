@@ -507,9 +507,10 @@ bot.on('message', message => {
                 break;
             // !key 
             case "key" :
+                console.log("running create sheet...");
+                    createSheet(message.guild.id.toString());
                 try {
-                    gsrun(client2, "A", "B", message.guild.id.toString()).then((x) => {
-                    console.log("THIS IS X: ", x);
+                    gsrun(client2, "A", "B", message.guild.id.toString()).then(() => {
                     keyArray = Array.from(congratsDatabase.keys());
                     keyArray.sort();
                     s = "";
@@ -524,8 +525,7 @@ bot.on('message', message => {
                     }
                     )
                 } catch (e) {
-                    console.log("running create sheet...");
-                    createSheet(message.guild.id.toString());
+                    console.log("!key Error: ", e);
                 }
                 
                 
