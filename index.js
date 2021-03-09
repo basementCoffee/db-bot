@@ -835,6 +835,7 @@ bot.on('message', message => {
                     let currentBotGuildId = "";
                         currentBotGuildId = message.guild.id.toString();
                     if (!dataSize.get(message.guild.id.toString()) || dataSize.get(message.guild.id.toString()) < 1) {
+                            createSheet(message, currentBotGuildId);
                             message.channel.send("Please call '!keys' to initialize the database.");
                             gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
                     }
