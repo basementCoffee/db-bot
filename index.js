@@ -938,7 +938,7 @@ function playRandom2(message, numOfTimes, cdb) {
     enumPlayingFunction = "randomS";
     var numOfRetries = 0;
     server = servers[message.guild.id];
-    let rKeyArray = Array.from(congratsDatabase.keys());
+    let rKeyArray = Array.from(cdb.keys());
     numOfRetries += 1;
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
