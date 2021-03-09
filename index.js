@@ -35,9 +35,9 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
-        if (!dataSize || !dataSize.get(nameOfSheet)){
+        if (!dataSize.get(nameOfSheet)){
             dataSize.set(nameOfSheet,1);
-            gsUpdateAdd2(cl, 1,"D",nameOfSheet);
+            gsUpdateAdd2(cl, 1,"D", nameOfSheet);
             console.log("Data Size prev undef: " + dataSize.get(nameOfSheet));
         }
         
