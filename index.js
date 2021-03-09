@@ -9,7 +9,8 @@ client2.authorize(function (err, tokens) {
     if (err) {
         console.log(err);
     } else {
-        console.log("Connected to google apis.")
+        console.log("Connected to google apis.");
+        console.log(bot.guilds);
         gsrun(client2, "A", "B", "entries");
     }
 });
@@ -58,6 +59,8 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             congratsDatabase.set(keyT, valueT);
             referenceDatabase.set(keyT.toUpperCase(), valueT);
         }
+        mapOfCongratsDatabase.set(nameOfSheet, congratsDatabase);
+        mapOfReferenceDatabase.set(nameOfSheet, referenceDatabase);
 }
 
 /**
@@ -210,7 +213,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709c";
+var buildNumber = "3709d";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
@@ -914,3 +917,5 @@ var congratsDatabase = new Map();
 var referenceDatabase = new Map();
 var currentRandomIntMap = new Map();
 var totalRandomIntMap = new Map();
+var mapOfCongratsDatabase = new Map();
+var mapOfReferenceDatabase = new Map();
