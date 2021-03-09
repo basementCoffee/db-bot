@@ -14,7 +14,7 @@ client2.authorize(function (err, tokens) {
     }
 });
 
-var dataSize = new Map();
+
 
 async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         const gsapi = google.sheets({version: 'v4', auth: cl});
@@ -28,14 +28,14 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             // await gsUpdateAdd2(cl, 1, "D",nameOfSheet);
-            await gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
             dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
-        if (!dataSize || !dataSize.get(nameOfSheet)){
+        if (!dataSize && !dataSize.get(nameOfSheet)){
             dataSize.set(nameOfSheet,1);
             gsUpdateAdd2(cl, 1,"D",nameOfSheet);
             console.log("Data Size prev undef: " + dataSize.get(nameOfSheet));
@@ -97,7 +97,7 @@ function createSheet(nameOfSheet) {
             console.log('The API returned an error: ' + err);
         } else {
             // gsUpdateAdd2(cl, 1, "D", nameOfSheet);
-            gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            // gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
         }
          
         console.log("success: ", response);
@@ -1075,3 +1075,4 @@ var currentRandomIntMap = new Map();
 var totalRandomIntMap = new Map();
 var mapOfCongratsDatabase = new Map();
 var mapOfReferenceDatabase = new Map();
+var dataSize = new Map();
