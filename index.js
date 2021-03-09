@@ -759,8 +759,11 @@ function playRandom(message, numOfTimes, isglobal) {
             whatsp = congratsDatabase.get(rk);
         });
     } else {
-        currentCD = mapOfCongratsDatabase.get(message.guild.id); 
-        whatsp = currentCD.get(rk);
+        let pRguildIdString = "";
+        pRguildIdString = message.guild.id;
+        gsrun(client2, "A", "B", pRguildIdString).then(() => {
+            whatsp = congratsDatabase.get(rk);
+        });
     }
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
