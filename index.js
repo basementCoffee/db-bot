@@ -786,7 +786,7 @@ bot.on('message', message => {
     }
 })
 var enumPlayingFunction;
-function playRandom(message, numOfTimes, isglobal) {
+async function playRandom(message, numOfTimes, isglobal) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "random";
     var numOfRetries = 0;
@@ -797,13 +797,13 @@ function playRandom(message, numOfTimes, isglobal) {
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
     if (isglobal) {
-        gsrun(client2, "A", "B", "entries").then(() => {
+        await gsrun(client2, "A", "B", "entries").then(() => {
             whatsp = congratsDatabase.get(rk);
         });
     } else {
         let pRguildIdString = "";
         pRguildIdString = message.guild.id;
-        gsrun(client2, "A", "B", pRguildIdString).then(() => {
+        await gsrun(client2, "A", "B", pRguildIdString).then(() => {
             whatsp = congratsDatabase.get(rk);
         });
     }
