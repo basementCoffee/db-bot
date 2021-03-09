@@ -99,10 +99,10 @@ function createSheet(nameOfSheet) {
             gsUpdateAdd2(cl, 1, "D", nameOfSheet);
             gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
         }
-        gsUpdateAdd2(cl, 1, "D", nameOfSheet);
-        gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
         console.log("success: ", response);
 });
+        gsUpdateAdd2(cl, 1, "D", nameOfSheet);
+        gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
 }
 
 
