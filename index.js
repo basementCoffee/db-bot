@@ -69,9 +69,6 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             congratsDatabase.set(keyT, valueT);
             referenceDatabase.set(keyT.toUpperCase(), valueT);
         }
-        mapOfCongratsDatabase.set(nameOfSheet, congratsDatabase);
-        mapOfReferenceDatabase.set(nameOfSheet, referenceDatabase);
-
         return congratsDatabase;
 }
 
@@ -94,13 +91,13 @@ function createSheet(message, nameOfSheet) {
     },
     function(err, response) {
         if (err){
-            console.log('The API returned an error: ' + err);
+            // console.log('The API returned an error: ' + err);
         } else {
             gsUpdateOverwrite(cl, 0, "D", nameOfSheet);
             gsrun(client2, "A", "B", message.guild.id).then(() => {
             });
         }
-        console.log("success: ", response);
+        // console.log("success: ", response);
 });
 }
 
@@ -135,7 +132,7 @@ function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, nameO
         })
             .then(function(response) {
                     // Handle the results here (response.result has the parsed body).
-                    console.log("Response", response);
+                    // console.log("Response", response);
                 },
                 function(err) { console.error("Execute error", err); });
     
@@ -163,10 +160,10 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
     })
         .then(function(response) {
                 // Handle the results here (response.result has the parsed body).
-                console.log("Response", response);
+                // console.log("Response", response);
             },
             function(err) { console.error("Execute error", err); });
-            console.log("UPDATE ADD 2");
+            // console.log("UPDATE ADD 2");
             dataSize.set(nameOfSheet, givenValue);
     gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
 
@@ -184,9 +181,9 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     try {
         value = parseInt(dataSize.get(nameOfSheet)) + 1;
     } catch (e) {
-        console.log("Error caught gsUpdateOverview", value);
+        // console.log("Error caught gsUpdateOverview", value);
         value = 1;
-        console.log(e);
+        // console.log(e);
     }
 
     databaseSizeCell += "1";
@@ -207,7 +204,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     })
         .then(function(response) {
                 // Handle the results here (response.result has the parsed body).
-                console.log("Response", response);
+                // console.log("Response", response);
             },
             function(err) { console.error("Execute error", err); });
     gsrun(cl, "A", "B", "entries").then(
@@ -401,7 +398,6 @@ bot.on('message', message => {
         switch (statement) {
             //!p is just the basic rhythm bot
             case 'p':
-                console.log("b1");
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
                     return;
@@ -416,7 +412,6 @@ bot.on('message', message => {
                 if (!servers[message.guild.id]) servers[message.guild.id] = {
                     queue: []
                 }
-                console.log("b2");
                 enumPlayingFunction = "playing";
                 // push to queue
                 servers[message.guild.id].queue.push(args[1]);
@@ -651,12 +646,12 @@ bot.on('message', message => {
                 break;
             // !keys 
             case "keys" :
-                console.log("running create sheet...");
+                // console.log("running create sheet...");
                 try {
                     let sheetString = "";
                     sheetString = message.guild.id;
                     createSheet(message, sheetString);
-                    console.log("done with create sheet...", message.guild.id);
+                    // console.log("done with create sheet...", message.guild.id);
                     gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
                     keyArray = Array.from(cdb.keys());
                     keyArray.sort();
@@ -1112,6 +1107,4 @@ var congratsDatabase = new Map();
 var referenceDatabase = new Map();
 var currentRandomIntMap = new Map();
 var totalRandomIntMap = new Map();
-var mapOfCongratsDatabase = new Map();
-var mapOfReferenceDatabase = new Map();
 var dataSize = new Map();
