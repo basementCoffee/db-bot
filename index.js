@@ -1047,6 +1047,12 @@ function playSongToVC(message, whatToPlay) {
     whatToPlayS = whatToPlay;
     whatsp = whatToPlayS;
     whatspMap[message.member.voice.channel] = whatToPlayS;
+    if (!message.member.voice.channel) {
+        console.log("Could not find person from message");
+        message.channel.send("!e");
+        server.queue = [];
+        return;
+    }
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             connection.voice.setSelfDeaf(true);
