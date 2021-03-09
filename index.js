@@ -381,6 +381,7 @@ bot.on('message', message => {
             }
             return;
         }
+        let mgid = "";
         let prefixString = ""; 
                 prefixString = prefix[message.member.voice.channel].toString();
         let statement = args[0].substr(1);
