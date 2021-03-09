@@ -27,7 +27,9 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         dataSize = dataSizeFromSheets.data.values;
-
+        if(!dataSize) {
+            gsUpdateOverwrite(cl, 0, "C");
+        }
         console.log("Data Size: " + dataSize);
 
         const songObjects = {
@@ -135,12 +137,11 @@ function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter, 
  * @param {*} value 
  * @param {*} databaseSizeCell 
  */
-function gsUpdateOverwrite(msg, cl, value, databaseSizeCell) {
+function gsUpdateOverwrite(cl, value, databaseSizeCell) {
 
     try {
         value = parseInt(dataSize) + 1;
     } catch (e) {
-        msg.channel.send("There's been a fatal error. Check debug log.");
         console.log(e);
     }
 
@@ -189,7 +190,7 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '3.7.9';
-var buildNumber = "3709j";
+var buildNumber = "3709k";
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
