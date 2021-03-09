@@ -28,7 +28,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
-            gsUpdateAdd(cl, 1, 0, "C","D",nameOfSheet);
+            // gsUpdateAdd(cl, 1, 0, "C","D",nameOfSheet);
             dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
@@ -451,7 +451,7 @@ bot.on('message', message => {
                 break;
 
             // !d is to run database songs
-            case "d":
+            case "dg":
                 if (!args[1]) {
                     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
                     return;
@@ -486,7 +486,7 @@ bot.on('message', message => {
                     message.channel.send("Added to queue.");
                 }
                 break;
-            case "dg":
+            case "d":
                 if (!args[1]) {
                     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
                     return;
