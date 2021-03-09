@@ -836,6 +836,9 @@ bot.on('message', message => {
                     }
                     var songsAddedInt = 0;
                     var z = 1;
+                    if (!dataSize.get(message.guild.id.toString())) {
+                        message.channel.send("Run '!keys' once more to finish initialization.");
+                    }
                     gsrun(client2,"A","B", message.guild.id).then((cdb) => {
                     while (args[z] && args[z + 1]) {
                         var linkZ = args[z + 1];
