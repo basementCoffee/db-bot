@@ -28,6 +28,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
+            gsUpdateAdd(cl, 1, 0, "C","D",nameOfSheet);
             dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
@@ -36,6 +37,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         console.log("Data Size: " + dataSize.get(nameOfSheet));
         if (!dataSize){
             dataSize.set(nameOfSheet,1);
+            gsUpdateAdd(cl, 1, 0, "C","D",nameOfSheet);
             console.log("Data Size prev undef: " + dataSize.get(nameOfSheet));
         }
         
