@@ -972,7 +972,7 @@ function playRandom2(message, numOfTimes, cdb) {
     let rn = Math.floor((Math.random() * (rKeyArray.length)));
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
-    whatsp = congratsDatabase.get(rk);
+    whatsp = cdb.get(rk);
     if (!whatsp) {
         let tempStringRandom = "";
         tempStringRandom = message.guild.id;
