@@ -65,6 +65,8 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         }
         mapOfCongratsDatabase.set(nameOfSheet, congratsDatabase);
         mapOfReferenceDatabase.set(nameOfSheet, referenceDatabase);
+
+        return congratsDatabase;
 }
 
 function createSheet(nameOfSheet) {
@@ -546,9 +548,9 @@ bot.on('message', message => {
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
-                gsrun(client2,"A","B", message.guild.id).then(() => {
+                gsrun(client2,"A","B", message.guild.id).then((cd) => {
                     if (!args[1]) {
-                        playRandom2(message, 1, congratsDatabase);
+                        playRandom2(message, 1, cd);
                     } else {
                         try {
                             let num = parseInt(args[1])
@@ -558,9 +560,9 @@ bot.on('message', message => {
                                 totalRandomIntMap[message.member.voice.channel] = num;
                             }
                             currentRandomIntMap[message.member.voice.channel] = 0;
-                            playRandom2(message, num, congratsDatabase);
+                            playRandom2(message, num, cd);
                         } catch (e) {
-                            playRandom2(message, 1, congratsDatabase);
+                            playRandom2(message, 1, cd);
                         }
                     }
                 });
