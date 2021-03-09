@@ -834,22 +834,22 @@ bot.on('message', message => {
                     var z = 1;
                     let currentBotGuildId = "";
                         currentBotGuildId = message.guild.id.toString();
-                    
+                    if (!dataSize.get(message.guild.id.toString()) || dataSize.get(message.guild.id.toString()) < 1) {
+                        console.log("BREAK 1");
+                            gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
+                            // message.channel.send("Run '!keys' to finish initialization.");
+                    }
                     gsrun(client2,"A","B", message.guild.id).then((cdb) => {
-                        if (!dataSize.get(message.guild.id.toString())) {
-                            gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
-                            message.channel.send("Run '!keys' to finish initialization.");
-                        }
-                        else if (dataSize.get(message.guild.id.toString()) < 1) {
-                            gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
-                        }
+                        console.log("BREAK 2");
                     while (args[z] && args[z + 1]) {
+                        console.log("BREAK 3");
                         var linkZ = args[z + 1];
                         if (linkZ.substring(linkZ.length - 1) === ",") {
                             linkZ = linkZ.substring(0, linkZ.length - 1);
                         }
                         cdb.set(args[z], args[z + 1]);
                         gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
+                        console.log("BREAK 4");
                         z = z + 2;
                         songsAddedInt += 1;
                     }
