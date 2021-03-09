@@ -279,7 +279,7 @@ function skipSong(message) {
             whatsp = "Last Played:\n" + whatsp;
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
-            playRandom(message, totalRandomIntMap[message.member.voice.channel]);
+            playRandom(message, totalRandomIntMap[message.member.voice.channel], true);
         }
     } else {
         // if server queue is not empty then skip
@@ -504,7 +504,7 @@ bot.on('message', message => {
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
                 if (!args[1]) {
-                    playRandom(message, 1);
+                    playRandom(message, 1, true);
                 } else {
                     try {
                         let num = parseInt(args[1])
@@ -514,9 +514,36 @@ bot.on('message', message => {
                             totalRandomIntMap[message.member.voice.channel] = num;
                         }
                         currentRandomIntMap[message.member.voice.channel] = 0;
-                        playRandom(message, num)
+                        playRandom(message, num, true);
                     } catch (e) {
-                        playRandom(message, 1);
+                        playRandom(message, 1, true);
+                    }
+                }
+                break;
+                case "r2" :
+                if (!message.member.voice.channel) {
+                    return;
+                }
+                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                    queue: []
+                }
+                totalRandomIntMap[message.member.voice.channel] = 0;
+                currentRandomIntMap[message.member.voice.channel] = 0;
+                servers[message.guild.id].queue = [];
+                if (!args[1]) {
+                    playRandom(message, 1, false);
+                } else {
+                    try {
+                        let num = parseInt(args[1])
+                        if (num === null || num === undefined) {
+                            totalRandomIntMap[message.member.voice.channel] = 0;
+                        } else {
+                            totalRandomIntMap[message.member.voice.channel] = num;
+                        }
+                        currentRandomIntMap[message.member.voice.channel] = 0;
+                        playRandom(message, num, false);
+                    } catch (e) {
+                        playRandom(message, 1, false);
                     }
                 }
                 break;
@@ -786,7 +813,7 @@ function playRandom(message, numOfTimes, isglobal) {
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
                     } else {
-                        playRandom(message, numOfTimes)
+                        playRandom(message, numOfTimes, isglobal);
                     }
 
                 })
@@ -806,7 +833,7 @@ function playRandom(message, numOfTimes, isglobal) {
                     printErrorToChannel("!r (second try)", rk, e);
                 }
                 //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                playRandom();
+                playRandom(message, numOfTimes, isglobal);
             }
 
         }
