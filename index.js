@@ -789,15 +789,15 @@ bot.on('message', message => {
                     + "e  -->  Stops playing and clears queue\n"
                     + prefixString
                     + "changeprefix  -->  changes the prefix for all commands \n"
-                    + "\n--------  Curated songs [Work in Progress] --------  \n"
+                    + "\n--------  Curated songs --------  \n"
                     + prefixString
                     + "key  -->  All the artist song tags (separated by a comma) \n"
+                    + prefixString
+                    + "a [song] [url]  -->  Adds a song to the database \n"
                     + prefixString
                     + "d [key]  -->  Plays a song from the database \n"
                     + prefixString
                     + "k [phrase]  -->  search keys with the same starting phrase\n"
-                    + prefixString
-                    + "a [song] [url]  -->  Adds a song to the database \n"
                     + prefixString
                     + "rm  -->  Removes a song from the database\n"
                     + "**Or just say congrats to a friend. I will chime in too! :) **");
