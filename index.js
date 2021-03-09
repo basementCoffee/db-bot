@@ -190,14 +190,12 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '3.7.9';
-var buildNumber = "3709k";
+var version = '4.0.0';
 var latestRelease = "Latest Release (3.7.x):\n" +
     "- Can now change the prefix of the bot (!changeprefix)\n" +
     "---3.6.x introduced---\n" +
     "- Add songs to google sheets (!a name, link)";
 var servers = {};
-var testingChannelGuildID = 730239813403410619;
 //bot.login(token);
 bot.login(process.env.token);
 var whatsp = "";
@@ -762,7 +760,7 @@ bot.on('message', message => {
                     "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622")
                 break;
             // !a adds to the databse
-            case "a":
+            case "ag":
                 if (!args[1] || !args[2]) {
                     message.channel.send("Could not add to the database. Put a song key followed by a link.");
                     break;
@@ -775,10 +773,7 @@ bot.on('message', message => {
                         linkZ = linkZ.substring(0, linkZ.length - 1);
                     }
                     congratsDatabase.set(args[z], args[z + 1]);
-                    // let currentBotGuildId = "";
-                    // currentBotGuildId = message.guild.id;
                     gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", "entries");
-                    // gsPushUpdate(client2, args[z], args[z + 1]);
                     z = z + 2;
                     songsAddedInt += 1;
                 }
@@ -789,7 +784,7 @@ bot.on('message', message => {
                     message.channel.send(songsAddedInt.toString() + " songs added to the database.");
                 }
                 break;
-                case "a2":
+                case "a":
                     if (!args[1] || !args[2]) {
                         message.channel.send("Could not add to the database. Put a song key followed by a link.");
                         break;
