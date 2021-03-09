@@ -246,61 +246,61 @@ var whatsp = "";
 //var ytpl = require('ytpl');
 
 
-//Who's down and algo greeting
-bot.on('message', msg => {
-    try {
-        if (msg.member.displayName === "Congratz Ambassador") {
-            return;
-        }
-    } catch (e) {
-        return;
-    }
-    if (msg.content.toUpperCase().includes("HELLO FRIEND")) {
-        msg.reply("Bonsoir " + msg.author.username);
-    } else if (msg.content.toUpperCase().includes("HELLO")) {
-        let randomInt = Math.floor(Math.random() * 4);
-        // section 1
-        if (randomInt === 1) {
-            let randomInt3 = Math.floor(Math.random() * 4);
-            if (randomInt3 === 0) {
-                msg.reply("Howdy-.. I mean bkawhh");
-            } else if (randomInt3 === 1) {
-                msg.reply("Quak quack (translation: sup my dude)");
-            } else if (randomInt3 === 2) {
-                msg.reply("Hi. How's it going.");
-            } else {
-                msg.reply("Hello! I'm your friendly neighborhood penguin.");
-            }
+// //Who's down and algo greeting
+// bot.on('message', msg => {
+//     try {
+//         if (msg.member.displayName === "Congratz Ambassador") {
+//             return;
+//         }
+//     } catch (e) {
+//         return;
+//     }
+//     if (msg.content.toUpperCase().includes("HELLO FRIEND")) {
+//         msg.reply("Bonsoir " + msg.author.username);
+//     } else if (msg.content.toUpperCase().includes("HELLO")) {
+//         let randomInt = Math.floor(Math.random() * 4);
+//         // section 1
+//         if (randomInt === 1) {
+//             let randomInt3 = Math.floor(Math.random() * 4);
+//             if (randomInt3 === 0) {
+//                 msg.reply("Howdy-.. I mean bkawhh");
+//             } else if (randomInt3 === 1) {
+//                 msg.reply("Quak quack (translation: sup my dude)");
+//             } else if (randomInt3 === 2) {
+//                 msg.reply("Hi. How's it going.");
+//             } else {
+//                 msg.reply("Hello! I'm your friendly neighborhood penguin.");
+//             }
 
-            // section 3
-        } else if (randomInt === 2) {
-            let randomInt4 = Math.floor(Math.random() * 2);
-            if (randomInt4 === 1) {
-                msg.reply("Hello friend!");
-            } else if (randomInt4 === 1) {
-                msg.reply("Hey! Why not listen to some music?");
-            } else {
-                msg.reply("Hello to you too. Oh... that wasn't for me was it")
-            }
-        }
-    }
-    if (msg.content.includes("who's down")) {
-        let randomIntForDown = Math.floor(Math.random() * 6);
-        if (randomIntForDown === 4) {
-            let randomIntForDown2 = Math.floor(Math.random() * 2);
-            if (randomIntForDown2 === 0) {
-                msg.reply("I would be down to play some game but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
-            } else {
-                msg.reply("You are a one player army... good luck!")
-            }
-        }
-    } else if (msg.content.includes("@algo")){
-        let randomIntForDown3 = Math.floor(Math.random() * 4);
-        if (randomIntForDown3 === 0) {
-            msg.reply("Thanks for the call. I'm here, reporting for algo duty.")
-        }
-    }
-})
+//             // section 3
+//         } else if (randomInt === 2) {
+//             let randomInt4 = Math.floor(Math.random() * 2);
+//             if (randomInt4 === 1) {
+//                 msg.reply("Hello friend!");
+//             } else if (randomInt4 === 1) {
+//                 msg.reply("Hey! Why not listen to some music?");
+//             } else {
+//                 msg.reply("Hello to you too. Oh... that wasn't for me was it")
+//             }
+//         }
+//     }
+//     if (msg.content.includes("who's down")) {
+//         let randomIntForDown = Math.floor(Math.random() * 6);
+//         if (randomIntForDown === 4) {
+//             let randomIntForDown2 = Math.floor(Math.random() * 2);
+//             if (randomIntForDown2 === 0) {
+//                 msg.reply("I would be down to play some game but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
+//             } else {
+//                 msg.reply("You are a one player army... good luck!")
+//             }
+//         }
+//     } else if (msg.content.includes("@algo")){
+//         let randomIntForDown3 = Math.floor(Math.random() * 4);
+//         if (randomIntForDown3 === 0) {
+//             msg.reply("Thanks for the call. I'm here, reporting for algo duty.")
+//         }
+//     }
+// })
 
 
 // the entire reason we built this bot
@@ -666,7 +666,7 @@ bot.on('message', message => {
                             s = s + ", " + keyArray[key];
                         }
                     }
-                    message.channel.send(s);
+                    message.channel.send("**Keys:** (use '!d' to play)\n" + s);
                     if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
                         gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
                             keyArray = Array.from(cdb.keys());
