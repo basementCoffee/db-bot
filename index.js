@@ -527,8 +527,8 @@ bot.on('message', message => {
                     let sheetString = "";
                     sheetString = message.guild.id;
                     createSheet(sheetString);
-                    console.log("done with create sheet...");
-                    gsrun(client2, "A", "B", message.guild.id.toString()).then(() => {
+                    console.log("done with create sheet...", sheetString);
+                    gsrun(client2, "A", "B", sheetString).then(() => {
                     keyArray = Array.from(congratsDatabase.keys());
                     keyArray.sort();
                     s = "";
