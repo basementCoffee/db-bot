@@ -75,7 +75,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         return congratsDatabase;
 }
 
-async function createSheet(nameOfSheet) {
+function createSheet(nameOfSheet) {
     console.log("within create sheets");
     const gsapi = google.sheets({version: 'v4', auth: client2});
     gsapi.spreadsheets.batchUpdate({
@@ -92,7 +92,7 @@ async function createSheet(nameOfSheet) {
             ],
         }
     },
-    function(err, response) {
+    async function(err, response) {
         if (err){
             console.log('The API returned an error: ' + err);
         } else {
