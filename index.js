@@ -804,6 +804,11 @@ function playRandom(message, numOfTimes) {
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
+    if (!whatsp){
+        let tempStringRandom = "";
+        tempStringRandom = message.guild.id;
+        gsrun(client2, "A", "B", tempStringRandom);
+    } 
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
