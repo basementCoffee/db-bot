@@ -234,10 +234,10 @@ const ytdl = require("discord-ytdl-core");
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
 var version = '4.0.0';
-var latestRelease = "Latest Release (3.7.x):\n" +
-    "- Can now change the prefix of the bot (!changeprefix)\n" +
-    "---3.6.x introduced---\n" +
-    "- Add songs to google sheets (!a name, link)";
+var latestRelease = "Latest Release (4.0.x):\n" +
+    "- Server specific databases now active.\n" +
+    "---3.7.x introduced---\n" +
+    "- Can now change the prefix of the bot (!changeprefix)\n";
 var servers = {};
 //bot.login(token);
 bot.login(process.env.token);
@@ -395,6 +395,8 @@ bot.on('message', message => {
             }
             return;
         }
+        let prefixString = ""; 
+                prefixString = prefix[message.member.voice.channel].toString();
         let statement = args[0].substr(1);
         switch (statement) {
             //!p is just the basic rhythm bot
@@ -666,7 +668,7 @@ bot.on('message', message => {
                             s = s + ", " + keyArray[key];
                         }
                     }
-                    message.channel.send("*(use '!d' to play)*\n **Keys:** " + s);
+                    message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
                     if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
                         gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
                             keyArray = Array.from(cdb.keys());
@@ -773,14 +775,10 @@ bot.on('message', message => {
             break;
             // list commands for public commands
             case "h" :
-                let prefixString = ""; 
-                prefixString = prefix[message.member.voice.channel].toString();
                 sendHelp(message, prefixString);
                 break;
             case "help" :
-                let prefixString2 = ""; 
-                prefixString2 = prefix[message.member.voice.channel].toString();
-                sendHelp(message, prefixString2);
+                sendHelp(message, prefixString);
             break;
             // !skip
             case "skip" :
