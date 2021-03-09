@@ -28,7 +28,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             gsUpdateOverwrite(cl, 0, "C", nameOfSheet).then(() => {
-                dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
+                dataSizeFromSheets = 0;
             }
             )
         }
