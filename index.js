@@ -25,9 +25,12 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             range: nameOfSheet + "!C2"
         }
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
-        let dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
+        var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
-            gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
+            gsUpdateOverwrite(cl, 0, "C", nameOfSheet).then(() => {
+                dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
+            }
+            )
         }
         dataSize = dataSizeFromSheets.data.values;
         console.log("Data Size: " + dataSize);
@@ -82,7 +85,7 @@ function createSheet(nameOfSheet) {
         }
     },
     function(err, response) {
-        if (err) return callback('The API returned an error: ' + err);
+        if (err) console.log('The API returned an error: ' + err);
         console.log("success: ", response);
 });
 }
@@ -125,7 +128,7 @@ function gsUpdateAdd(msg, cl, key, link, firstColumnLetter, secondColumnLetter, 
                 },
                 function(err) { console.error("Execute error", err); });
     
-        gsUpdateOverwrite(msg, cl, dataSize, "C", nameOfSheet);
+        gsUpdateOverwrite(msg, cl, dataSize, "C", "entries");
     }
     
 }
