@@ -14,7 +14,7 @@ client2.authorize(function (err, tokens) {
     }
 });
 
-var dataSize;
+var dataSize = new Map();
 
 async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         const gsapi = google.sheets({version: 'v4', auth: cl});
@@ -28,31 +28,30 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
             gsUpdateOverwrite(cl, 0, "C", nameOfSheet);
-            dataSize = 0;
+            dataSize.set(nameOfSheet,0);
         } else {
-            dataSize = dataSizeFromSheets.data.values;
+            dataSize.set(dataSizeFromSheets.data.values,0); 
         }
         
-        console.log("Data Size: " + dataSize);
+        console.log("Data Size: " + dataSize.get(nameOfSheet));
 
         const songObjects = {
             spreadsheetId: process.env.stoken,
-            range: nameOfSheet + "!" + columnToRun+ "2:" + secondColumn + "B" + dataSize.toString()
-
+            range: nameOfSheet + "!" + columnToRun+ "2:" + secondColumn + "B" + dataSize.get(nameOfSheet)
         };
 
         let dataSO = await gsapi.spreadsheets.values.get(songObjects);
         var arrayOfSpreadsheetValues = dataSO.data.values;
         //console.log(arrayOfSpreadsheetValues);
 
-        console.log("Database size: " + dataSize);
+        console.log("Database size: " + dataSize.get(nameOfSheet));
 
         var line;
         var keyT
         var valueT;
         congratsDatabase.clear();
         referenceDatabase.clear();
-        for (let i = 0; i < dataSize; i++) {
+        for (let i = 0; i < dataSize.get(nameOfSheet); i++) {
             // the array of rows (has two columns)
             line = arrayOfSpreadsheetValues[i];
             if (!line) {
@@ -127,7 +126,7 @@ function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, nameO
                 },
                 function(err) { console.error("Execute error", err); });
     
-        gsUpdateOverwrite(cl, dataSize, "C", nameOfSheet);
+        gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "C", nameOfSheet);
     
 }
 
@@ -141,7 +140,7 @@ function gsUpdateAdd(cl, key, link, firstColumnLetter, secondColumnLetter, nameO
 function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
 
     try {
-        value = parseInt(dataSize) + 1;
+        value = parseInt(dataSize.get(nameOfSheet)) + 1;
     } catch (e) {
         value = 1;
         console.log(e);
