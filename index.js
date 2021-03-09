@@ -927,7 +927,7 @@ function playRandom2(message, numOfTimes, cdb) {
     }
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
-    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(async function (connection) {
         try {
             connection.voice.setSelfDeaf(true);
             //console.log("calling play method...");
@@ -936,7 +936,7 @@ function playRandom2(message, numOfTimes, cdb) {
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
             });
-            let dispatcher = connection.play(myStream, {
+            let dispatcher = await connection.play(myStream, {
                 type: "opus"
             })
                 .on("finish", () => {
