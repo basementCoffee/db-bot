@@ -545,7 +545,7 @@ bot.on('message', message => {
 
 
             // !r plays a random song from the database
-            case "r" :
+            case "rg" :
                 if (!message.member.voice.channel) {
                     return;
                 }
@@ -573,7 +573,7 @@ bot.on('message', message => {
                     }
                 }
                 break;
-            case "r2" :
+            case "r" :
                 if (!message.member.voice.channel) {
                     return;
                 }
@@ -605,8 +605,8 @@ bot.on('message', message => {
                 
                 
                 break;
-            // !key 
-            case "key" :
+            // !keys 
+            case "keys" :
                 console.log("running create sheet...");
                 try {
                     let sheetString = "";
@@ -634,8 +634,8 @@ bot.on('message', message => {
                 
                 
                 break;
-            // !keys is keys
-            case "keys" :
+            // !keysg is global keys
+            case "keysg" :
                 gsrun(client2, "A", "B", "entries").then(() => {
                     keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
@@ -909,7 +909,7 @@ function playRandom2(message, numOfTimes, cdb) {
         let tempStringRandom = "";
         tempStringRandom = message.guild.id;
         gsrun(client2, "A", "B", tempStringRandom);
-        message.channel.send("It appears your database is empty.\nTry running !_keys or add a song to the database.");
+        message.channel.send("It appears your database is empty.\nTry running '!keys' or add a song to the database.");
         console.log("Play random whatsp is empty.");
         return;
     }
