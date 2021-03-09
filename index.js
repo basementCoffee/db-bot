@@ -895,7 +895,7 @@ function playRandom(message, numOfTimes) {
     server = servers[message.guild.id];
     let rKeyArray = Array.from(congratsDatabase.keys());
     numOfRetries += 1;
-    let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
+    let rn = Math.floor((Math.random() * (rKeyArray.length)));
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
     whatsp = congratsDatabase.get(rk);
