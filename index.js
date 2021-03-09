@@ -667,8 +667,6 @@ bot.on('message', message => {
                         }
                     }
                     message.channel.send(s);
-                    }
-                    );
                     if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
                         gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
                             keyArray = Array.from(cdb.keys());
@@ -684,6 +682,8 @@ bot.on('message', message => {
                             }
                             );
                     }
+                    }
+                    );
                 }
                  catch (e) {
                     console.log("!key Error: ", e);
@@ -832,12 +832,14 @@ bot.on('message', message => {
                     }
                     var songsAddedInt = 0;
                     var z = 1;
+                    let currentBotGuildId = "";
+                        currentBotGuildId = message.guild.id.toString();
                     if (!dataSize.get(message.guild.id.toString())) {
-                        gsUpdateAdd2(client2, 1,"D", nameOfSheet);
+                        gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
                         message.channel.send("Run '!keys' to finish initialization.");
                     }
                     else if (dataSize.get(message.guild.id.toString()) < 1) {
-                        gsUpdateAdd2(client2, 1,"D", nameOfSheet);
+                        gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
                     }
                     gsrun(client2,"A","B", message.guild.id).then((cdb) => {
                     while (args[z] && args[z + 1]) {
@@ -846,8 +848,6 @@ bot.on('message', message => {
                             linkZ = linkZ.substring(0, linkZ.length - 1);
                         }
                         cdb.set(args[z], args[z + 1]);
-                        let currentBotGuildId = "";
-                        currentBotGuildId = message.guild.id.toString();
                         gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
                         z = z + 2;
                         songsAddedInt += 1;
