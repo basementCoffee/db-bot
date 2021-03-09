@@ -75,7 +75,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         return congratsDatabase;
 }
 
-function createSheet(nameOfSheet) {
+function createSheet(message, nameOfSheet) {
     console.log("within create sheets");
     const gsapi = google.sheets({version: 'v4', auth: client2});
     gsapi.spreadsheets.batchUpdate({
@@ -97,6 +97,8 @@ function createSheet(nameOfSheet) {
             console.log('The API returned an error: ' + err);
         } else {
             gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+            gsrun(client2, "A", "B", message.guild.id).then(() => {
+            });
         }
         console.log("success: ", response);
 });
@@ -650,7 +652,7 @@ bot.on('message', message => {
                 try {
                     let sheetString = "";
                     sheetString = message.guild.id;
-                    createSheet(sheetString);
+                    createSheet(message, sheetString);
                     console.log("done with create sheet...", message.guild.id);
                     gsrun(client2, "A", "B", message.guild.id).then((cdb) => {
                     keyArray = Array.from(cdb.keys());
