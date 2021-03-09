@@ -381,7 +381,7 @@ bot.on('message', message => {
             }
             return;
         }
-        let mgid = "";
+        let mgid = message.guild.id;
         let prefixString = ""; 
                 prefixString = prefix[message.member.voice.channel].toString();
         let statement = args[0].substr(1);
@@ -399,14 +399,14 @@ bot.on('message', message => {
                 if (!message.member.voice.channel) {
                     return;
                 }
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                if (!servers[mgid]) servers[mgid] = {
                     queue: []
                 }
                 enumPlayingFunction = "playing";
                 // push to queue
-                servers[message.guild.id].queue.push(args[1]);
+                servers[mgid].queue.push(args[1]);
                 // if queue has only 1 song then play
-                if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
+                if (servers[mgid] && servers[mgid].queue.length < 2){
                     playSongToVC(message, args[1]);
                 } else {
                     message.channel.send("Added to queue.");
@@ -438,7 +438,6 @@ bot.on('message', message => {
 
             //!e is the Stop feature
             case "e" :
-                server = servers[message.guild.id];
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 firstSong = true;
@@ -447,12 +446,12 @@ bot.on('message', message => {
                 }
 
 
-                while (servers[message.guild.id] && servers[message.guild.id].queue.length > 0) {
+                while (servers[mgid] && servers[mgid].queue.length > 0) {
                     server.queue.shift();
                 }
                 // should do same as above
-                if (servers[message.guild.id] && servers[message.guild.id].queue) {
-                    servers[message.guild.id].queue = [];
+                if (servers[mgid] && servers[mgid].queue) {
+                    servers[mgid].queue = [];
                 }
                 
                 if (message.member.voice && message.member.voice.channel) {
@@ -482,7 +481,7 @@ bot.on('message', message => {
                 if (!message.member.voice.channel) {
                     return;
                 }
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                if (!servers[mgid]) servers[mgid] = {
                     queue: []
                 }
                 enumPlayingFunction = "playing";
@@ -501,9 +500,9 @@ bot.on('message', message => {
                     return;
                 }
                 // push to queue
-                servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
+                servers[mgid].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
                 // if queue has only 1 song then play
-                if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
+                if (servers[mgid] && servers[mgid].queue.length < 2){
                     playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
                 } else {
                     message.channel.send("Added to queue.");
@@ -518,11 +517,10 @@ bot.on('message', message => {
                 if (!message.member.voice.channel) {
                     return;
                 }
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                if (!servers[mgid]) servers[mgid] = {
                     queue: []
                 }
                 enumPlayingFunction = "playing";
-                server = servers[message.guild.id];
 
                 // no need to update what's playing on command call (should be inside play function)
                 // try {
@@ -532,15 +530,15 @@ bot.on('message', message => {
                 //     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
                 //     return;
                 // }
-                gsrun(client2,"A","B", message.guild.id).then((xdb) => {
+                gsrun(client2,"A","B", mgid).then((xdb) => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
                     return;
                 }
                 // push to queue
-                servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
+                servers[mgid].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
                 // if queue has only 1 song then play
-                if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
+                if (servers[mgid] && servers[mgid].queue.length < 2){
                     playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
                 } else {
                     message.channel.send("Added to queue.");
@@ -578,13 +576,13 @@ bot.on('message', message => {
                 if (!message.member.voice.channel) {
                     return;
                 }
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                if (!servers[mgid]) servers[mgid] = {
                     queue: []
                 }
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 enumPlayingFunction = "random";
-                servers[message.guild.id].queue = [];
+                servers[mgid].queue = [];
                 gsrun(client2,"A","B", "entries").then((xdb) => {
                 if (!args[1]) {
                     playRandom2(message, 1, xdb.congratsDatabase);
@@ -609,14 +607,14 @@ bot.on('message', message => {
                 if (!message.member.voice.channel) {
                     return;
                 }
-                if (!servers[message.guild.id]) servers[message.guild.id] = {
+                if (!servers[mgid]) servers[mgid] = {
                     queue: []
                 }
                 enumPlayingFunction = "randomS"
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
-                servers[message.guild.id].queue = [];
-                gsrun(client2,"A","B", message.guild.id).then((xdb) => {
+                servers[mgid].queue = [];
+                gsrun(client2,"A","B", mgid).then((xdb) => {
                     if (!args[1]) {
                         playRandom2(message, 1, xdb.congratsDatabase);
                     } else {
@@ -642,10 +640,10 @@ bot.on('message', message => {
                 // console.log("running create sheet...");
                 try {
                     let sheetString = "";
-                    sheetString = message.guild.id;
+                    sheetString = mgid;
                     createSheet(message, sheetString);
                     // console.log("done with create sheet...", message.guild.id);
-                    gsrun(client2, "A", "B", message.guild.id).then((xdb) => {
+                    gsrun(client2, "A", "B", mgid).then((xdb) => {
                     keyArray = Array.from(xdb.congratsDatabase.keys());
                     keyArray.sort();
                     s = "";
@@ -657,8 +655,8 @@ bot.on('message', message => {
                         }
                     }
                     message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
-                    if (!dataSize.get(message.guild.id) || !dataSize.get(message.guild.id).length < 1) {
-                        gsrun(client2, "A", "B", message.guild.id).then((xdb) => {
+                    if (!dataSize.get(mgid) || !dataSize.get(mgid).length < 1) {
+                        gsrun(client2, "A", "B", mgid).then((xdb) => {
                             keyArray = Array.from(xdb.congratsDatabase.keys());
                             keyArray.sort();
                             s = "";
@@ -743,8 +741,8 @@ bot.on('message', message => {
                 if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
                     if (totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] !== 0) {
                         message.channel.send("(" + currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + whatspMap[message.member.voice.channel]);
-                    } else if (servers[message.guild.id] && servers[message.guild.id].queue && servers[message.guild.id].queue.length > 1) {
-                        message.channel.send("(1/" + servers[message.guild.id].queue.length + ")  " + whatspMap[message.member.voice.channel]);
+                    } else if (servers[mgid] && servers[mgid].queue && servers[mgid].queue.length > 1) {
+                        message.channel.send("(1/" + servers[mgid].queue.length + ")  " + whatspMap[message.member.voice.channel]);
                     } 
                     else {
                         message.channel.send(whatspMap[message.member.voice.channel]);
@@ -770,7 +768,6 @@ bot.on('message', message => {
             break;
             // !skip
             case "skip" :
-                let mgid = "";
                 if (enumPlayingFunction === "random") {
                     mgid = "entries";
                 } else {
@@ -782,7 +779,6 @@ bot.on('message', message => {
                 break;
             // !sk
             case "sk" :
-                let mgid = "";
                 if (enumPlayingFunction === "random") {
                     mgid = "entries";
                 } else {
