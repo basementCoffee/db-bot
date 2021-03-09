@@ -550,12 +550,8 @@ bot.on('message', message => {
                 break;
             // !key 
             case "key" :
-                gsrun(client2, "A", "B", "entries");
-                console.log('before');
-                setTimeout(function(){
-                    console.log('after');
-                },500);
-                keyArray = Array.from(congratsDatabase.keys());
+                gsrun(client2, "A", "B", "entries").then(() => {
+                    keyArray = Array.from(congratsDatabase.keys());
                 keyArray.sort();
                 s = "";
                 for (let key in keyArray) {
@@ -566,6 +562,9 @@ bot.on('message', message => {
                     }
                 }
                 message.channel.send(s);
+                }
+                )
+                
                 break;
             // !rand gets a random number
             case "rand" :
