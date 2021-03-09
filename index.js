@@ -22,7 +22,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         nameOfSheet = nameOfSheet.toString();
         const spreadsheetSizeObjects = {
             spreadsheetId: process.env.stoken,
-            range: nameOfSheet + "!C1"
+            range: nameOfSheet + "!D2"
         }
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
@@ -157,7 +157,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     const gsapi = google.sheets({version: 'v4', auth: cl});
     gsapi.spreadsheets.values.update({
         "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-        "range": nameOfSheet + "!C1",
+        "range": nameOfSheet + "!D2",
         "includeValuesInResponse": true,
         "responseDateTimeRenderOption": "FORMATTED_STRING",
         "valueInputOption": "USER_ENTERED",
@@ -486,7 +486,7 @@ bot.on('message', message => {
                     message.channel.send("Added to queue.");
                 }
                 break;
-            case "d2":
+            case "dg":
                 if (!args[1]) {
                     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
                     return;
