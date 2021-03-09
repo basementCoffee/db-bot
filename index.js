@@ -546,29 +546,9 @@ bot.on('message', message => {
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 servers[message.guild.id].queue = [];
-                let tempCD = mapOfCongratsDatabase.get(message.guild.id.toString())
-                if (!tempCD || tempCD.size < 1){
-                    gsrun(client2,"A","B", message.guild.id).then(() => {
-                        if (!args[1]) {
-                            playRandom2(message, 1);
-                        } else {
-                            try {
-                                let num = parseInt(args[1])
-                                if (num === null || num === undefined) {
-                                    totalRandomIntMap[message.member.voice.channel] = 0;
-                                } else {
-                                    totalRandomIntMap[message.member.voice.channel] = num;
-                                }
-                                currentRandomIntMap[message.member.voice.channel] = 0;
-                                playRandom2(message, num);
-                            } catch (e) {
-                                playRandom2(message, 1);
-                            }
-                        }
-                    })
-                } else {
+                gsrun(client2,"A","B", message.guild.id).then(() => {
                     if (!args[1]) {
-                        playRandom2(message, 1);
+                        playRandom2(message, 1, congratsDatabase);
                     } else {
                         try {
                             let num = parseInt(args[1])
@@ -578,12 +558,13 @@ bot.on('message', message => {
                                 totalRandomIntMap[message.member.voice.channel] = num;
                             }
                             currentRandomIntMap[message.member.voice.channel] = 0;
-                            playRandom2(message, num);
+                            playRandom2(message, num, congratsDatabase);
                         } catch (e) {
-                            playRandom2(message, 1);
+                            playRandom2(message, 1, congratsDatabase);
                         }
                     }
-                } 
+                });
+                
                 
                 break;
             // !key 
@@ -869,7 +850,7 @@ function playRandom(message, numOfTimes) {
     })
 }
 // the specific version of play random
-function playRandom2(message, numOfTimes) {
+function playRandom2(message, numOfTimes, cdb) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     enumPlayingFunction = "randomS";
     var numOfRetries = 0;
@@ -879,9 +860,9 @@ function playRandom2(message, numOfTimes) {
     let rn = Math.floor((Math.random() * (rKeyArray.length)) + 1);
     let rk = rKeyArray[rn];
     //console.log("attempting to play key:" + rk);
-    congratsDatabaseTemp = mapOfCongratsDatabase.get(message.guild.id.toString());
-    whatsp = congratsDatabaseTemp.get(rk);
+    whatsp = congratsDatabase.get(rk);
     if (!whatsp) {
+        message.console.log("It appears your database is empty.\nTry running !_keys or add a song to the database.");
         console.log("Play random whatsp is empty.");
         return;
     }
