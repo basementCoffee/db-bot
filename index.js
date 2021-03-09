@@ -882,30 +882,30 @@ function playRandom(message, numOfTimes) {
     }
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
+    let myStream = ytdl(whatsp, {
+        filter: "audioonly",
+        opusEncoded: true,
+        encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+    })
     if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
         try {
             connection.voice.setSelfDeaf(true);
             //console.log("calling play method...");
-            let myStream = ytdl(whatsp, {
-                filter: "audioonly",
-                opusEncoded: true,
-                encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-            })
-            .then(connection.play(myStream, {
-                type: "opus"
-            })
-                .on("finish", () => {
-                    numOfTimes -= 1;
-                    if (numOfTimes === 0) {
-                        totalRandomIntMap[message.member.voice.channel] = 0;
-                        currentRandomIntMap[message.member.voice.channel] = 0;
-                        connection.disconnect();
-                    } else {
-                        playRandom(message, numOfTimes);
-                    }
-
+                connection.play(myStream, {
+                    type: "opus"
                 })
-            );
+                    .on("finish", () => {
+                        numOfTimes -= 1;
+                        if (numOfTimes === 0) {
+                            totalRandomIntMap[message.member.voice.channel] = 0;
+                            currentRandomIntMap[message.member.voice.channel] = 0;
+                            connection.disconnect();
+                        } else {
+                            playRandom(message, numOfTimes);
+                        }
+    
+                    })
+
         } catch (e) {
             // Error catching - fault with the database yt link?
             console.log("Below is a caught error message. (this broke:" + rk + ")");
