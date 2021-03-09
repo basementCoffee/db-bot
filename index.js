@@ -890,8 +890,8 @@ function playRandom(message, numOfTimes) {
                 filter: "audioonly",
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
-            });
-            let dispatcher = connection.play(myStream, {
+            })
+            .then(connection.play(myStream, {
                 type: "opus"
             })
                 .on("finish", () => {
@@ -905,6 +905,7 @@ function playRandom(message, numOfTimes) {
                     }
 
                 })
+            );
         } catch (e) {
             // Error catching - fault with the database yt link?
             console.log("Below is a caught error message. (this broke:" + rk + ")");
