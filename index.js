@@ -992,15 +992,15 @@ function playSongToVC(message, whatToPlay) {
         server.queue = [];
         return;
     }
-    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
+    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(async function (connection) {
         try {
-            connection.voice.setSelfDeaf(true);
+            await connection.voice.setSelfDeaf(true);
             let myStream = ytdl(whatToPlayS, {
                 filter: "audioonly",
                 opusEncoded: true,
                 encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
             });
-            let dispatcher = connection.play(myStream, {
+            let dispatcher = await connection.play(myStream, {
                 type: "opus"
             })
             .on("finish", () => {
