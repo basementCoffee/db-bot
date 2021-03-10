@@ -383,6 +383,7 @@ bot.on('message', message => {
         let prefixString = ""; 
                 prefixString = prefix[message.member.voice.channel].toString();
         let statement = args[0].substr(1);
+        statement = statement.toLowerCase();
         switch (statement) {
             //!p is just the basic rhythm bot
             case 'p':
