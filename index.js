@@ -934,7 +934,7 @@ function playRandom2(message, numOfTimes, cdb) {
             let myStream = ytdl(whatsp, {
                 filter: "audioonly",
                 opusEncoded: true,
-                encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200']
+                encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=100']
             });
             let dispatcher = await connection.play(myStream, {
                 type: "opus"
@@ -949,7 +949,8 @@ function playRandom2(message, numOfTimes, cdb) {
                         playRandom2(message, numOfTimes, cdb);
                     }
 
-                })
+                });
+                
         } catch (e) {
             // Error catching - fault with the database yt link?
             console.log("Below is a caught error message. (this broke:" + rk + ")");
