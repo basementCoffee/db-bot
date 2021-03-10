@@ -715,7 +715,7 @@ bot.on('message', message => {
                     if (args[1] === "" || args[1] === " ") {
                         // intentionally left blank
                     } else {
-                        if (totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] === 0) {
+                        if (congratsDatabase.get(args[1])) {
                             message.channel.send(congratsDatabase.get(args[1]));
                         } else if (enumPlayingFunction !== "playing" && currentRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] ) {
                             message.channel.send("("+ currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + congratsDatabase.get(args[1]));
