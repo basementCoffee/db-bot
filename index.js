@@ -655,21 +655,6 @@ bot.on('message', message => {
                         }
                     }
                     message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
-                    if (!dataSize.get(mgid) || !dataSize.get(mgid).length < 1) {
-                        gsrun(client2, "A", "B", mgid).then((xdb) => {
-                            keyArray = Array.from(xdb.congratsDatabase.keys());
-                            keyArray.sort();
-                            s = "";
-                            for (let key in keyArray) {
-                                if (key == 0) {
-                                    s = keyArray[key];
-                                } else {
-                                    s = s + ", " + keyArray[key];
-                                }
-                            }
-                            }
-                            );
-                    }
                     }
                     );
                 }
