@@ -391,6 +391,10 @@ bot.on('message', message => {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
                     return;
                 }
+                if (!(args[1].includes(".")))  {
+                    message.channel.send("There's something wrong with what you put there.");
+                    return;
+                }
                 if (!message.member.voice.channel) {
                     return;
                 }
