@@ -805,6 +805,8 @@ bot.on('message', message => {
                     break;
                 } else if (songsAddedInt > 1) {
                     message.channel.send(songsAddedInt.toString() + " songs added to the database.");
+                } else {
+                    message.channel.send("Song was not added. Please try again.");
                 }
                 break;
                 // !a is normal add
