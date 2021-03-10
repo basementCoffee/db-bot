@@ -402,10 +402,13 @@ bot.on('message', message => {
                     queue: []
                 }
                 enumPlayingFunction = "playing";
+                if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
+                    servers[mgid].queue = [];
+                }
                 // push to queue
                 servers[mgid].queue.push(args[1]);
                 // if queue has only 1 song then play
-                if ((servers[mgid] && servers[mgid].queue.length < 2) || !message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel){
+                if (servers[mgid] && servers[mgid].queue.length < 2){
                     playSongToVC(message, args[1]);
                 } else {
                     message.channel.send("Added to queue.");
