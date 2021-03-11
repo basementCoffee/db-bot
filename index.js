@@ -25,15 +25,19 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             range: nameOfSheet + "!D1"
         }
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
-        var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
-        if(!dataSizeFromSheets) {
+        var dataSizeFromSheets;
+        try{
+            dataSizeFromSheets =  await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
+            dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
+        } catch(e) {
             createSheet(message, mgid).then(
                 gsUpdateAdd2(cl, 1,"D", nameOfSheet)
             )
             dataSize.set(nameOfSheet,1);
-        } else {
-            dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
+            dataSizeFromSheets = 1;
         }
+
+            
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
         if (!dataSize.get(nameOfSheet)){
@@ -48,6 +52,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             range: nameOfSheet + "!" + columnToRun + "2:" + secondColumn + "B" + dataSize.get(nameOfSheet).toString()
         };
 
+        
         let dataSO = await gsapi.spreadsheets.values.get(songObjects);
         var arrayOfSpreadsheetValues = dataSO.data.values;
         //console.log(arrayOfSpreadsheetValues);
