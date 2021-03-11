@@ -132,10 +132,7 @@ function createSheetNoMessage(nameOfSheet) {
             gsUpdateAdd2(client2, 1, "D", nameOfSheet);
         }
         // console.log("success: ", response);
-        return response;
     });
-    let myObject = {};
-    return myObject;
 }
 
 
