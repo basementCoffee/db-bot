@@ -30,8 +30,10 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             dataSizeFromSheets =  await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
         } catch(e) {
-            createSheetNoMessage(nameOfSheet).then(
-                gsUpdateAdd2(client2, 1,"D", nameOfSheet)
+            createSheetNoMessage(nameOfSheet).then(() => {
+                gsUpdateAdd2(client2, 1,"D", nameOfSheet);
+            }
+                
             )
             dataSize.set(nameOfSheet,1);
             dataSizeFromSheets = 1;
@@ -134,6 +136,7 @@ function createSheetNoMessage(nameOfSheet) {
         }
         // console.log("success: ", response);
 });
+return "response";
 }
 
 
