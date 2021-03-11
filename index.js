@@ -837,6 +837,10 @@ bot.on('message', message => {
                     message.channel.send("Could not add to the database. Put a song key followed by a link.");
                     break;
                 }
+                if (!(args[2].includes(".")))  {
+                    message.channel.send("You can only add links to the database.");
+                    return;
+                }
                 gsrun(client2, "A", "B", "entries").then((xdb) => {
                 runAddCommand(message, args, "entries", xdb);
                 });
@@ -845,7 +849,11 @@ bot.on('message', message => {
                 case "a":
                     if (!args[1] || !args[2]) {
                         message.channel.send("Could not add to the database. Put a song key followed by a link.");
-                        break;
+                        return;
+                    }
+                    if (!(args[2].includes(".")))  {
+                        message.channel.send("You can only add links to the database.");
+                        return;
                     }
                     gsrun(client2, "A", "B", mgid).then((xdb) => {
                     if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
