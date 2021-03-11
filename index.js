@@ -889,7 +889,6 @@ function runAddCommand(message, args, currentBotGuildId, xdb) {
 }
 
 // The search command
-
 function runSearchCommand(args, mgid){
 
     gsrun(client2, "A", "B", mgid).then((xdb) => {
@@ -899,7 +898,7 @@ function runSearchCommand(args, mgid){
         let searchKey;
         for (let ik = 0; ik < keyArray2.length; ik++) {
             searchKey = keyArray2[ik];
-            if (givenS.toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()) {
+            if (args[1].toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()) {
                 if (!ss) {
                     ss = searchKey
                 } else {
