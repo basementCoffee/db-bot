@@ -536,7 +536,7 @@ bot.on('message', message => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     runSearchCommand(args, xdb);
                     if (ss && ss.length > 0) {
-                        message.channel.send("Could not find name in database.\nDid you mean:" + ss);
+                        message.channel.send("Could not find name in database.\nDid you mean: " + ss);
                     } else {
                         message.channel.send("Could not find name in database.");
                     }
@@ -577,7 +577,7 @@ bot.on('message', message => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     runSearchCommand(args, xdb);
                     if (ss && ss.length > 0) {
-                        message.channel.send("Could not find name in database.\nDid you mean:" + ss);
+                        message.channel.send("Could not find name in database.\nDid you mean: " + ss);
                     } else {
                         message.channel.send("Could not find name in database.");
                     }
