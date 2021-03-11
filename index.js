@@ -809,7 +809,13 @@ bot.on('message', message => {
                         break;
                     }
                     gsrun(client2, "A", "B", mgid).then((xdb) => {
+                    if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
+                                gsUpdateOverwrite(client2, 0,"D", mgid).then(
+                                    runAddCommand(message, args, mgid, xdb)
+                             );
+                    } else {
                         runAddCommand(message, args, mgid, xdb);
+                    }
                 });
                     break;
             // !rm removes database entries
