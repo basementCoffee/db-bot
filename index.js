@@ -97,7 +97,7 @@ function createSheet(message, nameOfSheet) {
         if (err){
             // console.log('The API returned an error: ' + err);
         } else {
-            gsUpdateOverwrite(cl, 0, "D", nameOfSheet);
+            gsUpdateOverwrite(client2, 0, "D", nameOfSheet);
             gsrun(client2, "A", "B", message.guild.id).then(() => {
             });
         }
