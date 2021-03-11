@@ -35,14 +35,14 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             dataSize.set(nameOfSheet,1);
             dataSizeFromSheets = 1;
             return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
-            
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
         if (!dataSize.get(nameOfSheet)){
             dataSize.set(nameOfSheet,1);
-            // gsUpdateAdd2(cl, 1,"D", nameOfSheet);
+            gsUpdateAdd2(cl, 1,"D", nameOfSheet);
             console.log("Data Size prev undef: " + dataSize.get(nameOfSheet));
+            return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
         }
         
 
@@ -691,7 +691,12 @@ bot.on('message', message => {
                             s = s + ", " + keyArray[key];
                         }
                     }
-                    message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
+                    if (!s || s.length < 1) {
+                        message.channel.send("It appears that your music database is empty. Try adding a song by running '" + prefixString + "a'");
+                    } else {
+                        message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
+                    }
+                    
                     }
                     );
                 }
