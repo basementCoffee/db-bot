@@ -135,8 +135,8 @@ function createSheetNoMessage(nameOfSheet) {
             // gsUpdateOverwrite(client2, 0, "D", nameOfSheet);
         }
         // console.log("success: ", response);
-});
-return "response";
+        return response;
+    });
 }
 
 
