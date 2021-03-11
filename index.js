@@ -640,13 +640,12 @@ bot.on('message', message => {
             case "keys" :
                 // console.log("running create sheet...");
                 try {
-                    let sheetString = "";
-                    sheetString = mgid;
-                    createSheet(message, sheetString);
+                    if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
+                    createSheet(message, mgid);
+                    }
                     // console.log("done with create sheet...", message.guild.id);
                     gsrun(client2, "A", "B", mgid).then((xdb) => {
-                    keyArray = Array.from(xdb.congratsDatabase.keys());
-                    keyArray.sort();
+                    keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
                     s = "";
                     for (let key in keyArray) {
                         if (key == 0) {
@@ -667,9 +666,8 @@ bot.on('message', message => {
                 break;
             // !keysg is global keys
             case "keysg" :
-                gsrun(client2, "A", "B", "entries").then(() => {
-                    keyArray = Array.from(congratsDatabase.keys());
-                keyArray.sort();
+                gsrun(client2, "A", "B", "entries").then((xdb) => {
+                keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
                 s = "";
                 for (let key in keyArray) {
                     if (key == 0) {
@@ -678,39 +676,17 @@ bot.on('message', message => {
                         s = s + ", " + keyArray[key];
                     }
                 }
-                message.channel.send(s);
+                message.channel.send("**Keys:** " + s);
                 }
                 )
                 break;
             // !k is the search
             case "k" :
-                //message.channel.send(args[1]);
-                if (!args[1]) {
-                    message.channel.send("No argument was given.");
-                    return;
-                }
-                let givenS = args[1];
-                let givenSLength = givenS.length;
-                let keyArray2 = Array.from(congratsDatabase.keys());
-                let ss = "";
-                var searchKey;
-                for (let ik = 0; ik < keyArray2.length; ik++) {
-                    searchKey = keyArray2[ik];
-                    if (givenS.toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()) {
-                        if (!ss) {
-                            ss = searchKey
-                        } else {
-                            ss += ", " + searchKey;
-                        }
-                    }
-                }
-                if (ss.length === 0) {
-                    message.channel.send("Could not find any keys that start with the given letters.");
-                } else {
-                    message.channel.send("Keys found: " + ss);
-                    //message.channel.send("--end--");
-                }
+                runSearchCommand(message, args, mgid);
                 break;
+            case "kg" :
+                runSearchCommand(message, args, "entries");
+            break;
             // !? is the command for what's playing?
             case "?":
                 if (args[1]) {
@@ -789,26 +765,9 @@ bot.on('message', message => {
                     message.channel.send("Could not add to the database. Put a song key followed by a link.");
                     break;
                 }
-                var songsAddedInt = 0;
-                var z = 1;
-                while (args[z] && args[z + 1]) {
-                    var linkZ = args[z + 1];
-                    if (linkZ.substring(linkZ.length - 1) === ",") {
-                        linkZ = linkZ.substring(0, linkZ.length - 1);
-                    }
-                    congratsDatabase.set(args[z], args[z + 1]);
-                    gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", "entries");
-                    z = z + 2;
-                    songsAddedInt += 1;
-                }
-                if (songsAddedInt === 1) {
-                    message.channel.send("Song successfully added to the database.");
-                    break;
-                } else if (songsAddedInt > 1) {
-                    message.channel.send(songsAddedInt.toString() + " songs added to the database.");
-                } else {
-                    message.channel.send("Song was not added. Please try again.");
-                }
+                gsrun(client2, "A", "B", "entries").then((xdb) => {
+                runAddCommand(message, args, "entries", xdb);
+                });
                 break;
                 // !a is normal add
                 case "a":
@@ -820,10 +779,10 @@ bot.on('message', message => {
                     if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
                             createSheet(message, mgid);
                                 gsUpdateOverwrite(client2, 0,"D", mgid).then(
-                                    runACommand(message, args, mgid, xdb)
+                                    runAddCommand(message, args, mgid, xdb)
                              );
                     } else {
-                        runACommand(message, args, mgid, xdb);
+                        runAddCommand(message, args, mgid, xdb);
                     }
                 });
                     break;
@@ -841,7 +800,8 @@ bot.on('message', message => {
 })
 var enumPlayingFunction;
 
-function runACommand(message, args, currentBotGuildId, xdb) {
+// The a command function
+function runAddCommand(message, args, currentBotGuildId, xdb) {
     let songsAddedInt = 0;
     let z = 1;
         while (args[z] && args[z + 1]) {
@@ -861,6 +821,37 @@ function runACommand(message, args, currentBotGuildId, xdb) {
         } else {
             message.channel.send("Please call '!keys' to initialize the database.");
         }
+}
+
+// The search command
+function runSearchCommand(message, args, mgid){
+    //message.channel.send(args[1]);
+    if (!args[1]) {
+        message.channel.send("No argument was given.");
+        return;
+    }
+    gsrun(client2, "A", "B", mgid).then((xdb) => {
+        let givenSLength = args[1].length;
+        let keyArray2 = Array.from(xdb.congratsDatabase.keys());
+        let ss = "";
+        let searchKey;
+        for (let ik = 0; ik < keyArray2.length; ik++) {
+            searchKey = keyArray2[ik];
+            if (givenS.toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()) {
+                if (!ss) {
+                    ss = searchKey
+                } else {
+                    ss += ", " + searchKey;
+                }
+            }
+        }
+    });
+    
+    if (ss.length === 0) {
+        message.channel.send("Could not find any keys that start with the given letters.");
+    } else {
+        message.channel.send("Keys found: " + ss);
+    }
 }
 
 /**
