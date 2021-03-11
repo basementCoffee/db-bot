@@ -132,7 +132,10 @@ function createSheetNoMessage(nameOfSheet) {
             gsUpdateAdd2(client2, 1, "D", nameOfSheet);
         }
         // console.log("success: ", response);
+        return response;
     });
+    let myObject = {};
+    return myObject;
 }
 
 
@@ -810,6 +813,7 @@ bot.on('message', message => {
                     }
                     gsrun(client2, "A", "B", mgid).then((xdb) => {
                     if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
+                            createSheet(message, mgid);
                                 gsUpdateOverwrite(client2, 0,"D", mgid).then(
                                     runAddCommand(message, args, mgid, xdb)
                              );
