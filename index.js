@@ -27,6 +27,9 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
         var dataSizeFromSheets = await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
         if(!dataSizeFromSheets) {
+            createSheet(message, mgid).then(
+                gsUpdateAdd2(cl, 1,"D", nameOfSheet)
+            )
             dataSize.set(nameOfSheet,1);
         } else {
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
