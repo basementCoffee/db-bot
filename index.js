@@ -413,7 +413,6 @@ bot.on('message', message => {
                 } else {
                     message.channel.send("Added to queue.");
                 }
-                    
                 break;
 
             // case '!pv':
@@ -823,7 +822,7 @@ bot.on('message', message => {
                         currentBotGuildId = message.guild.id.toString();
                     if (!dataSize.get(message.guild.id.toString()) || dataSize.get(message.guild.id.toString()) < 1) {
                             createSheet(message, currentBotGuildId);
-                            gsUpdateAdd2(client2, 1,"D", currentBotGuildId);
+                            // gsUpdateOverwrite(client2, 1,"D", currentBotGuildId);
                     }
                     gsrun(client2,"A","B", message.guild.id).then((xdb) => {
                     while (args[z] && args[z + 1]) {
