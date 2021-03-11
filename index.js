@@ -813,9 +813,8 @@ bot.on('message', message => {
                     }
                     gsrun(client2, "A", "B", mgid).then((xdb) => {
                     if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
-                                gsUpdateOverwrite(client2, 0,"D", mgid).then(
-                                    runAddCommand(message, args, mgid, xdb)
-                             );
+                        message.channel.send("Please try again.")
+                        return;
                     } else {
                         runAddCommand(message, args, mgid, xdb);
                     }
