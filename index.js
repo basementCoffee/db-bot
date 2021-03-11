@@ -535,9 +535,9 @@ bot.on('message', message => {
                 gsrun(client2,"A","B", "entries").then((xdb) => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
-                    let dgSearchString = runSearchCommand(message, args, mgid);
-                    if (dgSearchString && dgSearchString.length > 0) {
-                        message.channel.send("Did you mean one of these keys?\n" + dgSearchString);
+                    runSearchCommand(message, args, mgid);
+                    if (ss && ss.length > 0) {
+                        message.channel.send("Did you mean one of these keys?\n" + ss);
                     }
                     return;
                 }
@@ -575,9 +575,8 @@ bot.on('message', message => {
                 gsrun(client2,"A","B", mgid).then((xdb) => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
-                    let dSearchString = runSearchCommand(message, args, mgid);
-                    if (dSearchString && dSearchString.length > 0) {
-                        message.channel.send("Did you mean one of these keys?\n" + dSearchString);
+                    if (ss && ss.length > 0) {
+                        message.channel.send("Did you mean one of these keys?\n" + ss);
                     }
                     return;
                 }
@@ -895,7 +894,7 @@ function runSearchCommand(args, mgid){
     gsrun(client2, "A", "B", mgid).then((xdb) => {
         let givenSLength = args[1].length;
         let keyArray2 = Array.from(xdb.congratsDatabase.keys());
-        let ss = "";
+        var ss = "";
         let searchKey;
         for (let ik = 0; ik < keyArray2.length; ik++) {
             searchKey = keyArray2[ik];
