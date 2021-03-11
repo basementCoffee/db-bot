@@ -39,7 +39,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         console.log("Data Size: " + dataSize.get(nameOfSheet));
         if (!dataSize.get(nameOfSheet)){
             dataSize.set(nameOfSheet,1);
-            gsUpdateAdd2(cl, 1,"D", nameOfSheet);
+            // gsUpdateAdd2(cl, 1,"D", nameOfSheet);
             console.log("Data Size prev undef: " + dataSize.get(nameOfSheet));
         }
         
@@ -99,7 +99,7 @@ function createSheet(message, nameOfSheet) {
         if (err){
             // console.log('The API returned an error: ' + err);
         } else {
-            gsUpdateOverwrite(client2, 0, "D", nameOfSheet);
+            // gsUpdateOverwrite(client2, 0, "D", nameOfSheet);
             gsrun(client2, "A", "B", message.guild.id).then(() => {
             });
         }
@@ -201,8 +201,8 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
             },
             function(err) { console.error("Execute error", err); });
             // console.log("UPDATE ADD 2");
-            dataSize.set(nameOfSheet, givenValue);
-    gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
+            // dataSize.set(nameOfSheet, givenValue);
+    // gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
 
 }
 
