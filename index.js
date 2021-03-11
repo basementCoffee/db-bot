@@ -49,7 +49,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         var arrayOfSpreadsheetValues = dataSO.data.values;
         //console.log(arrayOfSpreadsheetValues);
 
-        console.log("Database size: " + dataSize.get(nameOfSheet));
+        // console.log("Database size: " + dataSize.get(nameOfSheet));
 
         var line;
         var keyT
@@ -209,7 +209,7 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
             },
             function(err) { console.error("Execute error", err); });
     gsrun(cl, "A", "B", "entries").then(
-        r => console.log(r)
+        r => console.log("updateOverwrite ran...")
     );
 }
 
@@ -820,10 +820,10 @@ bot.on('message', message => {
                     if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
                             createSheet(message, mgid);
                                 gsUpdateOverwrite(client2, 0,"D", mgid).then(
-                                    runACommand(message, args, mgid)
+                                    runACommand(message, args, mgid, xdb)
                              );
                     } else {
-                        runACommand(message, args, mgid);
+                        runACommand(message, args, mgid, xdb);
                     }
                 });
                     break;
@@ -841,10 +841,9 @@ bot.on('message', message => {
 })
 var enumPlayingFunction;
 
-function runACommand(message, args, currentBotGuildId) {
+function runACommand(message, args, currentBotGuildId, xdb) {
     let songsAddedInt = 0;
     let z = 1;
-    gsrun(client2,"A","B", currentBotGuildId).then((xdb) => {
         while (args[z] && args[z + 1]) {
             var linkZ = args[z + 1];
             if (linkZ.substring(linkZ.length - 1) === ",") {
@@ -862,7 +861,6 @@ function runACommand(message, args, currentBotGuildId) {
         } else {
             message.channel.send("Please call '!keys' to initialize the database.");
         }
-    });
 }
 
 /**
