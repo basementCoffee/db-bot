@@ -30,14 +30,12 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             dataSizeFromSheets =  await gsapi.spreadsheets.values.get(spreadsheetSizeObjects);
             dataSize.set(nameOfSheet, dataSizeFromSheets.data.values); 
         } catch(e) {
-            createSheet(message, mgid).then(
-                gsUpdateAdd2(cl, 1,"D", nameOfSheet)
+            createSheetNoMessage(nameOfSheet).then(
+                gsUpdateAdd2(client2, 1,"D", nameOfSheet)
             )
             dataSize.set(nameOfSheet,1);
             dataSizeFromSheets = 1;
         }
-
-            
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
         if (!dataSize.get(nameOfSheet)){
@@ -105,6 +103,34 @@ function createSheet(message, nameOfSheet) {
             gsUpdateOverwrite(client2, 0, "D", nameOfSheet);
             gsrun(client2, "A", "B", message.guild.id).then(() => {
             });
+        }
+        // console.log("success: ", response);
+});
+}
+
+function createSheetNoMessage(nameOfSheet) {
+    console.log("within create sheets");
+    const gsapi = google.sheets({version: 'v4', auth: client2});
+    gsapi.spreadsheets.batchUpdate({
+        "spreadsheetId": "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+        resource: {
+            requests: [
+                {
+                    'addSheet':{
+                        'properties':{
+                            'title': nameOfSheet
+                        }
+                    } 
+                }
+            ],
+        }
+    },
+    function(err, response) {
+        if (err){
+            // console.log('The API returned an error: ' + err);
+        } else {
+            // uncomment if does not work TODO
+            // gsUpdateOverwrite(client2, 0, "D", nameOfSheet);
         }
         // console.log("success: ", response);
 });
