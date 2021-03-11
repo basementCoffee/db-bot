@@ -821,28 +821,15 @@ bot.on('message', message => {
                     let currentBotGuildId = "";
                         currentBotGuildId = message.guild.id.toString();
                     if (!dataSize.get(message.guild.id.toString()) || dataSize.get(message.guild.id.toString()) < 1) {
-                            createSheet(message, currentBotGuildId);
-                            // gsUpdateOverwrite(client2, 1,"D", currentBotGuildId);
-                    }
-                    gsrun(client2,"A","B", message.guild.id).then((xdb) => {
-                    while (args[z] && args[z + 1]) {
-                        var linkZ = args[z + 1];
-                        if (linkZ.substring(linkZ.length - 1) === ",") {
-                            linkZ = linkZ.substring(0, linkZ.length - 1);
-                        }
-                        xdb.congratsDatabase.set(args[z], args[z + 1]);
-                        gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
-                        z = z + 2;
-                        songsAddedInt += 1;
-                    }
-                    if (songsAddedInt === 1) {
-                        message.channel.send("Song successfully added to the database.");
-                    } else if (songsAddedInt > 1) {
-                        message.channel.send(songsAddedInt.toString() + " songs added to the database.");
+                            createSheet(message, currentBotGuildId).then(() => {
+                                gsUpdateOverwrite(client2, 0,"D", currentBotGuildId).then(
+                                    runACommand(message, args, currentBotGuildId)
+                                )
+                                
+                            })
                     } else {
-                        message.channel.send("Please call '!keys' to initialize the database.");
+                        runACommand(message, args, currentBotGuildId);
                     }
-                });
                     break;
             // !rm removes database entries
             case "rm":
@@ -857,6 +844,28 @@ bot.on('message', message => {
     }
 })
 var enumPlayingFunction;
+
+function runACommand(message, args, currentBotGuildId) {
+    gsrun(client2,"A","B", message.guild.id).then((xdb) => {
+        while (args[z] && args[z + 1]) {
+            var linkZ = args[z + 1];
+            if (linkZ.substring(linkZ.length - 1) === ",") {
+                linkZ = linkZ.substring(0, linkZ.length - 1);
+            }
+            xdb.congratsDatabase.set(args[z], args[z + 1]);
+            gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
+            z = z + 2;
+            songsAddedInt += 1;
+        }
+        if (songsAddedInt === 1) {
+            message.channel.send("Song successfully added to the database.");
+        } else if (songsAddedInt > 1) {
+            message.channel.send(songsAddedInt.toString() + " songs added to the database.");
+        } else {
+            message.channel.send("Please call '!keys' to initialize the database.");
+        }
+    });
+}
 
 /**
  * Function to display help list
