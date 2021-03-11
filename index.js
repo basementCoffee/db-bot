@@ -34,6 +34,8 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             // gsUpdateAdd2(client2, 1,"D", nameOfSheet);
             dataSize.set(nameOfSheet,1);
             dataSizeFromSheets = 1;
+            gsrun(cl, columnToRun, secondColumn, nameOfSheet);
+            return;
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
@@ -200,9 +202,8 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
                 // console.log("Response", response);
             },
             function(err) { console.error("Execute error", err); });
-            // console.log("UPDATE ADD 2");
-            // dataSize.set(nameOfSheet, givenValue);
-    // gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
+
+    // gsUpdateOverwrite(cl, 0, "D", nameOfSheet);
 
 }
 
