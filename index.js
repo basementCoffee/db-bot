@@ -536,7 +536,7 @@ bot.on('message', message => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
                     let dgSearchString = runSearchCommand(message, args, mgid);
-                    if (dgSearchString.length > 0) {
+                    if (dgSearchString && dgSearchString.length > 0) {
                         message.channel.send("Did you mean one of these keys?\n" + dgSearchString);
                     }
                     return;
@@ -576,7 +576,7 @@ bot.on('message', message => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
                     let dSearchString = runSearchCommand(message, args, mgid);
-                    if (dSearchString.length > 0) {
+                    if (dSearchString && dSearchString.length > 0) {
                         message.channel.send("Did you mean one of these keys?\n" + dSearchString);
                     }
                     return;
