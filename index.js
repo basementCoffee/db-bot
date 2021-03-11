@@ -535,6 +535,9 @@ bot.on('message', message => {
                 gsrun(client2,"A","B", "entries").then((xdb) => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
+                    if (runSearchCommand(message, args, mgid).length > 0) {
+                        message.channel.send("Did you mean one of these keys?\n")
+                    }
                     return;
                 }
                 // push to queue
@@ -571,6 +574,9 @@ bot.on('message', message => {
                 gsrun(client2,"A","B", mgid).then((xdb) => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
+                    if (runSearchCommand(message, args, mgid).length > 0) {
+                        message.channel.send("Did you mean one of these keys?\n")
+                    }
                     return;
                 }
                 // push to queue
@@ -724,10 +730,28 @@ bot.on('message', message => {
                 break;
             // !k is the search
             case "k" :
-                runSearchCommand(message, args, mgid);
+
+                if (!args[1]) {
+                    message.channel.send("No argument was given.");
+                 return;
+                }
+                if (runSearchCommand(message, args, mgid).length === 0) {
+                    message.channel.send("Could not find any keys that start with the given letters.");
+                } else {
+                    message.channel.send("Keys found: " + ss);
+                }
                 break;
             case "kg" :
-                runSearchCommand(message, args, "entries");
+                if (!args[1]) {
+                    message.channel.send("No argument was given.");
+                 return;
+                }
+                if (runSearchCommand(message, args, mgid).length === 0) {
+                    message.channel.send("Could not find any keys that start with the given letters.");
+                } else {
+                    message.channel.send("Keys found: " + ss);
+                }
+                break;
             break;
             // !? is the command for what's playing?
             case "?":
@@ -864,12 +888,8 @@ function runAddCommand(message, args, currentBotGuildId, xdb) {
 }
 
 // The search command
-function runSearchCommand(message, args, mgid){
-    //message.channel.send(args[1]);
-    if (!args[1]) {
-        message.channel.send("No argument was given.");
-        return;
-    }
+function runSearchCommand(args, mgid){
+
     gsrun(client2, "A", "B", mgid).then((xdb) => {
         let givenSLength = args[1].length;
         let keyArray2 = Array.from(xdb.congratsDatabase.keys());
@@ -887,11 +907,7 @@ function runSearchCommand(message, args, mgid){
         }
     });
     
-    if (ss.length === 0) {
-        message.channel.send("Could not find any keys that start with the given letters.");
-    } else {
-        message.channel.send("Keys found: " + ss);
-    }
+    return ss; 
 }
 
 /**
