@@ -816,8 +816,6 @@ bot.on('message', message => {
                         message.channel.send("Could not add to the database. Put a song key followed by a link.");
                         break;
                     }
-                    var songsAddedInt = 0;
-                    var z = 1;
                     let currentBotGuildId = "";
                         currentBotGuildId = message.guild.id.toString();
                     if (!dataSize.get(message.guild.id.toString()) || dataSize.get(message.guild.id.toString()) < 1) {
@@ -846,6 +844,8 @@ bot.on('message', message => {
 var enumPlayingFunction;
 
 function runACommand(message, args, currentBotGuildId) {
+    let songsAddedInt = 0;
+    let z = 1;
     gsrun(client2,"A","B", message.guild.id).then((xdb) => {
         while (args[z] && args[z + 1]) {
             var linkZ = args[z + 1];
