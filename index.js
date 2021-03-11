@@ -535,8 +535,9 @@ bot.on('message', message => {
                 gsrun(client2,"A","B", "entries").then((xdb) => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
-                    if (runSearchCommand(message, args, mgid).length > 0) {
-                        message.channel.send("Did you mean one of these keys?\n")
+                    let dgSearchString = runSearchCommand(message, args, mgid);
+                    if (dgSearchString.length > 0) {
+                        message.channel.send("Did you mean one of these keys?\n" + dgSearchString);
                     }
                     return;
                 }
@@ -574,8 +575,9 @@ bot.on('message', message => {
                 gsrun(client2,"A","B", mgid).then((xdb) => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     message.channel.send("Could not find name in database.");
-                    if (runSearchCommand(message, args, mgid).length > 0) {
-                        message.channel.send("Did you mean one of these keys?\n")
+                    let dSearchString = runSearchCommand(message, args, mgid);
+                    if (dSearchString.length > 0) {
+                        message.channel.send("Did you mean one of these keys?\n" + dSearchString);
                     }
                     return;
                 }
