@@ -692,7 +692,7 @@ bot.on('message', message => {
                         }
                     }
                     if (!s || s.length < 1) {
-                        message.channel.send("It appears that your music database is empty. Try adding a song by running '" + prefixString + "a'");
+                        message.channel.send("Your music database is empty. Add a song by calling '" + prefixString + "a'");
                     } else {
                         message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
                     }
