@@ -34,8 +34,8 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             // gsUpdateAdd2(client2, 1,"D", nameOfSheet);
             dataSize.set(nameOfSheet,1);
             dataSizeFromSheets = 1;
-            gsrun(cl, columnToRun, secondColumn, nameOfSheet);
-            return;
+            return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
+            
         }
         
         console.log("Data Size: " + dataSize.get(nameOfSheet));
