@@ -889,12 +889,13 @@ function runAddCommand(message, args, currentBotGuildId, xdb) {
 }
 
 // The search command
+let ss; 
 function runSearchCommand(args, mgid){
 
     gsrun(client2, "A", "B", mgid).then((xdb) => {
         let givenSLength = args[1].length;
         let keyArray2 = Array.from(xdb.congratsDatabase.keys());
-        var ss = "";
+        ss = "";
         let searchKey;
         for (let ik = 0; ik < keyArray2.length; ik++) {
             searchKey = keyArray2[ik];
