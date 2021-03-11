@@ -816,18 +816,16 @@ bot.on('message', message => {
                         message.channel.send("Could not add to the database. Put a song key followed by a link.");
                         break;
                     }
-                    let currentBotGuildId = "";
-                        currentBotGuildId = message.guild.id.toString();
-                    if (!dataSize.get(message.guild.id.toString()) || dataSize.get(message.guild.id.toString()) < 1) {
-                            createSheet(message, currentBotGuildId).then(() => {
-                                gsUpdateOverwrite(client2, 0,"D", currentBotGuildId).then(
-                                    runACommand(message, args, currentBotGuildId)
-                                )
-                                
-                            })
+                    gsrun(client2, "A", "B", mgid).then((xdb) => {
+                    if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
+                            createSheet(message, mgid)
+                                gsUpdateOverwrite(client2, 0,"D", mgid).then(
+                                    runACommand(message, args, mgid)
+                             );
                     } else {
-                        runACommand(message, args, currentBotGuildId);
+                        runACommand(message, args, mgid);
                     }
+                });
                     break;
             // !rm removes database entries
             case "rm":
@@ -846,7 +844,7 @@ var enumPlayingFunction;
 function runACommand(message, args, currentBotGuildId) {
     let songsAddedInt = 0;
     let z = 1;
-    gsrun(client2,"A","B", message.guild.id).then((xdb) => {
+    gsrun(client2,"A","B", currentBotGuildId).then((xdb) => {
         while (args[z] && args[z + 1]) {
             var linkZ = args[z + 1];
             if (linkZ.substring(linkZ.length - 1) === ",") {
