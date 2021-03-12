@@ -268,7 +268,7 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '4.1.1';
+var version = '4.1.2';
 var latestRelease = "Latest Release (4.1.x):\n" +
     "- Can now play and pause music. (!pl & !pa)\n" +
     "---4.0.x introduced---\n" +
@@ -686,53 +686,26 @@ bot.on('message', message => {
                 break;
             // !keys 
             case "keys" :
-                // console.log("running create sheet...");
-                try {
-                    if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
+                if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
                     createSheet(message, mgid);
-                    }
-                    // console.log("done with create sheet...", message.guild.id);
-                    gsrun(client2, "A", "B", mgid).then((xdb) => {
-                    keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
-                    s = "";
-                    for (let key in keyArray) {
-                        if (key == 0) {
-                            s = keyArray[key];
-                        } else {
-                            s = s + ", " + keyArray[key];
-                        }
-                    }
-                    if (!s || s.length < 1) {
-                        message.channel.send("Your music database is empty. Add a song by calling '" + prefixString + "a'");
-                    } else {
-                        message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
-                    }
-                    
-                    }
-                    );
                 }
-                 catch (e) {
-                    console.log("!key Error: ", e);
-                }
-                
-                
+                    runKeysCommand(message, mgid);
                 break;
+             // !key
+             case "key" :
+                if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
+                    createSheet(message, mgid);
+                }
+                runKeysCommand(message, mgid);
+            break;
             // !keysg is global keys
             case "keysg" :
-                gsrun(client2, "A", "B", "entries").then((xdb) => {
-                keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
-                s = "";
-                for (let key in keyArray) {
-                    if (key == 0) {
-                        s = keyArray[key];
-                    } else {
-                        s = s + ", " + keyArray[key];
-                    }
-                }
-                message.channel.send("**Keys:** " + s);
-                }
-                )
+                runKeysCommand(message, "entries");
                 break;
+             // !keyg is global keys
+             case "keyg" :
+                runKeysCommand(message, "entries");
+            break;
             // !k is the search
             case "k" :
 
@@ -1045,6 +1018,30 @@ function playRandom2(message, numOfTimes, cdb) {
 
         }
     })
+}
+
+/**
+ * Grabs all of the keys/names from the database
+ * @param {*} message The message trigger
+ * @param {*} sheetname The name of the sheet to retrieve
+ */
+function runKeysCommand(message, sheetname) {
+    gsrun(client2, "A", "B", sheetname).then((xdb) => {
+        keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
+        s = "";
+        for (let key in keyArray) {
+            if (key == 0) {
+                s = keyArray[key];
+            } else {
+                s = s + ", " + keyArray[key];
+            }
+        }
+        if (!s || s.length < 1) {
+            message.channel.send("Your music database is empty. Add a song by calling '" + prefixString + "a'");
+        } else {
+            message.channel.send("*(use '"+ prefixString + "d' to play)*\n **Keys:** " + s);
+        }
+        });
 }
 
 /**
