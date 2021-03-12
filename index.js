@@ -268,7 +268,7 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '4.1.0';
+var version = '4.1.1';
 var latestRelease = "Latest Release (4.1.x):\n" +
     "- Can now play and pause music. (!pl & !pa)\n" +
     "---4.0.x introduced---\n" +
@@ -765,12 +765,13 @@ bot.on('message', message => {
                     if (args[1] === "" || args[1] === " ") {
                         // intentionally left blank
                     } else {
-                        if (congratsDatabase.get(args[1])) {
-                            message.channel.send(congratsDatabase.get(args[1]));
-                        } else if (enumPlayingFunction !== "playing" && currentRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] ) {
-                            message.channel.send("("+ currentRandomIntMap[message.member.voice.channel] + "/" + totalRandomIntMap[message.member.voice.channel] + ")  " + congratsDatabase.get(args[1]));
+                        gsrun(client2, "A", "B", "entries").then((xdb) => {
+                        if (xdb.congratsDatabase.get(args[1])) {
+                            message.channel.send(xdb.congratsDatabase.get(args[1]));
+                            return;
                         }
-                    }
+                    });
+                }
                 }
                 if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
                     if (enumPlayingFunction !== "playing" && totalRandomIntMap[message.member.voice.channel] && totalRandomIntMap[message.member.voice.channel] !== 0) {
@@ -822,16 +823,20 @@ bot.on('message', message => {
                 skipSong(message, xdb.congratsDatabase);
                 });
                 break;
+            // !pa
             case "pa":
             if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
+                message.channel.send("*paused*");
                 dispatcherMap[message.member.voice.channel].pause();
             }
             break;
+            // !pa
             case "pl":
                 if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
+                    message.channel.send("*playing*");
                     dispatcherMap[message.member.voice.channel].resume();
                 }
-                break;
+            break;
             // !v prints out the version number
             case "v" :
                 message.channel.send("version: " + version + "\n" + latestRelease);
@@ -946,11 +951,15 @@ function sendHelp(message, prefixString){
         + prefixString
         + "?  -->  What's playing\n"
         + prefixString
+        + "pa  -->  pause \n"
+        + prefixString
+        + "pl  -->  play if paused \n"
+        + prefixString
         + "sk  -->  Skip the current song\n"
         + prefixString
-        + "e  -->  Stops playing and clears queue\n"
+        + "e  -->  Stops playing and ends session\n"
         + prefixString
-        + "changeprefix  -->  changes the prefix for all commands \n"
+        + "changeprefix [new prefix]  -->  changes the prefix for all commands \n"
         + "\n--------  Curated songs --------  \n"
         + prefixString
         + "key  -->  All the artist song tags (separated by a comma) \n"
@@ -1000,13 +1009,15 @@ function playRandom2(message, numOfTimes, cdb) {
             });
             let dispatcher = connection.play(myStream, {
                 type: "opus"
-            })
-                .on("finish", () => {
+            });
+            dispatcherMap[message.member.voice.channel] = dispatcher;
+                dispatcher.on("finish", () => {
                     numOfTimes -= 1;
                     if (numOfTimes === 0) {
                         totalRandomIntMap[message.member.voice.channel] = 0;
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
+                        dispatcherMap[message.member.voice.channel] = undefined;
                     } else {
                         playRandom2(message, numOfTimes, cdb);
                     }
@@ -1065,6 +1076,7 @@ function playSongToVC(message, whatToPlay) {
             let dispatcher = connection.play(myStream, {
                 type: "opus"
             });
+            dispatcherMap[message.member.voice.channel] = dispatcher;
             dispatcher.on("finish", () => {
                 server.queue.shift();
                 if (server.queue.length > 0) {
@@ -1079,9 +1091,7 @@ function playSongToVC(message, whatToPlay) {
                     connection.disconnect();
                     dispatcherMap[message.member.voice.channel] = undefined;
                 }
-
             });
-            dispatcherMap[message.member.voice.channel] = dispatcher;
         } catch (e) {
             // Error catching - fault with the yt link?
                 console.log("Below is a caught error message. (tried to play:" + whatToPlayS + ")");
