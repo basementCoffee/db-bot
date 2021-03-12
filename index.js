@@ -794,14 +794,16 @@ function runDatabasePlayCommand(args, message, mgid) {
     if (!message.member.voice.channel) {
         return;
     }
-    if (!servers[mgid]) servers[mgid] = {
-        queue: []
-    }
+    if (!servers[mgid] || enumPlayingFunction !== "playing") {
+        enumPlayingFunction = "playing";
+        servers[mgid] = {
+            queue: []
+        }
+    } 
     // in case of force disconnect
     if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
         servers[mgid].queue = [];
     }
-    enumPlayingFunction = "playing";
 
     gsrun(client2,"A","B", mgid).then((xdb) => {
     if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
