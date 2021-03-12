@@ -377,6 +377,9 @@ function skipSong(message, cdb) {
             // if there is still items in the queue then play next song
         if (servers[message.guild.id].queue.length > 0) {
             whatspMap[message.member.voice.channel] = servers[message.guild.id].queue[0];
+            if (dispatcherMap[message.member.voice.channel]) {
+                dispatcherMap[message.member.voice.channel].destroy();
+            }
             playSongToVC(message, whatspMap[message.member.voice.channel]);
         }
       else {
