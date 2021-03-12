@@ -365,6 +365,12 @@ function skipSong(message, cdb) {
         }
     }
     else {
+        if (!servers[mgid] || enumPlayingFunction !== "playing") {
+            enumPlayingFunction = "playing";
+            servers[mgid] = {
+                queue: []
+            }
+        } 
         // if server queue is not empty then skip
         if (servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
             servers[message.guild.id].queue.shift();
