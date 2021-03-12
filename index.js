@@ -967,7 +967,7 @@ function playRandom2(message, numOfTimes, cdb, voiceChannel) {
     if (!voiceChannel) {
         voiceChannel = message.member.voice.channel;
     }
-    if (!message.guild.voice) message.member.voice.channel.join().then(async function (connection) {
+    if (!message.guild.voice || !message.guild.voice.channel) message.member.voice.channel.join().then(async function (connection) {
         try {
             await connection.voice.setSelfDeaf(true);
             //console.log("calling play method...");
