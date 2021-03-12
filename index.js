@@ -515,11 +515,11 @@ bot.on('message', message => {
 
             // !gd is to run database songs
             case "gd":
-                runDatabasePlayCommand(message, "entries");
+                runDatabasePlayCommand(args, message, "entries");
                 break;
             // !d 
             case "d":
-                runDatabasePlayCommand(message, mgid);
+                runDatabasePlayCommand(args, message, mgid);
                 break;
 
             // case "dv":
@@ -553,7 +553,7 @@ bot.on('message', message => {
                     return;
                 }
                 enumPlayingFunction = "random";
-                runRandomCommand(message, "entries");
+                runRandomCommand(args, message, "entries");
                 break;
             // !r is the normal random
             case "r" :
@@ -561,7 +561,7 @@ bot.on('message', message => {
                     return;
                 }
                 enumPlayingFunction = "randomS"
-                runRandomCommand(message, mgid);
+                runRandomCommand(args, message, mgid);
                 break;
             // !keys 
             case "keys" :
@@ -711,8 +711,9 @@ bot.on('message', message => {
                     message.channel.send("You can only add links to the database.");
                     return;
                 }
-                gsrun(client2, "A", "B", "entries").then((xdb) => {
-                runAddCommand(message, args, "entries", xdb);
+                // in case the database has not been initialized
+                gsrun(client2, "A", "B", "entries").then(() => {
+                runAddCommand(args, message, "entries");
                 });
                 break;
                 // !a is normal add
@@ -725,12 +726,13 @@ bot.on('message', message => {
                         message.channel.send("You can only add links to the database.");
                         return;
                     }
-                    gsrun(client2, "A", "B", mgid).then((xdb) => {
+                    // in case the database has not been initialized
+                    gsrun(client2, "A", "B", mgid).then(() => {
                     if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
                         message.channel.send("Please try again.")
                         return;
                     } else {
-                        runAddCommand(message, args, mgid, xdb);
+                        runAddCommand(args, message, mgid);
                     }
                 });
                     break;
@@ -748,8 +750,13 @@ bot.on('message', message => {
 })
 var enumPlayingFunction;
 
-// The a command function
-function runAddCommand(message, args, currentBotGuildId, xdb) {
+/**
+ * The command to add a song to a given database.
+ * @param {*} args The command arguments
+ * @param {*} message The message that triggered the command
+ * @param {*} currentBotGuildId the server/guild id
+ */
+function runAddCommand(args, message, currentBotGuildId) {
     let songsAddedInt = 0;
     let z = 1;
         while (args[z] && args[z + 1]) {
@@ -757,7 +764,6 @@ function runAddCommand(message, args, currentBotGuildId, xdb) {
             if (linkZ.substring(linkZ.length - 1) === ",") {
                 linkZ = linkZ.substring(0, linkZ.length - 1);
             }
-            xdb.congratsDatabase.set(args[z], args[z + 1]);
             gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
             z = z + 2;
             songsAddedInt += 1;
@@ -771,14 +777,16 @@ function runAddCommand(message, args, currentBotGuildId, xdb) {
         }
 }
 
+
 /**
  * Executes play assuming that message args are intended for a database call. 
  * The database referenced depends on what is passed in via mgid.
- * @param {*} message The message that called the command
- * @param {*} mgid The message guild id
+ * @param {*} args 
+ * @param {*} message 
+ * @param {*} mgid 
  * @returns 
  */
-function runDatabasePlayCommand(message, mgid) {
+function runDatabasePlayCommand(args, message, mgid) {
     if (!args[1]) {
         message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
         return;
@@ -874,12 +882,14 @@ function sendHelp(message, prefixString){
         + "**Or just say congrats to a friend. I will chime in too! :) **");
 }
 
+
 /**
- * The command to play a random song. 
+ * The command to play a random song from a database.
+ * @param {*} args 
  * @param {*} message 
  * @param {*} mgid 
  */
-function runRandomCommand(message, mgid) {
+function runRandomCommand(args, message, mgid) {
     if (!servers[mgid]) servers[mgid] = {
         queue: []
     }
