@@ -268,11 +268,11 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '4.1.0';
-var latestRelease = "Latest Release (4.1.x):\n" +
-    "- Can now play and pause music. (!pl & !pa) \n" +
-    "---4.0.x introduced---\n" +
-    "- Server specific databases now active.\n";
+var version = '4.0.0';
+var latestRelease = "Latest Release (4.0.x):\n" +
+    "- Server specific databases now active.\n" +
+    "---3.7.x introduced---\n" +
+    "- Can now change the prefix of the bot (!changeprefix)\n";
 var servers = {};
 //bot.login(token);
 bot.login(process.env.token);
@@ -822,16 +822,6 @@ bot.on('message', message => {
                 skipSong(message, xdb.congratsDatabase);
                 });
                 break;
-            case "pa":
-            if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
-                dispatcherMap[message.member.voice.channel].pause();
-            }
-            break;
-            case "pl":
-                if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
-                    dispatcherMap[message.member.voice.channel].resume();
-                }
-                break;
             // !v prints out the version number
             case "v" :
                 message.channel.send("version: " + version + "\n" + latestRelease);
@@ -1064,8 +1054,8 @@ function playSongToVC(message, whatToPlay) {
             });
             let dispatcher = connection.play(myStream, {
                 type: "opus"
-            });
-            dispatcher.on("finish", () => {
+            })
+            .on("finish", () => {
                 server.queue.shift();
                 if (server.queue.length > 0) {
                     whatsp = server.queue[0];
@@ -1077,11 +1067,9 @@ function playSongToVC(message, whatToPlay) {
                     playSongToVC(message, whatsp);
                 } else {
                     connection.disconnect();
-                    dispatcherMap[message.member.voice.channel] = undefined;
                 }
 
-            });
-            dispatcherMap[message.member.voice.channel] = dispatcher;
+            })
         } catch (e) {
             // Error catching - fault with the yt link?
                 console.log("Below is a caught error message. (tried to play:" + whatToPlayS + ")");
@@ -1118,4 +1106,3 @@ var referenceDatabase = new Map();
 var currentRandomIntMap = new Map();
 var totalRandomIntMap = new Map();
 var dataSize = new Map();
-var dispatcherMap = new Map();
