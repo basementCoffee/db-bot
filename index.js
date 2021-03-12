@@ -356,7 +356,7 @@ function skipSong(message, cdb) {
             whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
-            playRandom2(message, totalRandomIntMap[message.member.voice.channel], cdb, message.member.voice.channel);
+            playRandom2(message, totalRandomIntMap[message.member.voice.channel], cdb);
         }
     }
     else {
@@ -626,7 +626,7 @@ bot.on('message', message => {
                 servers[mgid].queue = [];
                 gsrun(client2,"A","B", "entries").then((xdb) => {
                 if (!args[1]) {
-                    playRandom2(message, 1, xdb.congratsDatabase, message.member.voice.channel);
+                    playRandom2(message, 1, xdb.congratsDatabase);
                 } else {
                     try {
                         let num = parseInt(args[1]);
@@ -636,9 +636,9 @@ bot.on('message', message => {
                         } else {
                             totalRandomIntMap[message.member.voice.channel] = num;
                         }
-                        playRandom2(message, num, xdb.congratsDatabase, message.member.voice.channel);
+                        playRandom2(message, num, xdb.congratsDatabase);
                     } catch (e) {
-                        playRandom2(message, 1, xdb.congratsDatabase, message.member.voice.channel);
+                        playRandom2(message, 1, xdb.congratsDatabase);
                     }
                 }
             });
@@ -657,7 +657,7 @@ bot.on('message', message => {
                 servers[mgid].queue = [];
                 gsrun(client2,"A","B", mgid).then((xdb) => {
                     if (!args[1]) {
-                        playRandom2(message, 1, xdb.congratsDatabase, message.member.voice.channel);
+                        playRandom2(message, 1, xdb.congratsDatabase);
                     } else {
                         try {
                             let num = parseInt(args[1])
@@ -667,9 +667,9 @@ bot.on('message', message => {
                                 totalRandomIntMap[message.member.voice.channel] = num;
                             }
                             currentRandomIntMap[message.member.voice.channel] = 0;
-                            playRandom2(message, num, xdb.congratsDatabase, message.member.voice.channel);
+                            playRandom2(message, num, xdb.congratsDatabase);
                         } catch (e) {
-                            playRandom2(message, 1, xdb.congratsDatabase, message.member.voice.channel);
+                            playRandom2(message, 1, xdb.congratsDatabase);
                         }
                     }
                 });
@@ -940,7 +940,7 @@ function sendHelp(message, prefixString){
         + "**Or just say congrats to a friend. I will chime in too! :) **");
 }
 // the specific version of play random
-function playRandom2(message, numOfTimes, cdb, voiceChannel) {
+function playRandom2(message, numOfTimes, cdb) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     var numOfRetries = 0;
     // server = servers[message.guild.id];
@@ -964,10 +964,7 @@ function playRandom2(message, numOfTimes, cdb, voiceChannel) {
     }
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
-    if (!voiceChannel) {
-        voiceChannel = message.member.voice.channel;
-    }
-    if (!message.guild.voice || !message.guild.voice.channel) message.member.voice.channel.join().then(async function (connection) {
+    if (!message.guild.voiceChannel) message.member.voice.channel.join().then(async function (connection) {
         try {
             await connection.voice.setSelfDeaf(true);
             //console.log("calling play method...");
@@ -982,13 +979,13 @@ function playRandom2(message, numOfTimes, cdb, voiceChannel) {
             dispatcherMap[message.member.voice.channel] = dispatcher;
                 dispatcher.on("finish", () => {
                     numOfTimes -= 1;
-                    if (numOfTimes === 0 || voiceChannel.length < 2) {
+                    if (numOfTimes === 0) {
                         totalRandomIntMap[message.member.voice.channel] = 0;
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
                         dispatcherMap[message.member.voice.channel] = undefined;
                     } else {
-                        playRandom2(message, numOfTimes, cdb, voiceChannel);
+                        playRandom2(message, numOfTimes, cdb);
                     }
 
                 });
@@ -1008,7 +1005,7 @@ function playRandom2(message, numOfTimes, cdb, voiceChannel) {
                     printErrorToChannel("!r (second try)", rk, e);
                 }
                 //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                playRandom2(message, numOfTimes, cdb, voiceChannel);
+                playRandom2(message, numOfTimes, cdb);
             }
 
         }
