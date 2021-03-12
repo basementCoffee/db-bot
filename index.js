@@ -353,7 +353,7 @@ function skipSong(message, cdb) {
                 connection.disconnect();
                 dispatcherMap[message.member.voice.channel] = undefined;
             })
-            whatsp = "Last Played:\n" + whatsp;
+            whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
             playRandom2(message, totalRandomIntMap[message.member.voice.channel], cdb);
@@ -566,14 +566,6 @@ bot.on('message', message => {
                 }
                 enumPlayingFunction = "playing";
 
-                // no need to update what's playing on command call (should be inside play function)
-                // try {
-                //     whatsp = referenceDatabase.get(args[1].toUpperCase());
-                //     whatspMap[message.member.voice.channel] = whatsp;
-                // } catch (e) {
-                //     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
-                //     return;
-                // }
                 gsrun(client2,"A","B", mgid).then((xdb) => {
                 if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
                     runSearchCommand(args, xdb);
