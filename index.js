@@ -482,8 +482,7 @@ bot.on('message', message => {
                 if (!message.member || !message.member.voice || !message.member.voice.channel) {
                     return;
                 }
-
-
+                dispatcherMap[message.member.voice.channel] = undefined;
                 while (servers[mgid] && servers[mgid].queue.length > 0) {
                     server.queue.shift();
                 }
