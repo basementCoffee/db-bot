@@ -797,10 +797,10 @@ function runAddCommand(args, message, currentBotGuildId) {
  * The database referenced depends on what is passed in via mgid.
  * @param {*} args 
  * @param {*} message 
- * @param {*} mgid 
+ * @param {*} sheetname 
  * @returns 
  */
-function runDatabasePlayCommand(args, message, mgid) {
+function runDatabasePlayCommand(args, message, sheetname) {
     if (!args[1]) {
         message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
         return;
@@ -808,18 +808,18 @@ function runDatabasePlayCommand(args, message, mgid) {
     if (!message.member.voice.channel) {
         return;
     }
-    if (!servers[mgid] || enumPlayingFunction !== "playing") {
+    if (!servers[message.guild.id] || enumPlayingFunction !== "playing") {
         enumPlayingFunction = "playing";
-        servers[mgid] = {
+        servers[message.guild.id] = {
             queue: []
         }
     } 
     // in case of force disconnect
     if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
-        servers[mgid].queue = [];
+        servers[message.guild.id].queue = [];
     }
 
-    gsrun(client2,"A","B", mgid).then((xdb) => {
+    gsrun(client2,"A","B", sheetname).then((xdb) => {
     if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
         runSearchCommand(args, xdb);
         if (ss && ss.length > 0) {
@@ -830,9 +830,9 @@ function runDatabasePlayCommand(args, message, mgid) {
         return;
     }
     // push to queue
-    servers[mgid].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
+    servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
     // if queue has only 1 song then play
-    if (servers[mgid] && servers[mgid].queue.length < 2){
+    if (servers[message.guild.id] && servers[message.guild.id].queue.length < 2){
         playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
     } else {
         message.channel.send("Added to queue.");
@@ -903,16 +903,16 @@ function sendHelp(message, prefixString){
  * The command to play a random song from a database.
  * @param {*} args 
  * @param {*} message 
- * @param {*} mgid 
+ * @param {*} sheetname 
  */
-function runRandomCommand(args, message, mgid) {
-    if (!servers[mgid]) servers[mgid] = {
+function runRandomCommand(args, message, sheetname) {
+    if (!servers[message.guild.id]) servers[message.guild.id] = {
         queue: []
     }
     totalRandomIntMap[message.member.voice.channel] = 0;
     currentRandomIntMap[message.member.voice.channel] = 0;
-    servers[mgid].queue = [];
-    gsrun(client2,"A","B", mgid).then((xdb) => {
+    servers[message.guild.id].queue = [];
+    gsrun(client2,"A","B", sheetname).then((xdb) => {
         if (!args[1]) {
             playRandom2(message, 1, xdb.congratsDatabase);
         } else {
