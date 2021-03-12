@@ -394,7 +394,10 @@ function skipSong(message, cdb) {
       else {
             if (message.member.voice && message.member.voice.channel) {
                 message.member.voice.channel.leave();
-                dispatcherMap[message.member.voice.channel].destroy();
+                if (dispatcherMap[message.member.voice.channel]) {
+                    dispatcherMap[message.member.voice.channel].destroy();
+                    console.log("b9");
+                }
                 dispatcherMap[message.member.voice.channel] = undefined;
             }
             if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
