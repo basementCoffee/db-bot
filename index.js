@@ -268,7 +268,7 @@ const ytdl = require("discord-ytdl-core");
 
 //const PREFIX = '!';
 // UPDATE HERE - Before Git Push
-var version = '4.1.2';
+var version = '4.1.3';
 var latestRelease = "Latest Release (4.1.x):\n" +
     "- Can now play and pause music. (!pl & !pa)\n" +
     "---4.0.x introduced---\n" +
@@ -345,14 +345,19 @@ var keyArray;
 var s;
 
 function skipSong(message, cdb) {
+    // in case of force disconnect
+    if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
+        servers[mgid].queue = [];
+        return;
+    }
     if (enumPlayingFunction === "random" || enumPlayingFunction === "randomS") {
         if (currentRandomIntMap[message.member.voice.channel] === totalRandomIntMap[message.member.voice.channel] || totalRandomIntMap[message.member.voice.channel] === 0){
             totalRandomIntMap[message.member.voice.channel] = 0;
             currentRandomIntMap[message.member.voice.channel] = 0;
-            if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                connection.disconnect();
+            if (message.member.voice && message.member.voice.channel) {
+                message.member.voice.channel.leave();
                 dispatcherMap[message.member.voice.channel] = undefined;
-            })
+            }
             whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
@@ -369,10 +374,10 @@ function skipSong(message, cdb) {
             playSongToVC(message, whatspMap[message.member.voice.channel]);
         }
       else {
-            if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                connection.disconnect();
+            if (message.member.voice && message.member.voice.channel) {
+                message.member.voice.channel.leave();
                 dispatcherMap[message.member.voice.channel] = undefined;
-            })
+            }
             if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
                 whatspMap[message.member.voice.channel] = "Last Played:\n" + whatspMap[message.member.voice.channel];
             }
@@ -441,6 +446,7 @@ bot.on('message', message => {
                     queue: []
                 }
                 enumPlayingFunction = "playing";
+                // in case of force disconnect
                 if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
                     servers[mgid].queue = [];
                 }
@@ -496,11 +502,7 @@ bot.on('message', message => {
                 if (message.member.voice && message.member.voice.channel) {
                     message.member.voice.channel.leave();
                 }
-                // alternative to above code
-                // if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
-                //     //server.dispatcher = connection.disconnect();
-                //     connection.disconnect();
-                // })
+
                 if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
                 whatspMap[message.member.voice.channel] = "Last Played:\n" + whatspMap[message.member.voice.channel];
                 }
@@ -511,7 +513,7 @@ bot.on('message', message => {
                 message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
                 break;
 
-            // !d is to run database songs
+            // !gd is to run database songs
             case "gd":
                 if (!args[1]) {
                     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
@@ -524,7 +526,10 @@ bot.on('message', message => {
                     queue: []
                 }
                 enumPlayingFunction = "playing";
-
+                // in case of force disconnect
+                if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
+                    servers[mgid].queue = [];
+                }
                 // no need to update what's playing on command call (should be inside play function)
                 // try {
                 //     whatsp = referenceDatabase.get(args[1].toUpperCase());
@@ -553,6 +558,7 @@ bot.on('message', message => {
                 }
             });
                 break;
+            // !d 
             case "d":
                 if (!args[1]) {
                     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
@@ -563,6 +569,10 @@ bot.on('message', message => {
                 }
                 if (!servers[mgid]) servers[mgid] = {
                     queue: []
+                }
+                // in case of force disconnect
+                if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
+                    servers[mgid].queue = [];
                 }
                 enumPlayingFunction = "playing";
 
@@ -706,7 +716,7 @@ bot.on('message', message => {
                  return;
                 }
                 gsrun(client2, "A", "B", mgid).then((xdb) => runSearchCommand(args, xdb));
-                if (ss.length === 0) {
+                if (ss && ss.length === 0) {
                     message.channel.send("Could not find any keys that start with the given letters.");
                 } else {
                     message.channel.send("Keys found: " + ss);
@@ -718,7 +728,7 @@ bot.on('message', message => {
                  return;
                 }
                 gsrun(client2, "A", "B", "entries").then((xdb) => runSearchCommand(args, xdb));
-                if (ss.length === 0) {
+                if (ss && ss.length === 0) {
                     message.channel.send("Could not find any keys that start with the given letters.");
                 } else {
                     message.channel.send("Keys found: " + ss);
@@ -767,8 +777,9 @@ bot.on('message', message => {
             case "help" :
                 sendHelp(message, prefixString);
             break;
-            // !skip
+            // !skip 
             case "skip" :
+                // determines random type
                 if (enumPlayingFunction === "random") {
                     mgid = "entries";
                 } else {
@@ -778,8 +789,9 @@ bot.on('message', message => {
                 skipSong(message, xdb.congratsDatabase);
                 });
                 break;
-            // !sk
+            // !sk 
             case "sk" :
+                // determines random type (global or local)
                 if (enumPlayingFunction === "random") {
                     mgid = "entries";
                 } else {
@@ -789,14 +801,14 @@ bot.on('message', message => {
                 skipSong(message, xdb.congratsDatabase);
                 });
                 break;
-            // !pa
+            // !pa 
             case "pa":
             if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
                 message.channel.send("*paused*");
                 dispatcherMap[message.member.voice.channel].pause();
             }
             break;
-            // !p1
+            // !pl 
             case "pl":
                 if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
                     message.channel.send("*playing*");
