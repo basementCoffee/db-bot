@@ -351,6 +351,7 @@ function skipSong(message, cdb) {
             currentRandomIntMap[message.member.voice.channel] = 0;
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
+                dispatcherMap[message.member.voice.channel] = undefined;
             })
             whatsp = "Last Played:\n" + whatsp;
             whatspMap[message.member.voice.channel] = whatsp;
@@ -370,6 +371,7 @@ function skipSong(message, cdb) {
       else {
             if (!message.guild.voiceChannel) message.member.voice.channel.join().then(function (connection) {
                 connection.disconnect();
+                dispatcherMap[message.member.voice.channel] = undefined;
             })
             if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
                 whatspMap[message.member.voice.channel] = "Last Played:\n" + whatspMap[message.member.voice.channel];
@@ -824,14 +826,14 @@ bot.on('message', message => {
                 break;
             // !pa
             case "pa":
-            if (message.member.voice && dispatcherMap[message.member.voice.channel] && dispatcherMap[message.member.voice.channel] !== 0) {
+            if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
                 message.channel.send("*paused*");
                 dispatcherMap[message.member.voice.channel].pause();
             }
             break;
             // !p1
             case "pl":
-                if (message.member.voice && dispatcherMap[message.member.voice.channel] && dispatcherMap[message.member.voice.channel] !== 0) {
+                if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
                     message.channel.send("*playing*");
                     dispatcherMap[message.member.voice.channel].resume();
                 }
