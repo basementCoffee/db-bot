@@ -512,7 +512,7 @@ bot.on('message', message => {
                 break;
 
             // !d is to run database songs
-            case "dg":
+            case "gd":
                 if (!args[1]) {
                     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
                     return;
@@ -613,7 +613,7 @@ bot.on('message', message => {
 
 
             // !rg plays a random song from the database
-            case "rg" :
+            case "gr" :
                 if (!message.member.voice.channel) {
                     return;
                 }
@@ -691,11 +691,11 @@ bot.on('message', message => {
                 runKeysCommand(message, prefixString, mgid);
             break;
             // !keysg is global keys
-            case "keysg" :
+            case "gkeys" :
                 runKeysCommand(message, prefixString, "entries");
                 break;
              // !keyg is global keys
-             case "keyg" :
+             case "gkey" :
                 runKeysCommand(message, prefixString, "entries");
             break;
             // !k is the search
@@ -712,7 +712,7 @@ bot.on('message', message => {
                     message.channel.send("Keys found: " + ss);
                 }
                 break;
-            case "kg" :
+            case "gk" :
                 if (!args[1]) {
                     message.channel.send("No argument was given.");
                  return;
@@ -813,7 +813,7 @@ bot.on('message', message => {
                     "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622")
                 break;
             // !ag adds to the databse
-            case "ag":
+            case "ga":
                 if (!args[1] || !args[2]) {
                     message.channel.send("Could not add to the database. Put a song key followed by a link.");
                     break;
