@@ -347,7 +347,7 @@ var s;
 function skipSong(message, cdb) {
     // in case of force disconnect
     if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
-        servers[mgid].queue = [];
+        servers[message.guild.id].queue = [];
         return;
     }
     console.log("b1");
@@ -369,9 +369,9 @@ function skipSong(message, cdb) {
     }
     else {
         console.log("b4");
-        if (!servers[mgid] || enumPlayingFunction !== "playing") {
+        if (!servers[message.guild.id] || enumPlayingFunction !== "playing") {
             enumPlayingFunction = "playing";
-            servers[mgid] = {
+            servers[message.guild.id] = {
                 queue: []
             }
             console.log("b5");
