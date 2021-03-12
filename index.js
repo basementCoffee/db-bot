@@ -825,14 +825,14 @@ bot.on('message', message => {
                 break;
             // !pa
             case "pa":
-            if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
+            if (message.member.voice && dispatcherMap[message.member.voice.channel] && dispatcherMap[message.member.voice.channel] !== 0) {
                 message.channel.send("*paused*");
                 dispatcherMap[message.member.voice.channel].pause();
             }
             break;
-            // !pa
+            // !p1
             case "pl":
-                if (message.member.voice && dispatcherMap[message.member.voice.channel]) {
+                if (message.member.voice && dispatcherMap[message.member.voice.channel] && dispatcherMap[message.member.voice.channel] !== 0) {
                     message.channel.send("*playing*");
                     dispatcherMap[message.member.voice.channel].resume();
                 }
@@ -1017,7 +1017,7 @@ function playRandom2(message, numOfTimes, cdb) {
                         totalRandomIntMap[message.member.voice.channel] = 0;
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
-                        dispatcherMap[message.member.voice.channel] = undefined;
+                        dispatcherMap[message.member.voice.channel] = 0;
                     } else {
                         playRandom2(message, numOfTimes, cdb);
                     }
@@ -1089,7 +1089,7 @@ function playSongToVC(message, whatToPlay) {
                     playSongToVC(message, whatsp);
                 } else {
                     connection.disconnect();
-                    dispatcherMap[message.member.voice.channel] = undefined;
+                    dispatcherMap[message.member.voice.channel] = 0;
                 }
             });
         } catch (e) {
