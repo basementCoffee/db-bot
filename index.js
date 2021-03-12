@@ -903,8 +903,8 @@ function runRandomCommand(args, message, mgid) {
             playRandom2(message, 1, xdb.congratsDatabase);
         } else {
             try {
-                let num = parseInt(args[1])
-                if (num !== null && num !== undefined) {
+                let num = parseInt(args[1]);
+                if (num) {
                     totalRandomIntMap[message.member.voice.channel] = num;
                 }
                 playRandom2(message, num, xdb.congratsDatabase);
