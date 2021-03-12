@@ -982,7 +982,7 @@ function playRandom2(message, numOfTimes, cdb, voiceChannel) {
             dispatcherMap[message.member.voice.channel] = dispatcher;
                 dispatcher.on("finish", () => {
                     numOfTimes -= 1;
-                    if (numOfTimes === 0 || voiceChannel.size() < 2) {
+                    if (numOfTimes === 0 || voiceChannel.length < 2) {
                         totalRandomIntMap[message.member.voice.channel] = 0;
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
