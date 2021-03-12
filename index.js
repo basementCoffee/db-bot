@@ -515,86 +515,11 @@ bot.on('message', message => {
 
             // !gd is to run database songs
             case "gd":
-                if (!args[1]) {
-                    message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
-                    return;
-                }
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                if (!servers[mgid]) servers[mgid] = {
-                    queue: []
-                }
-                enumPlayingFunction = "playing";
-                // in case of force disconnect
-                if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
-                    servers[mgid].queue = [];
-                }
-                // no need to update what's playing on command call (should be inside play function)
-                // try {
-                //     whatsp = referenceDatabase.get(args[1].toUpperCase());
-                //     whatspMap[message.member.voice.channel] = whatsp;
-                // } catch (e) {
-                //     message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
-                //     return;
-                // }
-                gsrun(client2,"A","B", "entries").then((xdb) => {
-                if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
-                    runSearchCommand(args, xdb);
-                    if (ss && ss.length > 0) {
-                        message.channel.send("Could not find name in database.\n*Did you mean: " + ss + "*");
-                    } else {
-                        message.channel.send("Could not find name in database.");
-                    }
-                    return;
-                }
-                // push to queue
-                servers[mgid].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
-                // if queue has only 1 song then play
-                if (servers[mgid] && servers[mgid].queue.length < 2){
-                    playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
-                } else {
-                    message.channel.send("Added to queue.");
-                }
-            });
+                runDatabasePlayCommand(message, "entries");
                 break;
             // !d 
             case "d":
-                if (!args[1]) {
-                    message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
-                    return;
-                }
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                if (!servers[mgid]) servers[mgid] = {
-                    queue: []
-                }
-                // in case of force disconnect
-                if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
-                    servers[mgid].queue = [];
-                }
-                enumPlayingFunction = "playing";
-
-                gsrun(client2,"A","B", mgid).then((xdb) => {
-                if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
-                    runSearchCommand(args, xdb);
-                    if (ss && ss.length > 0) {
-                        message.channel.send("Could not find name in database.\n*Did you mean: " + ss + "*");
-                    } else {
-                        message.channel.send("Could not find name in database.");
-                    }
-                    return;
-                }
-                // push to queue
-                servers[mgid].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
-                // if queue has only 1 song then play
-                if (servers[mgid] && servers[mgid].queue.length < 2){
-                    playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
-                } else {
-                    message.channel.send("Added to queue.");
-                }
-            });
+                runDatabasePlayCommand(message, mgid);
                 break;
 
             // case "dv":
@@ -627,64 +552,16 @@ bot.on('message', message => {
                 if (!message.member.voice.channel) {
                     return;
                 }
-                if (!servers[mgid]) servers[mgid] = {
-                    queue: []
-                }
-                totalRandomIntMap[message.member.voice.channel] = 0;
-                currentRandomIntMap[message.member.voice.channel] = 0;
                 enumPlayingFunction = "random";
-                servers[mgid].queue = [];
-                gsrun(client2,"A","B", "entries").then((xdb) => {
-                if (!args[1]) {
-                    playRandom2(message, 1, xdb.congratsDatabase);
-                } else {
-                    try {
-                        let num = parseInt(args[1]);
-                        currentRandomIntMap[message.member.voice.channel] = 0;
-                        if (num === null || num === undefined) {
-                            totalRandomIntMap[message.member.voice.channel] = 0;
-                        } else {
-                            totalRandomIntMap[message.member.voice.channel] = num;
-                        }
-                        playRandom2(message, num, xdb.congratsDatabase);
-                    } catch (e) {
-                        playRandom2(message, 1, xdb.congratsDatabase);
-                    }
-                }
-            });
+                runRandomCommand(message, "entries");
                 break;
             // !r is the normal random
             case "r" :
                 if (!message.member.voice.channel) {
                     return;
                 }
-                if (!servers[mgid]) servers[mgid] = {
-                    queue: []
-                }
                 enumPlayingFunction = "randomS"
-                totalRandomIntMap[message.member.voice.channel] = 0;
-                currentRandomIntMap[message.member.voice.channel] = 0;
-                servers[mgid].queue = [];
-                gsrun(client2,"A","B", mgid).then((xdb) => {
-                    if (!args[1]) {
-                        playRandom2(message, 1, xdb.congratsDatabase);
-                    } else {
-                        try {
-                            let num = parseInt(args[1])
-                            if (num === null || num === undefined) {
-                                totalRandomIntMap[message.member.voice.channel] = 0;
-                            } else {
-                                totalRandomIntMap[message.member.voice.channel] = num;
-                            }
-                            currentRandomIntMap[message.member.voice.channel] = 0;
-                            playRandom2(message, num, xdb.congratsDatabase);
-                        } catch (e) {
-                            playRandom2(message, 1, xdb.congratsDatabase);
-                        }
-                    }
-                });
-                
-                
+                runRandomCommand(message, mgid);
                 break;
             // !keys 
             case "keys" :
@@ -894,6 +771,51 @@ function runAddCommand(message, args, currentBotGuildId, xdb) {
         }
 }
 
+/**
+ * Executes play assuming that message args are intended for a database call. 
+ * The database referenced depends on what is passed in via mgid.
+ * @param {*} message The message that called the command
+ * @param {*} mgid The message guild id
+ * @returns 
+ */
+function runDatabasePlayCommand(message, mgid) {
+    if (!args[1]) {
+        message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+        return;
+    }
+    if (!message.member.voice.channel) {
+        return;
+    }
+    if (!servers[mgid]) servers[mgid] = {
+        queue: []
+    }
+    // in case of force disconnect
+    if(!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
+        servers[mgid].queue = [];
+    }
+    enumPlayingFunction = "playing";
+
+    gsrun(client2,"A","B", mgid).then((xdb) => {
+    if (!xdb.referenceDatabase.get(args[1].toUpperCase())){
+        runSearchCommand(args, xdb);
+        if (ss && ss.length > 0) {
+            message.channel.send("Could not find name in database.\n*Did you mean: " + ss + "*");
+        } else {
+            message.channel.send("Could not find name in database.");
+        }
+        return;
+    }
+    // push to queue
+    servers[mgid].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
+    // if queue has only 1 song then play
+    if (servers[mgid] && servers[mgid].queue.length < 2){
+        playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
+    } else {
+        message.channel.send("Added to queue.");
+    }
+});
+}
+
 // The search command
 let ss; 
 function runSearchCommand(args, xdb){
@@ -951,7 +873,44 @@ function sendHelp(message, prefixString){
         + "rm  -->  Removes a song from the database\n"
         + "**Or just say congrats to a friend. I will chime in too! :) **");
 }
-// the specific version of play random
+
+/**
+ * The command to play a random song. 
+ * @param {*} message 
+ * @param {*} mgid 
+ */
+function runRandomCommand(message, mgid) {
+    if (!servers[mgid]) servers[mgid] = {
+        queue: []
+    }
+    totalRandomIntMap[message.member.voice.channel] = 0;
+    currentRandomIntMap[message.member.voice.channel] = 0;
+    servers[mgid].queue = [];
+    gsrun(client2,"A","B", mgid).then((xdb) => {
+        if (!args[1]) {
+            playRandom2(message, 1, xdb.congratsDatabase);
+        } else {
+            try {
+                let num = parseInt(args[1])
+                if (num !== null && num !== undefined) {
+                    totalRandomIntMap[message.member.voice.channel] = num;
+                }
+                playRandom2(message, num, xdb.congratsDatabase);
+            } catch (e) {
+                playRandom2(message, 1, xdb.congratsDatabase);
+            }
+        }
+    });
+}
+
+/**
+ * The music-centric function of play random. This function executes the music stream 
+ * to be played into the voice channel of the message's owner.
+ * @param {} message 
+ * @param {*} numOfTimes 
+ * @param {*} cdb 
+ * @returns 
+ */
 function playRandom2(message, numOfTimes, cdb) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     var numOfRetries = 0;
