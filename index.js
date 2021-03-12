@@ -350,7 +350,6 @@ function skipSong(message, cdb) {
         servers[message.guild.id].queue = [];
         return;
     }
-    console.log("b1");
     if (enumPlayingFunction === "random" || enumPlayingFunction === "randomS") {
         if (currentRandomIntMap[message.member.voice.channel] === totalRandomIntMap[message.member.voice.channel] || totalRandomIntMap[message.member.voice.channel] === 0){
             totalRandomIntMap[message.member.voice.channel] = 0;
@@ -359,45 +358,39 @@ function skipSong(message, cdb) {
                 message.member.voice.channel.leave();
                 dispatcherMap[message.member.voice.channel] = undefined;
             }
-            console.log("b2");
             whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
             whatspMap[message.member.voice.channel] = whatsp;
         } else {
             playRandom2(message, totalRandomIntMap[message.member.voice.channel], cdb);
         }
-        console.log("b3");
     }
     else {
-        console.log("b4");
         if (!servers[message.guild.id] || enumPlayingFunction !== "playing") {
             enumPlayingFunction = "playing";
             servers[message.guild.id] = {
                 queue: []
             }
-            console.log("b5");
         } 
         // if server queue is not empty then skip
         if (servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
             servers[message.guild.id].queue.shift();
-            console.log("b6");
             // if there is still items in the queue then play next song
         if (servers[message.guild.id].queue.length > 0) {
             whatspMap[message.member.voice.channel] = servers[message.guild.id].queue[0];
+            // get rid of previous dispatch
             if (dispatcherMap[message.member.voice.channel]) {
                 dispatcherMap[message.member.voice.channel].destroy();
-                console.log("b7");
             }
-            console.log("b8");
             playSongToVC(message, whatspMap[message.member.voice.channel]);
         }
     }
       else {
             if (message.member.voice && message.member.voice.channel) {
-                message.member.voice.channel.leave();
+                // get rid of previous dispatch
                 if (dispatcherMap[message.member.voice.channel]) {
                     dispatcherMap[message.member.voice.channel].destroy();
-                    console.log("b9");
                 }
+                message.member.voice.channel.leave();
                 dispatcherMap[message.member.voice.channel] = undefined;
             }
             if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
