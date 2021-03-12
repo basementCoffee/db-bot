@@ -426,15 +426,15 @@ bot.on('message', message => {
         switch (statement) {
             //!p is just the basic rhythm bot
             case 'p':
+                if (!message.member.voice.channel) {
+                    return;
+                }
                 if (!args[1]) {
                     message.channel.send("Where's the link? I can't read your mind... unfortunately.");
                     return;
                 }
                 if (!(args[1].includes(".")))  {
                     message.channel.send("There's something wrong with what you put there.");
-                    return;
-                }
-                if (!message.member.voice.channel) {
                     return;
                 }
                 if (!servers[mgid]) servers[mgid] = {
