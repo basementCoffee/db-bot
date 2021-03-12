@@ -977,7 +977,7 @@ function sendHelp(message, prefixString){
 function playRandom2(message, numOfTimes, cdb) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     var numOfRetries = 0;
-    server = servers[message.guild.id];
+    // server = servers[message.guild.id];
     let rKeyArray = Array.from(cdb.keys());
     numOfRetries += 1;
     let rn = Math.floor((Math.random() * (rKeyArray.length)));
