@@ -1018,7 +1018,7 @@ function playRandom2(message, numOfTimes, cdb) {
                         totalRandomIntMap[message.member.voice.channel] = 0;
                         currentRandomIntMap[message.member.voice.channel] = 0;
                         connection.disconnect();
-                        dispatcherMap[message.member.voice.channel] = 0;
+                        dispatcherMap[message.member.voice.channel] = undefined;
                     } else {
                         playRandom2(message, numOfTimes, cdb);
                     }
@@ -1090,7 +1090,7 @@ function playSongToVC(message, whatToPlay) {
                     playSongToVC(message, whatsp);
                 } else {
                     connection.disconnect();
-                    dispatcherMap[message.member.voice.channel] = 0;
+                    dispatcherMap[message.member.voice.channel] = undefined;
                 }
             });
         } catch (e) {
