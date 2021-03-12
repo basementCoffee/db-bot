@@ -681,22 +681,22 @@ bot.on('message', message => {
                 if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
                     createSheet(message, mgid);
                 }
-                    runKeysCommand(message, mgid);
+                    runKeysCommand(message, prefixString, mgid);
                 break;
              // !key
              case "key" :
                 if (!dataSize.get(mgid.toString()) || dataSize.get(mgid.toString()) < 1) {
                     createSheet(message, mgid);
                 }
-                runKeysCommand(message, mgid);
+                runKeysCommand(message, prefixString, mgid);
             break;
             // !keysg is global keys
             case "keysg" :
-                runKeysCommand(message, "entries");
+                runKeysCommand(message, prefixString, "entries");
                 break;
              // !keyg is global keys
              case "keyg" :
-                runKeysCommand(message, "entries");
+                runKeysCommand(message, prefixString, "entries");
             break;
             // !k is the search
             case "k" :
@@ -1017,7 +1017,7 @@ function playRandom2(message, numOfTimes, cdb) {
  * @param {*} message The message trigger
  * @param {*} sheetname The name of the sheet to retrieve
  */
-function runKeysCommand(message, sheetname) {
+function runKeysCommand(message, prefixString, sheetname) {
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
         s = "";
