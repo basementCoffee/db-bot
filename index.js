@@ -270,7 +270,7 @@ const ytdl = require("discord-ytdl-core");
 // UPDATE HERE - Before Git Push
 var version = '4.1.0';
 var latestRelease = "Latest Release (4.1.x):\n" +
-    "- Can now play and pause music. (!pl & !pa)\n" +
+    "- Can now play and pause music. (!pl & !pa) \n" +
     "---4.0.x introduced---\n" +
     "- Server specific databases now active.\n";
 var servers = {};
