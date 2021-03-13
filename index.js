@@ -702,11 +702,11 @@ bot.on("message", (message) => {
               if (xdb.congratsDatabase.get(args[1])) {
                 message.channel.send(xdb.congratsDatabase.get(args[1]));
               } else if (whatspMap[message.member.voice.channel] && !whatspMap[message.member.voice.channel].includes("Last Played:")) {
-                message.channel.send("Could not find in database.\nCurrently playing: " + whatspMap[message.member.voice.channel]);
+                message.channel.send("Could not find '" + args[1] + "' in database.\nCurrently playing: " + whatspMap[message.member.voice.channel]);
               } else if (whatspMap[message.member.voice.channel]){
-                message.channel.send("Could not find in database.\n" + whatspMap[message.member.voice.channel]);
+                message.channel.send("Could not find '" + args[1] + "' in database.\n" + whatspMap[message.member.voice.channel]);
               } else {
-                message.channel.send("Could not find in database.");
+                message.channel.send("Could not find '" + args[1] + "' in database.");
               }
             });
         }
