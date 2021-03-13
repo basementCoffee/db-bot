@@ -698,15 +698,18 @@ bot.on("message", (message) => {
       // !? is the command for what's playing?
       case "?":
         if (args[1]) {
-          if (args[1] === "" || args[1] === " ") {
-            // intentionally left blank
-          } else {
+          let whatspExit = false;
+          if (args[1] !== "" && args[1] !== " ") {
             gsrun(client2, "A", "B", "entries").then((xdb) => {
               if (xdb.congratsDatabase.get(args[1])) {
                 message.channel.send(xdb.congratsDatabase.get(args[1]));
+                whatspExit = true;
                 return;
               }
             });
+          }
+          if (whatspExit) {
+            return;
           }
         }
         if (
