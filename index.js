@@ -396,39 +396,31 @@ function skipSong(message, cdb) {
         queue: [],
       };
     }
-    // if server queue is not empty then skip
+    // if server queue is not empty
     if (
       servers[message.guild.id].queue &&
       servers[message.guild.id].queue.length > 0
     ) {
-      console.log("b1");
-      console.log(servers[message.guild.id].queue);
       servers[message.guild.id].queue.shift();
-      console.log(servers[message.guild.id].queue);
-      console.log(servers[message.guild.id].queue.length);
       // if there is still items in the queue then play next song
       if (servers[message.guild.id].queue.length > 0) {
         whatspMap[message.member.voice.channel] =
           servers[message.guild.id].queue[0];
         // get rid of previous dispatch
-        console.log("b3");
         playSongToVC(message, whatspMap[message.member.voice.channel]);
-      }
-    } else {
-      console.log("b4");
-      if (message.member.voice && message.member.voice.channel) {
-        // get rid of previous dispatch
-        console.log("b5");
-        message.member.voice.channel.leave();
-        dispatcherMap[message.member.voice.channel] = undefined;
-      }
-      console.log("b6");
-      if (
-        whatspMap[message.member.voice.channel] &&
-        whatspMap[message.member.voice.channel].length > 0
-      ) {
-        whatspMap[message.member.voice.channel] =
-          "Last Played:\n" + whatspMap[message.member.voice.channel];
+      } else {
+        if (message.member.voice && message.member.voice.channel) {
+          // get rid of previous dispatch
+          message.member.voice.channel.leave();
+          dispatcherMap[message.member.voice.channel] = undefined;
+        }
+        if (
+          whatspMap[message.member.voice.channel] &&
+          whatspMap[message.member.voice.channel].length > 0
+        ) {
+          whatspMap[message.member.voice.channel] =
+            "Last Played:\n" + whatspMap[message.member.voice.channel];
+        }
       }
     }
   }
@@ -700,19 +692,33 @@ bot.on("message", (message) => {
       // !? is the command for what's playing?
       case "?":
         if (args[1] && args[1] !== " ") {
-            gsrun(client2, "A", "B", mgid).then((xdb) => {
-              if (xdb.congratsDatabase.get(args[1])) {
-                message.channel.send(xdb.congratsDatabase.get(args[1]));
-              } else if (whatspMap[message.member.voice.channel] && !whatspMap[message.member.voice.channel].includes("Last Played:")) {
-                message.channel.send("Could not find '" + args[1] + "' in database.\nCurrently playing: " + whatspMap[message.member.voice.channel]);
-              } else if (whatspMap[message.member.voice.channel]){
-                message.channel.send("Could not find '" + args[1] + "' in database.\n" + whatspMap[message.member.voice.channel]);
-              } else {
-                message.channel.send("Could not find '" + args[1] + "' in database.");
-              }
-            });
-        }
-        else {
+          gsrun(client2, "A", "B", mgid).then((xdb) => {
+            if (xdb.congratsDatabase.get(args[1])) {
+              message.channel.send(xdb.congratsDatabase.get(args[1]));
+            } else if (
+              whatspMap[message.member.voice.channel] &&
+              !whatspMap[message.member.voice.channel].includes("Last Played:")
+            ) {
+              message.channel.send(
+                "Could not find '" +
+                  args[1] +
+                  "' in database.\nCurrently playing: " +
+                  whatspMap[message.member.voice.channel]
+              );
+            } else if (whatspMap[message.member.voice.channel]) {
+              message.channel.send(
+                "Could not find '" +
+                  args[1] +
+                  "' in database.\n" +
+                  whatspMap[message.member.voice.channel]
+              );
+            } else {
+              message.channel.send(
+                "Could not find '" + args[1] + "' in database."
+              );
+            }
+          });
+        } else {
           if (
             whatspMap[message.member.voice.channel] &&
             whatspMap[message.member.voice.channel] !== ""
