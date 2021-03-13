@@ -697,23 +697,20 @@ bot.on("message", (message) => {
         break;
       // !? is the command for what's playing?
       case "?":
-        let whatspExit = false;
-        if (args[1]) {
-          if (args[1] !== "" && args[1] !== " ") {
-            gsrun(client2, "A", "B", "entries").then((xdb) => {
+        if (args[1] && args[1] !== " ") {
+            gsrun(client2, "A", "B", mgid).then((xdb) => {
               if (xdb.congratsDatabase.get(args[1])) {
                 message.channel.send(xdb.congratsDatabase.get(args[1]));
-                whatspExit = true;
-                return;
+              } else if (whatspMap[message.member.voice.channel] && !whatspMap[message.member.voice.channel].includes("Last Played:")) {
+                message.channel.send("Could not find in database.\nCurrently playing: " + whatspMap[message.member.voice.channel]);
+              } else if (whatspMap[message.member.voice.channel]){
+                message.channel.send("Could not find in database.\n" + whatspMap[message.member.voice.channel]);
               } else {
-                message.channel.send("Could not find in db.\Currently playing: ");
+                message.channel.send("Could not find in database.");
               }
             });
-          }
         }
-        if (whatspExit) {
-          break;
-        } else {
+        else {
           if (
             whatspMap[message.member.voice.channel] &&
             whatspMap[message.member.voice.channel] !== ""
