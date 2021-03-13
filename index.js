@@ -697,8 +697,8 @@ bot.on("message", (message) => {
         break;
       // !? is the command for what's playing?
       case "?":
+        let whatspExit = false;
         if (args[1]) {
-          let whatspExit = false;
           if (args[1] !== "" && args[1] !== " ") {
             gsrun(client2, "A", "B", "entries").then((xdb) => {
               if (xdb.congratsDatabase.get(args[1])) {
@@ -708,43 +708,44 @@ bot.on("message", (message) => {
               }
             });
           }
-          if (whatspExit) {
-            return;
-          }
         }
-        if (
-          whatspMap[message.member.voice.channel] &&
-          whatspMap[message.member.voice.channel] !== ""
-        ) {
-          if (
-            enumPlayingFunction !== "playing" &&
-            totalRandomIntMap[message.member.voice.channel] &&
-            totalRandomIntMap[message.member.voice.channel] !== 0
-          ) {
-            message.channel.send(
-              "(" +
-                currentRandomIntMap[message.member.voice.channel] +
-                "/" +
-                totalRandomIntMap[message.member.voice.channel] +
-                ")  " +
-                whatspMap[message.member.voice.channel]
-            );
-          } else if (
-            servers[mgid] &&
-            servers[mgid].queue &&
-            servers[mgid].queue.length > 1
-          ) {
-            message.channel.send(
-              "(1/" +
-                servers[mgid].queue.length +
-                ")  " +
-                whatspMap[message.member.voice.channel]
-            );
-          } else {
-            message.channel.send(whatspMap[message.member.voice.channel]);
-          }
+        if (whatspExit) {
+          return;
         } else {
-          message.channel.send("Nothing is playing right now");
+          if (
+            whatspMap[message.member.voice.channel] &&
+            whatspMap[message.member.voice.channel] !== ""
+          ) {
+            if (
+              enumPlayingFunction !== "playing" &&
+              totalRandomIntMap[message.member.voice.channel] &&
+              totalRandomIntMap[message.member.voice.channel] !== 0
+            ) {
+              message.channel.send(
+                "(" +
+                  currentRandomIntMap[message.member.voice.channel] +
+                  "/" +
+                  totalRandomIntMap[message.member.voice.channel] +
+                  ")  " +
+                  whatspMap[message.member.voice.channel]
+              );
+            } else if (
+              servers[mgid] &&
+              servers[mgid].queue &&
+              servers[mgid].queue.length > 1
+            ) {
+              message.channel.send(
+                "(1/" +
+                  servers[mgid].queue.length +
+                  ")  " +
+                  whatspMap[message.member.voice.channel]
+              );
+            } else {
+              message.channel.send(whatspMap[message.member.voice.channel]);
+            }
+          } else {
+            message.channel.send("Nothing is playing right now");
+          }
         }
         break;
       case "changeprefix":
