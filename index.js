@@ -404,6 +404,7 @@ function skipSong(message, cdb) {
       console.log("b1");
       console.log(servers[message.guild.id].queue);
       servers[message.guild.id].queue.shift();
+      console.log(servers[message.guild.id].queue);
       // if there is still items in the queue then play next song
       if (servers[message.guild.id].queue.length > 0) {
         whatspMap[message.member.voice.channel] =
@@ -416,9 +417,11 @@ function skipSong(message, cdb) {
       console.log("b4");
       if (message.member.voice && message.member.voice.channel) {
         // get rid of previous dispatch
+        console.log("b5");
         message.member.voice.channel.leave();
         dispatcherMap[message.member.voice.channel] = undefined;
       }
+      console.log("b6");
       if (
         whatspMap[message.member.voice.channel] &&
         whatspMap[message.member.voice.channel].length > 0
