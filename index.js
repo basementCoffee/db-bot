@@ -405,7 +405,7 @@ function skipSong(message, cdb) {
       console.log(servers[message.guild.id].queue);
       servers[message.guild.id].queue.shift();
       // if there is still items in the queue then play next song
-      if (servers[message.guild.id].queue.length > 0) {
+      if (servers[message.guild.id].queue.length > 1) {
         whatspMap[message.member.voice.channel] =
           servers[message.guild.id].queue[0];
         // get rid of previous dispatch
