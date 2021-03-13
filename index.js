@@ -705,12 +705,14 @@ bot.on("message", (message) => {
                 message.channel.send(xdb.congratsDatabase.get(args[1]));
                 whatspExit = true;
                 return;
+              } else {
+                message.channel.send("Could not find in db.\Currently playing: ");
               }
             });
           }
         }
         if (whatspExit) {
-          return;
+          break;
         } else {
           if (
             whatspMap[message.member.voice.channel] &&
