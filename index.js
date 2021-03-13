@@ -401,6 +401,7 @@ function skipSong(message, cdb) {
       servers[message.guild.id].queue &&
       servers[message.guild.id].queue.length > 0
     ) {
+      console.log("b1");
       servers[message.guild.id].queue.shift();
       // if there is still items in the queue then play next song
       if (servers[message.guild.id].queue.length > 0) {
@@ -409,13 +410,17 @@ function skipSong(message, cdb) {
         // get rid of previous dispatch
         if (dispatcherMap[message.member.voice.channel]) {
           dispatcherMap[message.member.voice.channel].destroy();
+          console.log("b2");
         }
+        console.log("b3");
         playSongToVC(message, whatspMap[message.member.voice.channel]);
       }
     } else {
+      console.log("b4");
       if (message.member.voice && message.member.voice.channel) {
         // get rid of previous dispatch
         if (dispatcherMap[message.member.voice.channel]) {
+          console.log("b5");
           dispatcherMap[message.member.voice.channel].destroy();
         }
         message.member.voice.channel.leave();
