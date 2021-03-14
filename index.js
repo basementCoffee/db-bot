@@ -1117,7 +1117,7 @@ async function playRandom2(message, numOfTimes, cdb) {
   currentRandomIntMap[message.member.voice.channel] += 1;
   var numOfRetries = 0;
   // server = servers[message.guild.id];
-  let rKeyArray = Array.from(cdb.keys());
+  var rKeyArray = Array.from(cdb.keys());
   let rn;
   let rk;
   if (numOfTimes <= 1) {
@@ -1131,7 +1131,7 @@ async function playRandom2(message, numOfTimes, cdb) {
         let executeWhileInRand = true;
         for (let i = 0; i < numOfTimes; i++) {
           if (!newArray || newArray.length < 1 || executeWhileInRand) {
-            let tempArray = rKeyArray;
+            var tempArray = rKeyArray;
             let j = 0;
             console.log("new array length is less than 0.")
             while (tempArray.length > 0 && j <= numOfTimes || newArray.length < 1 || executeWhileInRand) {
