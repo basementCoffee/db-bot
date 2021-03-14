@@ -428,28 +428,6 @@ function skipSong(message, cdb) {
 
 // parses message, provides a response
 bot.on('message', async (message) => {
-  if (bot.listenerCount('message').length > 11) {
-    bot.removeAllListeners('message');
-    console.log("bot liseners: " + bot.listenerCount());
-  }
-  console.log("Bot event names: " + bot.eventNames());
-  console.log("Process event names: " + process.eventNames());
-  if (process.listenerCount('newListener').length > 11) {
-    console.log("process liseners NL: " + process.listenerCount());
-    process.removeAllListeners('newListener');
-  }
-  console.log("warning count: " + process.listenerCount("warning"));
-  console.log("removeListener count: " + process.listenerCount('removeListener'));
-  console.log("newListener count: " + process.listenerCount('removeListener'));
-  if (process.listenerCount('removeListener').length > 11) {
-    console.log("process liseners RL: " + process.listenerCount());
-    process.removeAllListeners('removeListener');
-  }
-  if (process.listenerCount('warning').length > 11) {
-    console.log("process liseners W: " + process.listenerCount());
-    process.removeAllListeners('warning');
-  }
-  
   if (message.author.bot) return;
   if (contentsContainCongrats(message)) {
     if (message.author.bot) return;
@@ -497,6 +475,30 @@ bot.on('message', async (message) => {
     prefixString = prefix[message.member.voice.channel].toString();
     let statement = args[0].substr(1);
     statement = statement.toLowerCase();
+
+    if (bot.listenerCount('message').length > 11) {
+      bot.removeAllListeners('message');
+      console.log("bot liseners: " + bot.listenerCount());
+    }
+    console.log("Bot event names: " + bot.eventNames());
+    console.log("Process event names: " + process.eventNames());
+    if (process.listenerCount('newListener').length > 11) {
+      console.log("process liseners NL: " + process.listenerCount());
+      process.removeAllListeners('newListener');
+    }
+    console.log("warning count: " + process.listenerCount("warning"));
+    console.log("removeListener count: " + process.listenerCount('removeListener'));
+    console.log("newListener count: " + process.listenerCount('removeListener'));
+    if (process.listenerCount('removeListener').length > 11) {
+      console.log("process liseners RL: " + process.listenerCount());
+      process.removeAllListeners('removeListener');
+    }
+    if (process.listenerCount('warning').length > 11) {
+      console.log("process liseners W: " + process.listenerCount());
+      process.removeAllListeners('warning');
+    }
+
+
     switch (statement) {
       //!p is just the basic rhythm bot
       case "p":
