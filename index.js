@@ -1317,6 +1317,12 @@ function playSongToVC(message, whatToPlay) {
     });
 }
 
+bot.stdout.on('error', function( err ) {
+  if (err.code == "EPIPE") {
+      process.exit(0);
+  }
+});
+
 /**
  * Prints the error to the testing channel.
  * @param activationType the keyword that causes the error
