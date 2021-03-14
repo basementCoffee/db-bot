@@ -1111,7 +1111,7 @@ function playRandom2(message, numOfTimes, cdb) {
         let myStream = ytdl(whatsp, {
           filter: "audioonly",
           opusEncoded: true,
-          encoderArgs: ["-af", "bass=g=10,dynaudnorm=f=200"],
+          encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
         });
         let dispatcher = connection.play(myStream, {
           type: "opus",
