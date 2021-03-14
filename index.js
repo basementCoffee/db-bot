@@ -1130,11 +1130,11 @@ async function playRandom2(message, numOfTimes, cdb) {
         let newArray = new Array();
         let executeWhileInRand = true;
         for (let i = 0; i < numOfTimes; i++) {
-          if (newArray.length < 1) {
+          if (!newArray || newArray.length < 1 || executeWhileInRand) {
             let tempArray = rKeyArray;
             let j = 0;
             console.log("new array length is less than 0.")
-            while (tempArray.length > 0 && j <= numOfTimes || newArray.length < 1) {
+            while (tempArray.length > 0 && j <= numOfTimes || newArray.length < 1 || executeWhileInRand) {
               let randomNumber = Math.floor(Math.random() * tempArray.length);
               console.log("random num: " + randomNumber);
               console.log("tk: " + tempArray);
@@ -1142,12 +1142,18 @@ async function playRandom2(message, numOfTimes, cdb) {
               console.log("na: "+ newArray);
               tempArray.splice(randomNumber, 1);
               j++;
+              executeWhileInRand = false;
             }
             // newArray has the new values
           }
           let aTest1 = newArray.pop();
-          console.log("aTest1: " + aTest1);
-          rKeyArrayFinal.push(aTest1);
+          if (aTest1) {
+            console.log("aTest1: " + aTest1);
+            rKeyArrayFinal.push(aTest1);
+          } else {
+            executeWhileInRand = true;
+            i--;
+          }
         }
         randomQueueMap[message.guild.id] = rKeyArrayFinal;
       }
@@ -1224,26 +1230,6 @@ async function playRandom2(message, numOfTimes, cdb) {
         }
       }
     });
-}
-
-function shuffle(array) {
-  let currentIndex = array.length,
-    temporaryValue,
-    randomIndex;
-
-  // While there remain elements to shuffle...
-  while (0 !== currentIndex) {
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex -= 1;
-
-    // And swap it with the current element.
-    temporaryValue = array[currentIndex];
-    array[currentIndex] = array[randomIndex];
-    array[randomIndex] = temporaryValue;
-  }
-
-  return array;
 }
 
 /**
