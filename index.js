@@ -515,7 +515,40 @@ bot.on("message", (message) => {
           message.channel.send("Added to queue.");
         }
         break;
-
+      case "pn":
+        if (!message.member.voice.channel) {
+          return;
+        }
+        if (!args[1]) {
+          message.channel.send(
+            "Where's the link? I can't read your mind... unfortunately."
+          );
+          return;
+        }
+        if (!args[1].includes(".")) {
+          message.channel.send(
+            "There's something wrong with what you put there."
+          );
+          return;
+        }
+        if (!servers[mgid])
+          servers[mgid] = {
+            queue: [],
+          };
+        enumPlayingFunction = "playing";
+        // in case of force disconnect
+        if (
+          !message.guild.client.voice ||
+          !message.guild.voice ||
+          !message.guild.voice.channel
+        ) {
+          servers[mgid].queue = [];
+        }
+        // push to queue
+        servers[mgid].queue.unshift(args[1]);
+        message.channel.send("Playing now.");
+        playSongToVC(message, args[1]);
+        break;
       // case '!pv':
       //     if (!args[1]) {
       //         message.channel.send("Where's the link? I can't read your mind... unfortunately.");
