@@ -1039,7 +1039,7 @@ function runSearchCommand(args, xdb) {
 function sendHelp(message, prefixString) {
   message.channel.send(
     "Help list:\n" +
-      "-------------- Core Commands  -----------------\n" +
+      "--------------  Core Commands  -----------------\n" +
       prefixString +
       "p [youtube link]  -->  Plays YouTube video \n" +
       prefixString +
@@ -1056,7 +1056,7 @@ function sendHelp(message, prefixString) {
       "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
       prefixString +
       "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
-      "\n--------  Curated songs --------  \n" +
+      "\n--------------  Curated songs  --------------  \n" +
       prefixString +
       "key  -->  All the artist song tags (separated by a comma) \n" +
       prefixString +
