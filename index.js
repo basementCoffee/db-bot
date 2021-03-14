@@ -1324,7 +1324,7 @@ function playSongToVC(message, whatToPlay) {
 
 process.stdout.on('error', function( err ) {
   if (err.code == "EPIPE" || err.code == "EAGAIN") {
-    
+      console.log("errorz: " + bot.getMaxListeners());
       return;
   }
 });
