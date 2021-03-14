@@ -1133,13 +1133,9 @@ async function playRandom2(message, numOfTimes, cdb) {
           if (!newArray || newArray.length < 1 || executeWhileInRand) {
             var tempArray = [...rKeyArray];;
             let j = 0;
-            console.log("new array length is less than 0.")
             while ((tempArray.length > 0 && j <= numOfTimes) || executeWhileInRand) {
               let randomNumber = Math.floor(Math.random() * tempArray.length);
-              console.log("random num: " + randomNumber);
-              console.log("tk: " + tempArray);
               newArray.push(tempArray[randomNumber]);
-              console.log("na: "+ newArray);
               tempArray.splice(randomNumber, 1);
               j++;
               executeWhileInRand = false;
@@ -1148,7 +1144,6 @@ async function playRandom2(message, numOfTimes, cdb) {
           }
           let aTest1 = newArray.pop();
           if (aTest1) {
-            console.log("aTest1: " + aTest1);
             rKeyArrayFinal.push(aTest1);
           } else {
             executeWhileInRand = true;
