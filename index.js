@@ -456,7 +456,7 @@ bot.on("message", (message) => {
       }
     }
   } else {
-    var args = message.content.split(" ");
+    var args = message.content.replace(/\s+/g, " ").split(" ");
     console.log(args);
     if (!prefix[message.member.voice.channel]) {
       prefix[message.member.voice.channel] = "!";
@@ -724,7 +724,7 @@ bot.on("message", (message) => {
         break;
       // !? is the command for what's playing?
       case "?":
-        if (args[1] && args[1] !== " ") {
+        if (args[1]) {
           gsrun(client2, "A", "B", mgid).then((xdb) => {
             if (xdb.congratsDatabase.get(args[1])) {
               message.channel.send(xdb.congratsDatabase.get(args[1]));
@@ -1041,7 +1041,7 @@ function sendHelp(message, prefixString) {
     "Help list:\n" +
       "-------------- Core Commands  -----------------\n" +
       prefixString +
-      "p [youtube link]  -->  Plays YouTube video\n" +
+      "p [youtube link]  -->  Plays YouTube video \n" +
       prefixString +
       "?  -->  What's playing\n" +
       prefixString +
@@ -1052,6 +1052,8 @@ function sendHelp(message, prefixString) {
       "sk  -->  Skip the current song\n" +
       prefixString +
       "e  -->  Stops playing and ends session\n" +
+      prefixString +
+      "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
       prefixString +
       "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
       "\n--------  Curated songs --------  \n" +
