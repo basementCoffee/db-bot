@@ -1134,7 +1134,7 @@ async function playRandom2(message, numOfTimes, cdb) {
             var tempArray = rKeyArray;
             let j = 0;
             console.log("new array length is less than 0.")
-            while (tempArray.length > 0 && j <= numOfTimes || newArray.length < 1 || executeWhileInRand) {
+            while ((tempArray.length > 0 && j <= numOfTimes) || executeWhileInRand) {
               let randomNumber = Math.floor(Math.random() * tempArray.length);
               console.log("random num: " + randomNumber);
               console.log("tk: " + tempArray);
