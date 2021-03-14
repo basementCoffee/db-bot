@@ -428,8 +428,11 @@ function skipSong(message, cdb) {
 
 // parses message, provides a response
 bot.on('message', async (message) => {
-  if (bot.listenerCount('message').length > 20 ) {
+  if (bot.listenerCount('message').length > 20) {
     bot.removeAllListeners('message');
+  }
+  if (process.listenerCount('message').length > 20) {
+    process.removeAllListeners('message');
   }
   if (message.author.bot) return;
   if (contentsContainCongrats(message)) {
