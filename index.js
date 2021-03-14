@@ -1018,7 +1018,7 @@ function runSearchCommand(args, xdb) {
     searchKey = keyArray2[ik];
     if (
       args[1].toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()
-    || (searchKey.length > 1 && searchKey.toUpperCase().includes(args[1].toUpperCase()))) {
+    || (args[1].length > 1 && searchKey.toUpperCase().includes(args[1].toUpperCase()))) {
       if (!ss) {
         ss = searchKey;
       } else {
