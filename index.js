@@ -694,16 +694,16 @@ bot.on("message", (message) => {
           message.channel.send("No argument was given.");
           return;
         }
-        gsrun(client2, "A", "B", mgid).then(async (xdb) =>{
-          await runSearchCommand(args, xdb)
-            if (ss && ss.length === 0) {
-              message.channel.send(
-                "Could not find any keys that start with the given letters."
-              );
-            } else {
-              message.channel.send("Keys found: " + ss);
-            }
-          });
+        gsrun(client2, "A", "B", mgid).then(async (xdb) => {
+          await runSearchCommand(args, xdb);
+          if (ss && ss.length === 0) {
+            message.channel.send(
+              "Could not find any keys that start with the given letters."
+            );
+          } else {
+            message.channel.send("Keys found: " + ss);
+          }
+        });
         break;
       case "gk":
         if (!args[1]) {
@@ -712,14 +712,14 @@ bot.on("message", (message) => {
         }
         gsrun(client2, "A", "B", "entries").then(async (xdb) => {
           await runSearchCommand(args, xdb);
-            if (ss && ss.length === 0) {
-              message.channel.send(
-                "Could not find any keys that start with the given letters."
-              );
-            } else {
-              message.channel.send("Keys found: " + ss);
-            }
-          });
+          if (ss && ss.length === 0) {
+            message.channel.send(
+              "Could not find any keys that start with the given letters."
+            );
+          } else {
+            message.channel.send("Keys found: " + ss);
+          }
+        });
         break;
       // !? is the command for what's playing?
       case "?":
@@ -1017,8 +1017,11 @@ function runSearchCommand(args, xdb) {
   for (let ik = 0; ik < keyArray2.length; ik++) {
     searchKey = keyArray2[ik];
     if (
-      args[1].toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()
-    || (args[1].length > 1 && searchKey.toUpperCase().includes(args[1].toUpperCase()))) {
+      args[1].toUpperCase() ===
+        searchKey.substr(0, givenSLength).toUpperCase() ||
+      (args[1].length > 1 &&
+        searchKey.toUpperCase().includes(args[1].toUpperCase()))
+    ) {
       if (!ss) {
         ss = searchKey;
       } else {
@@ -1121,26 +1124,32 @@ async function playRandom2(message, numOfTimes, cdb) {
     rn = Math.floor(Math.random() * rKeyArray.length);
     rk = rKeyArray[rn];
   } else {
-    if (!randomQueueMap[message.guild.id]) {
-      let rKeyArrayFinal = new Array(); 
-      for (let i = 0; i < numOfTimes; i++) {
-        if(i % rKeyArray == 0) {
-          let tempArray = rKeyArray;
-          let newArray = new Array();
-          let j = 0;
-          while (tempArray.length > 0 && j <= numOfTimes) {
-            let randomNumber = Math.random() * rKeyArray.length;
-            newArray.push(tempArray[randomNumber]);
-            tempArray.splice(randomNumber, 1);
-            j++;
+    try {
+      if (!randomQueueMap[message.guild.id]) {
+        let rKeyArrayFinal = new Array();
+        let newArray = new Array();
+        for (let i = 0; i < numOfTimes; i++) {
+          if (i % rKeyArray == 0) {
+            let tempArray = rKeyArray;
+            let j = 0;
+            while (tempArray.length > 0 && j <= numOfTimes) {
+              let randomNumber = Math.random() * rKeyArray.length;
+              newArray.push(tempArray[randomNumber]);
+              tempArray.splice(randomNumber, 1);
+              j++;
+            }
+            // newArray has the new values
           }
-          // newArray has the new values
+          rKeyArrayFinal.push(newArray.pop());
         }
-        rKeyArrayFinal.push(newArray.pop());
+        randomQueueMap[message.guild.id] = rKeyArrayFinal;
       }
-      randomQueueMap[message.guild.id] = rKeyArrayFinal;
+      rk = randomQueueMap[message.guild.id].pop();
+    } catch (e) {
+      console.log("error in random: " + e);
+      rn = Math.floor(Math.random() * rKeyArray.length);
+      rk = rKeyArray[rn];
     }
-    rk = randomQueueMap[message.guild.id].pop();
   }
   numOfRetries += 1;
   //console.log("attempting to play key:" + rk);
@@ -1210,11 +1219,12 @@ async function playRandom2(message, numOfTimes, cdb) {
 }
 
 function shuffle(array) {
-  let currentIndex = array.length, temporaryValue, randomIndex;
+  let currentIndex = array.length,
+    temporaryValue,
+    randomIndex;
 
   // While there remain elements to shuffle...
   while (0 !== currentIndex) {
-
     // Pick a remaining element...
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex -= 1;
