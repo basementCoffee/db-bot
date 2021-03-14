@@ -432,6 +432,7 @@ bot.on('message', async (message) => {
     bot.removeAllListeners('message');
     console.log("bot liseners: " + bot.listenerCount());
   }
+  console.log("Event names: " + bot.eventNames());
   if (process.listenerCount('message').length > 20) {
     process.removeAllListeners('message');
     console.log("process liseners: " + process.listenerCount());
