@@ -1134,6 +1134,8 @@ async function playRandom2(message, numOfTimes, cdb) {
             let j = 0;
             while (tempArray.length > 0 && j <= numOfTimes) {
               let randomNumber = Math.random() * rKeyArray.length;
+              console.log("rk "+ rKeyArray);
+              console.log("tk" + tempArray);
               newArray.push(tempArray[randomNumber]);
               tempArray.splice(randomNumber, 1);
               j++;
@@ -1141,7 +1143,7 @@ async function playRandom2(message, numOfTimes, cdb) {
             // newArray has the new values
           }
           let aTest1 = newArray.pop();
-          console.log(aTest1);
+          console.log("aTest1: " + aTest1);
           rKeyArrayFinal.push(aTest1);
         }
         randomQueueMap[message.guild.id] = rKeyArrayFinal;
