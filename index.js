@@ -1116,7 +1116,7 @@ function playRandom2(message, numOfTimes, cdb) {
   // server = servers[message.guild.id];
   let rKeyArray = Array.from(cdb.keys());
   if (!randomQueueMap[message.guild.id]) {
-    let rKeyArrayFinal; 
+    let rKeyArrayFinal = new Array(); 
     for (let i = 0; i < numOfTimes; i++) {
       if(i % rKeyArray == 0) {
         rKeyArray = shuffle(rKeyArray);
