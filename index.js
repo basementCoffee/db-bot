@@ -427,7 +427,7 @@ function skipSong(message, cdb) {
 }
 
 // parses message, provides a response
-bot.on("message", (message) => {
+bot.on("message", async (message) => {
   if (message.author.bot) return;
   if (contentsContainCongrats(message)) {
     if (message.author.bot) return;
@@ -812,7 +812,7 @@ bot.on("message", (message) => {
         } else {
           mgid = message.guild.id;
         }
-        gsrun(client2, "A", "B", mgid).then((xdb) => {
+        await gsrun(client2, "A", "B", mgid).then((xdb) => {
           skipSong(message, xdb.congratsDatabase);
         });
         break;
@@ -824,7 +824,7 @@ bot.on("message", (message) => {
         } else {
           mgid = message.guild.id;
         }
-        gsrun(client2, "A", "B", mgid).then((xdb) => {
+        await gsrun(client2, "A", "B", mgid).then((xdb) => {
           skipSong(message, xdb.congratsDatabase);
         });
         break;
