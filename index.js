@@ -1084,6 +1084,7 @@ function runRandomCommand(args, message, sheetname) {
   totalRandomIntMap[message.member.voice.channel] = 0;
   currentRandomIntMap[message.member.voice.channel] = 0;
   servers[message.guild.id].queue = [];
+  randomQueueMap[message.guild.id] = undefined;
   gsrun(client2, "A", "B", sheetname).then((xdb) => {
     if (!args[1]) {
       playRandom2(message, 1, xdb.congratsDatabase);
@@ -1109,14 +1110,30 @@ function runRandomCommand(args, message, sheetname) {
  * @param {*} cdb
  * @returns
  */
-function playRandom2(message, numOfTimes, cdb) {
+async function playRandom2(message, numOfTimes, cdb) {
   currentRandomIntMap[message.member.voice.channel] += 1;
   var numOfRetries = 0;
   // server = servers[message.guild.id];
   let rKeyArray = Array.from(cdb.keys());
+  let rn;
+  let rk;
+  if (numOfTimes <= 1) {
+    rn = Math.floor(Math.random() * rKeyArray.length);
+    rk = rKeyArray[rn];
+  } else {
+    if (!randomQueueMap[message.guild.id]) {
+      let rKeyArrayFinal = new Array(); 
+      for (let i = 0; i < numOfTimes; i++) {
+        if(i % rKeyArray == 0) {
+          rKeyArray = await shuffle(rKeyArray);
+        }
+        rKeyArrayFinal.push(rKeyArray[i % rKeyArray.length]);
+      }
+      randomQueueMap[message.guild.id] = rKeyArrayFinal;
+    }
+    rk = randomQueueMap[message.guild.id].pop();
+  }
   numOfRetries += 1;
-  let rn = Math.floor(Math.random() * rKeyArray.length);
-  let rk = rKeyArray[rn];
   //console.log("attempting to play key:" + rk);
   whatsp = cdb.get(rk);
   if (!whatsp) {
@@ -1181,6 +1198,25 @@ function playRandom2(message, numOfTimes, cdb) {
         }
       }
     });
+}
+
+function shuffle(array) {
+  let currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
 }
 
 /**
@@ -1301,3 +1337,4 @@ var currentRandomIntMap = new Map();
 var totalRandomIntMap = new Map();
 var dataSize = new Map();
 var dispatcherMap = new Map();
+var randomQueueMap = new Map();
