@@ -1128,11 +1128,13 @@ async function playRandom2(message, numOfTimes, cdb) {
       if (!randomQueueMap[message.guild.id]) {
         let rKeyArrayFinal = new Array();
         let newArray = new Array();
+        let executeWhileInRand = true;
         for (let i = 0; i < numOfTimes; i++) {
           if (newArray.length < 1) {
             let tempArray = rKeyArray;
             let j = 0;
-            while (tempArray.length > 0 && j <= numOfTimes) {
+            console.log("new array length is less than 0.")
+            while (tempArray.length > 0 && j <= numOfTimes || newArray.length < 1) {
               let randomNumber = Math.floor(Math.random() * tempArray.length);
               console.log("random num: " + randomNumber);
               console.log("tk: " + tempArray);
