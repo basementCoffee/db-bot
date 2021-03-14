@@ -1125,9 +1125,18 @@ async function playRandom2(message, numOfTimes, cdb) {
       let rKeyArrayFinal = new Array(); 
       for (let i = 0; i < numOfTimes; i++) {
         if(i % rKeyArray == 0) {
-          rKeyArray = await shuffle(rKeyArray);
+          let tempArray = rKeyArray;
+          let newArray = new Array();
+          let j = 0;
+          while (tempArray.length > 0 && j <= numOfTimes) {
+            let randomNumber = Math.random() * rKeyArray.length;
+            newArray.push(tempArray[randomNumber]);
+            tempArray.splice(randomNumber, 1);
+            j++;
+          }
+          // newArray has the new values
         }
-        rKeyArrayFinal.push(rKeyArray[i % rKeyArray.length]);
+        rKeyArrayFinal.push(newArray.pop());
       }
       randomQueueMap[message.guild.id] = rKeyArrayFinal;
     }
