@@ -812,9 +812,6 @@ bot.on("message", (message) => {
         } else {
           mgid = message.guild.id;
         }
-        if (dispatcherMap[message.member.voice.channel]) {
-          dispatcherMap[message.member.voice.channel].pause();
-        }
         gsrun(client2, "A", "B", mgid).then((xdb) => {
           skipSong(message, xdb.congratsDatabase);
         });
@@ -826,9 +823,6 @@ bot.on("message", (message) => {
           mgid = "entries";
         } else {
           mgid = message.guild.id;
-        }
-        if (dispatcherMap[message.member.voice.channel]) {
-          dispatcherMap[message.member.voice.channel].pause();
         }
         gsrun(client2, "A", "B", mgid).then((xdb) => {
           skipSong(message, xdb.congratsDatabase);
@@ -1122,7 +1116,6 @@ function runRandomCommand(args, message, sheetname) {
 async function playRandom2(message, numOfTimes, cdb) {
   currentRandomIntMap[message.member.voice.channel] += 1;
   var numOfRetries = 0;
-  console.log("playing random");
   // server = servers[message.guild.id];
   var rKeyArray = Array.from(cdb.keys());
   let rn;
@@ -1186,24 +1179,20 @@ async function playRandom2(message, numOfTimes, cdb) {
     console.log("Play random whatsp is empty.");
     return;
   }
-  whatsp = whatsp.toString();
   whatspMap[message.member.voice.channel] = whatsp;
+  //server.queue.push(congratsDatabase.get(rk));
   if (!message.guild.voiceChannel)
     message.member.voice.channel.join().then(async function (connection) {
       try {
-        if (dispatcherMap[message.member.voice.channel]) {
-          await dispatcherMap[message.member.voice.channel].pause();
-        }
         await connection.voice.setSelfDeaf(true);
         let myStream = ytdl(whatsp, {
           filter: "audioonly",
           opusEncoded: true,
-          encoderArgs: ["-af", "bass=g=5, dynaudnorm=f=200"],
+          encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
         });
         let dispatcher = connection.play(myStream, {
           type: "opus",
         });
-        dispatcher.resume();
         dispatcherMap[message.member.voice.channel] = dispatcher;
         dispatcher.on("finish", () => {
           numOfTimes -= 1;
@@ -1294,12 +1283,11 @@ function playSongToVC(message, whatToPlay) {
         let myStream = ytdl(whatToPlayS, {
           filter: "audioonly",
           opusEncoded: true,
-          encoderArgs: ["-af", "bass=g=5, dynaudnorm=f=200"],
+          encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
         });
         let dispatcher = connection.play(myStream, {
           type: "opus",
         });
-        dispatcher.resume();
         dispatcherMap[message.member.voice.channel] = dispatcher;
         dispatcher.on("finish", () => {
           server.queue.shift();
