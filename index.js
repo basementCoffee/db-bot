@@ -1200,7 +1200,7 @@ async function playRandom2(message, numOfTimes, cdb) {
           opusEncoded: true,
           encoderArgs: ["-af", "bass=g=5, dynaudnorm=f=200"],
         });
-        let dispatcher = await connection.play(myStream, {
+        let dispatcher = connection.play(myStream, {
           type: "opus",
         });
         dispatcher.resume();
@@ -1296,7 +1296,7 @@ function playSongToVC(message, whatToPlay) {
           opusEncoded: true,
           encoderArgs: ["-af", "bass=g=5, dynaudnorm=f=200"],
         });
-        let dispatcher = await connection.play(myStream, {
+        let dispatcher = connection.play(myStream, {
           type: "opus",
         });
         dispatcher.resume();
