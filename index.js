@@ -812,6 +812,9 @@ bot.on("message", (message) => {
         } else {
           mgid = message.guild.id;
         }
+        if (dispatcherMap[message.member.voice.channel]) {
+          dispatcherMap[message.member.voice.channel].pause();
+        }
         gsrun(client2, "A", "B", mgid).then((xdb) => {
           skipSong(message, xdb.congratsDatabase);
         });
@@ -823,6 +826,9 @@ bot.on("message", (message) => {
           mgid = "entries";
         } else {
           mgid = message.guild.id;
+        }
+        if (dispatcherMap[message.member.voice.channel]) {
+          dispatcherMap[message.member.voice.channel].pause();
         }
         gsrun(client2, "A", "B", mgid).then((xdb) => {
           skipSong(message, xdb.congratsDatabase);
@@ -1185,7 +1191,7 @@ async function playRandom2(message, numOfTimes, cdb) {
     message.member.voice.channel.join().then(async function (connection) {
       try {
         if (dispatcherMap[message.member.voice.channel]) {
-          dispatcherMap[message.member.voice.channel].destroy();
+          await dispatcherMap[message.member.voice.channel].destroy();
         }
         await connection.voice.setSelfDeaf(true);
         let myStream = ytdl(whatsp, {
@@ -1197,6 +1203,7 @@ async function playRandom2(message, numOfTimes, cdb) {
           type: "opus",
         });
         dispatcherMap[message.member.voice.channel] = dispatcher;
+        dispatcherMap[message.member.voice.channel].resume();
         dispatcher.on("finish", () => {
           numOfTimes -= 1;
           if (numOfTimes === 0) {
@@ -1292,6 +1299,7 @@ function playSongToVC(message, whatToPlay) {
           type: "opus",
         });
         dispatcherMap[message.member.voice.channel] = dispatcher;
+        dispatcherMap[message.member.voice.channel].resume();
         dispatcher.on("finish", () => {
           server.queue.shift();
           if (server.queue.length > 0) {
