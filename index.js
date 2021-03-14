@@ -694,8 +694,8 @@ bot.on("message", (message) => {
           message.channel.send("No argument was given.");
           return;
         }
-        gsrun(client2, "A", "B", mgid).then((xdb) =>
-          runSearchCommand(args, xdb).then(() => {
+        gsrun(client2, "A", "B", mgid).then(async (xdb) =>{
+          await runSearchCommand(args, xdb)
             if (ss && ss.length === 0) {
               message.channel.send(
                 "Could not find any keys that start with the given letters."
@@ -703,16 +703,15 @@ bot.on("message", (message) => {
             } else {
               message.channel.send("Keys found: " + ss);
             }
-          })
-        );
+          });
         break;
       case "gk":
         if (!args[1]) {
           message.channel.send("No argument was given.");
           return;
         }
-        gsrun(client2, "A", "B", "entries").then((xdb) =>
-          runSearchCommand(args, xdb).then(() => {
+        gsrun(client2, "A", "B", "entries").then((xdb) => {
+          await runSearchCommand(args, xdb);
             if (ss && ss.length === 0) {
               message.channel.send(
                 "Could not find any keys that start with the given letters."
@@ -720,8 +719,7 @@ bot.on("message", (message) => {
             } else {
               message.channel.send("Keys found: " + ss);
             }
-          })
-        );
+          });
         break;
       // !? is the command for what's playing?
       case "?":
