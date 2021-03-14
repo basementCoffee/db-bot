@@ -425,7 +425,7 @@ function skipSong(message, cdb) {
     }
   }
 }
-
+emitter.setMaxListeners(0);
 // parses message, provides a response
 bot.on('message', async (message) => {
   if (bot.listenerCount('message').length > 20) {
