@@ -812,6 +812,9 @@ bot.on("message", (message) => {
         } else {
           mgid = message.guild.id;
         }
+        if (dispatcherMap[mgid]) {
+          dispatcherMap[mgid].pause();
+        }
         gsrun(client2, "A", "B", mgid).then((xdb) => {
           skipSong(message, xdb.congratsDatabase);
         });
@@ -823,6 +826,9 @@ bot.on("message", (message) => {
           mgid = "entries";
         } else {
           mgid = message.guild.id;
+        }
+        if (dispatcherMap[mgid]) {
+          dispatcherMap[mgid].pause();
         }
         gsrun(client2, "A", "B", mgid).then((xdb) => {
           skipSong(message, xdb.congratsDatabase);
