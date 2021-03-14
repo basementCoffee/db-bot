@@ -357,7 +357,7 @@ function contentsContainCongrats(message) {
 
 var keyArray;
 var s;
-
+process.setMaxListeners(0);
 function skipSong(message, cdb) {
   // in case of force disconnect
   if (
