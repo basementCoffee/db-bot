@@ -1010,7 +1010,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
 
 // The search command
 let ss;
-function runSearchCommand(args, xdb) {
+async function runSearchCommand(args, xdb) {
   let givenSLength = args[1].length;
   let keyArray2 = Array.from(xdb.congratsDatabase.keys());
   ss = "";
@@ -1018,14 +1018,17 @@ function runSearchCommand(args, xdb) {
   for (let ik = 0; ik < keyArray2.length; ik++) {
     searchKey = keyArray2[ik];
     if (
-      args[1].toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()
-    || (searchKey.length > 1 && searchKey.toUpperCase().includes(args[1].toUpperCase()))) {
+      await args[1].toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()
+    || await (searchKey.length > 1 && searchKey.toUpperCase().includes(args[1].toUpperCase()))) {
       if (!ss) {
         ss = searchKey;
       } else {
         ss += ", " + searchKey;
       }
     }
+  }
+  if (ss.length < 1) {
+    ss = "*none found.*"
   }
 
   return ss;
