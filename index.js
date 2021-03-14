@@ -1123,7 +1123,7 @@ function playRandom2(message, numOfTimes, cdb) {
     let tempStringRandom = "";
     tempStringRandom = message.guild.id;
     gsrun(client2, "A", "B", tempStringRandom);
-    if (cdb.size() < 2) {
+    if (cdb.length < 2) {
       message.channel.send(
         "Your database needs at least two items to randomize."
       );
