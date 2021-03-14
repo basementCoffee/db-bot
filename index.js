@@ -1113,7 +1113,7 @@ function runRandomCommand(args, message, sheetname) {
  * @param {*} cdb
  * @returns
  */
-async function playRandom2(message, numOfTimes, cdb) {
+function playRandom2(message, numOfTimes, cdb) {
   currentRandomIntMap[message.member.voice.channel] += 1;
   var numOfRetries = 0;
   // server = servers[message.guild.id];
@@ -1122,7 +1122,7 @@ async function playRandom2(message, numOfTimes, cdb) {
   let rk;
   process.stdout.on('error', function( err ) {
     if (err.code == "EPIPE") {
-        return;
+        console.log("error here's listeners: " + bot.getMaxListeners());
     }
   });
   if (numOfTimes <= 1) {
@@ -1187,9 +1187,9 @@ async function playRandom2(message, numOfTimes, cdb) {
   whatspMap[message.member.voice.channel] = whatsp;
   //server.queue.push(congratsDatabase.get(rk));
   if (!message.guild.voiceChannel)
-    message.member.voice.channel.join().then(async function (connection) {
+    message.member.voice.channel.join().then(function (connection) {
       try {
-        await connection.voice.setSelfDeaf(true);
+        connection.voice.setSelfDeaf(true);
         let myStream = ytdl(whatsp, {
           filter: "audioonly",
           opusEncoded: true,
