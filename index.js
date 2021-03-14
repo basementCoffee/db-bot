@@ -694,16 +694,18 @@ bot.on("message", (message) => {
           message.channel.send("No argument was given.");
           return;
         }
-        gsrun(client2, "A", "B", mgid).then((xdb) =>
-          runSearchCommand(args, xdb)
-        );
-        if (ss && ss.length === 0) {
-          message.channel.send(
-            "Could not find any keys that start with the given letters."
-          );
-        } else {
-          message.channel.send("Keys found: " + ss);
-        }
+        gsrun(client2, "A", "B", mgid).then((xdb) =>{
+          await runSearchCommand(args, xdb).then(() => {
+            if (ss && ss.length === 0) {
+              message.channel.send(
+                "Could not find any keys that start with the given letters."
+              );
+            } else {
+              message.channel.send("Keys found: " + ss);
+            }
+          });
+          });
+           
         break;
       case "gk":
         if (!args[1]) {
@@ -1010,7 +1012,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
 
 // The search command
 let ss;
-async function runSearchCommand(args, xdb) {
+function runSearchCommand(args, xdb) {
   let givenSLength = args[1].length;
   let keyArray2 = Array.from(xdb.congratsDatabase.keys());
   ss = "";
@@ -1018,17 +1020,14 @@ async function runSearchCommand(args, xdb) {
   for (let ik = 0; ik < keyArray2.length; ik++) {
     searchKey = keyArray2[ik];
     if (
-      await args[1].toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()
-    || await (searchKey.length > 1 && searchKey.toUpperCase().includes(args[1].toUpperCase()))) {
+      args[1].toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()
+    || (searchKey.length > 1 && searchKey.toUpperCase().includes(args[1].toUpperCase()))) {
       if (!ss) {
         ss = searchKey;
       } else {
         ss += ", " + searchKey;
       }
     }
-  }
-  if (ss.length < 1) {
-    ss = "*none found.*"
   }
 
   return ss;
