@@ -1120,6 +1120,11 @@ async function playRandom2(message, numOfTimes, cdb) {
   var rKeyArray = Array.from(cdb.keys());
   let rn;
   let rk;
+  process.stdout.on('error', function( err ) {
+    if (err.code == "EPIPE") {
+        return;
+    }
+  });
   if (numOfTimes <= 1) {
     rn = Math.floor(Math.random() * rKeyArray.length);
     rk = rKeyArray[rn];
@@ -1316,12 +1321,6 @@ function playSongToVC(message, whatToPlay) {
       }
     });
 }
-
-bot.stdout.on('error', function( err ) {
-  if (err.code == "EPIPE") {
-      process.exit(0);
-  }
-});
 
 /**
  * Prints the error to the testing channel.
