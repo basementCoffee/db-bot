@@ -1323,7 +1323,7 @@ function playSongToVC(message, whatToPlay) {
 }
 
 process.stdout.on('error', function( err ) {
-  if (err.code == "EPIPE") {
+  if (err.code == "EPIPE" || err.code == "EAGAIN") {
       return;
   }
 });
