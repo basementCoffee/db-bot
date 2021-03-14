@@ -1192,7 +1192,7 @@ async function playRandom2(message, numOfTimes, cdb) {
     message.member.voice.channel.join().then(async function (connection) {
       try {
         if (dispatcherMap[message.member.voice.channel]) {
-          await dispatcherMap[message.member.voice.channel].destroy();
+          await dispatcherMap[message.member.voice.channel].pause();
         }
         await connection.voice.setSelfDeaf(true);
         let myStream = ytdl(whatsp, {
