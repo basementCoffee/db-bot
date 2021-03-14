@@ -1184,6 +1184,9 @@ async function playRandom2(message, numOfTimes, cdb) {
   if (!message.guild.voiceChannel)
     message.member.voice.channel.join().then(async function (connection) {
       try {
+        if (dispatcherMap[message.member.voice.channel]) {
+          dispatcherMap[message.member.voice.channel].destroy();
+        }
         await connection.voice.setSelfDeaf(true);
         let myStream = ytdl(whatsp, {
           filter: "audioonly",
