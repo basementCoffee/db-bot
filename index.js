@@ -710,7 +710,7 @@ bot.on("message", (message) => {
           message.channel.send("No argument was given.");
           return;
         }
-        gsrun(client2, "A", "B", "entries").then((xdb) => {
+        gsrun(client2, "A", "B", "entries").then(async (xdb) => {
           await runSearchCommand(args, xdb);
             if (ss && ss.length === 0) {
               message.channel.send(
