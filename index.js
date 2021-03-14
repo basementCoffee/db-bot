@@ -1107,7 +1107,6 @@ function playRandom2(message, numOfTimes, cdb) {
     message.member.voice.channel.join().then(async function (connection) {
       try {
         await connection.voice.setSelfDeaf(true);
-        //console.log("calling play method...");
         let myStream = ytdl(whatsp, {
           filter: "audioonly",
           opusEncoded: true,
@@ -1206,7 +1205,7 @@ function playSongToVC(message, whatToPlay) {
         let myStream = ytdl(whatToPlayS, {
           filter: "audioonly",
           opusEncoded: true,
-          encoderArgs: ["-af", "bass=g=10,dynaudnorm=f=200"],
+          encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
         });
         let dispatcher = connection.play(myStream, {
           type: "opus",
