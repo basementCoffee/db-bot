@@ -1197,13 +1197,13 @@ async function playRandom2(message, numOfTimes, cdb) {
         let myStream = ytdl(whatsp, {
           filter: "audioonly",
           opusEncoded: true,
-          encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
+          encoderArgs: ["-af", "bass=g=5, dynaudnorm=f=200"],
         });
-        let dispatcher = connection.play(myStream, {
+        let dispatcher = await connection.play(myStream, {
           type: "opus",
         });
+        dispatcher.resume();
         dispatcherMap[message.member.voice.channel] = dispatcher;
-        dispatcherMap[message.member.voice.channel].resume();
         dispatcher.on("finish", () => {
           numOfTimes -= 1;
           if (numOfTimes === 0) {
@@ -1293,13 +1293,13 @@ function playSongToVC(message, whatToPlay) {
         let myStream = ytdl(whatToPlayS, {
           filter: "audioonly",
           opusEncoded: true,
-          encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
+          encoderArgs: ["-af", "bass=g=5, dynaudnorm=f=200"],
         });
-        let dispatcher = connection.play(myStream, {
+        let dispatcher = await connection.play(myStream, {
           type: "opus",
         });
+        dispatcher.resume();
         dispatcherMap[message.member.voice.channel] = dispatcher;
-        dispatcherMap[message.member.voice.channel].resume();
         dispatcher.on("finish", () => {
           server.queue.shift();
           if (server.queue.length > 0) {
