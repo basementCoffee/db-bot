@@ -1122,6 +1122,7 @@ function runRandomCommand(args, message, sheetname) {
 async function playRandom2(message, numOfTimes, cdb) {
   currentRandomIntMap[message.member.voice.channel] += 1;
   var numOfRetries = 0;
+  console.log("playing random");
   // server = servers[message.guild.id];
   var rKeyArray = Array.from(cdb.keys());
   let rn;
@@ -1185,8 +1186,8 @@ async function playRandom2(message, numOfTimes, cdb) {
     console.log("Play random whatsp is empty.");
     return;
   }
+  whatsp = whatsp.toString();
   whatspMap[message.member.voice.channel] = whatsp;
-  //server.queue.push(congratsDatabase.get(rk));
   if (!message.guild.voiceChannel)
     message.member.voice.channel.join().then(async function (connection) {
       try {
