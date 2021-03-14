@@ -1282,9 +1282,9 @@ function playSongToVC(message, whatToPlay) {
     return;
   }
   if (!message.guild.voiceChannel)
-    message.member.voice.channel.join().then(async function (connection) {
+    message.member.voice.channel.join().then(function (connection) {
       try {
-        await connection.voice.setSelfDeaf(true);
+        connection.voice.setSelfDeaf(true);
         let myStream = ytdl(whatToPlayS, {
           filter: "audioonly",
           opusEncoded: true,
