@@ -1019,7 +1019,7 @@ function runSearchCommand(args, xdb) {
     searchKey = keyArray2[ik];
     if (
       args[1].toUpperCase() === searchKey.substr(0, givenSLength).toUpperCase()
-    ) {
+    || (searchKey.length > 1 && searchKey.toUpperCase().includes(args[1].toUpperCase()))) {
       if (!ss) {
         ss = searchKey;
       } else {
@@ -1056,17 +1056,17 @@ function sendHelp(message, prefixString) {
       "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
       prefixString +
       "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
-      "\n--------------  Curated songs  --------------  \n" +
+      "\n-------  Your Songs (Personal Server Database) -------  \n" +
       prefixString +
-      "key  -->  All the artist song tags (separated by a comma) \n" +
+      "keys  -->  See all your saved songs \n" +
       prefixString +
-      "a [song] [url]  -->  Adds a song to the database \n" +
+      "a [song] [url]  -->  Adds a song to your database \n" +
       prefixString +
-      "d [key]  -->  Plays a song from the database \n" +
+      "d [key]  -->  Play a song from your database \n" +
       prefixString +
-      "k [phrase]  -->  search keys with the same starting phrase\n" +
+      "k [phrase]  -->  lookup keys with the same starting phrase\n" +
       prefixString +
-      "rm  -->  Removes a song from the database\n" +
+      "rm  -->  Removes a song from your database\n" +
       "**Or just say congrats to a friend. I will chime in too! :) **"
   );
 }
