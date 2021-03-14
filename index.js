@@ -1131,7 +1131,7 @@ async function playRandom2(message, numOfTimes, cdb) {
         let executeWhileInRand = true;
         for (let i = 0; i < numOfTimes; i++) {
           if (!newArray || newArray.length < 1 || executeWhileInRand) {
-            var tempArray = rKeyArray;
+            var tempArray = [...rKeyArray];;
             let j = 0;
             console.log("new array length is less than 0.")
             while ((tempArray.length > 0 && j <= numOfTimes) || executeWhileInRand) {
