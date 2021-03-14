@@ -1129,7 +1129,7 @@ async function playRandom2(message, numOfTimes, cdb) {
         let rKeyArrayFinal = new Array();
         let newArray = new Array();
         for (let i = 0; i < numOfTimes; i++) {
-          if (i % rKeyArray == 0) {
+          if (newArray.length < 1) {
             let tempArray = rKeyArray;
             let j = 0;
             while (tempArray.length > 0 && j <= numOfTimes) {
@@ -1140,11 +1140,14 @@ async function playRandom2(message, numOfTimes, cdb) {
             }
             // newArray has the new values
           }
-          rKeyArrayFinal.push(newArray.pop());
+          let aTest1 = newArray.pop();
+          console.log(aTest1);
+          rKeyArrayFinal.push(aTest1);
         }
         randomQueueMap[message.guild.id] = rKeyArrayFinal;
       }
       rk = randomQueueMap[message.guild.id].pop();
+      console.log("b1: " + rk);
     } catch (e) {
       console.log("error in random: " + e);
       rn = Math.floor(Math.random() * rKeyArray.length);
