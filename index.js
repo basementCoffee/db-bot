@@ -438,6 +438,8 @@ bot.on('message', async (message) => {
     console.log("process liseners NL: " + process.listenerCount());
     process.removeAllListeners('newListener');
   }
+  console.log(process.listenerCount("removeListener"));
+  console.log(process.listenerCount('removeListener'));
   if (process.listenerCount('removeListener').length > 11) {
     console.log("process liseners RL: " + process.listenerCount());
     process.removeAllListeners('removeListener');
