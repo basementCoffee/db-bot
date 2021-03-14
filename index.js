@@ -1127,15 +1127,15 @@ function playRandom2(message, numOfTimes, cdb) {
   }
   numOfRetries += 1;
   // let rn = Math.floor(Math.random() * rKeyArray.length);
-  let rn = randomQueueMap[message.guild.id].pop();
-  let rk = rKeyArray[rn];
+  // let rk = rKeyArray[rn];
+  let rk = randomQueueMap[message.guild.id].pop();
   //console.log("attempting to play key:" + rk);
   whatsp = cdb.get(rk);
   if (!whatsp) {
     let tempStringRandom = "";
     tempStringRandom = message.guild.id;
     gsrun(client2, "A", "B", tempStringRandom);
-    if (cdb.size() < 2) {
+    if (cdb.length < 2) {
       message.channel.send(
         "Your database needs at least two items to randomize."
       );
