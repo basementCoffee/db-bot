@@ -1072,7 +1072,7 @@ function playRandom2(message, numOfTimes, cdb) {
   whatspMap[message.member.voice.channel] = whatsp;
   //server.queue.push(congratsDatabase.get(rk));
   if (!message.guild.voiceChannel)
-    message.member.voice.channel.join().then(async function (connection) {
+    message.member.voice.channel.join().then(function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
 
@@ -1093,7 +1093,7 @@ function playRandom2(message, numOfTimes, cdb) {
             //   quality: '140'
             // });
 
-            let dispatcher = connection.play(await ytdl(whatsp), { 
+            let dispatcher = connection.play(ytdl(whatsp), { 
               type: 'opus',
               filter: 'audioonly',
               quality: '140' 
