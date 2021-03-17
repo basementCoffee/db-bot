@@ -1148,7 +1148,7 @@ function playRandom2(message, numOfTimes, cdb) {
             let dispatcher = connection.play(ytdl(whatsp), { 
               type: 'opus',
               filter: 'audioonly',
-              quality: '140'
+              quality: '100'
             });
 
         
