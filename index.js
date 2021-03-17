@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.8";
+var version = "4.1.3-alpha2.9";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Last version threw a |SyntaxError: missing ) after argument list| error; eighth attempt at fix \n";
+   "- Last version threw a |SyntaxError: missing ) after argument list| error; ninth attempt at fix \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1224,7 +1224,7 @@ function runKeysCommand(message, prefixString, sheetname) {
  */
 //
 
-async function playSongToVC(message, whatToPlay) {
+async function playSongToVC(message, whatToPlay, whatsp) {
   enumPlayingFunction = "playing";
   server = servers[message.guild.id];
   let whatToPlayS = "";
@@ -1248,8 +1248,8 @@ async function playSongToVC(message, whatToPlay) {
         
         
         
-        let dispatcher = await connection.play(myStream, {
-          type: "opus",
+        let dispatcher = connection.play(await ytdl(myStream), { 
+          type: 'opus' 
         });
         
         
