@@ -1073,18 +1073,18 @@ function playRandom2(message, numOfTimes, cdb) {
     message.member.voice.channel.join().then(function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
-        let dispatcher;
         async function play(connection, url) {
-          dispatcher = connection.play(await ytdl(url), {
+          dispatcherMap[message.member.voice.channel] = connection.play(await ytdl(url), {
             type: "opus",
             filter: "audioonly",
             quality: "140",
           });
         }
         play(connection, whatsp);
-
-        dispatcherMap[message.member.voice.channel] = dispatcher;
-        dispatcher.on("finish", () => {
+        if (!dispatcherMap[message.member.voice.channel]) {
+          console.log("there was an error: E5");
+        }
+        dispatcherMap[message.member.voice.channel].on("finish", () => {
           numOfTimes -= 1;
           if (numOfTimes === 0) {
             totalRandomIntMap[message.member.voice.channel] = 0;
