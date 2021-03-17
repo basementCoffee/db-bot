@@ -271,80 +271,20 @@ const { Client } = require("discord.js");
 
 // initialization
 const bot = new Client();
-const ytdl = require("discord-ytdl-core");
+const ytdl = require("ytdl-core-discord");
 
-// async function play(connection, url) {
-//     connection.play(await ytdl(url), { type: 'opus' });
-// }
 
-//const PREFIX = '!';
+
 // UPDATE HERE - Before Git Push
-var version = "4.1.3";
+var version = "4.1.3-alpha0";
 var latestRelease =
-  "Latest Release (4.1.x):\n" +
-  "- Can now play and pause music. (!pl & !pa)\n" +
-  "---4.0.x introduced---\n" +
-  "- Server specific databases now active.\n";
+  "Latest Release (4.1.X-alphaX):\n" +
+  "- Attempt to convert existing node modules encoding PWM data to ytd-core-discord" +
+   "- 4.1.X-alphaX builds are worked on by Keith parallel to (4.1.X) builds\n";
 var servers = {};
-//bot.login(token);
 bot.login(process.env.token);
 var whatsp = "";
 
-// //Who's down and algo greeting
-// bot.on('message', msg => {
-//     try {
-//         if (msg.member.displayName === "Congratz Ambassador") {
-//             return;
-//         }
-//     } catch (e) {
-//         return;
-//     }
-//     if (msg.content.toUpperCase().includes("HELLO FRIEND")) {
-//         msg.reply("Bonsoir " + msg.author.username);
-//     } else if (msg.content.toUpperCase().includes("HELLO")) {
-//         let randomInt = Math.floor(Math.random() * 4);
-//         // section 1
-//         if (randomInt === 1) {
-//             let randomInt3 = Math.floor(Math.random() * 4);
-//             if (randomInt3 === 0) {
-//                 msg.reply("Howdy-.. I mean bkawhh");
-//             } else if (randomInt3 === 1) {
-//                 msg.reply("Quak quack (translation: sup my dude)");
-//             } else if (randomInt3 === 2) {
-//                 msg.reply("Hi. How's it going.");
-//             } else {
-//                 msg.reply("Hello! I'm your friendly neighborhood penguin.");
-//             }
-
-//             // section 3
-//         } else if (randomInt === 2) {
-//             let randomInt4 = Math.floor(Math.random() * 2);
-//             if (randomInt4 === 1) {
-//                 msg.reply("Hello friend!");
-//             } else if (randomInt4 === 1) {
-//                 msg.reply("Hey! Why not listen to some music?");
-//             } else {
-//                 msg.reply("Hello to you too. Oh... that wasn't for me was it")
-//             }
-//         }
-//     }
-//     if (msg.content.includes("who's down")) {
-//         let randomIntForDown = Math.floor(Math.random() * 6);
-//         if (randomIntForDown === 4) {
-//             let randomIntForDown2 = Math.floor(Math.random() * 2);
-//             if (randomIntForDown2 === 0) {
-//                 msg.reply("I would be down to play some game but I get flagged for cheating, every. single. time. Maybe it's because I am a bot :p");
-//             } else {
-//                 msg.reply("You are a one player army... good luck!")
-//             }
-//         }
-//     } else if (msg.content.includes("@algo")){
-//         let randomIntForDown3 = Math.floor(Math.random() * 4);
-//         if (randomIntForDown3 === 0) {
-//             msg.reply("Thanks for the call. I'm here, reporting for algo duty.")
-//         }
-//     }
-// })
 
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
@@ -1191,14 +1131,19 @@ function playRandom2(message, numOfTimes, cdb) {
     message.member.voice.channel.join().then(function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
-        let myStream = ytdl(whatsp, {
-          filter: "audioonly",
-          opusEncoded: true,
-          encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
-        });
-        let dispatcher = connection.play(myStream, {
-          type: "opus",
-        });
+        //let myStream = ytdl(whatsp, {
+        //  filter: "audioonly",
+        //  opusEncoded: true,
+        //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
+        //});
+        async function play(connection, whatsp) {
+            let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
+        }
+        
+        //let dispatcher = connection.play(myStream, {
+        //  type: "opus",
+        //});
+        
         dispatcherMap[message.member.voice.channel] = dispatcher;
         dispatcher.on("finish", () => {
           numOfTimes -= 1;
@@ -1286,14 +1231,19 @@ function playSongToVC(message, whatToPlay) {
     message.member.voice.channel.join().then(function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
-        let myStream = ytdl(whatToPlayS, {
-          filter: "audioonly",
-          opusEncoded: true,
-          encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
-        });
-        let dispatcher = connection.play(myStream, {
-          type: "opus",
-        });
+        //let myStream = ytdl(whatToPlayS, {
+        //  filter: "audioonly",
+        //  opusEncoded: true,
+        //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
+        //});
+        
+        async function play(connection, whatsp) {
+            let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
+        }
+        
+        //let dispatcher = connection.play(myStream, {
+        //  type: "opus",
+        //});
         dispatcherMap[message.member.voice.channel] = dispatcher;
         dispatcher.on("finish", () => {
           server.queue.shift();
@@ -1349,6 +1299,34 @@ function printErrorToChannel(activationType, songKey, e) {
 //function printErrorToChannel() {
 //    bot.channels.cache.get("730239813403410619").send("There was an error!");
 //}
+
+
+/**
+ * Keith's Testing Corner 3/17/21
+ * -Test to overhaul ffmpeg/opus with ytdl-core-discord <- very important that its this one
+ * 
+ * 
+ * 
+ * 
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 var whatspMap = new Map();
 var prefix = new Map();
