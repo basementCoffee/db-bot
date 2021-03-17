@@ -646,6 +646,7 @@ bot.on('message', (message) => {
           }
         });
         break;
+      // !gk
       case "gk":
         if (!args[1]) {
           message.channel.send("No argument was given.");
@@ -664,69 +665,10 @@ bot.on('message', (message) => {
         break;
       // !? is the command for what's playing?
       case "?":
-        if (args[1]) {
-          gsrun(client2, "A", "B", mgid).then((xdb) => {
-            if (xdb.congratsDatabase.get(args[1])) {
-              message.channel.send(xdb.congratsDatabase.get(args[1]));
-            } else if (
-              whatspMap[message.member.voice.channel] &&
-              !whatspMap[message.member.voice.channel].includes("Last Played:")
-            ) {
-              message.channel.send(
-                "Could not find '" +
-                  args[1] +
-                  "' in database.\nCurrently playing: " +
-                  whatspMap[message.member.voice.channel]
-              );
-            } else if (whatspMap[message.member.voice.channel]) {
-              message.channel.send(
-                "Could not find '" +
-                  args[1] +
-                  "' in database.\n" +
-                  whatspMap[message.member.voice.channel]
-              );
-            } else {
-              message.channel.send(
-                "Could not find '" + args[1] + "' in database."
-              );
-            }
-          });
-        } else {
-          if (
-            whatspMap[message.member.voice.channel] &&
-            whatspMap[message.member.voice.channel] !== ""
-          ) {
-            if (
-              enumPlayingFunction !== "playing" &&
-              totalRandomIntMap[message.member.voice.channel] &&
-              totalRandomIntMap[message.member.voice.channel] !== 0
-            ) {
-              message.channel.send(
-                "(" +
-                  currentRandomIntMap[message.member.voice.channel] +
-                  "/" +
-                  totalRandomIntMap[message.member.voice.channel] +
-                  ")  " +
-                  whatspMap[message.member.voice.channel]
-              );
-            } else if (
-              servers[mgid] &&
-              servers[mgid].queue &&
-              servers[mgid].queue.length > 1
-            ) {
-              message.channel.send(
-                "(1/" +
-                  servers[mgid].queue.length +
-                  ")  " +
-                  whatspMap[message.member.voice.channel]
-              );
-            } else {
-              message.channel.send(whatspMap[message.member.voice.channel]);
-            }
-          } else {
-            message.channel.send("Nothing is playing right now");
-          }
-        }
+        runWhatsPCommand(args, message, mgid, mgid);
+        break;
+      case "g?":
+        runWhatsPCommand(args, message, mgid, "entries");
         break;
       case "changeprefix":
         if (!args[1]) {
@@ -1286,6 +1228,82 @@ function playSongToVC(message, whatToPlay, whatsp) {
       }
     });
 }
+
+
+/**
+ * Runs the what's playing command. 
+ * @param {*} args 
+ * @param {*} message 
+ * @param {*} mgid The guild id
+ * @param {*} sheetname The name of the sheet reference
+ */
+function runWhatsPCommand(args, message, mgid, sheetname){
+  if (args[1]) {
+    gsrun(client2, "A", "B", sheetname).then((xdb) => {
+      if (xdb.congratsDatabase.get(args[1])) {
+        message.channel.send(xdb.congratsDatabase.get(args[1]));
+      } else if (
+        whatspMap[message.member.voice.channel] &&
+        !whatspMap[message.member.voice.channel].includes("Last Played:")
+      ) {
+        message.channel.send(
+          "Could not find '" +
+            args[1] +
+            "' in database.\nCurrently playing: " +
+            whatspMap[message.member.voice.channel]
+        );
+      } else if (whatspMap[message.member.voice.channel]) {
+        message.channel.send(
+          "Could not find '" +
+            args[1] +
+            "' in database.\n" +
+            whatspMap[message.member.voice.channel]
+        );
+      } else {
+        message.channel.send(
+          "Could not find '" + args[1] + "' in database."
+        );
+      }
+    });
+  } else {
+    if (
+      whatspMap[message.member.voice.channel] &&
+      whatspMap[message.member.voice.channel] !== ""
+    ) {
+      if (
+        enumPlayingFunction !== "playing" &&
+        totalRandomIntMap[message.member.voice.channel] &&
+        totalRandomIntMap[message.member.voice.channel] !== 0
+      ) {
+        message.channel.send(
+          "(" +
+            currentRandomIntMap[message.member.voice.channel] +
+            "/" +
+            totalRandomIntMap[message.member.voice.channel] +
+            ")  " +
+            whatspMap[message.member.voice.channel]
+        );
+      } else if (
+        servers[mgid] &&
+        servers[mgid].queue &&
+        servers[mgid].queue.length > 1
+      ) {
+        message.channel.send(
+          "(1/" +
+            servers[mgid].queue.length +
+            ")  " +
+            whatspMap[message.member.voice.channel]
+        );
+      } else {
+        message.channel.send(whatspMap[message.member.voice.channel]);
+      }
+    } else {
+      message.channel.send("Nothing is playing right now");
+    }
+  }
+}
+
+
 
 process.stdout.on('error', function( err ) {
   if (err.code == "EPIPE" || err.code == "EAGAIN") {
