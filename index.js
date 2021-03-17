@@ -1108,12 +1108,14 @@ function playRandom2(message, numOfTimes, cdb) {
           message.channel.send("Could not play random songs. Sorry.");
           printErrorToChannel("!r (third try)", rk, e);
           connection.disconnect();
+          dispatcher.destroy();
         } else {
           if (numOfRetries > 1) {
             printErrorToChannel("!r", rk, e);
           } else {
             printErrorToChannel("!r (second try)", rk, e);
           }
+          dispatcher.destroy();
           //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
           playRandom2(message, numOfTimes, cdb);
         }
