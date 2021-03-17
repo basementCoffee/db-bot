@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2";
+var version = "4.1.3-alpha2.1";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Last version threw a |SyntaxError: missing ) after argument list| error; first attempt at fix \n";
+   "- Last version threw a |SyntaxError: missing ) after argument list| error; second attempt at fix \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1054,6 +1054,8 @@ function runRandomCommand(args, message, sheetname) {
  * @param {*} cdb
  * @returns
  */
+//
+
 function playRandom2(message, numOfTimes, cdb) {
   currentRandomIntMap[message.member.voice.channel] += 1;
   var numOfRetries = 0;
@@ -1139,7 +1141,7 @@ function playRandom2(message, numOfTimes, cdb) {
             //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
             //});
             
-            connection.play(await ytdl(url), { type: 'opus' });
+            connection.play(await ytdl(whatsp), { type: 'opus' });
             let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
             
         
@@ -1244,9 +1246,8 @@ async function playSongToVC(message, whatToPlay) {
         //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
         //});
         
-        connection.play(await ytdl(url), { type: 'opus' });
+        connection.play(await ytdl(whatToPlayS), { type: 'opus' });
         let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
-        
         
         //let dispatcher = connection.play(myStream, {
         //  type: "opus",
