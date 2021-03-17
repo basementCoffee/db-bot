@@ -1242,11 +1242,11 @@ function playSongToVC(message, whatToPlay, whatsp) {
       try {
         connection.voice.setSelfDeaf(true);
         
-        
-        let dispatcher = connection.play(await ytdl(whatsp, {
+        let myStream = ytdl(whatToPlayS, {});
+        let dispatcher = connection.play(await ytdl(myStream, {
           type: "opus",
         }));
-
+        
         dispatcherMap[message.member.voice.channel] = dispatcher;
         dispatcher.on("finish", () => {
         server.queue.shift();
