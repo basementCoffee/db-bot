@@ -1165,6 +1165,7 @@ function playRandom2(message, numOfTimes, cdb) {
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
                 connection.disconnect();
+                whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
                 dispatcherMap[message.member.voice.channel] = undefined;
               } else {
                 playRandom2(message, numOfTimes, cdb);
