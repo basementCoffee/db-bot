@@ -1074,18 +1074,20 @@ function playRandom2(message, numOfTimes, cdb) {
       try {
         connection.voice.setSelfDeaf(true);
 
-          dispatcherMap[message.member.voice.channel] = connection.play(await ytdl(url), {
-            type: "opus",
-            filter: "audioonly",
-            quality: "140",
-          });
+        let dispatcher = connection.play(await ytdl(whatsp), {
+          type: "opus",
+          filter: "audioonly",
+          quality: "140",
+        });
+
+        dispatcherMap[message.member.voice.channel] = dispatcher;
 
         if (!dispatcherMap[message.member.voice.channel]) {
           console.log("there was an error: E5");
           return;
         }
-        
-        dispatcherMap[message.member.voice.channel].on("finish", () => {
+
+        dispatcher.on("finish", () => {
           numOfTimes -= 1;
           if (numOfTimes === 0) {
             totalRandomIntMap[message.member.voice.channel] = 0;
