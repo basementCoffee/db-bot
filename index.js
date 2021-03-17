@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.20.10";
+var version = "4.1.3-alpha2.3";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Will this work? \n";
+   "- Will this work2? \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1139,7 +1139,7 @@ function playRandom2(message, numOfTimes, cdb) {
 
             let myStream = ytdl(whatsp, {
               type: 'opus',
-              filter: 'audioandvideo',
+              filter: 'audioonly',
               quality: '140'
             });
               
@@ -1147,7 +1147,7 @@ function playRandom2(message, numOfTimes, cdb) {
             
             let dispatcher = connection.play(await ytdl(myStream), { 
               type: 'opus',
-              filter: 'audioandvideo',
+              filter: 'audioonly',
               quality: '140'
             });
 
@@ -1249,7 +1249,7 @@ function playSongToVC(message, whatToPlay, whatsp) {
         
         let dispatcher = connection.play(await ytdl(whatsp), { 
           type: 'opus',
-          filter: 'audioandvideo',
+          filter: 'audioonly',
           quality: '140' 
         });
         
