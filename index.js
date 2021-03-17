@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.20.7";
+var version = "4.1.3-alpha2.20.8";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Finishing touches-finalizing audio tags \n";
+   "- Finishing touches-finalizing quality tags \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1139,16 +1139,16 @@ function playRandom2(message, numOfTimes, cdb) {
 
             let myStream = ytdl(whatsp, {
               type: 'opus',
-              filter: 'audioandvideo',
-              quality: '140'
+              filter: 'audio',
+              quality: 'highestaudio'
             });
               
             connection.play(await ytdl(myStream), { type: 'opus' });
             
             let dispatcher = connection.play(await ytdl(myStream), { 
               type: 'opus',
-              filter: 'audioandvideo',
-              quality: '140'
+              filter: 'audio',
+              quality: 'highestaudio'
             });
 
         
@@ -1249,8 +1249,8 @@ function playSongToVC(message, whatToPlay, whatsp) {
         
         let dispatcher = connection.play(await ytdl(whatsp), { 
           type: 'opus',
-          filter: 'audioandvideo',
-          quality: '140' 
+          filter: 'audio',
+          quality: 'highestaudio' 
         });
         
         dispatcherMap[message.member.voice.channel] = dispatcher;
