@@ -1133,7 +1133,6 @@ function playRandom2(message, numOfTimes, cdb) {
     message.member.voice.channel.join().then(function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
-        async function play(connection, whatsp) {
             
             
 
@@ -1150,9 +1149,6 @@ function playRandom2(message, numOfTimes, cdb) {
               filter: 'audioonly',
               quality: '100'
             });
-
-        
-           
         
             dispatcherMap[message.member.voice.channel] = dispatcher;
             dispatcher.on("finish", () => {
@@ -1166,7 +1162,6 @@ function playRandom2(message, numOfTimes, cdb) {
                 playRandom2(message, numOfTimes, cdb);
               }
             });
-        }
         
       } catch (e) {
         // Error catching - fault with the database yt link?
