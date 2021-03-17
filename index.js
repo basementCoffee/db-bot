@@ -273,18 +273,15 @@ const { Client } = require("discord.js");
 const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
-
-
 // UPDATE HERE - Before Git Push
 var version = "4.1.3-alpha2.3";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Will this work2? \n";
+  "- Will this work2? \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
-
 
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
@@ -367,7 +364,7 @@ function skipSong(message, cdb) {
 }
 
 // parses message, provides a response
-bot.on('message', (message) => {
+bot.on("message", (message) => {
   if (message.author.bot) return;
   if (contentsContainCongrats(message)) {
     if (message.author.bot) return;
@@ -1005,9 +1002,9 @@ function playRandom2(message, numOfTimes, cdb) {
   var rKeyArray = Array.from(cdb.keys());
   let rn;
   let rk;
-  process.stdout.on('error', function( err ) {
+  process.stdout.on("error", function (err) {
     if (err.code == "EPIPE") {
-        console.log("error here's listeners: " + bot.getMaxListeners());
+      console.log("error here's listeners: " + bot.getMaxListeners());
     }
   });
   if (numOfTimes <= 1) {
@@ -1021,9 +1018,12 @@ function playRandom2(message, numOfTimes, cdb) {
         let executeWhileInRand = true;
         for (let i = 0; i < numOfTimes; i++) {
           if (!newArray || newArray.length < 1 || executeWhileInRand) {
-            var tempArray = [...rKeyArray];;
+            var tempArray = [...rKeyArray];
             let j = 0;
-            while ((tempArray.length > 0 && j <= numOfTimes) || executeWhileInRand) {
+            while (
+              (tempArray.length > 0 && j <= numOfTimes) ||
+              executeWhileInRand
+            ) {
               let randomNumber = Math.floor(Math.random() * tempArray.length);
               newArray.push(tempArray[randomNumber]);
               tempArray.splice(randomNumber, 1);
@@ -1075,45 +1075,29 @@ function playRandom2(message, numOfTimes, cdb) {
     message.member.voice.channel.join().then(function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
+        let dispatcher;
+        async function play(connection, url) {
+          dispatcher = connection.play(await ytdl(url), {
+            type: "opus",
+            filter: "audioonly",
+            quality: "140",
+          });
+        }
+        play(connection, whatsp);
 
-            
-            
-
-            // let myStream = ytdl(whatsp, {
-            //   type: 'opus',
-            //   filter: 'audioonly',
-            //   quality: '140'
-            // });
-              
-            // connection.play(await ytdl(myStream), { type: 'opus' });
-            
-            // let dispatcher = connection.play(await ytdl(myStream), { 
-            //   type: 'opus',
-            //   filter: 'audioonly',
-            //   quality: '140'
-            // });
-
-            let dispatcher = connection.play(ytdl(whatsp), { 
-              type: 'opus',
-              filter: 'audioonly',
-              quality: '140' 
-            });
-           
-        
-            dispatcherMap[message.member.voice.channel] = dispatcher;
-            dispatcher.on("finish", () => {
-              numOfTimes -= 1;
-              if (numOfTimes === 0) {
-                totalRandomIntMap[message.member.voice.channel] = 0;
-                currentRandomIntMap[message.member.voice.channel] = 0;
-                connection.disconnect();
-                whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
-                dispatcherMap[message.member.voice.channel] = undefined;
-              } else {
-                playRandom2(message, numOfTimes, cdb);
-              }
-            });
-        
+        dispatcherMap[message.member.voice.channel] = dispatcher;
+        dispatcher.on("finish", () => {
+          numOfTimes -= 1;
+          if (numOfTimes === 0) {
+            totalRandomIntMap[message.member.voice.channel] = 0;
+            currentRandomIntMap[message.member.voice.channel] = 0;
+            connection.disconnect();
+            whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
+            dispatcherMap[message.member.voice.channel] = undefined;
+          } else {
+            playRandom2(message, numOfTimes, cdb);
+          }
+        });
       } catch (e) {
         // Error catching - fault with the database yt link?
         console.log("Below is a caught error message. (this broke:" + rk + ")");
@@ -1191,31 +1175,29 @@ function playSongToVC(message, whatToPlay, whatsp) {
     message.member.voice.channel.join().then(async function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
-        
-        
-        let dispatcher = connection.play(await ytdl(whatsp), { 
-          type: 'opus',
-          filter: 'audioonly',
-          quality: '140' 
+
+        let dispatcher = connection.play(await ytdl(whatsp), {
+          type: "opus",
+          filter: "audioonly",
+          quality: "140",
         });
-        
+
         dispatcherMap[message.member.voice.channel] = dispatcher;
         dispatcher.on("finish", () => {
-        server.queue.shift();
-        if (server.queue.length > 0) {
-          whatsp = server.queue[0];
-          console.log("On finish, playing; " + whatsp);
-          whatspMap[message.member.voice.channel] = whatsp;
-          if (!whatsp) {
-            return;
-          }
-          playSongToVC(message, whatsp);
+          server.queue.shift();
+          if (server.queue.length > 0) {
+            whatsp = server.queue[0];
+            console.log("On finish, playing; " + whatsp);
+            whatspMap[message.member.voice.channel] = whatsp;
+            if (!whatsp) {
+              return;
+            }
+            playSongToVC(message, whatsp);
           } else {
             connection.disconnect();
             dispatcherMap[message.member.voice.channel] = undefined;
           }
         });
-      
       } catch (e) {
         // Error catching - fault with the yt link?
         console.log(
@@ -1229,15 +1211,14 @@ function playSongToVC(message, whatToPlay, whatsp) {
     });
 }
 
-
 /**
- * Runs the what's playing command. 
- * @param {*} args 
- * @param {*} message 
+ * Runs the what's playing command.
+ * @param {*} args
+ * @param {*} message
  * @param {*} mgid The guild id
  * @param {*} sheetname The name of the sheet reference
  */
-function runWhatsPCommand(args, message, mgid, sheetname){
+function runWhatsPCommand(args, message, mgid, sheetname) {
   if (args[1]) {
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
       if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
@@ -1260,9 +1241,7 @@ function runWhatsPCommand(args, message, mgid, sheetname){
             whatspMap[message.member.voice.channel]
         );
       } else {
-        message.channel.send(
-          "Could not find '" + args[1] + "' in database."
-        );
+        message.channel.send("Could not find '" + args[1] + "' in database.");
       }
     });
   } else {
@@ -1303,12 +1282,10 @@ function runWhatsPCommand(args, message, mgid, sheetname){
   }
 }
 
-
-
-process.stdout.on('error', function( err ) {
+process.stdout.on("error", function (err) {
   if (err.code == "EPIPE" || err.code == "EAGAIN") {
-      console.log("errorz: " + bot.getMaxListeners());
-      return;
+    console.log("errorz: " + bot.getMaxListeners());
+    return;
   }
 });
 
@@ -1332,33 +1309,14 @@ function printErrorToChannel(activationType, songKey, e) {
 //    bot.channels.cache.get("730239813403410619").send("There was an error!");
 //}
 
-
 /**
  * Keith's Testing Corner 3/17/21
  * -Test to overhaul ffmpeg/opus with ytdl-core-discord <- very important that its this one
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
  */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 var whatspMap = new Map();
 var prefix = new Map();
