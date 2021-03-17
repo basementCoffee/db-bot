@@ -1137,15 +1137,15 @@ function playRandom2(message, numOfTimes, cdb) {
             
             
 
-            let myStream = ytdl(whatsp, {
-              type: 'opus',
-              filter: 'audioonly',
-              quality: '140'
-            });
+            // let myStream = ytdl(whatsp, {
+            //   type: 'opus',
+            //   filter: 'audioonly',
+            //   quality: '140'
+            // });
               
-            connection.play(ytdl(myStream), { type: 'opus' });
+            // connection.play(ytdl(myStream), { type: 'opus' });
             
-            let dispatcher = connection.play(await ytdl(myStream), { 
+            let dispatcher = connection.play(ytdl(whatsp), { 
               type: 'opus',
               filter: 'audioonly',
               quality: '140'
