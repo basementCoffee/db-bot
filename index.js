@@ -307,7 +307,7 @@ function skipSong(message, cdb) {
   }
   if (enumPlayingFunction === "random" || enumPlayingFunction === "randomS") {
     if (
-      currentRandomIntMap[message.member.voice.channel] ===
+      currentRandomIntMap[message.member.voice.channel] >=
         totalRandomIntMap[message.member.voice.channel] ||
       totalRandomIntMap[message.member.voice.channel] === 0
     ) {
@@ -1070,20 +1070,21 @@ function playRandom2(message, numOfTimes, cdb) {
   whatspMap[message.member.voice.channel] = whatsp;
   //server.queue.push(congratsDatabase.get(rk));
   if (!message.guild.voiceChannel)
-    message.member.voice.channel.join().then(function (connection) {
+    message.member.voice.channel.join().then(async function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
-        async function play(connection, url) {
+
           dispatcherMap[message.member.voice.channel] = connection.play(await ytdl(url), {
             type: "opus",
             filter: "audioonly",
             quality: "140",
           });
-        }
-        play(connection, whatsp);
+
         if (!dispatcherMap[message.member.voice.channel]) {
           console.log("there was an error: E5");
+          return;
         }
+        
         dispatcherMap[message.member.voice.channel].on("finish", () => {
           numOfTimes -= 1;
           if (numOfTimes === 0) {
