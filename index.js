@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha1";
+var version = "4.1.3-alpha2";
 var latestRelease =
-  "Latest Release (4.1.3-alpha1):\n" +
-  "- Second attempt at implementing ytdl-core-discord\n" +
-   "- Changed connection.play call to await function\n";
+  "Latest Release (4.1.3-alpha2):\n" +
+  "- Third attempt at implementing ytdl-core-discord\n" +
+   "- Last version threw a |SyntaxError: missing ) after argument list| error; first attempt at fix \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1139,6 +1139,7 @@ function playRandom2(message, numOfTimes, cdb) {
             //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
             //});
             
+            connection.play(await ytdl(url), { type: 'opus' });
             let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
             
         
@@ -1243,6 +1244,7 @@ async function playSongToVC(message, whatToPlay) {
         //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
         //});
         
+        connection.play(await ytdl(url), { type: 'opus' });
         let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
         
         
