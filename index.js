@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.11";
+var version = "4.1.3-alpha2.12";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Last version threw a |SyntaxError: missing ) after argument list| error; eleventh attempt at fix \n";
+   "- Last version threw a |SyntaxError: missing ) after argument list| error; twelvth attempt at fix \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1248,7 +1248,7 @@ async function playSongToVC(message, whatToPlay, whatsp) {
         
       
       
-      let dispatcher = connection.play(await ytdl(myStream), { 
+      let dispatcher = connection.play(await ytdl(whatsp), { 
           type: 'opus' 
       });
 
