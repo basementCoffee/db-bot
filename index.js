@@ -1240,8 +1240,8 @@ function playSongToVC(message, whatToPlay, whatsp) {
 function runWhatsPCommand(args, message, mgid, sheetname){
   if (args[1]) {
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
-      if (xdb.congratsDatabase.get(args[1])) {
-        message.channel.send(xdb.congratsDatabase.get(args[1]));
+      if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
+        message.channel.send(xdb.referenceDatabase.get(args[1].toUpperCase()));
       } else if (
         whatspMap[message.member.voice.channel] &&
         !whatspMap[message.member.voice.channel].includes("Last Played:")
