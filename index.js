@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.20.8";
+var version = "4.1.3-alpha3";
 var latestRelease =
-  "Latest Release (4.1.3-alpha2):\n" +
-  "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Finishing touches-finalizing quality tags \n";
+  "Latest Release (4.1.3-alpha3):\n" +
+  "- Fourth attempt at implementing ytdl-core-discord\n" +
+   "- Full success in this build \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
