@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.12";
+var version = "4.1.3-alpha2.13";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Last version threw a |SyntaxError: missing ) after argument list| error; twelvth attempt at fix \n";
+   "- Last version threw a |SyntaxError: missing ) after argument list| error; 13th attempt at fix \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1247,29 +1247,30 @@ async function playSongToVC(message, whatToPlay, whatsp) {
       });
         
       
-      
-      let dispatcher = connection.play(await ytdl(whatsp), { 
-          type: 'opus' 
+      connection.play(await ytdl(myStream), { type: 'opus' });
+      let dispatcher = connection.play(myStream, {
+        type: "opus",
       });
 
         
         
-        dispatcherMap[message.member.voice.channel] = dispatcher;
-        dispatcher.on("finish", () => {
-          server.queue.shift();
-          if (server.queue.length > 0) {
-            whatsp = server.queue[0];
-            console.log("On finish, playing; " + whatsp);
-            whatspMap[message.member.voice.channel] = whatsp;
-            if (!whatsp) {
-              return;
-            }
-            playSongToVC(message, whatsp);
+      dispatcherMap[message.member.voice.channel] = dispatcher;
+      dispatcher.on("finish", () => {
+        server.queue.shift();
+        if (server.queue.length > 0) {
+          whatsp = server.queue[0];
+          console.log("On finish, playing; " + whatsp);
+          whatspMap[message.member.voice.channel] = whatsp;
+          if (!whatsp) {
+            return;
+          }
+          playSongToVC(message, whatsp);
           } else {
             connection.disconnect();
             dispatcherMap[message.member.voice.channel] = undefined;
           }
         });
+      
       } catch (e) {
         // Error catching - fault with the yt link?
         console.log(
