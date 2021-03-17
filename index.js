@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.1";
+var version = "4.1.3-alpha2.2";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Last version threw a |SyntaxError: missing ) after argument list| error; second attempt at fix \n";
+   "- Last version threw a |SyntaxError: missing ) after argument list| error; third attempt at fix \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1135,19 +1135,20 @@ function playRandom2(message, numOfTimes, cdb) {
         connection.voice.setSelfDeaf(true);
         async function play(connection, whatsp) {
             
-            //let myStream = ytdl(whatsp, {
-            //  filter: "audioonly",
-            //  opusEncoded: true,
-            //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
-            //});
             
-            connection.play(await ytdl(whatsp), { type: 'opus' });
-            let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
+
+            let myStream = ytdl(whatsp, {
+                type: 'opus'
+            });
+              
+            connection.play(await ytdl(myStream), { type: 'opus' });
             
+            let dispatcher = connection.play(await ytdl(myStream), { 
+                type: 'opus' 
+            });
+
         
-            //let dispatcher = connection.play(myStream, {
-            //  type: "opus",
-            //});
+           
         
             dispatcherMap[message.member.voice.channel] = dispatcher;
             dispatcher.on("finish", () => {
@@ -1240,18 +1241,17 @@ async function playSongToVC(message, whatToPlay) {
     message.member.voice.channel.join().then(function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
-        //let myStream = ytdl(whatToPlayS, {
-        //  filter: "audioonly",
-        //  opusEncoded: true,
-        //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
-        //});
         
-        connection.play(await ytdl(whatToPlayS), { type: 'opus' });
-        let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
+        let myStream = ytdl(whatToPlayS, {
+          type: 'opus'
+        });
         
-        //let dispatcher = connection.play(myStream, {
-        //  type: "opus",
-        //});
+        connection.play(await ytdl(myStream), { type: 'opus' });
+        let dispatcher = connection.play(await ytdl(myStream), { 
+            type: 'opus' 
+        });
+        
+        
         dispatcherMap[message.member.voice.channel] = dispatcher;
         dispatcher.on("finish", () => {
           server.queue.shift();
