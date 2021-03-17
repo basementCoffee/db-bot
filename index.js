@@ -1054,9 +1054,7 @@ function playRandom2(message, numOfTimes, cdb) {
   //console.log("attempting to play key:" + rk);
   whatsp = cdb.get(rk);
   if (!whatsp) {
-    let tempStringRandom = "";
-    tempStringRandom = message.guild.id;
-    gsrun(client2, "A", "B", tempStringRandom);
+    gsrun(client2, "A", "B", message.guild.id);
     if (cdb.length < 2) {
       message.channel.send(
         "Your database needs at least two items to randomize."
