@@ -414,7 +414,7 @@ bot.on("message", (message) => {
     statement = statement.toLowerCase();
 
     switch (statement) {
-      //!p is just the basic rhythm bot
+      // !p is just the basic rhythm bot
       case "p":
         if (!message.member.voice.channel) {
           return;
@@ -453,6 +453,7 @@ bot.on("message", (message) => {
           message.channel.send("Added to queue.");
         }
         break;
+      // !pn
       case "pn":
         if (!message.member.voice.channel) {
           return;
@@ -974,8 +975,11 @@ function runRandomCommand(args, message, sheetname) {
     } else {
       try {
         let num = parseInt(args[1]);
-        if (num) {
+        if (num && num < 1001) {
           totalRandomIntMap[message.member.voice.channel] = num;
+        } else if (num && num > 1000) {
+          message.channel.send("*max limit for random is 1000*");
+          return;
         }
         playRandom2(message, num, xdb.congratsDatabase);
       } catch (e) {
