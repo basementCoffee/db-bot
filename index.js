@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha0";
+var version = "4.1.3-alpha1";
 var latestRelease =
-  "Latest Release (4.1.X-alphaX):\n" +
-  "- Attempt to convert existing node modules encoding PWM data to ytd-core-discord" +
-   "- 4.1.X-alphaX builds are worked on by Keith parallel to (4.1.X) builds\n";
+  "Latest Release (4.1.3-alpha1):\n" +
+  "- Second attempt at implementing ytdl-core-discord\n" +
+   "- Changed connection.play call to await function\n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1131,31 +1131,35 @@ function playRandom2(message, numOfTimes, cdb) {
     message.member.voice.channel.join().then(function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
-        //let myStream = ytdl(whatsp, {
-        //  filter: "audioonly",
-        //  opusEncoded: true,
-        //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
-        //});
         async function play(connection, whatsp) {
+            
+            //let myStream = ytdl(whatsp, {
+            //  filter: "audioonly",
+            //  opusEncoded: true,
+            //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
+            //});
+            
             let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
+            
+        
+            //let dispatcher = connection.play(myStream, {
+            //  type: "opus",
+            //});
+        
+            dispatcherMap[message.member.voice.channel] = dispatcher;
+            dispatcher.on("finish", () => {
+              numOfTimes -= 1;
+              if (numOfTimes === 0) {
+                totalRandomIntMap[message.member.voice.channel] = 0;
+                currentRandomIntMap[message.member.voice.channel] = 0;
+                connection.disconnect();
+                dispatcherMap[message.member.voice.channel] = undefined;
+              } else {
+                playRandom2(message, numOfTimes, cdb);
+              }
+            });
         }
         
-        //let dispatcher = connection.play(myStream, {
-        //  type: "opus",
-        //});
-        
-        dispatcherMap[message.member.voice.channel] = dispatcher;
-        dispatcher.on("finish", () => {
-          numOfTimes -= 1;
-          if (numOfTimes === 0) {
-            totalRandomIntMap[message.member.voice.channel] = 0;
-            currentRandomIntMap[message.member.voice.channel] = 0;
-            connection.disconnect();
-            dispatcherMap[message.member.voice.channel] = undefined;
-          } else {
-            playRandom2(message, numOfTimes, cdb);
-          }
-        });
       } catch (e) {
         // Error catching - fault with the database yt link?
         console.log("Below is a caught error message. (this broke:" + rk + ")");
@@ -1214,7 +1218,9 @@ function runKeysCommand(message, prefixString, sheetname) {
  * @param {*} numOfTimes should be 1.
  * @param {*} whatToPlay the link of the song to play
  */
-function playSongToVC(message, whatToPlay) {
+//
+
+async function playSongToVC(message, whatToPlay) {
   enumPlayingFunction = "playing";
   server = servers[message.guild.id];
   let whatToPlayS = "";
@@ -1237,9 +1243,8 @@ function playSongToVC(message, whatToPlay) {
         //  encoderArgs: ["-af", "bass=g=5,dynaudnorm=f=200"],
         //});
         
-        async function play(connection, whatsp) {
-            let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
-        }
+        let dispatcher = connection.play(await ytdl(whatsp), { type: 'opus' });
+        
         
         //let dispatcher = connection.play(myStream, {
         //  type: "opus",
