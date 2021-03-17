@@ -276,11 +276,11 @@ const ytdl = require("ytdl-core-discord");
 
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.15";
+var version = "4.1.3-alpha2.20";
 var latestRelease =
   "Latest Release (4.1.3-alpha2):\n" +
   "- Third attempt at implementing ytdl-core-discord\n" +
-   "- Last version threw a |SyntaxError: missing ) after argument list| error; 15th attempt at fix \n";
+   "- Last version threw a |SyntaxError: missing ) after argument list| error; 20th attempt at fix \n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -1224,7 +1224,7 @@ function runKeysCommand(message, prefixString, sheetname) {
  */
 //
 
-async function playSongToVC(message, whatToPlay, whatsp) {
+function playSongToVC(message, whatToPlay, whatsp) {
   enumPlayingFunction = "playing";
   server = servers[message.guild.id];
   let whatToPlayS = "";
@@ -1238,7 +1238,7 @@ async function playSongToVC(message, whatToPlay, whatsp) {
     return;
   }
   if (!message.guild.voiceChannel)
-    message.member.voice.channel.join().then(function (connection) {
+    message.member.voice.channel.join().then(async function (connection) {
       try {
         connection.voice.setSelfDeaf(true);
         
