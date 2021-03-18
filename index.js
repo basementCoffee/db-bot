@@ -794,7 +794,7 @@ bot.on("message", (message) => {
           message.channel.send("Could not find song tag within the database.");
         }
         break;
-      // !rand 
+      // !rand
       case "rand":
         if (args[1]) {
           const numToCheck = parseInt(args[1]);
@@ -810,10 +810,16 @@ bot.on("message", (message) => {
               "."
           );
         } else {
-          if (message.member && message.member.voice && message.member.voice.channel) {
+          if (
+            message.member &&
+            message.member.voice &&
+            message.member.voice.channel
+          ) {
             const numToCheck = message.member.voice.channel.members.size;
             if (numToCheck <= 1) {
-              message.channel.send("Need at least 2 people your voice channel.");
+              message.channel.send(
+                "Need at least 2 people your voice channel."
+              );
             }
             let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
             message.channel.send(
@@ -895,57 +901,61 @@ function runDatabasePlayCommand(args, message, sheetname) {
   }
 
   gsrun(client2, "A", "B", sheetname).then((xdb) => {
-    if (args[2]) {
-    let dbAddInt = 1; 
-    let unFoundString = "Could not find: ";
-    let firstUnfoundRan = false;
-    let dbAddedToQueue = 0;
-    while (args[dbAddInt]) {
-      if (!xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())) {
-        if (firstUnfoundRan) {
-          unFoundString.concat(",")
-        }
-        unFoundString.concat(args[dbAddInt]);
-        firstUnfoundRan = true;
-    } else {
-      // push to queue
-    servers[message.guild.id].queue.push(
-      xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())
-    );
-    dbAddedToQueue++;
-  }
-  dbAddInt++;
-  }
-  message.channel.send("Added " + dbAddedToQueue + " to queue.");
-  if (firstUnfoundRan) {
-    message.channel.send(unFoundString);
-  }
-} else {
-    if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
-      runSearchCommand(args, xdb);
-      if (ss && ss.length > 0) {
-        message.channel.send(
-          "Could not find name in database.\n*Did you mean: " + ss + "*"
-        );
-      } else {
-        message.channel.send("Could not find name in database.");
-      }
-      return;
-    }
-    // push to queue
-    servers[message.guild.id].queue.push(
-      xdb.referenceDatabase.get(args[1].toUpperCase())
-    );
-    if(servers[message.guild.id] &&
-      servers[message.guild.id].queue.length > 1) {
-      message.channel.send("Added to queue.");
-    }
-}
-    // if queue has only 1 song then play
+    let dbPlayOverride = false;
+    // if the queue is empty then play
     if (
       servers[message.guild.id] &&
-      servers[message.guild.id].queue.length < 2
+      servers[message.guild.id].queue.length < 1
     ) {
+      dbPlayOverride = true;
+    }
+    if (args[2]) {
+      let dbAddInt = 1;
+      let unFoundString = "Could not find: ";
+      let firstUnfoundRan = false;
+      let dbAddedToQueue = 0;
+      while (args[dbAddInt]) {
+        if (!xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())) {
+          if (firstUnfoundRan) {
+            unFoundString.concat(",");
+          }
+          unFoundString.concat(args[dbAddInt]);
+          firstUnfoundRan = true;
+        } else {
+          // push to queue
+          servers[message.guild.id].queue.push(
+            xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())
+          );
+          dbAddedToQueue++;
+        }
+        dbAddInt++;
+      }
+      message.channel.send("Added " + dbAddedToQueue + " to queue.");
+      if (firstUnfoundRan) {
+        message.channel.send(unFoundString);
+      }
+    } else {
+      if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
+        runSearchCommand(args, xdb);
+        if (ss && ss.length > 0) {
+          message.channel.send(
+            "Could not find name in database.\n*Did you mean: " + ss + "*"
+          );
+        } else {
+          message.channel.send("Could not find name in database.");
+        }
+        return;
+      }
+      // push to queue
+      servers[message.guild.id].queue.push(
+        xdb.referenceDatabase.get(args[1].toUpperCase())
+      );
+      if (!dbPlayOverride) {
+        message.channel.send("Added to queue.");
+      }
+    }
+    // if queue was empty then play
+    if (dbPlayOverride) {
       playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
     }
   });
@@ -1328,15 +1338,20 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
       ) {
         if (
           whatspMap[message.member.voice.channel] &&
-          !whatspMap[message.member.voice.channel].includes("Last Played:")) {
-            whatspMap[message.member.voice.channel] = "Last Played:\n" + whatspMap[message.member.voice.channel];
-            message.channel.send(whatspMap[message.member.voice.channel]);
-          } else if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
-            message.channel.send(whatspMap[message.member.voice.channel]);
-          } else {
-            message.channel.send("Nothing is playing right now");
-          }
-          return;
+          !whatspMap[message.member.voice.channel].includes("Last Played:")
+        ) {
+          whatspMap[message.member.voice.channel] =
+            "Last Played:\n" + whatspMap[message.member.voice.channel];
+          message.channel.send(whatspMap[message.member.voice.channel]);
+        } else if (
+          whatspMap[message.member.voice.channel] &&
+          whatspMap[message.member.voice.channel].length > 0
+        ) {
+          message.channel.send(whatspMap[message.member.voice.channel]);
+        } else {
+          message.channel.send("Nothing is playing right now");
+        }
+        return;
       }
       if (
         enumPlayingFunction !== "playing" &&
