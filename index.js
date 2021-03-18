@@ -808,11 +808,7 @@ bot.on("message", (message) => {
               "."
           );
         } else {
-          if (
-            message.member &&
-            message.member.voice &&
-            message.member.voice.channel
-          ) {
+          if (message.member && message.member.voice && message.member.voice.channel) {
             const numToCheck = message.member.voice.channel.members.size;
             if (numToCheck <= 0) {
               message.channel.send("Upper limit required.");
