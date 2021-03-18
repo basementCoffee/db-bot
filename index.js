@@ -850,7 +850,7 @@ function runAddCommand(args, message, currentBotGuildId) {
     if (linkZ.substring(linkZ.length - 1) === ",") {
       linkZ = linkZ.substring(0, linkZ.length - 1);
     }
-    gsrun(client2, "A", "B", mgid).then(() => {
+    gsrun(client2, "A", "B", currentBotGuildId).then(() => {
     gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
     });
     z = z + 2;
