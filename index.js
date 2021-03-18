@@ -453,6 +453,7 @@ bot.on("message", (message) => {
           message.channel.send("Added to queue.");
         }
         break;
+      // !pn
       case "pn":
         if (!message.member.voice.channel) {
           return;
@@ -792,6 +793,30 @@ bot.on("message", (message) => {
           message.channel.send("Could not find song tag within the database.");
         }
         break;
+      case "rand":
+        if (args[1]) {
+          const numToCheck = parseInt(args[1]);
+          if (numToCheck < 1) {
+            message.channel.send("Number has to be positive.");
+          }
+          let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
+          message.channel.send(randomInt2);
+        } else {
+          const numToCheck = message.member.voice.channel.members.size;
+          if (numToCheck <= 0) {
+            message.channel.send("Upper limit required.");
+          }
+          let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
+          message.channel.send(
+            "Assuming " +
+              numToCheck +
+              " people. Your number is " +
+              randomInt2 +
+              "."
+          );
+          // message.channel.send("You need to input a upper limit");
+        }
+        break;
     }
   }
 });
@@ -938,6 +963,7 @@ function sendHelp(message, prefixString) {
       "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
       prefixString +
       "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
+      "!rand  --> random roll from 1 to the number of players in the vc" +
       "\n-------  Your Songs (Personal Server Database) -------  \n" +
       prefixString +
       "keys  -->  See all your saved songs \n" +
