@@ -254,14 +254,12 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
       function (response) {
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
+        gsrun(cl, "A", "B", "entries").then(x => {});
       },
       function (err) {
         console.error("Execute error", err);
       }
     );
-  gsrun(cl, "A", "B", "entries").then((r) =>
-    console.log("updateOverwrite ran...")
-  );
 }
 
 //ABOVE IS GOOGLE API -------------------------------------------------------------
@@ -855,7 +853,7 @@ function runAddCommand(args, message, currentBotGuildId) {
     gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
     z = z + 2;
     songsAddedInt += 1;
-  }
+  } 
   if (songsAddedInt === 1) {
     message.channel.send("Song successfully added to the database.");
   } else if (songsAddedInt > 1) {
