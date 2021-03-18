@@ -414,7 +414,7 @@ bot.on("message", (message) => {
     statement = statement.toLowerCase();
 
     switch (statement) {
-      // !p is just the basic rhythm bot
+      //!p is just the basic rhythm bot
       case "p":
         if (!message.member.voice.channel) {
           return;
@@ -453,7 +453,6 @@ bot.on("message", (message) => {
           message.channel.send("Added to queue.");
         }
         break;
-      // !pn
       case "pn":
         if (!message.member.voice.channel) {
           return;
@@ -975,11 +974,11 @@ function runRandomCommand(args, message, sheetname) {
     } else {
       try {
         let num = parseInt(args[1]);
-        if (num && num < 1001) {
-          totalRandomIntMap[message.member.voice.channel] = num;
-        } else if (num && num > 1000) {
+        if (num && num > 1000) {
           message.channel.send("*max limit for random is 1000*");
-          return;
+        }
+        if (num) {
+          totalRandomIntMap[message.member.voice.channel] = num;
         }
         playRandom2(message, num, xdb.congratsDatabase);
       } catch (e) {
@@ -1112,14 +1111,12 @@ function playRandom2(message, numOfTimes, cdb) {
           message.channel.send("Could not play random songs. Sorry.");
           printErrorToChannel("!r (third try)", rk, e);
           connection.disconnect();
-          dispatcher.destroy();
         } else {
           if (numOfRetries > 1) {
             printErrorToChannel("!r", rk, e);
           } else {
             printErrorToChannel("!r (second try)", rk, e);
           }
-          dispatcher.destroy();
           //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
           playRandom2(message, numOfTimes, cdb);
         }
