@@ -917,9 +917,9 @@ function runDatabasePlayCommand(args, message, sheetname) {
       while (args[dbAddInt]) {
         if (!xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())) {
           if (firstUnfoundRan) {
-            unFoundString.concat(",");
+            unFoundString = unFoundString.concat(",");
           }
-          unFoundString.concat(args[dbAddInt]);
+          unFoundString = unFoundString.concat(args[dbAddInt]);
           firstUnfoundRan = true;
         } else {
           // push to queue
