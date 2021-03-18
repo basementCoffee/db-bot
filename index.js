@@ -976,6 +976,7 @@ function runRandomCommand(args, message, sheetname) {
         let num = parseInt(args[1]);
         if (num && num > 1000) {
           message.channel.send("*max limit for random is 1000*");
+          num = 1000;
         }
         if (num) {
           totalRandomIntMap[message.member.voice.channel] = num;
