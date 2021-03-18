@@ -808,22 +808,26 @@ bot.on("message", (message) => {
               "."
           );
         } else {
-          if (message.member && message.member.voice && message.member.voice.channel) {
-          const numToCheck = message.member.voice.channel.members.size;
-          if (numToCheck <= 0) {
-            message.channel.send("Upper limit required.");
+          if (
+            message.member &&
+            message.member.voice &&
+            message.member.voice.channel
+          ) {
+            const numToCheck = message.member.voice.channel.members.size;
+            if (numToCheck <= 0) {
+              message.channel.send("Upper limit required.");
+            }
+            let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
+            message.channel.send(
+              "Assuming " +
+                numToCheck +
+                " people. Your number is " +
+                randomInt2 +
+                "."
+            );
+            // message.channel.send("You need to input a upper limit");
           }
-          let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-          message.channel.send(
-            "Assuming " +
-              numToCheck +
-              " people. Your number is " +
-              randomInt2 +
-              "."
-          );
-          // message.channel.send("You need to input a upper limit");
         }
-      }
         break;
     }
   }
