@@ -793,10 +793,11 @@ bot.on("message", (message) => {
           message.channel.send("Could not find song tag within the database.");
         }
         break;
+      // !rand 
       case "rand":
         if (args[1]) {
           const numToCheck = parseInt(args[1]);
-          if (numToCheck < 1) {
+          if (numToCheck <= 1) {
             message.channel.send("Number has to be positive.");
           }
           let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
@@ -810,8 +811,8 @@ bot.on("message", (message) => {
         } else {
           if (message.member && message.member.voice && message.member.voice.channel) {
             const numToCheck = message.member.voice.channel.members.size;
-            if (numToCheck <= 0) {
-              message.channel.send("Upper limit required.");
+            if (numToCheck <= 1) {
+              message.channel.send("Need at least 2 people your voice channel.");
             }
             let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
             message.channel.send(
@@ -971,7 +972,8 @@ function sendHelp(message, prefixString) {
       "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
       prefixString +
       "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
-      "!rand  --> random roll from 1 to the number of players in the vc" +
+      prefixString +
+      "rand  --> random roll for the number of people in the voice channel" +
       "\n-------  Your Songs (Personal Server Database) -------  \n" +
       prefixString +
       "keys  -->  See all your saved songs \n" +
