@@ -859,6 +859,7 @@ function runAddCommand(args, message, currentBotGuildId) {
   if (songsAddedInt === 1) {
     message.channel.send("Song successfully added to the database.");
   } else if (songsAddedInt > 1) {
+    gsUpdateOverwrite(client2, dataSize.get(nameOfSheet) + songsAddedInt, "D", nameOfSheet);
     message.channel.send(
       songsAddedInt.toString() + " songs added to the database."
     );
