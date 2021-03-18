@@ -895,6 +895,32 @@ function runDatabasePlayCommand(args, message, sheetname) {
   }
 
   gsrun(client2, "A", "B", sheetname).then((xdb) => {
+    if (args[2]) {
+    let dbAddInt = 1; 
+    let unFoundString = "Could not find: ";
+    let firstUnfoundRan = false;
+    let dbAddedToQueue = 0;
+    while (args[dbAddInt]) {
+      if (!xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())) {
+        if (firstUnfoundRan) {
+          unFoundString.concat(",")
+        }
+        unFoundString.concat(args[dbAddInt]);
+        firstUnfoundRan = true;
+    } else {
+      // push to queue
+    servers[message.guild.id].queue.push(
+      xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())
+    );
+    dbAddedToQueue++;
+  }
+  dbAddInt++;
+  }
+  message.channel.send("Added " + dbAddedToQueue + " to queue.");
+  if (firstUnfoundRan) {
+    message.channel.send(unFoundString);
+  }
+} else {
     if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
       runSearchCommand(args, xdb);
       if (ss && ss.length > 0) {
@@ -910,14 +936,17 @@ function runDatabasePlayCommand(args, message, sheetname) {
     servers[message.guild.id].queue.push(
       xdb.referenceDatabase.get(args[1].toUpperCase())
     );
+    if(servers[message.guild.id] &&
+      servers[message.guild.id].queue.length > 1) {
+      message.channel.send("Added to queue.");
+    }
+}
     // if queue has only 1 song then play
     if (
       servers[message.guild.id] &&
       servers[message.guild.id].queue.length < 2
     ) {
       playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
-    } else {
-      message.channel.send("Added to queue.");
     }
   });
 }
