@@ -901,13 +901,10 @@ function runDatabasePlayCommand(args, message, sheetname) {
   }
 
   gsrun(client2, "A", "B", sheetname).then((xdb) => {
-    let dbPlayOverride = false;
+    let queueWasEmpty = false;
     // if the queue is empty then play
-    if (
-      servers[message.guild.id] &&
-      servers[message.guild.id].queue.length < 1
-    ) {
-      dbPlayOverride = true;
+    if (servers[message.guild.id].queue.length < 1) {
+      queueWasEmpty = true;
     }
     if (args[2]) {
       let dbAddInt = 1;
@@ -951,12 +948,12 @@ function runDatabasePlayCommand(args, message, sheetname) {
       servers[message.guild.id].queue.push(
         xdb.referenceDatabase.get(args[1].toUpperCase())
       );
-      if (!dbPlayOverride) {
+      if (!queueWasEmpty) {
         message.channel.send("Added to queue.");
       }
     }
     // if queue was empty then play
-    if (dbPlayOverride) {
+    if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
       playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
     }
   });
