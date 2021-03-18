@@ -1290,6 +1290,24 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
       whatspMap[message.member.voice.channel] &&
       whatspMap[message.member.voice.channel] !== ""
     ) {
+      // in case of force disconnect
+      if (
+        !message.guild.client.voice ||
+        !message.guild.voice ||
+        !message.guild.voice.channel
+      ) {
+        if (
+          whatspMap[message.member.voice.channel] &&
+          !whatspMap[message.member.voice.channel].includes("Last Played:")) {
+            whatspMap[message.member.voice.channel] = "Last Played: " + whatspMap[message.member.voice.channel];
+            message.channel.send(whatspMap[message.member.voice.channel]);
+          } else if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
+            message.channel.send(whatspMap[message.member.voice.channel]);
+          } else {
+            message.channel.send("Nothing is playing right now");
+          }
+          return;
+      }
       if (
         enumPlayingFunction !== "playing" &&
         totalRandomIntMap[message.member.voice.channel] &&
