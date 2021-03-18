@@ -911,13 +911,13 @@ function runDatabasePlayCommand(args, message, sheetname) {
     }
     if (args[2]) {
       let dbAddInt = 1;
-      let unFoundString = "Could not find: ";
+      let unFoundString = "*Could not find: ";
       let firstUnfoundRan = false;
       let dbAddedToQueue = 0;
       while (args[dbAddInt]) {
         if (!xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())) {
           if (firstUnfoundRan) {
-            unFoundString = unFoundString.concat(",");
+            unFoundString = unFoundString.concat(", ");
           }
           unFoundString = unFoundString.concat(args[dbAddInt]);
           firstUnfoundRan = true;
@@ -932,6 +932,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
       }
       message.channel.send("Added " + dbAddedToQueue + " to queue.");
       if (firstUnfoundRan) {
+        unFoundString = unFoundString.concat("*");
         message.channel.send(unFoundString);
       }
     } else {
