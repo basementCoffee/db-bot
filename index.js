@@ -536,7 +536,8 @@ bot.on("message", (message) => {
 
         if (
           whatspMap[message.member.voice.channel] &&
-          whatspMap[message.member.voice.channel].length > 0
+          whatspMap[message.member.voice.channel].length > 0 &&
+          !whatspMap[message.member.voice.channel].includes("Last Played:")
         ) {
           whatspMap[message.member.voice.channel] =
             "Last Played:\n" + whatspMap[message.member.voice.channel];
@@ -1299,7 +1300,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
         if (
           whatspMap[message.member.voice.channel] &&
           !whatspMap[message.member.voice.channel].includes("Last Played:")) {
-            whatspMap[message.member.voice.channel] = "Last Played: " + whatspMap[message.member.voice.channel];
+            whatspMap[message.member.voice.channel] = "Last Played:\n" + whatspMap[message.member.voice.channel];
             message.channel.send(whatspMap[message.member.voice.channel]);
           } else if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0) {
             message.channel.send(whatspMap[message.member.voice.channel]);
