@@ -515,7 +515,6 @@ bot.on("message", (message) => {
             case "e":
                 totalRandomIntMap[message.member.voice.channel] = 0;
                 currentRandomIntMap[message.member.voice.channel] = 0;
-                firstSong = true;
                 if (
                     !message.member ||
                     !message.member.voice ||
@@ -778,7 +777,6 @@ bot.on("message", (message) => {
                         dataSize.get(mgid.toString()) < 1
                     ) {
                         message.channel.send("Please try again.");
-                        return;
                     } else {
                         runAddCommand(args, message, mgid);
                     }
@@ -786,7 +784,7 @@ bot.on("message", (message) => {
                 break;
             // !rm removes database entries
             case "rm":
-                var successInDelete = congratsDatabase.delete(args[1]);
+                const successInDelete = congratsDatabase.delete(args[1]);
                 if (successInDelete === true) {
                     message.channel.send(
                         "Song successfully removed from the temp database."
@@ -849,7 +847,7 @@ function runAddCommand(args, message, currentBotGuildId) {
     let songsAddedInt = 0;
     let z = 1;
     while (args[z] && args[z + 1]) {
-        var linkZ = args[z + 1];
+        let linkZ = args[z + 1];
         if (linkZ.substring(linkZ.length - 1) === ",") {
             linkZ = linkZ.substring(0, linkZ.length - 1);
         }
