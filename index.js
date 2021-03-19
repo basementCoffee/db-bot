@@ -107,7 +107,6 @@ function createSheet(message, nameOfSheet) {
       if (err) {
         // console.log('The API returned an error: ' + err);
       } else {
-        // gsUpdateOverwrite(client2, 0, "D", nameOfSheet);
         gsrun(client2, "A", "B", message.guild.id).then(() => {});
       }
       // console.log("success: ", response);
@@ -190,7 +189,7 @@ function gsUpdateAdd(
       }
     );
 
-  gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
+  gsUpdateOverwrite(cl, -1, 1, nameOfSheet);
 }
 
 function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
@@ -217,8 +216,6 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
         console.error("Execute error", err);
       }
     );
-
-  // gsUpdateOverwrite(cl, 0, "D", nameOfSheet);
 }
 
 /**
@@ -229,6 +226,7 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
  * @param {*} databaseSizeCell
  */
 function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
+  if (value < 0) {
   try {
     value = parseInt(dataSize.get(nameOfSheet)) + addOn;
   } catch (e) {
@@ -236,6 +234,7 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
     value = 1;
     // console.log(e);
   }
+}
   const gsapi = google.sheets({ version: "v4", auth: cl });
   gsapi.spreadsheets.values
     .update({
@@ -859,7 +858,7 @@ function runAddCommand(args, message, currentBotGuildId) {
     message.channel.send("Song successfully added to the database.");
   } else if (songsAddedInt > 1) {
     gsrun(client2, "A", "B", currentBotGuildId).then(() => {
-      gsUpdateOverwrite(client2, songsAddedInt, "D", currentBotGuildId);
+      gsUpdateOverwrite(client2, -1, songsAddedInt, currentBotGuildId);
     message.channel.send(songsAddedInt + " songs added to the database.");
   });
   } else {
