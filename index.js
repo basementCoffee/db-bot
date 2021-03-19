@@ -270,8 +270,8 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-var version = "4.2.1";
-var latestRelease =
+const version = "4.2.2";
+const latestRelease =
     "Latest Release (4.2.x):\n" +
     "- Implemented ytdl-core-discord\n";
 var servers = {};
@@ -365,7 +365,7 @@ bot.on("message", (message) => {
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
         const messageArray = message.content.split(" ");
-        for (i = 0; i < messageArray.length; i++) {
+        for (let i = 0; i < messageArray.length; i++) {
             if (!servers[message.guild.id])
                 servers[message.guild.id] = {
                     queue: [],
@@ -408,8 +408,7 @@ bot.on("message", (message) => {
             return;
         }
         let mgid = message.guild.id;
-        let prefixString = "";
-        prefixString = prefix[message.member.voice.channel].toString();
+        let prefixString = prefix[message.member.voice.channel].toString();
         let statement = args[0].substr(1);
         statement = statement.toLowerCase();
 
@@ -994,7 +993,7 @@ function runSearchCommand(args, xdb) {
 function sendHelp(message, prefixString) {
     message.channel.send(
         "Help list:\n" +
-        "--------------  Core Commands  -----------------\n" +
+        "--------------  Music Commands  -----------------\n" +
         prefixString +
         "p [youtube link]  -->  Plays YouTube video \n" +
         prefixString +
@@ -1002,18 +1001,14 @@ function sendHelp(message, prefixString) {
         prefixString +
         "pa  -->  pause \n" +
         prefixString +
-        "pl  -->  play if paused \n" +
+        "pl  -->  play (if paused) \n" +
         prefixString +
         "sk  -->  Skip the current song\n" +
         prefixString +
         "e  -->  Stops playing and ends session\n" +
         prefixString +
         "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
-        prefixString +
-        "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
-        prefixString +
-        "rand  --> random roll for the number of people in the voice channel" +
-        "\n-------  Your Songs (Personal Server Database) -------  \n" +
+        "\n----------  Personal Music Database ----------  \n" +
         prefixString +
         "keys  -->  See all your saved songs \n" +
         prefixString +
@@ -1024,6 +1019,11 @@ function sendHelp(message, prefixString) {
         "k [phrase]  -->  lookup keys with the same starting phrase\n" +
         prefixString +
         "rm  -->  Removes a song from your database\n" +
+        "\n--------------  Other Commands  -----------------\n" +
+        prefixString +
+        "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
+        prefixString +
+        "rand  --> random roll for the number of people in the voice channel\n" +
         "**Or just say congrats to a friend. I will chime in too! :) **"
     );
 }
@@ -1148,10 +1148,10 @@ function playRandom2(message, numOfTimes, cdb) {
     }
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
-    if (!message.guild.voiceChannel)
+    if (!message.guild.voice.channel)
         message.member.voice.channel.join().then(async function (connection) {
             try {
-                connection.voice.setSelfDeaf(true);
+                await connection.voice.setSelfDeaf(true);
 
                 let dispatcher = connection.play(await ytdl(whatsp), {
                     type: "opus",
@@ -1203,6 +1203,7 @@ function playRandom2(message, numOfTimes, cdb) {
 /**
  * Grabs all of the keys/names from the database
  * @param {*} message The message trigger
+ * @param prefixString The character of the prefix
  * @param {*} sheetname The name of the sheet to retrieve
  */
 function runKeysCommand(message, prefixString, sheetname) {
