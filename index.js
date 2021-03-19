@@ -219,11 +219,11 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
 }
 
 /**
- *  Runs and overwrites the database cell
- * @param {*} msg
- * @param {*} cl
- * @param {*} value
- * @param {*} databaseSizeCell
+ * Overwrites the cell D1.
+ * @param cl
+ * @param value
+ * @param addOn
+ * @param nameOfSheet
  */
 function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
   if (value < 0) {
@@ -382,8 +382,11 @@ bot.on("message", (message) => {
         if (i + 1 === messageArray.length) {
           message.channel.send("Congratulations!");
         } else {
-          if (messageArray[i + 1].toLowerCase() !== "on")
+          if (messageArray[i + 1].toLowerCase() !== "on") {
           message.channel.send("Congratulations " + messageArray[i + 1] + "!");
+          } else {
+          message.channel.send("Congratulations!");
+          }
         }
         playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8");
         return;
@@ -1232,24 +1235,21 @@ function runKeysCommand(message, prefixString, sheetname) {
 /**
  *  New play song function.
  * @param {*} message the message with channel info
- * @param {*} numOfTimes should be 1.
  * @param {*} whatToPlay the link of the song to play
  */
 //
 
-function playSongToVC(message, whatToPlay, whatsp) {
+function playSongToVC(message, whatToPlay) {
   enumPlayingFunction = "playing";
-  server = servers[message.guild.id];
+  let server = servers[message.guild.id];
+  if (!message.member.voice.channel) {
+    server.queue = [];
+    return;
+  }
   let whatToPlayS = "";
   whatToPlayS = whatToPlay;
   whatsp = whatToPlayS;
   whatspMap[message.member.voice.channel] = whatToPlayS;
-  if (!message.member.voice.channel) {
-    console.log("Could not find person from message");
-    message.channel.send("!e");
-    server.queue = [];
-    return;
-  }
   if (!message.guild.voiceChannel)
     message.member.voice.channel.join().then(async function (connection) {
       try {
