@@ -271,7 +271,7 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-var version = "4.2.0";
+var version = "4.2.1";
 var latestRelease =
   "Latest Release (4.2.x):\n" +
   "- Implemented ytdl-core-discord\n";
@@ -364,7 +364,7 @@ bot.on("message", (message) => {
   if (message.author.bot) return;
   if (contentsContainCongrats(message)) {
     if (message.author.bot) return;
-    var messageArray = message.content.substring(message.length).split(" ");
+    const messageArray = message.content.split(" ");
     for (i = 0; i < messageArray.length; i++) {
       if (!servers[message.guild.id])
         servers[message.guild.id] = {
@@ -376,12 +376,13 @@ bot.on("message", (message) => {
       if (
         (word.includes("grats") ||
           word.includes("gratz") ||
-          word.includes("ongratulations")) &&
+          word.includes("ongratulation")) &&
         !word.substring(0, 1).includes("!")
       ) {
         if (i + 1 === messageArray.length) {
           message.channel.send("Congratulations!");
         } else {
+          if (messageArray[i + 1].toLowerCase() !== "on")
           message.channel.send("Congratulations " + messageArray[i + 1] + "!");
         }
         playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8");
