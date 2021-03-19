@@ -228,7 +228,7 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
  * @param {*} value
  * @param {*} databaseSizeCell
  */
-function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
+async function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
   try {
     value = parseInt(dataSize.get(nameOfSheet)) + 1;
   } catch (e) {
@@ -252,22 +252,22 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     })
     .then(
       function (response) {
-        gsrun(cl, "A", "B", "entries").then((r) =>{
+        await gsrun(cl, "A", "B", "entries").then((r) =>{
         console.log("updateOverwrite ran...");
-        return dataSize.get(nameOfSheet);
       }
   );
+  return dataSize.get(nameOfSheet);
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
         
       },
       function (err) {
-        gsrun(cl, "A", "B", "entries").then((r) => {
+        await gsrun(cl, "A", "B", "entries").then((r) => {
           console.log("updateOverwrite error ran...");
           console.error("Execute error", err);
-              return undefined;
         }
   );
+  return undefined;
         
       }
     );
