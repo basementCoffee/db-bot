@@ -252,26 +252,22 @@ async function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     })
     .then(
       function (response) {
-        await gsrun(cl, "A", "B", "entries").then((r) =>{
-        console.log("updateOverwrite ran...");
-      }
-  );
-  return dataSize.get(nameOfSheet);
+        
+  
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
         
       },
       function (err) {
-        await gsrun(cl, "A", "B", "entries").then((r) => {
-          console.log("updateOverwrite error ran...");
-          console.error("Execute error", err);
-        }
-  );
-  return undefined;
-        
+                
       }
     );
-}
+    await gsrun(cl, "A", "B", "entries").then((r) =>{
+      console.log("updateOverwrite ran...");
+    }
+);
+return dataSize.get(nameOfSheet);
+  }
 
 //ABOVE IS GOOGLE API -------------------------------------------------------------
 //ABOVE IS GOOGLE API -------------------------------------------------------------
