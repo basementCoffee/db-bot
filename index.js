@@ -23,7 +23,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         range: nameOfSheet + "!D1",
     };
     // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
-    var dataSizeFromSheets;
+    let dataSizeFromSheets;
     try {
         dataSizeFromSheets = await gsapi.spreadsheets.values.get(
             spreadsheetSizeObjects
@@ -33,7 +33,6 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         createSheetNoMessage(nameOfSheet);
         // gsUpdateAdd2(client2, 1,"D", nameOfSheet);
         dataSize.set(nameOfSheet, 1);
-        dataSizeFromSheets = 1;
         return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
     }
 
@@ -58,14 +57,14 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     };
 
     let dataSO = await gsapi.spreadsheets.values.get(songObjects);
-    var arrayOfSpreadsheetValues = dataSO.data.values;
+    const arrayOfSpreadsheetValues = dataSO.data.values;
     //console.log(arrayOfSpreadsheetValues);
 
     // console.log("Database size: " + dataSize.get(nameOfSheet));
 
-    var line;
-    var keyT;
-    var valueT;
+    let line;
+    let keyT;
+    let valueT;
     congratsDatabase.clear();
     referenceDatabase.clear();
     for (let i = 0; i < dataSize.get(nameOfSheet); i++) {
@@ -144,18 +143,17 @@ function createSheetNoMessage(nameOfSheet) {
             return response;
         }
     );
-    let myObject = {};
-    return myObject;
+    return {};
 }
 
 /**
  * Adds the entry into the column
- * @param {*} msg
  * @param {*} cl
  * @param {*} key
  * @param {*} link
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
+ * @param nameOfSheet
  */
 function gsUpdateAdd(
     cl,
@@ -257,7 +255,7 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
                 console.error("Execute error", err);
             }
         );
-    gsrun(cl, "A", "B", "entries").then((r) =>
+    gsrun(cl, "A", "B", "entries").then(() =>
         console.log("updateOverwrite ran...")
     );
 }
@@ -401,7 +399,7 @@ bot.on("message", (message) => {
             prefix[message.member.voice.channel] = "!";
         }
         if (args[0].substr(0, 1) !== prefix[message.member.voice.channel]) {
-            if (args[0] == "!changeprefix") {
+            if (args[0] === "!changeprefix") {
                 message.channel.send(
                     "Use prefix to change. Prefix is: " +
                     prefix[message.member.voice.channel]
@@ -1069,7 +1067,7 @@ function runRandomCommand(args, message, sheetname) {
 /**
  * The music-centric function of play random. This function executes the music stream
  * to be played into the voice channel of the message's owner.
- * @param {} message
+ * @param {*} message
  * @param {*} numOfTimes
  * @param {*} cdb
  * @returns
@@ -1094,8 +1092,8 @@ function playRandom2(message, numOfTimes, cdb) {
     } else {
         try {
             if (!randomQueueMap[message.guild.id]) {
-                let rKeyArrayFinal = new Array();
-                let newArray = new Array();
+                let rKeyArrayFinal = [];
+                let newArray = [];
                 let executeWhileInRand = true;
                 for (let i = 0; i < numOfTimes; i++) {
                     if (!newArray || newArray.length < 1 || executeWhileInRand) {
@@ -1387,7 +1385,6 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
 process.stdout.on("error", function (err) {
     if (err.code == "EPIPE" || err.code == "EAGAIN") {
         console.log("errorz: " + bot.getMaxListeners());
-        return;
     }
 });
 
