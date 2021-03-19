@@ -271,11 +271,10 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-var version = "4.1.3-alpha2.3";
+var version = "4.2.0";
 var latestRelease =
-  "Latest Release (4.1.3-alpha2):\n" +
-  "- Third attempt at implementing ytdl-core-discord\n" +
-  "- Will this work2? \n";
+  "Latest Release (4.2.x):\n" +
+  "- Implemented ytdl-core-discord\n";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -855,11 +854,11 @@ function runAddCommand(args, message, currentBotGuildId) {
   }
   
   if (songsAddedInt === 1) {
-    message.channel.send("Song successfully added to the database.");
+    message.channel.send("*Song successfully added to the database.*");
   } else if (songsAddedInt > 1) {
     gsrun(client2, "A", "B", currentBotGuildId).then(() => {
       gsUpdateOverwrite(client2, -1, songsAddedInt, currentBotGuildId);
-    message.channel.send(songsAddedInt + " songs added to the database.");
+    message.channel.send("*" + songsAddedInt + " songs successfully added to the database.*");
   });
   } else {
     message.channel.send("Please call '!keys' to initialize the database.");
