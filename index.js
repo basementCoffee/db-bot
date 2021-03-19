@@ -1097,7 +1097,7 @@ function playRandom2(message, numOfTimes, cdb) {
                 let executeWhileInRand = true;
                 for (let i = 0; i < numOfTimes; i++) {
                     if (!newArray || newArray.length < 1 || executeWhileInRand) {
-                        var tempArray = [...rKeyArray];
+                        let tempArray = [...rKeyArray];
                         let j = 0;
                         while (
                             (tempArray.length > 0 && j <= numOfTimes) ||
@@ -1122,7 +1122,7 @@ function playRandom2(message, numOfTimes, cdb) {
                 randomQueueMap[message.guild.id] = rKeyArrayFinal;
             }
             rk = randomQueueMap[message.guild.id].pop();
-            console.log("b1: " + rk);
+            console.log("random call: " + rk);
         } catch (e) {
             console.log("error in random: " + e);
             rn = Math.floor(Math.random() * rKeyArray.length);
@@ -1133,17 +1133,18 @@ function playRandom2(message, numOfTimes, cdb) {
     //console.log("attempting to play key:" + rk);
     whatsp = cdb.get(rk);
     if (!whatsp) {
-        gsrun(client2, "A", "B", message.guild.id);
-        if (cdb.length < 2) {
-            message.channel.send(
-                "Your database needs at least two items to randomize."
-            );
-        } else {
-            message.channel.send(
-                "It appears your database is empty.\nTry running '!keys' or add a song to the database."
-            );
-        }
-        console.log("Play random whatsp is empty.");
+        gsrun(client2, "A", "B", message.guild.id).then(() => {
+            if (cdb.length < 2) {
+                message.channel.send(
+                    "Your database needs at least two items to randomize."
+                );
+            } else {
+                message.channel.send(
+                    "It appears your database is empty.\nTry running '!keys' or add a song to the database."
+                );
+            }
+            console.log("Play random whatsp is empty.");
+        });
         return;
     }
     whatspMap[message.member.voice.channel] = whatsp;
@@ -1250,8 +1251,7 @@ function playSongToVC(message, whatToPlay) {
     whatspMap[message.member.voice.channel] = whatToPlayS;
         message.member.voice.channel.join().then(async function (connection) {
             try {
-                connection.voice.setSelfDeaf(true);
-
+                await connection.voice.setSelfDeaf(true);
                 let dispatcher = connection.play(await ytdl(whatsp), {
                     type: "opus",
                     filter: "audioonly",
