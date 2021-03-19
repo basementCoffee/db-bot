@@ -1149,55 +1149,55 @@ function playRandom2(message, numOfTimes, cdb) {
     }
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
-        message.member.voice.channel.join().then(async function (connection) {
-            try {
-                await connection.voice.setSelfDeaf(true);
+    message.member.voice.channel.join().then(async function (connection) {
+        try {
+            await connection.voice.setSelfDeaf(true);
 
-                let dispatcher = connection.play(await ytdl(whatsp), {
-                    type: "opus",
-                    filter: "audioonly",
-                    quality: "140",
-                });
+            let dispatcher = connection.play(await ytdl(whatsp), {
+                type: "opus",
+                filter: "audioonly",
+                quality: "140",
+            });
 
-                dispatcherMap[message.member.voice.channel] = dispatcher;
+            dispatcherMap[message.member.voice.channel] = dispatcher;
 
-                if (!dispatcherMap[message.member.voice.channel]) {
-                    console.log("there was an error: E5");
-                    return;
-                }
+            if (!dispatcherMap[message.member.voice.channel]) {
+                console.log("there was an error: E5");
+                return;
+            }
 
-                dispatcher.on("finish", () => {
-                    numOfTimes -= 1;
-                    if (numOfTimes === 0) {
-                        totalRandomIntMap[message.member.voice.channel] = 0;
-                        currentRandomIntMap[message.member.voice.channel] = 0;
-                        connection.disconnect();
-                        whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
-                        dispatcherMap[message.member.voice.channel] = undefined;
-                    } else {
-                        playRandom2(message, numOfTimes, cdb);
-                    }
-                });
-            } catch (e) {
-                // Error catching - fault with the database yt link?
-                console.log("Below is a caught error message. (this broke:" + rk + ")");
-                //printErrorToChannel("!r", rk, e);
-                console.log(e);
-                if (numOfRetries > 2) {
-                    message.channel.send("Could not play random songs. Sorry.");
-                    printErrorToChannel("!r (third try)", rk, e);
+            dispatcher.on("finish", () => {
+                numOfTimes -= 1;
+                if (numOfTimes === 0) {
+                    totalRandomIntMap[message.member.voice.channel] = 0;
+                    currentRandomIntMap[message.member.voice.channel] = 0;
                     connection.disconnect();
+                    whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
+                    dispatcherMap[message.member.voice.channel] = undefined;
                 } else {
-                    if (numOfRetries > 1) {
-                        printErrorToChannel("!r", rk, e);
-                    } else {
-                        printErrorToChannel("!r (second try)", rk, e);
-                    }
-                    //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
                     playRandom2(message, numOfTimes, cdb);
                 }
+            });
+        } catch (e) {
+            // Error catching - fault with the database yt link?
+            console.log("Below is a caught error message. (this broke:" + rk + ")");
+            //printErrorToChannel("!r", rk, e);
+            console.log(e);
+            if (numOfRetries > 2) {
+                message.channel.send("Could not play random songs. Sorry.");
+                printErrorToChannel("!r (third try)", rk, e);
+                connection.disconnect();
+            } else {
+                if (numOfRetries > 1) {
+                    printErrorToChannel("!r", rk, e);
+                } else {
+                    printErrorToChannel("!r (second try)", rk, e);
+                }
+                //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
+                playRandom2(message, numOfTimes, cdb);
             }
-        });
+        }
+    });
 }
 
 /**
@@ -1249,42 +1249,42 @@ function playSongToVC(message, whatToPlay) {
     whatToPlayS = whatToPlay;
     whatsp = whatToPlayS;
     whatspMap[message.member.voice.channel] = whatToPlayS;
-        message.member.voice.channel.join().then(async function (connection) {
-            try {
-                await connection.voice.setSelfDeaf(true);
-                let dispatcher = connection.play(await ytdl(whatsp), {
-                    type: "opus",
-                    filter: "audioonly",
-                    quality: "140",
-                });
+    message.member.voice.channel.join().then(async function (connection) {
+        try {
+            await connection.voice.setSelfDeaf(true);
+            let dispatcher = connection.play(await ytdl(whatsp), {
+                type: "opus",
+                filter: "audioonly",
+                quality: "140",
+            });
 
-                dispatcherMap[message.member.voice.channel] = dispatcher;
-                dispatcher.on("finish", () => {
-                    server.queue.shift();
-                    if (server.queue.length > 0) {
-                        whatsp = server.queue[0];
-                        console.log("On finish, playing; " + whatsp);
-                        whatspMap[message.member.voice.channel] = whatsp;
-                        if (!whatsp) {
-                            return;
-                        }
-                        playSongToVC(message, whatsp);
-                    } else {
-                        connection.disconnect();
-                        dispatcherMap[message.member.voice.channel] = undefined;
-                    }
-                });
-            } catch (e) {
-                // Error catching - fault with the yt link?
-                console.log(
-                    "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
-                );
-                console.log("Error:", e);
+            dispatcherMap[message.member.voice.channel] = dispatcher;
+            dispatcher.on("finish", () => {
                 server.queue.shift();
-                message.channel.send("Could not play song.");
-                connection.disconnect();
-            }
-        });
+                if (server.queue.length > 0) {
+                    whatsp = server.queue[0];
+                    console.log("On finish, playing; " + whatsp);
+                    whatspMap[message.member.voice.channel] = whatsp;
+                    if (!whatsp) {
+                        return;
+                    }
+                    playSongToVC(message, whatsp);
+                } else {
+                    connection.disconnect();
+                    dispatcherMap[message.member.voice.channel] = undefined;
+                }
+            });
+        } catch (e) {
+            // Error catching - fault with the yt link?
+            console.log(
+                "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
+            );
+            console.log("Error:", e);
+            server.queue.shift();
+            message.channel.send("Could not play song.");
+            connection.disconnect();
+        }
+    });
 }
 
 /**
