@@ -157,7 +157,7 @@ function createSheetNoMessage(nameOfSheet) {
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
  */
-async function gsUpdateAdd(
+function gsUpdateAdd(
   cl,
   key,
   link,
@@ -190,7 +190,7 @@ async function gsUpdateAdd(
       }
     );
 
-  return gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
+  gsUpdateOverwrite(cl, 1, "D", nameOfSheet);
 }
 
 function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
@@ -228,16 +228,14 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
  * @param {*} value
  * @param {*} databaseSizeCell
  */
-async function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
+function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
   try {
-    value = parseInt(dataSize.get(nameOfSheet)) + 1;
+    value = parseInt(dataSize.get(nameOfSheet)) + addOn;
   } catch (e) {
     // console.log("Error caught gsUpdateOverview", value);
     value = 1;
     // console.log(e);
   }
-
-  databaseSizeCell += "1";
   const gsapi = google.sheets({ version: "v4", auth: cl });
   gsapi.spreadsheets.values
     .update({
@@ -252,22 +250,17 @@ async function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     })
     .then(
       function (response) {
-        
-  
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
-        
       },
       function (err) {
-                
+        console.error("Execute error", err);
       }
     );
-    await gsrun(cl, "A", "B", "entries").then((r) =>{
-      console.log("updateOverwrite ran...");
-    }
-);
-return dataSize.get(nameOfSheet);
-  }
+  gsrun(cl, "A", "B", "entries").then((r) =>
+    console.log("updateOverwrite ran...")
+  );
+}
 
 //ABOVE IS GOOGLE API -------------------------------------------------------------
 //ABOVE IS GOOGLE API -------------------------------------------------------------
@@ -849,7 +842,7 @@ var enumPlayingFunction;
  * @param {*} message The message that triggered the command
  * @param {*} currentBotGuildId the server/guild id
  */
-async function runAddCommand(args, message, currentBotGuildId) {
+function runAddCommand(args, message, currentBotGuildId) {
   let songsAddedInt = 0;
   let z = 1;
   while (args[z] && args[z + 1]) {
@@ -857,17 +850,22 @@ async function runAddCommand(args, message, currentBotGuildId) {
     if (linkZ.substring(linkZ.length - 1) === ",") {
       linkZ = linkZ.substring(0, linkZ.length - 1);
     }
-    await gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
+    gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
     z = z + 2;
     songsAddedInt += 1;
   }
+  
   if (songsAddedInt === 1) {
     message.channel.send("Song successfully added to the database.");
   } else if (songsAddedInt > 1) {
+    gsrun(client2, "A", "B", currentBotGuildId).then(() => {
+      gsUpdateOverwrite(client2, songsAddedInt, "D", currentBotGuildId);
     message.channel.send(songsAddedInt + " songs added to the database.");
+  });
   } else {
     message.channel.send("Please call '!keys' to initialize the database.");
   }
+
 }
 
 /**
