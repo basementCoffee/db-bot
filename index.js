@@ -1243,7 +1243,7 @@ function playSongToVC(message, whatToPlay) {
   enumPlayingFunction = "playing";
   let server = servers[message.guild.id];
   if (!message.member.voice.channel) {
-    server.queue = [];
+    // server.queue = [];
     return;
   }
   let whatToPlayS = "";
