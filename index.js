@@ -1248,7 +1248,6 @@ function playSongToVC(message, whatToPlay) {
     whatToPlayS = whatToPlay;
     whatsp = whatToPlayS;
     whatspMap[message.member.voice.channel] = whatToPlayS;
-    if (!message.guild.voiceChannel)
         message.member.voice.channel.join().then(async function (connection) {
             try {
                 connection.voice.setSelfDeaf(true);
