@@ -1148,7 +1148,6 @@ function playRandom2(message, numOfTimes, cdb) {
     }
     whatspMap[message.member.voice.channel] = whatsp;
     //server.queue.push(congratsDatabase.get(rk));
-    if (!message.guild.voice.channel)
         message.member.voice.channel.join().then(async function (connection) {
             try {
                 await connection.voice.setSelfDeaf(true);
