@@ -157,7 +157,7 @@ function createSheetNoMessage(nameOfSheet) {
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
  */
-function gsUpdateAdd(
+async function gsUpdateAdd(
   cl,
   key,
   link,
@@ -190,7 +190,7 @@ function gsUpdateAdd(
       }
     );
 
-  gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
+  return gsUpdateOverwrite(cl, dataSize.get(nameOfSheet), "D", nameOfSheet);
 }
 
 function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
@@ -252,17 +252,25 @@ function gsUpdateOverwrite(cl, value, databaseSizeCell, nameOfSheet) {
     })
     .then(
       function (response) {
+        gsrun(cl, "A", "B", "entries").then((r) =>{
+        console.log("updateOverwrite ran...");
+        return dataSize.get(nameOfSheet);
+      }
+  );
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
-        dataSize.set(nameOfSheet, value);
+        
       },
       function (err) {
-        console.error("Execute error", err);
+        gsrun(cl, "A", "B", "entries").then((r) => {
+          console.log("updateOverwrite error ran...");
+          console.error("Execute error", err);
+              return undefined;
+        }
+  );
+        
       }
     );
-  gsrun(cl, "A", "B", "entries").then((r) =>
-    console.log("updateOverwrite ran...")
-  );
 }
 
 //ABOVE IS GOOGLE API -------------------------------------------------------------
@@ -845,7 +853,7 @@ var enumPlayingFunction;
  * @param {*} message The message that triggered the command
  * @param {*} currentBotGuildId the server/guild id
  */
-function runAddCommand(args, message, currentBotGuildId) {
+async function runAddCommand(args, message, currentBotGuildId) {
   let songsAddedInt = 0;
   let z = 1;
   while (args[z] && args[z + 1]) {
@@ -853,16 +861,14 @@ function runAddCommand(args, message, currentBotGuildId) {
     if (linkZ.substring(linkZ.length - 1) === ",") {
       linkZ = linkZ.substring(0, linkZ.length - 1);
     }
-    gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
+    await gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
     z = z + 2;
     songsAddedInt += 1;
   }
   if (songsAddedInt === 1) {
     message.channel.send("Song successfully added to the database.");
   } else if (songsAddedInt > 1) {
-    message.channel.send(
-      songsAddedInt.toString() + " songs added to the database."
-    );
+    message.channel.send(songsAddedInt + " songs added to the database.");
   } else {
     message.channel.send("Please call '!keys' to initialize the database.");
   }
