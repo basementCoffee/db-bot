@@ -1054,7 +1054,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
             }
             if (!queueWasEmpty) {
-                message.channel.send("*Added to queue.*");
+                message.channel.send("*Added to queue*");
             }
         }
         // if queue was empty then play
