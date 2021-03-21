@@ -377,7 +377,8 @@ function skipSong(message, cdb) {
             playRandom2(
                 message,
                 totalRandomIntMap[message.member.voice.channel],
-                cdb
+                cdb,
+                0
             );
         }
     } else {
@@ -1162,7 +1163,7 @@ function runRandomCommand(args, message, sheetname) {
     randomQueueMap[message.guild.id] = undefined;
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         if (!args[1]) {
-            playRandom2(message, 1, xdb.congratsDatabase);
+            playRandom2(message, 1, xdb.congratsDatabase, 0);
         } else {
             try {
                 let num = parseInt(args[1]);
@@ -1173,9 +1174,9 @@ function runRandomCommand(args, message, sheetname) {
                 if (num) {
                     totalRandomIntMap[message.member.voice.channel] = num;
                 }
-                playRandom2(message, num, xdb.congratsDatabase);
+                playRandom2(message, num, xdb.congratsDatabase, 0);
             } catch (e) {
-                playRandom2(message, 1, xdb.congratsDatabase);
+                playRandom2(message, 1, xdb.congratsDatabase, 0);
             }
         }
     });
@@ -1187,11 +1188,11 @@ function runRandomCommand(args, message, sheetname) {
  * @param {*} message the message that triggered the bot
  * @param {*} numOfTimes the number of times to play random songs
  * @param {*} cdb the congrats-database
+ * @param numOfRetries should be 0 unless called within itself
  * @returns
  */
-function playRandom2(message, numOfTimes, cdb) {
+function playRandom2(message, numOfTimes, cdb, numOfRetries) {
     currentRandomIntMap[message.member.voice.channel] += 1;
-    var numOfRetries = 0;
     // server = servers[message.guild.id];
     var rKeyArray = Array.from(cdb.keys());
     let rn;
@@ -1290,7 +1291,7 @@ function playRandom2(message, numOfTimes, cdb) {
                     whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
                     dispatcherMap[message.member.voice.channel] = undefined;
                 } else {
-                    playRandom2(message, numOfTimes, cdb);
+                    playRandom2(message, numOfTimes, cdb, numOfRetries);
                 }
             });
         } catch (e) {
@@ -1309,7 +1310,7 @@ function playRandom2(message, numOfTimes, cdb) {
                     printErrorToChannel("!r (second try)", rk, e);
                 }
                 //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                playRandom2(message, numOfTimes, cdb);
+                playRandom2(message, numOfTimes, cdb, numOfRetries);
             }
         }
     });
