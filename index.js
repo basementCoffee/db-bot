@@ -716,7 +716,7 @@ bot.on("message", (message) => {
                     return;
                 }
                 gsrun(client2, "A", "B", mgid).then(async (xdb) => {
-                    await runSearchCommand(args, xdb);
+                    ss = await runSearchCommand(args, xdb);
                     if (ss && ss.length === 0) {
                         message.channel.send(
                             "Could not find any keys that start with the given letters."
@@ -733,7 +733,7 @@ bot.on("message", (message) => {
                     return;
                 }
                 gsrun(client2, "A", "B", "entries").then(async (xdb) => {
-                    await runSearchCommand(args, xdb);
+                    ss = await runSearchCommand(args, xdb);
                     if (ss && ss.length === 0) {
                         message.channel.send(
                             "Could not find any keys that start with the given letters."
@@ -1015,7 +1015,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
             }
         } else {
             if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
-                runSearchCommand(args, xdb);
+                let ss = runSearchCommand(args, xdb);
                 if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find name in database.\n*Did you mean: " + ss + "*"
