@@ -987,6 +987,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
         if (servers[message.guild.id].queue.length < 1) {
             queueWasEmpty = true;
         }
+        let ss = xdb.referenceDatabase.get(args[1].toUpperCase());
         // if attempting multiple database add
         if (args[2]) {
             let dbAddInt = 1;
@@ -1015,7 +1016,6 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 message.channel.send(unFoundString);
             }
         } else { // assuming single database add
-            let ss = xdb.referenceDatabase.get(args[1].toUpperCase());
             if (!ss) {
                 ss = await runSearchCommand(args, xdb);
                 if (ss && ss.length > 0 && ssi === 1) {
