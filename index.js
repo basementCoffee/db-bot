@@ -137,7 +137,7 @@ async function deleteRows(message, sheetName, rowNumber) {
     let sheetId = res.data.sheets[0].properties.sheetId;
 
 // ----------------------------------------------------------
-    await gsapi.spreadsheets.batchUpdate(
+    gsapi.spreadsheets.batchUpdate(
         {
             spreadsheetId: "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
             resource: {
@@ -430,19 +430,19 @@ function runRemoveItemCommand(message, args, sheetName) {
                     couldNotFindKey = false;
                     deleteRows(message, sheetName, i);
                     gsUpdateOverwrite(client2, -1, -1, sheetName);
-                    message.channel.send("Removed *" + itemToCheck + "*");
+                    message.channel.send("*Removed '" + itemToCheck + "'*");
                 }
             }
             if (couldNotFindKey) {
                 gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
-                let foundStrings = runSearchCommand(args, xdb);
-                if (foundStrings && foundStrings.length > 0) {
-                    message.channel.send("*Could not find '"+ args[1] +"'.*\nDid you mean: *" + ss +"*");
-                } else {
-                    message.channel.send("*Could not find '"+ args[1] +"'.*");
-                }
+                    let foundStrings = runSearchCommand(args, xdb);
+                    if (foundStrings && foundStrings.length > 0) {
+                        message.channel.send("Could not find '" + args[1] + "'.\n*Did you mean: " + ss + "*");
+                    } else {
+                        message.channel.send("*Could not find '" + args[1] + "'.*");
+                    }
 
-            });
+                });
             }
         });
     } else {
@@ -474,7 +474,7 @@ bot.on("message", (message) => {
                 if (i + 1 === messageArray.length) {
                     message.channel.send("Congratulations!");
                 } else {
-                    if (messageArray[i + 1].toLowerCase() !== "on") {
+                    if (messageArray[i + 1].toLowerCase() !== "on" || messageArray[i + 1].toLowerCase() !== "my") {
                         message.channel.send("Congratulations " + messageArray[i + 1] + "!");
                     } else {
                         message.channel.send("Congratulations!");
@@ -765,7 +765,7 @@ bot.on("message", (message) => {
                     );
                     return;
                 }
-                prefix[message.member.voice.channel] = args[1].substr(0,1);
+                prefix[message.member.voice.channel] = args[1].substr(0, 1);
                 message.channel.send("Prefix successfully changed to " + args[1]);
                 break;
             // list commands for public commands
