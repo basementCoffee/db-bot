@@ -435,7 +435,7 @@ function runRemoveItemCommand(message, args, sheetName) {
             if (couldNotFindKey) {
                 gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
                     let foundStrings = runSearchCommand(args, xdb).ss;
-                    if (foundStrings && foundStrings.length > 0) {
+                    if (foundStrings && foundStrings.length > 0 && args[1].length > 1) {
                         message.channel.send("Could not find '" + args[1] + "'.\n*Did you mean: " + ss + "*");
                     } else {
                         message.channel.send("*Could not find '" + args[1] + "'.*");
@@ -540,7 +540,7 @@ bot.on("message", (message) => {
                 if (servers[mgid] && servers[mgid].queue.length < 2) {
                     playSongToVC(message, args[1]);
                 } else {
-                    message.channel.send("Added to queue.");
+                    message.channel.send("*Added to queue*");
                 }
                 break;
             // !pn
@@ -1021,19 +1021,20 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 }
                 dbAddInt++;
             }
-            message.channel.send("Added " + dbAddedToQueue + " to queue.");
+            message.channel.send("*Added " + dbAddedToQueue + " to queue*");
             if (firstUnfoundRan) {
                 unFoundString = unFoundString.concat("*");
                 message.channel.send(unFoundString);
             }
         } else {
+            let whatWasAdded = "";
             if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
                 let ss = runSearchCommand(args, xdb).ss;
                 if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 1)) {
                     message.channel.send(
                         "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
                     );
-                    console.log("ss: " + ss);
+                    whatWasAdded = ss;
                     // push to queue
                     servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
                 } else if (ss && ss.length > 0) {
@@ -1046,11 +1047,12 @@ function runDatabasePlayCommand(args, message, sheetname) {
                     return;
                 }
             } else {
+                whatWasAdded = args[1];
                 // push to queue
                 servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
             }
             if (!queueWasEmpty) {
-                message.channel.send("Added to queue.");
+                message.channel.send("*Added '"+ whatWasAdded +"' to queue.*");
             }
         }
         // if queue was empty then play
