@@ -274,10 +274,10 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
 
 /**
  * Overwrites the cell D1.
- * @param cl
- * @param value
- * @param addOn
- * @param nameOfSheet
+ * @param cl the client auth
+ * @param value the final DB value, overrides addOn
+ * @param addOn the number to mutate the current DB size by
+ * @param nameOfSheet the name of the sheet to change
  */
 function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
     if (value < 0) {
@@ -837,30 +837,50 @@ bot.on("message", (message) => {
             // !rm removes database entries
             case "rm":
                 if (args[1]) {
+                    let hasFoundKeyToRemove = false;
                     gsrun(client2, "A", "B", mgid).then((xdb) => {
                         for (let i = 0; i < xdb.line.length ; i++) {
-                            if (xdb.line[i] === args[1]) {
+                            let itemToCheck = xdb.line[i];
+                            if (itemToCheck.toLowerCase() === args[1].toLowerCase()) {
                                 i += 1;
                                 console.log("i:" + i);
                                 deleteRows(message, mgid, i);
-                                message.channel.send("*Deleted " + xdb.line[i] + "*" );
-                                return;
+                                gsUpdateOverwrite(client2, -1, -1, mgid);
+                                hasFoundKeyToRemove = true;
+                                message.channel.send("*Deleted " + itemToCheck + "*" );
                             }
                         }
                     });
+                    if (hasFoundKeyToRemove) {
+                        return;
+                    }
                     message.channel.send("Could not find key to delete.");
                 }
                 message.channel.send("Need to specify the key to delete.");
-                // deleteRows(message, mgid, 2);
-
-                // const successInDelete = congratsDatabase.delete(args[1]);
-                // if (successInDelete === true) {
-                //     message.channel.send(
-                //         "Song successfully removed from the temp database."
-                //     );
-                // } else {
-                //     message.channel.send("Could not find song tag within the database.");
-                // }
+                break;
+            // !grm removes database entries
+            case "grm":
+                if (args[1]) {
+                    let hasFoundKeyToRemove = false;
+                    gsrun(client2, "A", "B", "entries").then((xdb) => {
+                        for (let i = 0; i < xdb.line.length ; i++) {
+                            let itemToCheck = xdb.line[i];
+                            if (itemToCheck.toLowerCase() === args[1].toLowerCase()) {
+                                i += 1;
+                                console.log("i:" + i);
+                                deleteRows(message, mgid, i);
+                                gsUpdateOverwrite(client2, -1, -1, "entries");
+                                hasFoundKeyToRemove = true;
+                                message.channel.send("*Deleted " + itemToCheck + "*" );
+                            }
+                        }
+                    });
+                    if (hasFoundKeyToRemove) {
+                        return;
+                    }
+                    message.channel.send("Could not find key to delete.");
+                }
+                message.channel.send("Need to specify the key to delete.");
                 break;
             // !rand
             case "rand":
