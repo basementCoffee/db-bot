@@ -1030,7 +1030,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
             let whatWasAdded = "";
             if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
                 let ss = runSearchCommand(args, xdb).ss;
-                if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 1)) {
+                if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
                     message.channel.send(
                         "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
                     );
@@ -1039,11 +1039,11 @@ function runDatabasePlayCommand(args, message, sheetname) {
                     servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
                 } else if (ss && ss.length > 0) {
                     message.channel.send(
-                        "Could not find name in database.\n*Did you mean: " + ss + "*"
+                        "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
                     );
                     return;
                 } else {
-                    message.channel.send("Could not find name in database.");
+                    message.channel.send("Could not find '" + args[1] + "' in database.");
                     return;
                 }
             } else {
