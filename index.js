@@ -810,7 +810,7 @@ bot.on("message", (message) => {
                 break;
             // !rm removes database entries
             case "rm":
-                deleteRows(message, mgid, 2).then(r => console.log(r))
+                deleteRows(message, mgid, 2);
                 // const successInDelete = congratsDatabase.delete(args[1]);
                 // if (successInDelete === true) {
                 //     message.channel.send(
@@ -824,7 +824,7 @@ bot.on("message", (message) => {
             case "rand":
                 if (args[1]) {
                     const numToCheck = parseInt(args[1]);
-                    if (numToCheck <= 1) {
+                    if (!numToCheck || numToCheck <= 1) {
                         message.channel.send("Number has to be positive.");
                         return;
                     }
