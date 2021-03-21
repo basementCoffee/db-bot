@@ -1020,7 +1020,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 ss = await runSearchCommand(args, xdb);
                 if (ss && ss.length > 0 && ssi === 1) {
                     message.channel.send(
-                        "Could not find '" + args[1] + "'. Assuming you meant '" + ss + "'."
+                        "Could not find '" + args[1] + "'. *Assuming you meant '" + ss + "'.*"
                     );
                     ss = xdb.referenceDatabase.get(ss.toUpperCase());
                 } else if (ss && ss.length > 0) {
