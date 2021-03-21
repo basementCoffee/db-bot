@@ -325,10 +325,10 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-const version = "4.2.2";
+const version = "4.3.0";
 const latestRelease =
-    "Latest Release (4.2.x):\n" +
-    "- Implemented ytdl-core-discord\n";
+    "Latest Release (4.3.x):\n" +
+    "- Full support for removing items from the database";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -837,7 +837,6 @@ bot.on("message", (message) => {
             // !rm removes database entries
             case "rm":
                 if (args[1]) {
-                    let hasFoundKeyToRemove = false;
                     gsrun(client2, "A", "B", mgid).then((xdb) => {
                         for (let i = 0; i < xdb.line.length ; i++) {
                             let itemToCheck = xdb.line[i];
@@ -846,41 +845,36 @@ bot.on("message", (message) => {
                                 console.log("i:" + i);
                                 deleteRows(message, mgid, i);
                                 gsUpdateOverwrite(client2, -1, -1, mgid);
-                                hasFoundKeyToRemove = true;
-                                message.channel.send("*Deleted " + itemToCheck + "*" );
+                                message.channel.send("*Removed " + itemToCheck + "*" );
+                            } else {
+                                message.channel.send("*Could not find key to delete.*");
                             }
                         }
                     });
-                    if (hasFoundKeyToRemove) {
-                        return;
-                    }
-                    message.channel.send("Could not find key to delete.");
+                } else {
+                    message.channel.send("Need to specify the key to delete.");
                 }
-                message.channel.send("Need to specify the key to delete.");
                 break;
             // !grm removes database entries
             case "grm":
                 if (args[1]) {
-                    let hasFoundKeyToRemove = false;
                     gsrun(client2, "A", "B", "entries").then((xdb) => {
                         for (let i = 0; i < xdb.line.length ; i++) {
                             let itemToCheck = xdb.line[i];
                             if (itemToCheck.toLowerCase() === args[1].toLowerCase()) {
                                 i += 1;
                                 console.log("i:" + i);
-                                deleteRows(message, mgid, i);
+                                deleteRows(message, "entries", i);
                                 gsUpdateOverwrite(client2, -1, -1, "entries");
-                                hasFoundKeyToRemove = true;
-                                message.channel.send("*Deleted " + itemToCheck + "*" );
+                                message.channel.send("*Removed " + itemToCheck + "*" );
+                            } else {
+                                message.channel.send("*Could not find key to delete.*");
                             }
                         }
                     });
-                    if (hasFoundKeyToRemove) {
-                        return;
-                    }
-                    message.channel.send("Could not find key to delete.");
+                } else {
+                    message.channel.send("Need to specify the key to delete.");
                 }
-                message.channel.send("Need to specify the key to delete.");
                 break;
             // !rand
             case "rand":
@@ -1111,7 +1105,7 @@ function sendHelp(message, prefixString) {
         prefixString +
         "k [phrase]  -->  lookup keys with the same starting phrase\n" +
         prefixString +
-        "rm  -->  Removes a song from your database\n" +
+        "rm [key] -->  Removes a song from your database\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
         "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
