@@ -484,7 +484,7 @@ bot.on("message", (message) => {
                 }
                 // push to queue
                 servers[mgid].queue.unshift(args[1]);
-                message.channel.send("Playing now.");
+                message.channel.send("*Playing now.*");
                 playSongToVC(message, args[1]);
                 break;
             // case '!pv':
