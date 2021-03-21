@@ -67,6 +67,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     let valueT;
     congratsDatabase.clear();
     referenceDatabase.clear();
+    let keyArray = [];
     for (let i = 0; i < dataSize.get(nameOfSheet); i++) {
         // the array of rows (has two columns)
         line = arrayOfSpreadsheetValues[i];
@@ -74,6 +75,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
             continue;
         }
         keyT = line[0];
+        keyArray.push(keyT);
         valueT = line[1];
         congratsDatabase.set(keyT, valueT);
         referenceDatabase.set(keyT.toUpperCase(), valueT);
@@ -81,7 +83,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     return {
         congratsDatabase: congratsDatabase,
         referenceDatabase: referenceDatabase,
-        line: line
+        line: keyArray
     };
 }
 
@@ -846,7 +848,7 @@ bot.on("message", (message) => {
                         }
                     });
                 }
-                deleteRows(message, mgid, 2);
+                // deleteRows(message, mgid, 2);
 
                 // const successInDelete = congratsDatabase.delete(args[1]);
                 // if (successInDelete === true) {
