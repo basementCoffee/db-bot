@@ -419,7 +419,7 @@ function skipSong(message, cdb) {
  * @param args the message broken into arguments
  * @param sheetName the name of the sheet to alter
  */
-function removeItem(message, args, sheetName) {
+function runRemoveItemCommand(message, args, sheetName) {
     if (args[1]) {
         gsrun(client2, "A", "B", sheetName).then((xdb) => {
             let couldNotFindKey = true;
@@ -434,7 +434,15 @@ function removeItem(message, args, sheetName) {
                 }
             }
             if (couldNotFindKey) {
-                message.channel.send("*Could not find key to delete.*");
+                gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
+                let foundStrings = runSearchCommand(args, xdb);
+                if (foundStrings && foundStrings.length > 0) {
+                    message.channel.send("*Could not find '"+ args[1] +"'.*\nDid you mean: *" + ss +"*");
+                } else {
+                    message.channel.send("*Could not find '"+ args[1] +"'.*");
+                }
+
+            });
             }
         });
     } else {
@@ -865,11 +873,11 @@ bot.on("message", (message) => {
                 break;
             // !rm removes database entries
             case "rm":
-                removeItem(message, args, mgid);
+                runRemoveItemCommand(message, args, mgid);
                 break;
             // !grm removes database entries
             case "grm":
-                removeItem(message, args, "entries");
+                runRemoveItemCommand(message, args, "entries");
                 break;
             // !rand
             case "rand":
@@ -1041,7 +1049,13 @@ function runDatabasePlayCommand(args, message, sheetname) {
 }
 
 // The search command
-let ss;
+let ss; // the search string
+/**
+ * Searches the database for the keys matching args[1].
+ * @param args the list of arguments from the message
+ * @param xdb the object containing multiple DBs
+ * @returns {string} a string containing the found values
+ */
 function runSearchCommand(args, xdb) {
     let givenSLength = args[1].length;
     let keyArray2 = Array.from(xdb.congratsDatabase.keys());
