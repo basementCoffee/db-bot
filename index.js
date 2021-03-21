@@ -325,7 +325,7 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-const version = "4.3.0";
+const version = "4.3.1";
 const latestRelease =
     "Latest Release (4.3.x):\n" +
     "- Full support for removing items from the database";
@@ -412,6 +412,36 @@ function skipSong(message, cdb) {
             }
         }
     }
+}
+
+/**
+ * Removes an item from the google sheets music database
+ * @param message the message that triggered the bot
+ * @param args the message broken into arguments
+ * @param sheetName the name of the sheet to alter
+ */
+function removeItem(message, args, sheetName) {
+    if (args[1]) {
+        gsrun(client2, "A", "B", sheetName).then((xdb) => {
+            let couldNotFindKey = true;
+            for (let i = 0; i < xdb.line.length ; i++) {
+                let itemToCheck = xdb.line[i];
+                if (itemToCheck.toLowerCase() === args[1].toLowerCase()) {
+                    i += 1;
+                    couldNotFindKey = false;
+                    deleteRows(message, sheetName, i);
+                    gsUpdateOverwrite(client2, -1, -1, sheetName);
+                    message.channel.send("*Removed " + itemToCheck + "*" );
+                }
+            }
+            if (couldNotFindKey) {
+                message.channel.send("*Could not find key to delete.*");
+            }
+        });
+    } else {
+        message.channel.send("Need to specify the key to delete.");
+    }
+
 }
 
 // parses message, provides a response
@@ -836,45 +866,11 @@ bot.on("message", (message) => {
                 break;
             // !rm removes database entries
             case "rm":
-                if (args[1]) {
-                    gsrun(client2, "A", "B", mgid).then((xdb) => {
-                        for (let i = 0; i < xdb.line.length ; i++) {
-                            let itemToCheck = xdb.line[i];
-                            if (itemToCheck.toLowerCase() === args[1].toLowerCase()) {
-                                i += 1;
-                                console.log("i:" + i);
-                                deleteRows(message, mgid, i);
-                                gsUpdateOverwrite(client2, -1, -1, mgid);
-                                message.channel.send("*Removed " + itemToCheck + "*" );
-                            } else {
-                                message.channel.send("*Could not find key to delete.*");
-                            }
-                        }
-                    });
-                } else {
-                    message.channel.send("Need to specify the key to delete.");
-                }
+                removeItem(message, args, mgid);
                 break;
             // !grm removes database entries
             case "grm":
-                if (args[1]) {
-                    gsrun(client2, "A", "B", "entries").then((xdb) => {
-                        for (let i = 0; i < xdb.line.length ; i++) {
-                            let itemToCheck = xdb.line[i];
-                            if (itemToCheck.toLowerCase() === args[1].toLowerCase()) {
-                                i += 1;
-                                console.log("i:" + i);
-                                deleteRows(message, "entries", i);
-                                gsUpdateOverwrite(client2, -1, -1, "entries");
-                                message.channel.send("*Removed " + itemToCheck + "*" );
-                            } else {
-                                message.channel.send("*Could not find key to delete.*");
-                            }
-                        }
-                    });
-                } else {
-                    message.channel.send("Need to specify the key to delete.");
-                }
+                removeItem(message, args, "entries");
                 break;
             // !rand
             case "rand":
