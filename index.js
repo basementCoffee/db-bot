@@ -1015,12 +1015,15 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 unFoundString = unFoundString.concat("*");
                 message.channel.send(unFoundString);
             }
+            if (servers[message.guild.id].queue.length > 0) {
+                ss = servers[message.guild.id].queue[0];
+            }
         } else { // assuming single database add
             if (!ss) {
                 ss = await runSearchCommand(args, xdb);
                 if (ss && ss.length > 0 && ssi === 1) {
                     message.channel.send(
-                        "Could not find '" + args[1] + "'. *Assuming you meant '" + ss + "'.*"
+                        "Could not find *" + args[1] + "*. Assuming you meant *" + ss + "*."
                     );
                     ss = xdb.referenceDatabase.get(ss.toUpperCase());
                 } else if (ss && ss.length > 0) {
@@ -1039,6 +1042,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 message.channel.send("Added to queue.");
             }
         }
+
         // if queue was empty then play
         if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
             playSongToVC(message, ss);
