@@ -323,9 +323,14 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-const version = "4.3.1";
+const version = "4.4.0";
 const latestRelease =
-    "Latest Release (4.3.x):\n" +
+    "**Latest Release (4.4.x):**\n"
+    +
+    "- DB play command can now guess what you meant (!d [incorrect_key])"
+    +
+    "\n\n**Previous Release (4.3.x):**\n"
+    +
     "- Full support for removing items from the database";
 var servers = {};
 bot.login(process.env.token);
