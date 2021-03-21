@@ -30,7 +30,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         );
         dataSize.set(nameOfSheet, dataSizeFromSheets.data.values);
     } catch (e) {
-        createSheetNoMessage(nameOfSheet);
+        await createSheetNoMessage(nameOfSheet);
         // gsUpdateAdd2(client2, 1,"D", nameOfSheet);
         dataSize.set(nameOfSheet, 1);
         return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
@@ -972,7 +972,7 @@ function runAddCommand(args, message, currentBotGuildId) {
  * @param {*} args the message split by spaces into an array
  * @param {*} message the message that triggered the bot
  * @param {*} sheetname the name of the google sheet to reference
- * @returns null
+ * @returns
  */
 function runDatabasePlayCommand(args, message, sheetname) {
     if (!args[1]) {
@@ -999,7 +999,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
         servers[message.guild.id].queue = [];
     }
 
-    gsrun(client2, "A", "B", sheetname).then((xdb) => {
+    gsrun(client2, "A", "B", sheetname).then(async (xdb) => {
         let queueWasEmpty = false;
         // if the queue is empty then play
         if (servers[message.guild.id].queue.length < 1) {
@@ -1032,16 +1032,14 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 message.channel.send(unFoundString);
             }
         } else {
-            let whatWasAdded = "";
             if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
                 let ss = runSearchCommand(args, xdb).ss;
                 if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
                     message.channel.send(
                         "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
                     );
-                    whatWasAdded = ss;
                     // push to queue
-                    servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
+                    await servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
                 } else if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
@@ -1052,7 +1050,6 @@ function runDatabasePlayCommand(args, message, sheetname) {
                     return;
                 }
             } else {
-                whatWasAdded = args[1];
                 // push to queue
                 servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
             }
