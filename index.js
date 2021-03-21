@@ -115,9 +115,24 @@ function createSheet(message, nameOfSheet) {
     );
 }
 
-function deleteRows(message, sheetName,rowNumber) {
-    console.log("within create sheets");
+async function deleteRows(message, sheetName, rowNumber) {
     const gsapi = google.sheets({version: "v4", auth: client2});
+    try {
+        const request = {
+            spreadsheetId: "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+            ranges: ["entries"],
+            includeGridData: false,
+            auth: client2,
+        };
+
+        res = await gsapi.spreadsheets.get(request)
+    } catch (error) {
+        console.log("Error get sheetId")
+    }
+
+    console.log(res.data.sheets[0].properties.sheetId)
+
+// ----------------------------------------------------------
     gsapi.spreadsheets.batchUpdate(
         {
             spreadsheetId: "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
@@ -125,7 +140,7 @@ function deleteRows(message, sheetName,rowNumber) {
                 requests: [
                     {
                         deleteNamedRange: {
-                        "namedRangeId": sheetName + "!A" + rowNumber + ":B" + rowNumber
+                            namedRangeId: sheetName + "!A" + rowNumber + ":B" + rowNumber
                         },
                     },
                 ],
@@ -142,6 +157,8 @@ function deleteRows(message, sheetName,rowNumber) {
         }
     );
 }
+
+
 
 function createSheetNoMessage(nameOfSheet) {
     console.log("within create sheets");
@@ -824,7 +841,7 @@ bot.on("message", (message) => {
             case "rand":
                 if (args[1]) {
                     const numToCheck = parseInt(args[1]);
-                    if (!numToCheck || numToCheck <= 1) {
+                    if (!numToCheck || numToCheck < 1) {
                         message.channel.send("Number has to be positive.");
                         return;
                     }
