@@ -757,7 +757,7 @@ bot.on("message", (message) => {
                     );
                     return;
                 }
-                prefix[message.member.voice.channel] = args[1];
+                prefix[message.member.voice.channel] = args[1].substr(0,1);
                 message.channel.send("Prefix successfully changed to " + args[1]);
                 break;
             // list commands for public commands
