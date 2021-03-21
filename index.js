@@ -137,7 +137,7 @@ async function deleteRows(message, sheetName, rowNumber) {
     let sheetId = res.data.sheets[0].properties.sheetId;
 
 // ----------------------------------------------------------
-    gsapi.spreadsheets.batchUpdate(
+    await gsapi.spreadsheets.batchUpdate(
         {
             spreadsheetId: "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
             resource: {
@@ -430,7 +430,7 @@ function removeItem(message, args, sheetName) {
                     couldNotFindKey = false;
                     deleteRows(message, sheetName, i);
                     gsUpdateOverwrite(client2, -1, -1, sheetName);
-                    message.channel.send("*Removed " + itemToCheck + "*");
+                    message.channel.send("Removed *" + itemToCheck + "*");
                 }
             }
             if (couldNotFindKey) {
@@ -1042,7 +1042,6 @@ function runDatabasePlayCommand(args, message, sheetname) {
 
 // The search command
 let ss;
-
 function runSearchCommand(args, xdb) {
     let givenSLength = args[1].length;
     let keyArray2 = Array.from(xdb.congratsDatabase.keys());
@@ -1481,13 +1480,6 @@ function printErrorToChannel(activationType, songKey, e) {
         .send("ERROR: When called " + activationType + ", song key: " + songKey);
     bot.channels.cache.get("730239813403410619").send(e);
 }
-
-/**
- * Prints the error to the testing channel with no args.
- */
-//function printErrorToChannel() {
-//    bot.channels.cache.get("730239813403410619").send("There was an error!");
-//}
 
 /**
  * Keith's Testing Corner 3/17/21
