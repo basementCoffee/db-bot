@@ -190,7 +190,6 @@ function createSheetNoMessage(nameOfSheet) {
             if (err) {
                 // console.log('The API returned an error: ' + err);
             } else {
-                // uncomment if does not work TODO
                 gsUpdateAdd2(client2, 1, "D", nameOfSheet);
             }
             // console.log("success: ", response);
@@ -965,10 +964,10 @@ function runAddCommand(args, message, currentBotGuildId) {
 /**
  * Executes play assuming that message args are intended for a database call.
  * The database referenced depends on what is passed in via mgid.
- * @param {*} args
- * @param {*} message
- * @param {*} sheetname
- * @returns
+ * @param {*} args the message split by spaces into an array
+ * @param {*} message the message that triggered the bot
+ * @param {*} sheetname the name of the google sheet to reference
+ * @returns null
  */
 function runDatabasePlayCommand(args, message, sheetname) {
     if (!args[1]) {
@@ -1063,7 +1062,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
 
 // The search command
 let ss; // the search string
-let ssi;
+let ssi; // the number of searches found
 /**
  * Searches the database for the keys matching args[1].
  * @param args the list of arguments from the message
@@ -1100,9 +1099,9 @@ function runSearchCommand(args, xdb) {
 }
 
 /**
- * Function to display help list
- * @param {*} message
- * @param {*} prefixString
+ * Function to display help list.
+ * @param {*} message the message that triggered the bot
+ * @param {*} prefixString the prefix in string format
  */
 function sendHelp(message, prefixString) {
     message.channel.send(
@@ -1144,9 +1143,9 @@ function sendHelp(message, prefixString) {
 
 /**
  * The command to play a random song from a database.
- * @param {*} args
- * @param {*} message
- * @param {*} sheetname
+ * @param {*} args the message split by spaces into an array
+ * @param {*} message the message that triggered the bot
+ * @param {*} sheetname the name of the database sheet to reference
  */
 function runRandomCommand(args, message, sheetname) {
     if (!servers[message.guild.id])
@@ -1181,13 +1180,11 @@ function runRandomCommand(args, message, sheetname) {
 /**
  * The music-centric function of play random. This function executes the music stream
  * to be played into the voice channel of the message's owner.
- * @param {*} message
- * @param {*} numOfTimes
- * @param {*} cdb
+ * @param {*} message the message that triggered the bot
+ * @param {*} numOfTimes the number of times to play random songs
+ * @param {*} cdb the congrats-database
  * @returns
  */
-//
-
 function playRandom2(message, numOfTimes, cdb) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     var numOfRetries = 0;
@@ -1350,8 +1347,6 @@ function runKeysCommand(message, prefixString, sheetname) {
  * @param {*} message the message with channel info
  * @param {*} whatToPlay the link of the song to play
  */
-//
-
 function playSongToVC(message, whatToPlay) {
     enumPlayingFunction = "playing";
     let server = servers[message.guild.id];
@@ -1402,9 +1397,9 @@ function playSongToVC(message, whatToPlay) {
 }
 
 /**
- * Runs the what's playing command.
- * @param {*} args
- * @param {*} message
+ * Runs the what's playing command. Can also look up database values if args[2] is present.
+ * @param {*} args the message split into an array, delim by spaces
+ * @param {*} message the message that activated the bot
  * @param {*} mgid The guild id
  * @param {*} sheetname The name of the sheet reference
  */
@@ -1514,14 +1509,6 @@ function printErrorToChannel(activationType, songKey, e) {
     bot.channels.cache.get("730239813403410619").send(e);
 }
 
-/**
- * Keith's Testing Corner 3/17/21
- * -Test to overhaul ffmpeg/opus with ytdl-core-discord <- very important that its this one
- *
- *
- *
- *
- */
 
 var whatspMap = new Map();
 var prefix = new Map();
