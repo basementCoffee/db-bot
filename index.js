@@ -1024,9 +1024,9 @@ function runDatabasePlayCommand(args, message, sheetname) {
         } else {
             if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
                 let ss = runSearchCommand(args, xdb).ss;
-                if (ssi === 1 && ss && ss.length > 0) {
+                if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1) {
                     message.channel.send(
-                        "Could not find name in database.\n**Assuming '" + ss + "'**"
+                        "Could not find '" + args[1] + "', **assuming '" + ss + "'**"
                     );
                     console.log("ss: " + ss);
                     // push to queue
