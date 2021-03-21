@@ -128,7 +128,7 @@ async function deleteRows(message, sheetName, rowNumber) {
             auth: client2,
         };
 
-       res = await gsapi.spreadsheets.get(request)
+        res = await gsapi.spreadsheets.get(request)
     } catch (error) {
         console.log("Error get sheetId")
     }
@@ -166,7 +166,6 @@ async function deleteRows(message, sheetName, rowNumber) {
         }
     );
 }
-
 
 
 function createSheetNoMessage(nameOfSheet) {
@@ -424,14 +423,14 @@ function removeItem(message, args, sheetName) {
     if (args[1]) {
         gsrun(client2, "A", "B", sheetName).then((xdb) => {
             let couldNotFindKey = true;
-            for (let i = 0; i < xdb.line.length ; i++) {
+            for (let i = 0; i < xdb.line.length; i++) {
                 let itemToCheck = xdb.line[i];
                 if (itemToCheck.toLowerCase() === args[1].toLowerCase()) {
                     i += 1;
                     couldNotFindKey = false;
                     deleteRows(message, sheetName, i);
                     gsUpdateOverwrite(client2, -1, -1, sheetName);
-                    message.channel.send("*Removed " + itemToCheck + "*" );
+                    message.channel.send("*Removed " + itemToCheck + "*");
                 }
             }
             if (couldNotFindKey) {
