@@ -435,7 +435,7 @@ function runRemoveItemCommand(message, args, sheetName) {
             }
             if (couldNotFindKey) {
                 gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
-                    let foundStrings = runSearchCommand(args, xdb);
+                    let foundStrings = runSearchCommand(args, xdb).ss;
                     if (foundStrings && foundStrings.length > 0) {
                         message.channel.send("Could not find '" + args[1] + "'.\n*Did you mean: " + ss + "*");
                     } else {
@@ -724,7 +724,7 @@ bot.on("message", (message) => {
                     return;
                 }
                 gsrun(client2, "A", "B", mgid).then(async (xdb) => {
-                    ss = await runSearchCommand(args, xdb);
+                    ss = runSearchCommand(args, xdb).ss;
                     if (ss && ss.length === 0) {
                         message.channel.send(
                             "Could not find any keys that start with the given letters."
@@ -741,7 +741,7 @@ bot.on("message", (message) => {
                     return;
                 }
                 gsrun(client2, "A", "B", "entries").then(async (xdb) => {
-                    ss = await runSearchCommand(args, xdb);
+                    ss = runSearchCommand(args, xdb).ss;
                     if (ss && ss.length === 0) {
                         message.channel.send(
                             "Could not find any keys that start with the given letters."
@@ -1023,7 +1023,12 @@ function runDatabasePlayCommand(args, message, sheetname) {
             }
         } else {
             if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
-                let ss = runSearchCommand(args, xdb);
+                let ss = runSearchCommand(args, xdb).ss;
+                if (ssi === 1 && ss && ss.length > 0) {
+                    message.channel.send(
+                        "Could not find name in database.\n*Assuming '" + ss + "'*"
+                    );
+                }
                 if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find name in database.\n*Did you mean: " + ss + "*"
@@ -1043,23 +1048,25 @@ function runDatabasePlayCommand(args, message, sheetname) {
         }
         // if queue was empty then play
         if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-            playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
+            playSongToVC(message, servers[message.guild.id].queue[0]);
         }
     });
 }
 
 // The search command
 let ss; // the search string
+let ssi;
 /**
  * Searches the database for the keys matching args[1].
  * @param args the list of arguments from the message
  * @param xdb the object containing multiple DBs
- * @returns {string} a string containing the found values
+ * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values
  */
 function runSearchCommand(args, xdb) {
     let givenSLength = args[1].length;
     let keyArray2 = Array.from(xdb.congratsDatabase.keys());
     ss = "";
+    ssi = 0;
     let searchKey;
     for (let ik = 0; ik < keyArray2.length; ik++) {
         searchKey = keyArray2[ik];
@@ -1069,6 +1076,7 @@ function runSearchCommand(args, xdb) {
             (args[1].length > 1 &&
                 searchKey.toUpperCase().includes(args[1].toUpperCase()))
         ) {
+            ssi++;
             if (!ss) {
                 ss = searchKey;
             } else {
@@ -1077,7 +1085,10 @@ function runSearchCommand(args, xdb) {
         }
     }
 
-    return ss;
+    return {
+        ss: ss,
+        ssi: ssi
+    };
 }
 
 /**
