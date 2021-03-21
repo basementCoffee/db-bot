@@ -1029,7 +1029,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
         } else {
             if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
                 let ss = runSearchCommand(args, xdb).ss;
-                if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1) {
+                if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 1)) {
                     message.channel.send(
                         "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
                     );
