@@ -324,7 +324,7 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-const version = "4.3.1";
+const version = "4.3.2";
 const latestRelease =
     "Latest Release (4.3.x):\n" +
     "- Full support for removing items from the database";
@@ -757,7 +757,7 @@ bot.on("message", (message) => {
                     );
                     return;
                 }
-                prefix[message.member.voice.channel] = args[1].substr(0,1);
+                prefix[message.member.voice.channel] = args[1].substr(0, 1);
                 message.channel.send("Prefix successfully changed to " + args[1]);
                 break;
             // list commands for public commands
@@ -1022,10 +1022,10 @@ function runDatabasePlayCommand(args, message, sheetname) {
                     message.channel.send(
                         "Could not find '" + args[1] + "'. Assuming you meant '" + ss + "'."
                     );
-                ss = xdb.referenceDatabase.get(ss.toUpperCase());
+                    ss = xdb.referenceDatabase.get(ss.toUpperCase());
                 } else if (ss && ss.length > 0) {
                     message.channel.send(
-                        "Could not find name in database.\n*Did you mean: " + ss + "*"
+                        "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
                     );
                     return;
                 } else {
@@ -1041,7 +1041,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
         }
         // if queue was empty then play
         if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-            playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
+            playSongToVC(message, ss);
         }
     });
 }
@@ -1049,6 +1049,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
 // The search command
 let ss;
 let ssi;
+
 function runSearchCommand(args, xdb) {
     let givenSLength = args[1].length;
     let keyArray2 = Array.from(xdb.congratsDatabase.keys());
