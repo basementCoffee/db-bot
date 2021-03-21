@@ -81,6 +81,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     return {
         congratsDatabase: congratsDatabase,
         referenceDatabase: referenceDatabase,
+        line: line
     };
 }
 
@@ -97,6 +98,34 @@ function createSheet(message, nameOfSheet) {
                             properties: {
                                 title: nameOfSheet,
                             },
+                        },
+                    },
+                ],
+            },
+        },
+        function (err, response) {
+            if (err) {
+                // console.log('The API returned an error: ' + err);
+            } else {
+                gsrun(client2, "A", "B", message.guild.id).then(() => {
+                });
+            }
+            // console.log("success: ", response);
+        }
+    );
+}
+
+function deleteRows(message, sheetName,rowNumber) {
+    console.log("within create sheets");
+    const gsapi = google.sheets({version: "v4", auth: client2});
+    gsapi.spreadsheets.batchUpdate(
+        {
+            spreadsheetId: "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+            resource: {
+                requests: [
+                    {
+                        deleteNamedRange: {
+                        "namedRangeId": sheetName + "!A" + rowNumber + ":B" + rowNumber
                         },
                     },
                 ],
@@ -484,7 +513,7 @@ bot.on("message", (message) => {
                 }
                 // push to queue
                 servers[mgid].queue.unshift(args[1]);
-                message.channel.send("*Playing now.*");
+                message.channel.send("*Playing now*");
                 playSongToVC(message, args[1]);
                 break;
             // case '!pv':
@@ -713,8 +742,8 @@ bot.on("message", (message) => {
                     message.member.voice &&
                     dispatcherMap[message.member.voice.channel]
                 ) {
-                    message.channel.send("*paused*");
                     dispatcherMap[message.member.voice.channel].pause();
+                    message.channel.send("*paused*");
                 }
                 break;
             // !pl
@@ -723,8 +752,8 @@ bot.on("message", (message) => {
                     message.member.voice &&
                     dispatcherMap[message.member.voice.channel]
                 ) {
-                    message.channel.send("*playing*");
                     dispatcherMap[message.member.voice.channel].resume();
+                    message.channel.send("*playing*");
                 }
                 break;
             // !v prints out the version number
@@ -781,14 +810,15 @@ bot.on("message", (message) => {
                 break;
             // !rm removes database entries
             case "rm":
-                const successInDelete = congratsDatabase.delete(args[1]);
-                if (successInDelete === true) {
-                    message.channel.send(
-                        "Song successfully removed from the temp database."
-                    );
-                } else {
-                    message.channel.send("Could not find song tag within the database.");
-                }
+                deleteRows(message, mgid, 2).then(r => console.log(r))
+                // const successInDelete = congratsDatabase.delete(args[1]);
+                // if (successInDelete === true) {
+                //     message.channel.send(
+                //         "Song successfully removed from the temp database."
+                //     );
+                // } else {
+                //     message.channel.send("Could not find song tag within the database.");
+                // }
                 break;
             // !rand
             case "rand":
