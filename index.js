@@ -324,7 +324,7 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-const version = "4.3.2";
+const version = "4.3.1";
 const latestRelease =
     "Latest Release (4.3.x):\n" +
     "- Full support for removing items from the database";
@@ -757,7 +757,7 @@ bot.on("message", (message) => {
                     );
                     return;
                 }
-                prefix[message.member.voice.channel] = args[1].substr(0, 1);
+                prefix[message.member.voice.channel] = args[1].substr(0,1);
                 message.channel.send("Prefix successfully changed to " + args[1]);
                 break;
             // list commands for public commands
@@ -981,14 +981,12 @@ function runDatabasePlayCommand(args, message, sheetname) {
         servers[message.guild.id].queue = [];
     }
 
-    gsrun(client2, "A", "B", sheetname).then(async (xdb) => {
+    gsrun(client2, "A", "B", sheetname).then((xdb) => {
         let queueWasEmpty = false;
         // if the queue is empty then play
         if (servers[message.guild.id].queue.length < 1) {
             queueWasEmpty = true;
         }
-        let ss = xdb.referenceDatabase.get(args[1].toUpperCase());
-        // if attempting multiple database add
         if (args[2]) {
             let dbAddInt = 1;
             let unFoundString = "*Could not find: ";
@@ -1015,50 +1013,40 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 unFoundString = unFoundString.concat("*");
                 message.channel.send(unFoundString);
             }
-            if (servers[message.guild.id].queue.length > 0) {
-                ss = servers[message.guild.id].queue[0];
-            }
-        } else { // assuming single database add
-            if (!ss) {
-                ss = await runSearchCommand(args, xdb);
-                if (ss && ss.length > 0 && ssi === 1) {
+        } else {
+            if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
+                let ss = runSearchCommand(args, xdb);
+                if (ss && ss.length > 0) {
                     message.channel.send(
-                        "Could not find *" + args[1] + "*. Assuming you meant *" + ss + "*."
+                        "Could not find name in database.\n*Did you mean: " + ss + "*"
                     );
-                    ss = xdb.referenceDatabase.get(ss.toUpperCase());
-                } else if (ss && ss.length > 0) {
-                    message.channel.send(
-                        "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
-                    );
-                    return;
                 } else {
                     message.channel.send("Could not find name in database.");
-                    return;
                 }
+                return;
             }
             // push to queue
-            servers[message.guild.id].queue.push(ss);
+            servers[message.guild.id].queue.push(
+                xdb.referenceDatabase.get(args[1].toUpperCase())
+            );
             if (!queueWasEmpty) {
                 message.channel.send("Added to queue.");
             }
         }
-
         // if queue was empty then play
         if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-            playSongToVC(message, ss);
+            playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
         }
     });
 }
 
 // The search command
 let ss;
-let ssi;
 
 function runSearchCommand(args, xdb) {
     let givenSLength = args[1].length;
     let keyArray2 = Array.from(xdb.congratsDatabase.keys());
     ss = "";
-    ssi = 0;
     let searchKey;
     for (let ik = 0; ik < keyArray2.length; ik++) {
         searchKey = keyArray2[ik];
@@ -1068,7 +1056,6 @@ function runSearchCommand(args, xdb) {
             (args[1].length > 1 &&
                 searchKey.toUpperCase().includes(args[1].toUpperCase()))
         ) {
-            ssi += 1;
             if (!ss) {
                 ss = searchKey;
             } else {
