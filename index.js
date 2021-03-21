@@ -117,20 +117,22 @@ function createSheet(message, nameOfSheet) {
 
 async function deleteRows(message, sheetName, rowNumber) {
     const gsapi = google.sheets({version: "v4", auth: client2});
+    let res;
     try {
         const request = {
             spreadsheetId: "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
-            ranges: ["entries"],
+            ranges: [sheetName],
             includeGridData: false,
             auth: client2,
         };
 
-        res = await gsapi.spreadsheets.get(request)
+       res = await gsapi.spreadsheets.get(request)
     } catch (error) {
         console.log("Error get sheetId")
     }
 
-    console.log(res.data.sheets[0].properties.sheetId)
+    console.log(res.data.sheets[0].properties.sheetId);
+    let sheetId = res.data.sheets[0].properties.sheetId;
 
 // ----------------------------------------------------------
     gsapi.spreadsheets.batchUpdate(
@@ -139,10 +141,15 @@ async function deleteRows(message, sheetName, rowNumber) {
             resource: {
                 requests: [
                     {
-                        deleteNamedRange: {
-                            namedRangeId: sheetName + "!A" + rowNumber + ":B" + rowNumber
-                        },
-                    },
+                        deleteDimension: {
+                            range: {
+                                sheetId: sheetId,
+                                dimension: "ROWS",
+                                startIndex: rowNumber,
+                                endIndex: rowNumber + 1
+                            }
+                        }
+                    }
                 ],
             },
         },
@@ -827,7 +834,19 @@ bot.on("message", (message) => {
                 break;
             // !rm removes database entries
             case "rm":
+                if (args[1]) {
+                    gsrun(client2, "A", "B", mgid).then((xdb) => {
+                        for (let i = 0; i < xdb.line.length ; i++) {
+                            if (xdb.line[i] === args[1]) {
+                                i += 2;
+                                deleteRows(message, mgid, i).then(r => console.log(r));
+                                return;
+                            }
+                        }
+                    });
+                }
                 deleteRows(message, mgid, 2);
+
                 // const successInDelete = congratsDatabase.delete(args[1]);
                 // if (successInDelete === true) {
                 //     message.channel.send(
