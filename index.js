@@ -1031,8 +1031,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
                     console.log("ss: " + ss);
                     // push to queue
                     servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
-                }
-                if (ss && ss.length > 0) {
+                } else if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find name in database.\n*Did you mean: " + ss + "*"
                     );
