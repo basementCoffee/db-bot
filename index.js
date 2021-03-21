@@ -826,6 +826,7 @@ bot.on("message", (message) => {
                     const numToCheck = parseInt(args[1]);
                     if (numToCheck <= 1) {
                         message.channel.send("Number has to be positive.");
+                        return;
                     }
                     let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
                     message.channel.send(
