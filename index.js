@@ -840,14 +840,17 @@ bot.on("message", (message) => {
                     gsrun(client2, "A", "B", mgid).then((xdb) => {
                         for (let i = 0; i < xdb.line.length ; i++) {
                             if (xdb.line[i] === args[1]) {
-                                i += 2;
+                                i += 1;
                                 console.log("i:" + i);
                                 deleteRows(message, mgid, i);
+                                message.channel.send("*Deleted " + xdb.line[i] + "*" );
                                 return;
                             }
                         }
                     });
+                    message.channel.send("Could not find key to delete.");
                 }
+                message.channel.send("Need to specify the key to delete.");
                 // deleteRows(message, mgid, 2);
 
                 // const successInDelete = congratsDatabase.delete(args[1]);
