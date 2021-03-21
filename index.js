@@ -839,7 +839,8 @@ bot.on("message", (message) => {
                         for (let i = 0; i < xdb.line.length ; i++) {
                             if (xdb.line[i] === args[1]) {
                                 i += 2;
-                                deleteRows(message, mgid, i).then(r => console.log(r));
+                                console.log("i:" + i);
+                                deleteRows(message, mgid, i);
                                 return;
                             }
                         }
