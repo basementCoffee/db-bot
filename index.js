@@ -1032,7 +1032,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
                 let ss = runSearchCommand(args, xdb).ss;
                 if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1) {
                     message.channel.send(
-                        "Could not find '" + args[1] + "', **assuming '" + ss + "'**"
+                        "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
                     );
                     console.log("ss: " + ss);
                     // push to queue
