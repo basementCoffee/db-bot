@@ -725,12 +725,12 @@ bot.on("message", (message) => {
                 }
                 gsrun(client2, "A", "B", mgid).then(async (xdb) => {
                     ss = runSearchCommand(args, xdb).ss;
-                    if (ss && ss.length === 0) {
+                    if (ss && ss.length > 0) {
+                        message.channel.send("Keys found: " + ss);
+                    } else {
                         message.channel.send(
                             "Could not find any keys that start with the given letters."
                         );
-                    } else {
-                        message.channel.send("Keys found: " + ss);
                     }
                 });
                 break;
@@ -742,12 +742,12 @@ bot.on("message", (message) => {
                 }
                 gsrun(client2, "A", "B", "entries").then(async (xdb) => {
                     ss = runSearchCommand(args, xdb).ss;
-                    if (ss && ss.length === 0) {
+                    if (ss && ss.length > 0) {
+                        message.channel.send("Keys found: " + ss);
+                    } else {
                         message.channel.send(
                             "Could not find any keys that start with the given letters."
                         );
-                    } else {
-                        message.channel.send("Keys found: " + ss);
                     }
                 });
                 break;
@@ -1028,20 +1028,23 @@ function runDatabasePlayCommand(args, message, sheetname) {
                     message.channel.send(
                         "Could not find name in database.\n*Assuming '" + ss + "'*"
                     );
+                    console.log("ss: " + ss);
+                    // push to queue
+                    servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
                 }
                 if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find name in database.\n*Did you mean: " + ss + "*"
                     );
+                    return;
                 } else {
                     message.channel.send("Could not find name in database.");
+                    return;
                 }
-                return;
+            } else {
+                // push to queue
+                servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
             }
-            // push to queue
-            servers[message.guild.id].queue.push(
-                xdb.referenceDatabase.get(args[1].toUpperCase())
-            );
             if (!queueWasEmpty) {
                 message.channel.send("Added to queue.");
             }
