@@ -461,9 +461,484 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
 
 }
 
+/**
+ * The execution for all of the bot commands
+ * @param message
+ * @returns {Promise<void>}
+ */
+async function runCommandCases(message) {
+    var args = message.content.replace(/\s+/g, " ").split(" ");
+    console.log(args);
+    let mgid = message.guild.id;
+    let prefixString = prefix[mgid];
+    if (!prefixString) {
+        await gsrun(client2, "A", "B", mgid).then((xdb) => {
+            console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
+            console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
+            let newPrefix = xdb.congratsDatabase.get(mgid);
+            if (!newPrefix) {
+                prefix[mgid] = "!";
+            } else {
+                prefix[mgid] = newPrefix;
+            }
+        });
+    }
+    if (args[0].substr(0, 1) !== prefix[mgid]) {
+        if (args[0] === "!changeprefix") {
+            message.channel.send(
+                "Use prefix to change. Prefix is: " +
+                prefix[mgid]
+            );
+        }
+        return;
+    }
+    let statement = args[0].substr(1);
+    statement = statement.toLowerCase();
+
+    switch (statement) {
+        //!p is just the basic rhythm bot
+        case "p":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            if (!args[1]) {
+                message.channel.send(
+                    "Where's the link? I can't read your mind... unfortunately."
+                );
+                return;
+            }
+            if (!args[1].includes(".")) {
+                message.channel.send(
+                    "There's something wrong with what you put there."
+                );
+                return;
+            }
+            if (!servers[mgid])
+                servers[mgid] = {
+                    queue: [],
+                };
+            enumPlayingFunction = "playing";
+            // in case of force disconnect
+            if (
+                !message.guild.client.voice ||
+                !message.guild.voice ||
+                !message.guild.voice.channel
+            ) {
+                servers[mgid].queue = [];
+            }
+            // push to queue
+            servers[mgid].queue.push(args[1]);
+            // if queue has only 1 song then play
+            if (servers[mgid] && servers[mgid].queue.length < 2) {
+                playSongToVC(message, args[1]);
+            } else {
+                message.channel.send("*Added to queue*");
+            }
+            break;
+        // !pn
+        case "pn":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            if (!args[1]) {
+                message.channel.send(
+                    "Where's the link? I can't read your mind... unfortunately."
+                );
+                return;
+            }
+            if (!args[1].includes(".")) {
+                message.channel.send(
+                    "There's something wrong with what you put there."
+                );
+                return;
+            }
+            if (!servers[mgid])
+                servers[mgid] = {
+                    queue: [],
+                };
+            enumPlayingFunction = "playing";
+            // in case of force disconnect
+            if (
+                !message.guild.client.voice ||
+                !message.guild.voice ||
+                !message.guild.voice.channel
+            ) {
+                servers[mgid].queue = [];
+            }
+            // push to queue
+            servers[mgid].queue.unshift(args[1]);
+            message.channel.send("*Playing now*");
+            playSongToVC(message, args[1]);
+            break;
+        // case '!pv':
+        //     if (!args[1]) {
+        //         message.channel.send("Where's the link? I can't read your mind... unfortunately.");
+        //         return;
+        //     }
+        //     if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
+        //         message.channel.send("There's something wrong with what you put there.");
+        //         return;
+        //     }
+        //     if (!message.member.voice.channel) {
+        //         return;
+        //     }
+        //     if (!servers[message.guild.id]) servers[message.guild.id] = {
+        //         queue: []
+        //     }
+        //
+        //     server = servers[message.guild.id];
+        //     server.queue.push(args[1]);
+        //     playSong(message, args[1], false);
+        //     break;
+
+        //!e is the Stop feature
+        case "e":
+            totalRandomIntMap[message.member.voice.channel] = 0;
+            currentRandomIntMap[message.member.voice.channel] = 0;
+            if (
+                !message.member ||
+                !message.member.voice ||
+                !message.member.voice.channel
+            ) {
+                return;
+            }
+            dispatcherMap[message.member.voice.channel] = undefined;
+            // should do same as below
+            if (servers[mgid] && servers[mgid].queue) {
+                servers[mgid].queue = [];
+            }
+            while (servers[mgid] && servers[mgid].queue.length > 0) {
+                servers[mgid].queue.shift();
+            }
+            if (message.member.voice && message.member.voice.channel) {
+                message.member.voice.channel.leave();
+            }
+
+            if (
+                whatspMap[message.member.voice.channel] &&
+                whatspMap[message.member.voice.channel].length > 0 &&
+                !whatspMap[message.member.voice.channel].includes("Last Played:")
+            ) {
+                whatspMap[message.member.voice.channel] =
+                    "Last Played:\n" + whatspMap[message.member.voice.channel];
+            }
+            break;
+
+        // !s prints out the database size
+        case "s":
+            message.channel.send(
+                "Database size: " + Array.from(congratsDatabase.keys()).length
+            );
+            break;
+
+        // !gd is to run database songs
+        case "gd":
+            runDatabasePlayCommand(args, message, "entries");
+            break;
+        // !d
+        case "d":
+            runDatabasePlayCommand(args, message, mgid);
+            break;
+
+        // case "dv":
+        //     if (!args[1]) {
+        //         message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+        //         return;
+        //     }
+        //     if (!message.member.voice.channel) {
+        //         return;
+        //     }
+        //     if (!servers[message.guild.id]) servers[message.guild.id] = {
+        //         queue: []
+        //     }
+        //
+        //     server = servers[message.guild.id];
+        //     try {
+        //         whatsp = referenceDatabase.get(args[1].toUpperCase());
+        //     } catch (e) {
+        //         message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
+        //         return;
+        //     }
+        //     //let dPhrase = args[1];
+        //     //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
+        //     playSong(message, whatsp, false);
+        //     break;
+
+        // !rg plays a random song from the database
+        case "gr":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            enumPlayingFunction = "random";
+            runRandomCommand(args, message, "entries");
+            break;
+        // !r is the normal random
+        case "r":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            enumPlayingFunction = "randomS";
+            runRandomCommand(args, message, mgid);
+            break;
+        // !r2 is the experimental random to work with the normal queue
+        case "r2":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            enumPlayingFunction = "randomS";
+            runRandomCommand(args, message, mgid);
+            break;
+        // !keys
+        case "keys":
+            if (
+                !dataSize.get(mgid.toString()) ||
+                dataSize.get(mgid.toString()) < 1
+            ) {
+                createSheet(message, mgid);
+            }
+            runKeysCommand(message, prefixString, mgid);
+            break;
+        // !key
+        case "key":
+            if (
+                !dataSize.get(mgid.toString()) ||
+                dataSize.get(mgid.toString()) < 1
+            ) {
+                createSheet(message, mgid);
+            }
+            runKeysCommand(message, prefixString, mgid);
+            break;
+        // !keysg is global keys
+        case "gkeys":
+            runKeysCommand(message, prefixString, "entries");
+            break;
+        // !keyg is global keys
+        case "gkey":
+            runKeysCommand(message, prefixString, "entries");
+            break;
+        // !k is the search
+        case "k":
+            if (!args[1]) {
+                message.channel.send("No argument was given.");
+                return;
+            }
+            gsrun(client2, "A", "B", mgid).then(async (xdb) => {
+                ss = runSearchCommand(args, xdb).ss;
+                if (ss && ss.length > 0) {
+                    message.channel.send("Keys found: " + ss);
+                } else {
+                    message.channel.send(
+                        "Could not find any keys that start with the given letters."
+                    );
+                }
+            });
+            break;
+        // !gk
+        case "gk":
+            if (!args[1]) {
+                message.channel.send("No argument was given.");
+                return;
+            }
+            gsrun(client2, "A", "B", "entries").then(async (xdb) => {
+                ss = runSearchCommand(args, xdb).ss;
+                if (ss && ss.length > 0) {
+                    message.channel.send("Keys found: " + ss);
+                } else {
+                    message.channel.send(
+                        "Could not find any keys that start with the given letters."
+                    );
+                }
+            });
+            break;
+        // !? is the command for what's playing?
+        case "?":
+            runWhatsPCommand(args, message, mgid, mgid);
+            break;
+        case "g?":
+            runWhatsPCommand(args, message, mgid, "entries");
+            break;
+        case "changeprefix":
+            if (!args[1]) {
+                message.channel.send(
+                    "No argument was given. Enter the new prefix after the command."
+                );
+                return;
+            }
+            if (args[1].length > 1) {
+                message.channel.send(
+                    "Prefix length cannot be greater than 1."
+                );
+                return;
+            }
+            args[2] = args[1];
+            args[1] = mgid;
+            gsrun(client2, "A", "B", "prefixes").then(async () => {
+                await runRemoveItemCommand(message, args[1], "prefixes", false);
+                runAddCommand(args, message, "prefixes", false);
+            });
+            prefix[mgid] = args[2];
+            message.channel.send("Prefix successfully changed to " + args[2]);
+            break;
+        // list commands for public commands
+        case "h":
+            sendHelp(message, prefixString);
+            break;
+        case "help":
+            sendHelp(message, prefixString);
+            break;
+        // !skip
+        case "skip":
+            // determines random type
+            if (enumPlayingFunction === "random") {
+                mgid = "entries";
+            } else {
+                mgid = message.guild.id;
+            }
+            gsrun(client2, "A", "B", mgid).then((xdb) => {
+                skipSong(message, xdb.congratsDatabase);
+            });
+            break;
+        // !sk
+        case "sk":
+            // determines random type (global or local)
+            if (enumPlayingFunction === "random") {
+                mgid = "entries";
+            } else {
+                mgid = message.guild.id;
+            }
+            gsrun(client2, "A", "B", mgid).then((xdb) => {
+                skipSong(message, xdb.congratsDatabase);
+            });
+            break;
+        // !pa
+        case "pa":
+            if (
+                message.member.voice &&
+                dispatcherMap[message.member.voice.channel]
+            ) {
+                dispatcherMap[message.member.voice.channel].pause();
+                message.channel.send("*paused*");
+            }
+            break;
+        // !pl
+        case "pl":
+            if (
+                message.member.voice &&
+                dispatcherMap[message.member.voice.channel]
+            ) {
+                dispatcherMap[message.member.voice.channel].resume();
+                message.channel.send("*playing*");
+            }
+            break;
+        // !v prints out the version number
+        case "v":
+            message.channel.send("version: " + version + "\n" + latestRelease);
+            break;
+        // !devadd
+        case "devadd":
+            message.channel.send(
+                "Here's link to add to the database:\n" +
+                "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622"
+            );
+            break;
+        // !ag adds to the databse
+        case "ga":
+            if (!args[1] || !args[2]) {
+                message.channel.send(
+                    "Could not add to the database. Put a song key followed by a link."
+                );
+                break;
+            }
+            if (!args[2].includes(".")) {
+                message.channel.send("You can only add links to the database.");
+                return;
+            }
+            // in case the database has not been initialized
+            gsrun(client2, "A", "B", "entries").then(() => {
+                runAddCommand(args, message, "entries", true);
+            });
+            break;
+        // !a is normal add
+        case "a":
+            if (!args[1] || !args[2]) {
+                message.channel.send(
+                    "Could not add to the database. Put a song key followed by a link."
+                );
+                return;
+            }
+            if (!args[2].includes(".")) {
+                message.channel.send("You can only add links to the database.");
+                return;
+            }
+            // in case the database has not been initialized
+            gsrun(client2, "A", "B", mgid).then(() => {
+                if (
+                    !dataSize.get(mgid.toString()) ||
+                    dataSize.get(mgid.toString()) < 1
+                ) {
+                    message.channel.send("Please try again.");
+                } else {
+                    runAddCommand(args, message, mgid, true);
+                }
+            });
+            break;
+        // !rm removes database entries
+        case "rm":
+            runRemoveItemCommand(message, args, mgid, true);
+            break;
+        // !grm removes database entries
+        case "grm":
+            runRemoveItemCommand(message, args, "entries", true);
+            break;
+        // !rand
+        case "rand":
+            if (args[1]) {
+                const numToCheck = parseInt(args[1]);
+                if (!numToCheck || numToCheck < 1) {
+                    message.channel.send("Number has to be positive.");
+                    return;
+                }
+                let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
+                message.channel.send(
+                    "Assuming " +
+                    numToCheck +
+                    " in total. Your number is " +
+                    randomInt2 +
+                    "."
+                );
+            } else {
+                if (
+                    message.member &&
+                    message.member.voice &&
+                    message.member.voice.channel
+                ) {
+                    const numToCheck = message.member.voice.channel.members.size;
+                    if (numToCheck <= 1) {
+                        message.channel.send(
+                            "Need at least 2 people your voice channel."
+                        );
+                    }
+                    let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
+                    message.channel.send(
+                        "Assuming " +
+                        numToCheck +
+                        " people. Your number is " +
+                        randomInt2 +
+                        "."
+                    );
+                    // message.channel.send("You need to input a upper limit");
+                }
+            }
+            break;
+    }
+}
+
+}
+
 // parses message, provides a response
 bot.on("message", (message) => {
     if (message.author.bot) return;
+
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
         const messageArray = message.content.split(" ");
@@ -495,462 +970,9 @@ bot.on("message", (message) => {
             }
         }
     } else {
-        var args = message.content.replace(/\s+/g, " ").split(" ");
-        console.log(args);
-        if (!prefix[message.member.voice.channel]) {
-            prefix[message.member.voice.channel] = "!";
-        }
-        if (args[0].substr(0, 1) !== prefix[message.member.voice.channel]) {
-            if (args[0] === "!changeprefix") {
-                message.channel.send(
-                    "Use prefix to change. Prefix is: " +
-                    prefix[message.member.voice.channel]
-                );
-            }
-            return;
-        }
-        let mgid = message.guild.id;
-        let prefixString = prefix[message.member.voice.channel].toString();
-        let statement = args[0].substr(1);
-        statement = statement.toLowerCase();
-
-        switch (statement) {
-            //!p is just the basic rhythm bot
-            case "p":
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                if (!args[1]) {
-                    message.channel.send(
-                        "Where's the link? I can't read your mind... unfortunately."
-                    );
-                    return;
-                }
-                if (!args[1].includes(".")) {
-                    message.channel.send(
-                        "There's something wrong with what you put there."
-                    );
-                    return;
-                }
-                if (!servers[mgid])
-                    servers[mgid] = {
-                        queue: [],
-                    };
-                enumPlayingFunction = "playing";
-                // in case of force disconnect
-                if (
-                    !message.guild.client.voice ||
-                    !message.guild.voice ||
-                    !message.guild.voice.channel
-                ) {
-                    servers[mgid].queue = [];
-                }
-                // push to queue
-                servers[mgid].queue.push(args[1]);
-                // if queue has only 1 song then play
-                if (servers[mgid] && servers[mgid].queue.length < 2) {
-                    playSongToVC(message, args[1]);
-                } else {
-                    message.channel.send("*Added to queue*");
-                }
-                break;
-            // !pn
-            case "pn":
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                if (!args[1]) {
-                    message.channel.send(
-                        "Where's the link? I can't read your mind... unfortunately."
-                    );
-                    return;
-                }
-                if (!args[1].includes(".")) {
-                    message.channel.send(
-                        "There's something wrong with what you put there."
-                    );
-                    return;
-                }
-                if (!servers[mgid])
-                    servers[mgid] = {
-                        queue: [],
-                    };
-                enumPlayingFunction = "playing";
-                // in case of force disconnect
-                if (
-                    !message.guild.client.voice ||
-                    !message.guild.voice ||
-                    !message.guild.voice.channel
-                ) {
-                    servers[mgid].queue = [];
-                }
-                // push to queue
-                servers[mgid].queue.unshift(args[1]);
-                message.channel.send("*Playing now*");
-                playSongToVC(message, args[1]);
-                break;
-            // case '!pv':
-            //     if (!args[1]) {
-            //         message.channel.send("Where's the link? I can't read your mind... unfortunately.");
-            //         return;
-            //     }
-            //     if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
-            //         message.channel.send("There's something wrong with what you put there.");
-            //         return;
-            //     }
-            //     if (!message.member.voice.channel) {
-            //         return;
-            //     }
-            //     if (!servers[message.guild.id]) servers[message.guild.id] = {
-            //         queue: []
-            //     }
-            //
-            //     server = servers[message.guild.id];
-            //     server.queue.push(args[1]);
-            //     playSong(message, args[1], false);
-            //     break;
-
-            //!e is the Stop feature
-            case "e":
-                totalRandomIntMap[message.member.voice.channel] = 0;
-                currentRandomIntMap[message.member.voice.channel] = 0;
-                if (
-                    !message.member ||
-                    !message.member.voice ||
-                    !message.member.voice.channel
-                ) {
-                    return;
-                }
-                dispatcherMap[message.member.voice.channel] = undefined;
-                // should do same as below
-                if (servers[mgid] && servers[mgid].queue) {
-                    servers[mgid].queue = [];
-                }
-                while (servers[mgid] && servers[mgid].queue.length > 0) {
-                    servers[mgid].queue.shift();
-                }
-                if (message.member.voice && message.member.voice.channel) {
-                    message.member.voice.channel.leave();
-                }
-
-                if (
-                    whatspMap[message.member.voice.channel] &&
-                    whatspMap[message.member.voice.channel].length > 0 &&
-                    !whatspMap[message.member.voice.channel].includes("Last Played:")
-                ) {
-                    whatspMap[message.member.voice.channel] =
-                        "Last Played:\n" + whatspMap[message.member.voice.channel];
-                }
-                break;
-
-            // !s prints out the database size
-            case "s":
-                message.channel.send(
-                    "Database size: " + Array.from(congratsDatabase.keys()).length
-                );
-                break;
-
-            // !gd is to run database songs
-            case "gd":
-                runDatabasePlayCommand(args, message, "entries");
-                break;
-            // !d
-            case "d":
-                runDatabasePlayCommand(args, message, mgid);
-                break;
-
-            // case "dv":
-            //     if (!args[1]) {
-            //         message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
-            //         return;
-            //     }
-            //     if (!message.member.voice.channel) {
-            //         return;
-            //     }
-            //     if (!servers[message.guild.id]) servers[message.guild.id] = {
-            //         queue: []
-            //     }
-            //
-            //     server = servers[message.guild.id];
-            //     try {
-            //         whatsp = referenceDatabase.get(args[1].toUpperCase());
-            //     } catch (e) {
-            //         message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
-            //         return;
-            //     }
-            //     //let dPhrase = args[1];
-            //     //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-            //     playSong(message, whatsp, false);
-            //     break;
-
-            // !rg plays a random song from the database
-            case "gr":
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                enumPlayingFunction = "random";
-                runRandomCommand(args, message, "entries");
-                break;
-            // !r is the normal random
-            case "r":
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                enumPlayingFunction = "randomS";
-                runRandomCommand(args, message, mgid);
-                break;
-            // !r2 is the experimental random to work with the normal queue
-            case "r2":
-                if (!message.member.voice.channel) {
-                    return;
-                }
-                enumPlayingFunction = "randomS";
-                runRandomCommand(args, message, mgid);
-                break;
-            // !keys
-            case "keys":
-                if (
-                    !dataSize.get(mgid.toString()) ||
-                    dataSize.get(mgid.toString()) < 1
-                ) {
-                    createSheet(message, mgid);
-                }
-                runKeysCommand(message, prefixString, mgid);
-                break;
-            // !key
-            case "key":
-                if (
-                    !dataSize.get(mgid.toString()) ||
-                    dataSize.get(mgid.toString()) < 1
-                ) {
-                    createSheet(message, mgid);
-                }
-                runKeysCommand(message, prefixString, mgid);
-                break;
-            // !keysg is global keys
-            case "gkeys":
-                runKeysCommand(message, prefixString, "entries");
-                break;
-            // !keyg is global keys
-            case "gkey":
-                runKeysCommand(message, prefixString, "entries");
-                break;
-            // !k is the search
-            case "k":
-                if (!args[1]) {
-                    message.channel.send("No argument was given.");
-                    return;
-                }
-                gsrun(client2, "A", "B", mgid).then(async (xdb) => {
-                    ss = runSearchCommand(args, xdb).ss;
-                    if (ss && ss.length > 0) {
-                        message.channel.send("Keys found: " + ss);
-                    } else {
-                        message.channel.send(
-                            "Could not find any keys that start with the given letters."
-                        );
-                    }
-                });
-                break;
-            // !gk
-            case "gk":
-                if (!args[1]) {
-                    message.channel.send("No argument was given.");
-                    return;
-                }
-                gsrun(client2, "A", "B", "entries").then(async (xdb) => {
-                    ss = runSearchCommand(args, xdb).ss;
-                    if (ss && ss.length > 0) {
-                        message.channel.send("Keys found: " + ss);
-                    } else {
-                        message.channel.send(
-                            "Could not find any keys that start with the given letters."
-                        );
-                    }
-                });
-                break;
-            // !? is the command for what's playing?
-            case "?":
-                runWhatsPCommand(args, message, mgid, mgid);
-                break;
-            case "g?":
-                runWhatsPCommand(args, message, mgid, "entries");
-                break;
-            case "changeprefix":
-                if (!args[1]) {
-                    message.channel.send(
-                        "No argument was given. Enter the new prefix after the command."
-                    );
-                    return;
-                }
-                if (args[1].length > 1) {
-                    message.channel.send(
-                        "Prefix length cannot be greater than 1."
-                    );
-                    return;
-                }
-                args[2] = args[1];
-                args[1] = mgid;
-                gsrun(client2, "A", "B", "prefixes").then(async () => {
-                    await runRemoveItemCommand(message, args[1], "prefixes", false);
-                    runAddCommand(args, message, "prefixes");
-                });
-                prefix[message.member.voice.channel] = args[2];
-                message.channel.send("Prefix successfully changed to " + args[2]);
-                break;
-            // list commands for public commands
-            case "h":
-                sendHelp(message, prefixString);
-                break;
-            case "help":
-                sendHelp(message, prefixString);
-                break;
-            // !skip
-            case "skip":
-                // determines random type
-                if (enumPlayingFunction === "random") {
-                    mgid = "entries";
-                } else {
-                    mgid = message.guild.id;
-                }
-                gsrun(client2, "A", "B", mgid).then((xdb) => {
-                    skipSong(message, xdb.congratsDatabase);
-                });
-                break;
-            // !sk
-            case "sk":
-                // determines random type (global or local)
-                if (enumPlayingFunction === "random") {
-                    mgid = "entries";
-                } else {
-                    mgid = message.guild.id;
-                }
-                gsrun(client2, "A", "B", mgid).then((xdb) => {
-                    skipSong(message, xdb.congratsDatabase);
-                });
-                break;
-            // !pa
-            case "pa":
-                if (
-                    message.member.voice &&
-                    dispatcherMap[message.member.voice.channel]
-                ) {
-                    dispatcherMap[message.member.voice.channel].pause();
-                    message.channel.send("*paused*");
-                }
-                break;
-            // !pl
-            case "pl":
-                if (
-                    message.member.voice &&
-                    dispatcherMap[message.member.voice.channel]
-                ) {
-                    dispatcherMap[message.member.voice.channel].resume();
-                    message.channel.send("*playing*");
-                }
-                break;
-            // !v prints out the version number
-            case "v":
-                message.channel.send("version: " + version + "\n" + latestRelease);
-                break;
-            // !devadd
-            case "devadd":
-                message.channel.send(
-                    "Here's link to add to the database:\n" +
-                    "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622"
-                );
-                break;
-            // !ag adds to the databse
-            case "ga":
-                if (!args[1] || !args[2]) {
-                    message.channel.send(
-                        "Could not add to the database. Put a song key followed by a link."
-                    );
-                    break;
-                }
-                if (!args[2].includes(".")) {
-                    message.channel.send("You can only add links to the database.");
-                    return;
-                }
-                // in case the database has not been initialized
-                gsrun(client2, "A", "B", "entries").then(() => {
-                    runAddCommand(args, message, "entries");
-                });
-                break;
-            // !a is normal add
-            case "a":
-                if (!args[1] || !args[2]) {
-                    message.channel.send(
-                        "Could not add to the database. Put a song key followed by a link."
-                    );
-                    return;
-                }
-                if (!args[2].includes(".")) {
-                    message.channel.send("You can only add links to the database.");
-                    return;
-                }
-                // in case the database has not been initialized
-                gsrun(client2, "A", "B", mgid).then(() => {
-                    if (
-                        !dataSize.get(mgid.toString()) ||
-                        dataSize.get(mgid.toString()) < 1
-                    ) {
-                        message.channel.send("Please try again.");
-                    } else {
-                        runAddCommand(args, message, mgid);
-                    }
-                });
-                break;
-            // !rm removes database entries
-            case "rm":
-                runRemoveItemCommand(message, args, mgid, true);
-                break;
-            // !grm removes database entries
-            case "grm":
-                runRemoveItemCommand(message, args, "entries", true);
-                break;
-            // !rand
-            case "rand":
-                if (args[1]) {
-                    const numToCheck = parseInt(args[1]);
-                    if (!numToCheck || numToCheck < 1) {
-                        message.channel.send("Number has to be positive.");
-                        return;
-                    }
-                    let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-                    message.channel.send(
-                        "Assuming " +
-                        numToCheck +
-                        " in total. Your number is " +
-                        randomInt2 +
-                        "."
-                    );
-                } else {
-                    if (
-                        message.member &&
-                        message.member.voice &&
-                        message.member.voice.channel
-                    ) {
-                        const numToCheck = message.member.voice.channel.members.size;
-                        if (numToCheck <= 1) {
-                            message.channel.send(
-                                "Need at least 2 people your voice channel."
-                            );
-                        }
-                        let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-                        message.channel.send(
-                            "Assuming " +
-                            numToCheck +
-                            " people. Your number is " +
-                            randomInt2 +
-                            "."
-                        );
-                        // message.channel.send("You need to input a upper limit");
-                    }
-                }
-                break;
-        }
+        runCommandCases(message);
     }
+
 });
 
 /**
@@ -958,8 +980,9 @@ bot.on("message", (message) => {
  * @param {*} args The command arguments
  * @param {*} message The message that triggered the command
  * @param {*} currentBotGuildId the server/guild id
+ * @param printMsgToChannel whether to print response to channel
  */
-function runAddCommand(args, message, currentBotGuildId) {
+function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
     let songsAddedInt = 0;
     let z = 1;
     while (args[z] && args[z + 1]) {
@@ -971,18 +994,18 @@ function runAddCommand(args, message, currentBotGuildId) {
         z = z + 2;
         songsAddedInt += 1;
     }
-
-    if (songsAddedInt === 1) {
-        message.channel.send("*Song successfully added to the database.*");
-    } else if (songsAddedInt > 1) {
-        gsrun(client2, "A", "B", currentBotGuildId).then(() => {
-            gsUpdateOverwrite(client2, -1, songsAddedInt, currentBotGuildId);
-            message.channel.send("*" + songsAddedInt + " songs successfully added to the database.*");
-        });
-    } else {
-        message.channel.send("Please call '!keys' to initialize the database.");
+    if (printMsgToChannel) {
+        if (songsAddedInt === 1) {
+            message.channel.send("*Song successfully added to the database.*");
+        } else if (songsAddedInt > 1) {
+            gsrun(client2, "A", "B", currentBotGuildId).then(() => {
+                gsUpdateOverwrite(client2, -1, songsAddedInt, currentBotGuildId);
+                message.channel.send("*" + songsAddedInt + " songs successfully added to the database.*");
+            });
+        } else {
+            message.channel.send("Please call '!keys' to initialize the database.");
+        }
     }
-
 }
 
 /**
