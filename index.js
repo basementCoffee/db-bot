@@ -933,8 +933,6 @@ async function runCommandCases(message) {
     }
 }
 
-}
-
 // parses message, provides a response
 bot.on("message", (message) => {
     if (message.author.bot) return;
@@ -972,7 +970,6 @@ bot.on("message", (message) => {
     } else {
         runCommandCases(message);
     }
-
 });
 
 /**
