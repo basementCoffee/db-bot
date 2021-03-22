@@ -772,15 +772,19 @@ async function runCommandCases(message) {
                 );
                 return;
             }
+            if (args[1] === "+" || args[1] === "=") {
+                message.channel.send("Cannot have " + args[1] + " as a prefix.");
+                return;
+            }
             args[2] = args[1];
             args[1] = mgid;
             await gsrun(client2, "A", "B", "prefixes").then(() => {
                 console.log("P1: " + dataSize.get("prefixes"));
-                runRemoveItemCommand(message, mgid, "prefixes", false).then(() =>{
-                    runAddCommand(args, message, "prefixes", false).then(()=> {
-                        gsUpdateOverwrite(client2,5,2,"prefixes");
-                    });
-                });
+                runRemoveItemCommand(message, mgid, "prefixes", false);
+                runAddCommand(args, message, "prefixes", false);
+                args[1] = "";
+                args[2] = "";
+                runAddCommand(args, message, "prefixes", false);
             });
             console.log("P2: " + dataSize.get("prefixes"));
             prefix[mgid] = args[2];
