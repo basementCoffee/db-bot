@@ -473,18 +473,24 @@ async function runCommandCases(message) {
     let mgid = message.guild.id;
     let prefixString = prefix[mgid];
     if (!prefixString) {
-        await gsrun(client2, "A", "B", "prefixes").then((xdb) => {
-            console.log(xdb.congratsDatabase);
-            console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
-            console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
-            let newPrefix = xdb.congratsDatabase.get(mgid);
-            if (!newPrefix) {
-                prefix[mgid] = "!";
-            } else {
-                prefix[mgid] = newPrefix;
-            }
-        });
+        try {
+            await gsrun(client2, "A", "B", "prefixes").then((xdb) => {
+                console.log(xdb.congratsDatabase);
+                console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
+                console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
+                let newPrefix = xdb.congratsDatabase.get(mgid);
+                if (!newPrefix) {
+                    prefix[mgid] = "!";
+                } else {
+                    prefix[mgid] = newPrefix;
+                }
+            });
+        } catch(e) {
+            prefix[mgid] = "!";
+            gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
+        }
     }
+    prefixString = prefix[mgid];
     if (args[0].substr(0, 1) !== prefix[mgid]) {
         if (args[0] === "!changeprefix") {
             message.channel.send(
