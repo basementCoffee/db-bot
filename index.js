@@ -791,9 +791,9 @@ bot.on("message", (message) => {
                 }
                 args[2] = args[1];
                 args[1] = mgid;
-                gsrun(client2, "A", "B", "prefixes").then(() => {
-                        runRemoveItemCommand(message, args[1], "prefixes", false).then(
-                            runAddCommand(args, message, "prefixes"))
+                gsrun(client2, "A", "B", "prefixes").then(async () => {
+                    await runRemoveItemCommand(message, args[1], "prefixes", false);
+                    runAddCommand(args, message, "prefixes");
                 });
                 prefix[message.member.voice.channel] = args[2];
                 message.channel.send("Prefix successfully changed to " + args[2]);
