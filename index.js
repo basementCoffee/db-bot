@@ -68,17 +68,19 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     congratsDatabase.clear();
     referenceDatabase.clear();
     let keyArray = [];
-    for (let i = 0; i < dataSize.get(nameOfSheet); i++) {
-        // the array of rows (has two columns)
-        line = arrayOfSpreadsheetValues[i];
-        if (!line) {
-            continue;
+    if (arrayOfSpreadsheetValues) {
+        for (let i = 0; i < dataSize.get(nameOfSheet); i++) {
+            // the array of rows (has two columns)
+            line = arrayOfSpreadsheetValues[i];
+            if (!line) {
+                continue;
+            }
+            keyT = line[0];
+            keyArray.push(keyT);
+            valueT = line[1];
+            congratsDatabase.set(keyT, valueT);
+            referenceDatabase.set(keyT.toUpperCase(), valueT);
         }
-        keyT = line[0];
-        keyArray.push(keyT);
-        valueT = line[1];
-        congratsDatabase.set(keyT, valueT);
-        referenceDatabase.set(keyT.toUpperCase(), valueT);
     }
     return {
         congratsDatabase: congratsDatabase,
