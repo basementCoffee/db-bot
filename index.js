@@ -459,7 +459,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
             message.channel.send("Need to specify the key to delete.");
         }
     }
-
+    return 1;
 }
 
 /**
@@ -774,12 +774,12 @@ async function runCommandCases(message) {
             }
             args[2] = args[1];
             args[1] = mgid;
-            await gsrun(client2, "A", "B", "prefixes").then(async () => {
+            await gsrun(client2, "A", "B", "prefixes").then(() => {
                 console.log("P1: " + dataSize.get("prefixes"));
-                await runRemoveItemCommand(message, mgid, "prefixes", false);
-                console.log("removed item");
-                await runAddCommand(args, message, "prefixes", false).then(
-                    gsUpdateOverwrite(client2,-1,2,"prefixes"))
+                runRemoveItemCommand(message, mgid, "prefixes", false).then(
+                    runAddCommand(args, message, "prefixes", false).then(
+                        gsUpdateOverwrite(client2,-1,2,"prefixes"))
+                )
             });
             console.log("P2: " + dataSize.get("prefixes"));
             prefix[mgid] = args[2];
@@ -1009,6 +1009,7 @@ function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
             message.channel.send("Please call '!keys' to initialize the database.");
         }
     }
+    return 1;
 }
 
 /**
