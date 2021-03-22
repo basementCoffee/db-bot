@@ -427,14 +427,14 @@ function skipSong(message, cdb) {
  */
 function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
     if (keyName) {
-        gsrun(client2, "A", "B", sheetName).then((xdb) => {
+        gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
             let couldNotFindKey = true;
             for (let i = 0; i < xdb.line.length; i++) {
                 let itemToCheck = xdb.line[i];
                 if (itemToCheck.toLowerCase() === keyName.toLowerCase()) {
                     i += 1;
                     couldNotFindKey = false;
-                    deleteRows(message, sheetName, i);
+                    await deleteRows(message, sheetName, i);
                     gsUpdateOverwrite(client2, -1, -1, sheetName);
                     if (sendMsgToChannel){
                         message.channel.send("*Removed '" + itemToCheck + "'*");
