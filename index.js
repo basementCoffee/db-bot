@@ -421,7 +421,7 @@ function skipSong(message, cdb) {
 /**
  * Removes an item from the google sheets music database
  * @param message the message that triggered the bot
- * @param keyName the key to remove
+ * @param {string} keyName the key to remove
  * @param sheetName the name of the sheet to alter
  * @param sendMsgToChannel whether to send a response to the channel
  */
@@ -431,7 +431,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
             let couldNotFindKey = true;
             for (let i = 0; i < xdb.line.length; i++) {
                 let itemToCheck = xdb.line[i];
-                if (itemToCheck.toLowerCase() === keyName.toLowerCase()) {
+                if (itemToCheck.toLowerCase() === keyName.toString().toLowerCase()) {
                     i += 1;
                     couldNotFindKey = false;
                     await deleteRows(message, sheetName, i);
@@ -774,7 +774,9 @@ async function runCommandCases(message) {
             args[1] = mgid;
             gsrun(client2, "A", "B", "prefixes").then(async () => {
                 await runRemoveItemCommand(message, args[1], "prefixes", false);
-                runAddCommand(args, message, "prefixes", false);
+                gsrun(client2, "A", "B", "prefixes").then(() => {
+                    runAddCommand(args, message, "prefixes", false);
+                });
             });
             prefix[mgid] = args[2];
             message.channel.send("Prefix successfully changed to " + args[2]);
