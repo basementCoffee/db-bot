@@ -494,7 +494,7 @@ async function runCommandCases(message) {
     if (args[0].substr(0, 1) !== prefix[mgid]) {
         if (args[0] === "!changeprefix") {
             message.channel.send(
-                "Use prefix to change. Prefix is: " +
+                "Current prefix is: " +
                 prefix[mgid]
             );
         }
