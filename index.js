@@ -273,7 +273,7 @@ function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
 /**
  * Overwrites the cell D1.
  * @param cl the client auth
- * @param value the final DB value, overrides addOn
+ * @param value the final DB value, overrides addOn unless negative
  * @param addOn the number to mutate the current DB size by
  * @param nameOfSheet the name of the sheet to change
  */
@@ -775,12 +775,13 @@ async function runCommandCases(message) {
             args[2] = args[1];
             args[1] = mgid;
             gsrun(client2, "A", "B", "prefixes").then(async () => {
-                dataSize["prefixes"] += 1;
                 await runRemoveItemCommand(message, args[1], "prefixes", false);
                 console.log("removed item");
+                console.log(dataSize["prefixes"]);
                 gsrun(client2, "A", "B", "prefixes").then(() => {
                     runAddCommand(args, message, "prefixes", false);
                 });
+                gsUpdateOverwrite(client2,-1,1,"prefixes");
             });
             prefix[mgid] = args[2];
             message.channel.send("Prefix successfully changed to " + args[2]);
