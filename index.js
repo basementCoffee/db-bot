@@ -473,7 +473,7 @@ async function runCommandCases(message) {
     let mgid = message.guild.id;
     let prefixString = prefix[mgid];
     if (!prefixString) {
-        await gsrun(client2, "A", "B", mgid).then((xdb) => {
+        await gsrun(client2, "A", "B", "prefixes").then((xdb) => {
             console.log(xdb.congratsDatabase);
             console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
             console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
