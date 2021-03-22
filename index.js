@@ -778,13 +778,13 @@ async function runCommandCases(message) {
             }
             args[2] = args[1];
             args[1] = mgid;
-            await gsrun(client2, "A", "B", "prefixes").then(() => {
-                console.log("P1: " + dataSize.get("prefixes"));
-                runRemoveItemCommand(message, mgid, "prefixes", false);
-                runAddCommand(args, message, "prefixes", false);
+            await gsrun(client2, "A", "B", "prefixes").then(async () => {
+                // try gsupdate overwrite here
+                console.log("P1: " + dataSize.set("prefixes", parseInt(dataSize.get("prefixes"))+1));
+                await runRemoveItemCommand(message, mgid, "prefixes", false);
+                await runAddCommand(args, message, "prefixes", false);
                 args[1] = "";
                 args[2] = "";
-                runAddCommand(args, message, "prefixes", false);
             });
             console.log("P2: " + dataSize.get("prefixes"));
             prefix[mgid] = args[2];
