@@ -780,7 +780,7 @@ async function runCommandCases(message) {
             args[1] = mgid;
             await gsrun(client2, "A", "B", "prefixes").then(async () => {
                 // try gsupdate overwrite here
-                console.log("P1: " + dataSize.set("prefixes", parseInt(dataSize.get("prefixes"))+1));
+                dataSize.set("prefixes", parseInt(dataSize.get("prefixes"))+1)
                 await runRemoveItemCommand(message, mgid, "prefixes", false);
                 await runAddCommand(args, message, "prefixes", false);
                 args[1] = "";
