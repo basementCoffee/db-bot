@@ -459,7 +459,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
             message.channel.send("Need to specify the key to delete.");
         }
     }
-    return 1;
+    return new Promise((resolve, reject) => 1);
 }
 
 /**
@@ -1009,7 +1009,7 @@ function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
             message.channel.send("Please call '!keys' to initialize the database.");
         }
     }
-    return 1;
+    return new Promise((resolve, reject) => 1);
 }
 
 /**
