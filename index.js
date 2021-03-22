@@ -431,11 +431,12 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
             let couldNotFindKey = true;
             for (let i = 0; i < xdb.line.length; i++) {
                 let itemToCheck = xdb.line[i];
-                if (itemToCheck.toLowerCase() === keyName.toString().toLowerCase()) {
+                if (itemToCheck.toLowerCase() === keyName.toLowerCase()) {
                     i += 1;
                     couldNotFindKey = false;
                     await deleteRows(message, sheetName, i);
                     gsUpdateOverwrite(client2, -1, -1, sheetName);
+                    console.log("Removed: " + itemToCheck);
                     if (sendMsgToChannel){
                         message.channel.send("*Removed '" + itemToCheck + "'*");
                     }
@@ -886,11 +887,11 @@ async function runCommandCases(message) {
             break;
         // !rm removes database entries
         case "rm":
-            runRemoveItemCommand(message, args, mgid, true);
+            runRemoveItemCommand(message, args[1], mgid, true);
             break;
         // !grm removes database entries
         case "grm":
-            runRemoveItemCommand(message, args, "entries", true);
+            runRemoveItemCommand(message, args[1], "entries", true);
             break;
         // !rand
         case "rand":
