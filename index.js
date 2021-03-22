@@ -775,11 +775,11 @@ async function runCommandCases(message) {
             args[2] = args[1];
             args[1] = mgid;
             gsrun(client2, "A", "B", "prefixes").then(async () => {
-                await runRemoveItemCommand(message, args[1], "prefixes", false);
                 console.log("removed item");
                 console.log(dataSize["prefixes"]);
-                gsrun(client2, "A", "B", "prefixes").then(() => {
-                    runAddCommand(args, message, "prefixes", false);
+                runAddCommand(args, message, "prefixes", false);
+                await gsrun(client2, "A", "B", "prefixes").then(() => {
+                    await runRemoveItemCommand(message, args[1], "prefixes", false);
                 });
                 gsUpdateOverwrite(client2,-1,2,"prefixes");
             });
