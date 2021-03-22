@@ -1013,7 +1013,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
         servers[message.guild.id].queue = [];
     }
 
-    gsrun(client2, "A", "B", sheetname).then(async (xdb) => {
+    gsrun(client2, "A", "B", sheetname).then((xdb) => {
         let queueWasEmpty = false;
         // if the queue is empty then play
         if (servers[message.guild.id].queue.length < 1) {
@@ -1053,7 +1053,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
                         "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
                     );
                     // push to queue
-                    await servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
+                    servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
                 } else if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
