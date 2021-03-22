@@ -68,19 +68,17 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     congratsDatabase.clear();
     referenceDatabase.clear();
     let keyArray = [];
-    if (arrayOfSpreadsheetValues) {
-        for (let i = 0; i < dataSize.get(nameOfSheet); i++) {
-            // the array of rows (has two columns)
-            line = arrayOfSpreadsheetValues[i];
-            if (!line) {
-                continue;
-            }
-            keyT = line[0];
-            keyArray.push(keyT);
-            valueT = line[1];
-            congratsDatabase.set(keyT, valueT);
-            referenceDatabase.set(keyT.toUpperCase(), valueT);
+    for (let i = 0; i < dataSize.get(nameOfSheet); i++) {
+        // the array of rows (has two columns)
+        line = arrayOfSpreadsheetValues[i];
+        if (!line) {
+            continue;
         }
+        keyT = line[0];
+        keyArray.push(keyT);
+        valueT = line[1];
+        congratsDatabase.set(keyT, valueT);
+        referenceDatabase.set(keyT.toUpperCase(), valueT);
     }
     return {
         congratsDatabase: congratsDatabase,
@@ -461,7 +459,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
             message.channel.send("Need to specify the key to delete.");
         }
     }
-    return new Promise((resolve, reject) => 1);
+
 }
 
 /**
@@ -774,21 +772,17 @@ async function runCommandCases(message) {
                 );
                 return;
             }
-            if (args[1] === "+" || args[1] === "=") {
-                message.channel.send("Cannot have " + args[1] + " as a prefix.");
-                return;
-            }
             args[2] = args[1];
             args[1] = mgid;
-            await gsrun(client2, "A", "B", "prefixes").then(async () => {
-                // try gsupdate overwrite here
-                dataSize.set("prefixes", parseInt(dataSize.get("prefixes"))+1)
-                await runRemoveItemCommand(message, mgid, "prefixes", false);
-                await runAddCommand(args, message, "prefixes", false);
-                args[1] = "";
-                args[2] = "";
+            gsrun(client2, "A", "B", "prefixes").then(async () => {
+                await runRemoveItemCommand(message, args[1], "prefixes", false);
+                console.log("removed item");
+                console.log(dataSize["prefixes"]);
+                gsrun(client2, "A", "B", "prefixes").then(() => {
+                    runAddCommand(args, message, "prefixes", false);
+                });
+                gsUpdateOverwrite(client2,-1,2,"prefixes");
             });
-            console.log("P2: " + dataSize.get("prefixes"));
             prefix[mgid] = args[2];
             message.channel.send("Prefix successfully changed to " + args[2]);
             break;
@@ -1016,7 +1010,6 @@ function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
             message.channel.send("Please call '!keys' to initialize the database.");
         }
     }
-    return new Promise((resolve, reject) => 1);
 }
 
 /**
