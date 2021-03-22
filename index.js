@@ -474,6 +474,7 @@ async function runCommandCases(message) {
     let prefixString = prefix[mgid];
     if (!prefixString) {
         await gsrun(client2, "A", "B", mgid).then((xdb) => {
+            console.log(xdb.congratsDatabase);
             console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
             console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
             let newPrefix = xdb.congratsDatabase.get(mgid);
@@ -775,6 +776,7 @@ async function runCommandCases(message) {
             args[1] = mgid;
             gsrun(client2, "A", "B", "prefixes").then(async () => {
                 await runRemoveItemCommand(message, args[1], "prefixes", false);
+                console.log("removed item");
                 gsrun(client2, "A", "B", "prefixes").then(() => {
                     runAddCommand(args, message, "prefixes", false);
                 });
