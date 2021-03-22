@@ -423,8 +423,9 @@ function skipSong(message, cdb) {
  * @param message the message that triggered the bot
  * @param keyName the key to remove
  * @param sheetName the name of the sheet to alter
+ * @param sendMsgToChannel whether to send a response to the channel
  */
-function runRemoveItemCommand(message, keyName, sheetName) {
+function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
     if (keyName) {
         gsrun(client2, "A", "B", sheetName).then((xdb) => {
             let couldNotFindKey = true;
@@ -435,10 +436,12 @@ function runRemoveItemCommand(message, keyName, sheetName) {
                     couldNotFindKey = false;
                     deleteRows(message, sheetName, i);
                     gsUpdateOverwrite(client2, -1, -1, sheetName);
-                    message.channel.send("*Removed '" + itemToCheck + "'*");
+                    if (sendMsgToChannel){
+                        message.channel.send("*Removed '" + itemToCheck + "'*");
+                    }
                 }
             }
-            if (couldNotFindKey) {
+            if (couldNotFindKey && sendMsgToChannel) {
                 gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
                     let foundStrings = runSearchCommand(keyName, xdb).ss;
                     if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
@@ -451,7 +454,9 @@ function runRemoveItemCommand(message, keyName, sheetName) {
             }
         });
     } else {
-        message.channel.send("Need to specify the key to delete.");
+        if (sendMsgToChannel) {
+            message.channel.send("Need to specify the key to delete.");
+        }
     }
 
 }
@@ -787,8 +792,8 @@ bot.on("message", (message) => {
                 args[2] = args[1];
                 args[1] = mgid;
                 gsrun(client2, "A", "B", "prefixes").then(() => {
-                        runRemoveItemCommand(message, args[1], mgid)
-                        runAddCommand(args, message, "prefixes");
+                        runRemoveItemCommand(message, args[1], "prefixes", false).then(
+                            runAddCommand(args, message, "prefixes"))
                 });
                 prefix[message.member.voice.channel] = args[2];
                 message.channel.send("Prefix successfully changed to " + args[2]);
@@ -898,11 +903,11 @@ bot.on("message", (message) => {
                 break;
             // !rm removes database entries
             case "rm":
-                runRemoveItemCommand(message, args, mgid);
+                runRemoveItemCommand(message, args, mgid, true);
                 break;
             // !grm removes database entries
             case "grm":
-                runRemoveItemCommand(message, args, "entries");
+                runRemoveItemCommand(message, args, "entries", true);
                 break;
             // !rand
             case "rand":
