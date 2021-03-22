@@ -421,16 +421,16 @@ function skipSong(message, cdb) {
 /**
  * Removes an item from the google sheets music database
  * @param message the message that triggered the bot
- * @param args the message broken into arguments
+ * @param keyName the key to remove
  * @param sheetName the name of the sheet to alter
  */
-function runRemoveItemCommand(message, args, sheetName) {
-    if (args[1]) {
+function runRemoveItemCommand(message, keyName, sheetName) {
+    if (keyName) {
         gsrun(client2, "A", "B", sheetName).then((xdb) => {
             let couldNotFindKey = true;
             for (let i = 0; i < xdb.line.length; i++) {
                 let itemToCheck = xdb.line[i];
-                if (itemToCheck.toLowerCase() === args[1].toLowerCase()) {
+                if (itemToCheck.toLowerCase() === keyName.toLowerCase()) {
                     i += 1;
                     couldNotFindKey = false;
                     deleteRows(message, sheetName, i);
@@ -440,11 +440,11 @@ function runRemoveItemCommand(message, args, sheetName) {
             }
             if (couldNotFindKey) {
                 gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
-                    let foundStrings = runSearchCommand(args, xdb).ss;
-                    if (foundStrings && foundStrings.length > 0 && args[1].length > 1) {
-                        message.channel.send("Could not find '" + args[1] + "'.\n*Did you mean: " + ss + "*");
+                    let foundStrings = runSearchCommand(keyName, xdb).ss;
+                    if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
+                        message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + ss + "*");
                     } else {
-                        message.channel.send("*Could not find '" + args[1] + "'.*");
+                        message.channel.send("*Could not find '" + keyName + "'.*");
                     }
 
                 });
@@ -694,6 +694,14 @@ bot.on("message", (message) => {
                 enumPlayingFunction = "randomS";
                 runRandomCommand(args, message, mgid);
                 break;
+            // !r2 is the experimental random to work with the normal queue
+            case "r2":
+                if (!message.member.voice.channel) {
+                    return;
+                }
+                enumPlayingFunction = "randomS";
+                runRandomCommand(args, message, mgid);
+                break;
             // !keys
             case "keys":
                 if (
@@ -776,8 +784,14 @@ bot.on("message", (message) => {
                     );
                     return;
                 }
-                prefix[message.member.voice.channel] = args[1];
-                message.channel.send("Prefix successfully changed to " + args[1]);
+                args[2] = args[1];
+                args[1] = mgid;
+                gsrun(client2, "A", "B", "prefixes").then(() => {
+                        runRemoveItemCommand(message, args[1], mgid)
+                        runAddCommand(args, message, "prefixes");
+                });
+                prefix[message.member.voice.channel] = args[2];
+                message.channel.send("Prefix successfully changed to " + args[2]);
                 break;
             // list commands for public commands
             case "h":
@@ -933,7 +947,6 @@ bot.on("message", (message) => {
         }
     }
 });
-var enumPlayingFunction;
 
 /**
  * The command to add a song to a given database.
@@ -1514,7 +1527,7 @@ function printErrorToChannel(activationType, songKey, e) {
     bot.channels.cache.get("730239813403410619").send(e);
 }
 
-
+var enumPlayingFunction;
 var whatspMap = new Map();
 var prefix = new Map();
 var congratsDatabase = new Map();
