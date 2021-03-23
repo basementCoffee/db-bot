@@ -786,6 +786,9 @@ async function runCommandCases(message) {
         case "g?":
             runWhatsPCommand(args, message, mgid, "entries");
             break;
+        case "m?":
+            runWhatsPCommand(args, message, mgid, "p" + message.member.id);
+            break;
         case "changeprefix":
             if (!args[1]) {
                 message.channel.send(
