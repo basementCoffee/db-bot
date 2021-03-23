@@ -1231,7 +1231,7 @@ function sendHelp(message, prefixString) {
         "e  -->  Stops playing and ends session\n" +
         prefixString +
         "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
-        "\n----------  Server Music Database  ----------  \n" +
+        "\n-----------  Server Music Database  -----------  \n" +
         prefixString +
         "keys  -->  See all your saved songs \n" +
         prefixString +
