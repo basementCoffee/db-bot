@@ -649,7 +649,7 @@ async function runCommandCases(message) {
             break;
         // !md is the personal database
         case "md":
-            runDatabasePlayCommand(args, message, message.member.id);
+            runDatabasePlayCommand(args, message, "p"+message.member.id);
             break;
         // case "dv":
         //     if (!args[1]) {
@@ -709,12 +709,11 @@ async function runCommandCases(message) {
             break;
         // !mkeys is personal keys
         case "mkeys":
-            console.log("message member id: " + message.member.id);
-            runKeysCommand(message, prefixString, message.member.id);
+            runKeysCommand(message, prefixString, "p"+message.member.id);
             break;
         // !mkey is personal keys
         case "mkey":
-            runKeysCommand(message, prefixString, message.member.id);
+            runKeysCommand(message, prefixString, "p"+message.member.id);
             break;
         // !gkeys is global keys
         case "gkeys":
@@ -908,14 +907,14 @@ async function runCommandCases(message) {
                 return;
             }
             // in case the database has not been initialized
-            gsrun(client2, "A", "B", message.member.id).then(() => {
+            gsrun(client2, "A", "B", "p"+message.member.id).then(() => {
                 if (
-                    !dataSize.get(message.member.id.toString()) ||
-                    dataSize.get(message.member.id.toString()) < 1
+                    !dataSize.get("p"+message.member.id.toString()) ||
+                    dataSize.get("p"+message.member.id.toString()) < 1
                 ) {
                     message.channel.send("Please try again.");
                 } else {
-                    runAddCommand(args, message, message.member.id, true);
+                    runAddCommand(args, message, "p"+message.member.id, true);
                 }
             });
             break;
@@ -929,7 +928,7 @@ async function runCommandCases(message) {
             break;
         // !rm removes database entries
         case "mrm":
-            runRemoveItemCommand(message, args[1], message.member.id, true);
+            runRemoveItemCommand(message, args[1], "p"+message.member.id, true);
             break;
         // !rand
         case "rand":
