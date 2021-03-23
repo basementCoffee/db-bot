@@ -930,6 +930,9 @@ async function runCommandCases(message) {
         case "mrm":
             runRemoveItemCommand(message, args[1], "p"+message.member.id, true);
             break;
+        case "invite":
+            message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1133584&scope=bot");
+            break;
         // !rand
         case "rand":
             if (args[1]) {
@@ -1273,7 +1276,7 @@ function runRandomCommand(args, message, sheetname) {
 function playRandom2(message, numOfTimes, cdb, numOfRetries) {
     currentRandomIntMap[message.member.voice.channel] += 1;
     // server = servers[message.guild.id];
-    var rKeyArray = Array.from(cdb.keys());
+    const rKeyArray = Array.from(cdb.keys());
     let rn;
     let rk;
     process.stdout.on("error", function (err) {
