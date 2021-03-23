@@ -437,7 +437,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                     await deleteRows(message, sheetName, i);
                     gsUpdateOverwrite(client2, -1, -1, sheetName);
                     console.log("Removed: " + itemToCheck);
-                    if (sendMsgToChannel){
+                    if (sendMsgToChannel) {
                         message.channel.send("*Removed '" + itemToCheck + "'*");
                     }
                 }
@@ -485,7 +485,7 @@ async function runCommandCases(message) {
                     prefix[mgid] = newPrefix;
                 }
             });
-        } catch(e) {
+        } catch (e) {
             prefix[mgid] = "!";
             gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
         }
@@ -647,7 +647,10 @@ async function runCommandCases(message) {
         case "d":
             runDatabasePlayCommand(args, message, mgid);
             break;
-
+        // !md is the personal database
+        case "md":
+            runDatabasePlayCommand(args, message, message.member.id);
+            break;
         // case "dv":
         //     if (!args[1]) {
         //         message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
@@ -696,31 +699,28 @@ async function runCommandCases(message) {
             enumPlayingFunction = "randomS";
             runRandomCommand(args, message, mgid);
             break;
-        // !keys
+        // !keys is server keys
         case "keys":
-            if (
-                !dataSize.get(mgid.toString()) ||
-                dataSize.get(mgid.toString()) < 1
-            ) {
-                createSheet(message, mgid);
-            }
             runKeysCommand(message, prefixString, mgid);
             break;
         // !key
         case "key":
-            if (
-                !dataSize.get(mgid.toString()) ||
-                dataSize.get(mgid.toString()) < 1
-            ) {
-                createSheet(message, mgid);
-            }
             runKeysCommand(message, prefixString, mgid);
             break;
-        // !keysg is global keys
+        // !mkeys is personal keys
+        case "mkeys":
+            console.log("message member id: " + message.member.id);
+            runKeysCommand(message, prefixString, message.member.id);
+            break;
+        // !mkey is personal keys
+        case "mkey":
+            runKeysCommand(message, prefixString, message.member.id);
+            break;
+        // !gkeys is global keys
         case "gkeys":
             runKeysCommand(message, prefixString, "entries");
             break;
-        // !keyg is global keys
+        // !gkey is global keys
         case "gkey":
             runKeysCommand(message, prefixString, "entries");
             break;
@@ -787,7 +787,7 @@ async function runCommandCases(message) {
                 await gsrun(client2, "A", "B", "prefixes").then(() => {
                     runRemoveItemCommand(message, args[1], "prefixes", false);
                 });
-                gsUpdateOverwrite(client2,-1,1,"prefixes");
+                gsUpdateOverwrite(client2, -1, 1, "prefixes");
             });
             prefix[mgid] = args[2];
             message.channel.send("Prefix successfully changed to " + args[2]);
@@ -854,13 +854,13 @@ async function runCommandCases(message) {
                 "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622"
             );
             break;
-        // !ag adds to the databse
+        // !ga adds to the server database
         case "ga":
             if (!args[1] || !args[2]) {
                 message.channel.send(
                     "Could not add to the database. Put a song key followed by a link."
                 );
-                break;
+                return;
             }
             if (!args[2].includes(".")) {
                 message.channel.send("You can only add links to the database.");
@@ -895,6 +895,30 @@ async function runCommandCases(message) {
                 }
             });
             break;
+        // !a is normal add
+        case "ma":
+            if (!args[1] || !args[2]) {
+                message.channel.send(
+                    "Could not add to the database. Put a song key followed by a link."
+                );
+                return;
+            }
+            if (!args[2].includes(".")) {
+                message.channel.send("You can only add links to the database.");
+                return;
+            }
+            // in case the database has not been initialized
+            gsrun(client2, "A", "B", message.member.id).then(() => {
+                if (
+                    !dataSize.get(message.member.id.toString()) ||
+                    dataSize.get(message.member.id.toString()) < 1
+                ) {
+                    message.channel.send("Please try again.");
+                } else {
+                    runAddCommand(args, message, message.member.id, true);
+                }
+            });
+            break;
         // !rm removes database entries
         case "rm":
             runRemoveItemCommand(message, args[1], mgid, true);
@@ -902,6 +926,10 @@ async function runCommandCases(message) {
         // !grm removes database entries
         case "grm":
             runRemoveItemCommand(message, args[1], "entries", true);
+            break;
+        // !rm removes database entries
+        case "mrm":
+            runRemoveItemCommand(message, args[1], message.member.id, true);
             break;
         // !rand
         case "rand":
@@ -1374,6 +1402,12 @@ function playRandom2(message, numOfTimes, cdb, numOfRetries) {
  * @param {*} sheetname The name of the sheet to retrieve
  */
 function runKeysCommand(message, prefixString, sheetname) {
+    if (
+        !dataSize.get(sheetname.toString()) ||
+        dataSize.get(sheetname.toString()) < 1
+    ) {
+        createSheet(message, sheetname);
+    }
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
         s = "";
