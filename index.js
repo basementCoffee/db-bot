@@ -696,8 +696,16 @@ async function runCommandCases(message) {
             if (!message.member.voice.channel) {
                 return;
             }
-            enumPlayingFunction = "randomS";
-            runRandomCommand(args, message, mgid);
+            enumPlayingFunction = "playing";
+            runRandomToQueue(args, message, mgid);
+            break;
+        // !gr2 is the experimental global random to work with the normal queue
+        case "gr2":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            enumPlayingFunction = "playing";
+            runRandomToQueue(args, message, "entries");
             break;
         // !keys is server keys
         case "keys":
@@ -1396,6 +1404,91 @@ function playRandom2(message, numOfTimes, cdb, numOfRetries) {
             }
         }
     });
+}
+
+function runRandomToQueue(args, message, sheetname) {
+    if (!servers[message.guild.id])
+        servers[message.guild.id] = {
+            queue: [],
+        };
+    totalRandomIntMap[message.member.voice.channel] = 0;
+    currentRandomIntMap[message.member.voice.channel] = 0;
+    servers[message.guild.id].queue = [];
+    randomQueueMap[message.guild.id] = undefined;
+    gsrun(client2, "A", "B", sheetname).then((xdb) => {
+        if (!args[1]) {
+            addRandomToQueue(message, 1, xdb.congratsDatabase);
+        } else {
+            try {
+                let num = parseInt(args[1]);
+                if (num && num > 1000) {
+                    message.channel.send("*max limit for random is 1000*");
+                    num = 1000;
+                }
+                if (num) {
+                    totalRandomIntMap[message.member.voice.channel] = num;
+                }
+                addRandomToQueue(message, num, xdb.congratsDatabase);
+            } catch (e) {
+                addRandomToQueue(message, 1, xdb.congratsDatabase);
+            }
+        }
+    });
+}
+
+function addRandomToQueue(message, numOfTimes, cdb) {
+    const rKeyArray = Array.from(cdb.keys());
+    let rn;
+    let queueWasEmpty = false;
+    if (servers[message.guild.id].queue.length < 1) {
+        queueWasEmpty = true;
+    }
+    try {
+        if (!randomQueueMap[message.guild.id]) {
+            let rKeyArrayFinal = [];
+            let newArray = [];
+            let executeWhileInRand = true;
+            for (let i = 0; i < numOfTimes; i++) {
+                if (!newArray || newArray.length < 1 || executeWhileInRand) {
+                    let tempArray = [...rKeyArray];
+                    let j = 0;
+                    while (
+                        (tempArray.length > 0 && j <= numOfTimes) ||
+                        executeWhileInRand
+                        ) {
+                        let randomNumber = Math.floor(Math.random() * tempArray.length);
+                        newArray.push(tempArray[randomNumber]);
+                        tempArray.splice(randomNumber, 1);
+                        j++;
+                        executeWhileInRand = false;
+                    }
+                    // newArray has the new values
+                }
+                let aTest1 = newArray.pop();
+                if (aTest1) {
+                    rKeyArrayFinal.push(aTest1);
+                } else {
+                    executeWhileInRand = true;
+                    i--;
+                }
+            }
+            randomQueueMap[message.guild.id] = rKeyArrayFinal;
+        }
+        // rk = randomQueueMap[message.guild.id].pop();
+        // console.log("random call: " + rk);
+    } catch (e) {
+        console.log("error in random: " + e);
+        rn = Math.floor(Math.random() * rKeyArray.length);
+        randomQueueMap[message.guild.id] = [];
+        randomQueueMap.push(rKeyArray[rn]);
+
+    }
+    randomQueueMap[message.guild.id].forEach(e => {
+        servers[message.guild.id].queue.push(cdb.get(e));
+    })
+    if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
+        playSongToVC(message,servers[message.guild.id].queue[0]);
+    }
 }
 
 /**
