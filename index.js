@@ -701,27 +701,27 @@ async function runCommandCases(message) {
             break;
         // !keys is server keys
         case "keys":
-            runKeysCommand(message, prefixString, mgid);
+            runKeysCommand(message, prefixString, mgid, "");
             break;
         // !key
         case "key":
-            runKeysCommand(message, prefixString, mgid);
+            runKeysCommand(message, prefixString, mgid, "");
             break;
         // !mkeys is personal keys
         case "mkeys":
-            runKeysCommand(message, prefixString, "p"+message.member.id);
+            runKeysCommand(message, prefixString, "p"+message.member.id, "m");
             break;
         // !mkey is personal keys
         case "mkey":
-            runKeysCommand(message, prefixString, "p"+message.member.id);
+            runKeysCommand(message, prefixString, "p"+message.member.id, "m");
             break;
         // !gkeys is global keys
         case "gkeys":
-            runKeysCommand(message, prefixString, "entries");
+            runKeysCommand(message, prefixString, "entries", "g");
             break;
         // !gkey is global keys
         case "gkey":
-            runKeysCommand(message, prefixString, "entries");
+            runKeysCommand(message, prefixString, "entries", "g");
             break;
         // !k is the search
         case "k":
@@ -1400,7 +1400,7 @@ function playRandom2(message, numOfTimes, cdb, numOfRetries) {
  * @param prefixString The character of the prefix
  * @param {*} sheetname The name of the sheet to retrieve
  */
-function runKeysCommand(message, prefixString, sheetname) {
+function runKeysCommand(message, prefixString, sheetname, cmdType) {
     if (
         !dataSize.get(sheetname.toString()) ||
         dataSize.get(sheetname.toString()) < 1
@@ -1420,12 +1420,12 @@ function runKeysCommand(message, prefixString, sheetname) {
         if (!s || s.length < 1) {
             message.channel.send(
                 "Your music database is empty. Add a song by calling '" +
-                prefixString +
+                prefixString + cmdType +
                 "a'"
             );
         } else {
             message.channel.send(
-                "*(use '" + prefixString + "d' to play)*\n **Keys:** " + s
+                "*(use '" + prefixString + cmdType + "d' to play)*\n **Keys:** " + s
             );
         }
     });
