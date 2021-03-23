@@ -36,7 +36,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
     }
 
-    console.log("Data Size: " + dataSize.get(nameOfSheet));
+    // console.log("Data Size: " + dataSize.get(nameOfSheet));
     if (!dataSize.get(nameOfSheet)) {
         dataSize.set(nameOfSheet, 1);
         gsUpdateAdd2(cl, 1, "D", nameOfSheet);
@@ -308,9 +308,7 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
                 console.error("Execute error", err);
             }
         );
-    gsrun(cl, "A", "B", "entries").then(() =>
-        console.log("updateOverwrite ran...")
-    );
+    gsrun(cl, "A", "B", "entries").then();
 }
 
 //ABOVE IS GOOGLE API -------------------------------------------------------------
@@ -436,7 +434,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                     couldNotFindKey = false;
                     await deleteRows(message, sheetName, i);
                     gsUpdateOverwrite(client2, -1, -1, sheetName);
-                    console.log("Removed: " + itemToCheck);
+                    // console.log("Removed: " + itemToCheck);
                     if (sendMsgToChannel) {
                         message.channel.send("*Removed '" + itemToCheck + "'*");
                     }
@@ -475,9 +473,9 @@ async function runCommandCases(message) {
     if (!prefixString) {
         try {
             await gsrun(client2, "A", "B", "prefixes").then((xdb) => {
-                console.log(xdb.congratsDatabase);
-                console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
-                console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
+                // console.log(xdb.congratsDatabase);
+                // console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
+                // console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
                 let newPrefix = xdb.congratsDatabase.get(mgid);
                 if (!newPrefix) {
                     prefix[mgid] = "!";
@@ -1572,7 +1570,7 @@ function playSongToVC(message, whatToPlay) {
                 server.queue.shift();
                 if (server.queue.length > 0) {
                     whatsp = server.queue[0];
-                    console.log("On finish, playing; " + whatsp);
+                    // console.log("On finish, playing; " + whatsp);
                     whatspMap[message.member.voice.channel] = whatsp;
                     if (!whatsp) {
                         return;
