@@ -1204,7 +1204,7 @@ function sendHelp(message, prefixString) {
         "e  -->  Stops playing and ends session\n" +
         prefixString +
         "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
-        "\n----------  Personal Music Database ----------  \n" +
+        "\n----------  Server Music Database  ----------  \n" +
         prefixString +
         "keys  -->  See all your saved songs \n" +
         prefixString +
@@ -1215,12 +1215,13 @@ function sendHelp(message, prefixString) {
         "k [phrase]  -->  lookup keys with the same starting phrase\n" +
         prefixString +
         "rm [key] -->  Removes a song from your database\n" +
+        "*prepend 'm' to these commands to access your personal music database (ex: '!mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
         "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
         prefixString +
         "rand  --> random roll for the number of people in the voice channel\n" +
-        "**Or just say congrats to a friend. I will chime in too! :) **"
+        "\n**Or just say congrats to a friend. I will chime in too! :) **"
     );
 }
 
@@ -1399,6 +1400,7 @@ function playRandom2(message, numOfTimes, cdb, numOfRetries) {
  * @param {*} message The message trigger
  * @param prefixString The character of the prefix
  * @param {*} sheetname The name of the sheet to retrieve
+ * @param cmdType the prefix to call the keys being displayed
  */
 function runKeysCommand(message, prefixString, sheetname, cmdType) {
     if (
