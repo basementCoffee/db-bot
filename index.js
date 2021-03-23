@@ -323,15 +323,15 @@ const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
 // UPDATE HERE - Before Git Push
-const version = "4.4.0";
+const version = "5.1.1";
 const latestRelease =
-    "**Latest Release (4.4.x):**\n"
+    "**Latest Release (5.1.x):**\n"
     +
-    "- DB play command can now guess what you meant (!d [incorrect_key])"
+    "- Random command now uses the same queue as everything else. (Ex: !r [key])"
     +
-    "\n\n**Previous Release (4.3.x):**\n"
+    "\n\n**Previous Release (5.0.x):**\n"
     +
-    "- Full support for removing items from the database";
+    "- Personal database is now live! (Ex: !mkeys)";
 var servers = {};
 bot.login(process.env.token);
 var whatsp = "";
@@ -675,37 +675,53 @@ async function runCommandCases(message) {
         //     playSong(message, whatsp, false);
         //     break;
 
-        // !rg plays a random song from the database
-        case "gr":
+        // DEPRECIATED !gor plays a random song from the database
+        case "gor":
             if (!message.member.voice.channel) {
                 return;
             }
             enumPlayingFunction = "random";
             runRandomCommand(args, message, "entries");
             break;
-        // !r is the normal random
-        case "r":
+        // DEPRECIATED !or is the normal random
+        case "or":
             if (!message.member.voice.channel) {
                 return;
             }
             enumPlayingFunction = "randomS";
             runRandomCommand(args, message, mgid);
             break;
-        // !r2 is the experimental random to work with the normal queue
-        case "r2":
+        // DEPRECIATED !mor is the personal random
+        case "mor":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            enumPlayingFunction = "randomS";
+            runRandomCommand(args, message, "p" + message.member.id);
+            break;
+        // !r is a random that works with the normal queue
+        case "r":
             if (!message.member.voice.channel) {
                 return;
             }
             enumPlayingFunction = "playing";
             runRandomToQueue(args, message, mgid);
             break;
-        // !gr2 is the experimental global random to work with the normal queue
-        case "gr2":
+        // !gr is the global random to work with the normal queue
+        case "gr":
             if (!message.member.voice.channel) {
                 return;
             }
             enumPlayingFunction = "playing";
             runRandomToQueue(args, message, "entries");
+            break;
+        // !mr is the personal random that works with the normal queue
+        case "mr":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            enumPlayingFunction = "playing";
+            runRandomToQueue(args, message, "p" + message.member.id);
             break;
         // !keys is server keys
         case "keys":
@@ -1411,9 +1427,6 @@ function runRandomToQueue(args, message, sheetname) {
         servers[message.guild.id] = {
             queue: [],
         };
-    totalRandomIntMap[message.member.voice.channel] = 0;
-    currentRandomIntMap[message.member.voice.channel] = 0;
-    servers[message.guild.id].queue = [];
     randomQueueMap[message.guild.id] = undefined;
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         if (!args[1]) {
