@@ -1,4 +1,5 @@
 const {google} = require("googleapis");
+// comment out when deploying - GIT
 // const keys = require("./DiscordBot-d96fd2d64ee5.json");
 
 const client2 = new google.auth.JWT( process.env.client_email || keys.client_email, null, process.env.private_key || keys.private_key, [
