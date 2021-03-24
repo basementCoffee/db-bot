@@ -1,7 +1,7 @@
 const {google} = require("googleapis");
 const keys = require("./DiscordBot-d96fd2d64ee5.json");
 
-const client2 = new google.auth.JWT(keys.client_email, null, keys.private_key, [
+const client2 = new google.auth.JWT( process.env.client_email || keys.client_email, null, process.env.private_key || keys.private_key, [
     "https://www.googleapis.com/auth/spreadsheets",
 ]);
 
@@ -19,7 +19,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 
     nameOfSheet = nameOfSheet.toString();
     const spreadsheetSizeObjects = {
-        spreadsheetId: process.env.stoken,
+        spreadsheetId: process.env.stoken || keys.stoken,
         range: nameOfSheet + "!D1",
     };
     // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
@@ -45,7 +45,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     }
 
     const songObjects = {
-        spreadsheetId: process.env.stoken,
+        spreadsheetId: process.env.stoken || keys.stoken,
         range:
             nameOfSheet +
             "!" +
@@ -331,7 +331,7 @@ const latestRelease =
     +
     "- Personal database is now live! (Ex: !mkeys)";
 var servers = {};
-bot.login(process.env.token);
+bot.login(process.env.token || keys.token);
 var whatsp = "";
 
 // the entire reason we built this bot
