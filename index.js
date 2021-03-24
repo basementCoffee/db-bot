@@ -958,11 +958,7 @@ bot.on("message", (message) => {
                     word.includes("ongratulation")) &&
                 !word.substring(0, 1).includes("!")
             ) {
-                if (i + 1 === messageArray.length) {
-                    message.channel.send("Congratulations!");
-                } else {
-                    message.channel.send("Congratulations!");
-                }
+                message.channel.send("Congratulations!");
                 playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel);
                 return;
             }
