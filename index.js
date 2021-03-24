@@ -1170,7 +1170,7 @@ function runSkipCommand(message, args) {
                     skipTimes--;
                     skipCounter++;
                 }
-                if (skipTimes > 1) {
+                if (skipCounter > 1) {
                     message.channel.send("*skipped " + skipCounter + " times*");
                 } else {
                     message.channel.send("*skipped 1 time*");
