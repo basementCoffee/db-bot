@@ -615,13 +615,11 @@ async function runCommandCases(message) {
                 return;
             }
             dispatcherMap[message.member.voice.channel] = undefined;
-            // should do same as below
+
             if (servers[mgid] && servers[mgid].queue) {
                 servers[mgid].queue = [];
             }
-            while (servers[mgid] && servers[mgid].queue.length > 0) {
-                servers[mgid].queue.shift();
-            }
+
             if (message.member.voice && message.member.voice.channel) {
                 message.member.voice.channel.leave();
             }
