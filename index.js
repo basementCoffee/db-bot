@@ -1318,15 +1318,14 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
  */
 function playSongToVC(message, whatToPlay, voiceChannel) {
     let server = servers[message.guild.id];
-    if (!message.member.voice.channel) {
-        // server.queue = [];
+    if (voiceChannel.member.size < 1) {
         return;
     }
     let whatToPlayS = "";
     whatToPlayS = whatToPlay;
     whatsp = whatToPlayS;
     whatspMap[message.member.voice.channel] = whatToPlayS;
-        message.member.voice.channel.join().then(async function (connection) {
+        voiceChannel.join().then(async function (connection) {
             try {
                 await connection.voice.setSelfDeaf(true);
                 let dispatcher = connection.play(await ytdl(whatsp), {
