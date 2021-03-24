@@ -759,9 +759,6 @@ async function runCommandCases(message) {
                 message.channel.send("Cannot have " + args[1] + " as a prefix.");
                 return;
             }
-            await gsrun(client2, "A", "B", "prefixes").then(() => {
-                gsUpdateOverwrite(client2, -1, 1, "prefixes");
-            });
             args[2] = args[1];
             args[1] = mgid;
             await gsrun(client2, "A", "B", "prefixes").then(async () => {
