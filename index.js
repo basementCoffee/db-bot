@@ -770,8 +770,10 @@ async function runCommandCases(message) {
                 await gsrun(client2, "A", "B", "prefixes").then(() => {
                     runRemoveItemCommand(message, args[1], "prefixes", false);
                 });
-                runAddCommand(args, message, "prefixes", false);
-                gsUpdateOverwrite(client2, -1, 1, "prefixes");
+            });
+            gsrun(client2, "A", "B", "prefixes").then(async () => {
+            runAddCommand(args, message, "prefixes", false);
+            gsUpdateOverwrite(client2, -1, 1, "prefixes");
             });
             prefix[mgid] = args[2];
             message.channel.send("Prefix successfully changed to " + args[2]);
