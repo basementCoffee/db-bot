@@ -915,15 +915,15 @@ async function runCommandCases(message) {
             }
                 try {
                     let newVol = parseInt(args[1]);
-                    if (newVol > 10 || newVol < 1) {
+                    if (newVol < 11 && newVol > 0) {
+                        dispatcherMap[message.member.voice.channel].setVolume(newVol/10);
+                        message.channel.send("*volume set to " + args[1]+"*");
+
+                    } else {
                         message.channel.send("Need to provide volume limit (1-10)");
-                        return;
                     }
-                    dispatcherMap[message.member.voice.channel].setVolume(newVol/10);
-                    message.channel.send("*volume set to " + args[1]+"*");
                 } catch (e) {
                     message.channel.send("Need to provide volume limit (1-10)");
-                    return;
                 }
             break;
         // !rand
