@@ -961,7 +961,7 @@ bot.on("message", (message) => {
                 if (i + 1 === messageArray.length) {
                     message.channel.send("Congratulations!");
                 } else {
-                    if (messageArray[i + 1].toLowerCase() !== "on" || messageArray[i + 1].toLowerCase() !== "my") {
+                    if (!word.includes("on") && !word.includes("my")) {
                         message.channel.send("Congratulations " + messageArray[i + 1] + "!");
                     } else {
                         message.channel.send("Congratulations!");
