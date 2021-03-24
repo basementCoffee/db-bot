@@ -4,7 +4,7 @@ const keys = require("./DiscordBot-d96fd2d64ee5.json");
 // process.env.stoken ||
 // const keys = [];
 
-const client2 = new google.auth.JWT( keys.client_email, null, keys.private_key, [
+const client2 = new google.auth.JWT(keys.client_email, null, keys.private_key, [
     "https://www.googleapis.com/auth/spreadsheets",
 ]);
 
@@ -94,7 +94,7 @@ function createSheet(message, nameOfSheet) {
     const gsapi = google.sheets({version: "v4", auth: client2});
     gsapi.spreadsheets.batchUpdate(
         {
-            spreadsheetId: keys.spreadsheet_id,
+            spreadsheetId: "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
             resource: {
                 requests: [
                     {
@@ -468,7 +468,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
  * @returns {Promise<void>}
  */
 async function runCommandCases(message) {
-    var args = message.content.replace(/\s+/g, " ").split(" ");
+    let args = message.content.replace(/\s+/g, " ").split(" ");
     console.log(args);
     let mgid = message.guild.id;
     let prefixString = prefix[mgid];
