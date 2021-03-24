@@ -1324,7 +1324,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
  */
 function playSongToVC(message, whatToPlay, voiceChannel) {
     let server = servers[message.guild.id];
-    if (voiceChannel.member.size < 1) {
+    if (voiceChannel.members.size < 1) {
         return;
     }
     let whatToPlayS = "";
