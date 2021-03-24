@@ -1338,7 +1338,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                 dispatcherMap[message.member.voice.channel] = dispatcher;
                 dispatcher.on("finish", () => {
                     server.queue.shift();
-                    if (server.queue.length > 0 && message.member.voice && message.member.voice.channel && message.member.voice.channel.members.size > 1) {
+                    if (server.queue.length > 0 && voiceChannel.members.size > 1) {
                         whatsp = server.queue[0];
                         // console.log("On finish, playing; " + whatsp);
                         whatspMap[message.member.voice.channel] = whatsp;
