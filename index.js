@@ -783,11 +783,11 @@ async function runCommandCases(message) {
             break;
         // !skip
         case "skip":
-                skipSong(message);
+            runSkipCommand(message,args);
             break;
         // !sk
         case "sk":
-                skipSong(message);
+            runSkipCommand(message,args);
             break;
         // !pa
         case "pa":
@@ -1152,6 +1152,40 @@ function runSearchCommand(keyName, xdb) {
         ss: ss,
         ssi: ssi
     };
+}
+
+/**
+ * Function to skip songs once or multiple times depending on args
+ * @param message the message that triggered the bot
+ * @param args args[1] can optionally have number of times to skip
+ */
+function runSkipCommand(message, args) {
+    if (args[1]) {
+        try {
+            let skipTimes = parseInt(args[1]);
+            if (skipTimes > 0 && skipTimes < 101) {
+                let skipCounter = 0;
+                while (skipTimes !== 0 && servers[message.guild.id].queue.length > 0) {
+                    skipSong(message);
+                    skipTimes--;
+                    skipCounter++;
+                }
+                if (skipTimes > 1) {
+                    message.channel.send("*skipped " + skipCounter + " times*");
+                } else {
+                    message.channel.send("*skipped 1 time*");
+                }
+            } else {
+                message.channel.send("*Invalid skip amount (should be between 1-100)\n skipped 1 time*");
+                skipSong(message);
+            }
+        } catch (e) {
+            skipSong(message);
+            message.channel.send("*skipped*");
+        }
+    } else {
+        skipSong(message);
+    }
 }
 
 /**
