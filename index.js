@@ -374,7 +374,7 @@ function skipSong(message) {
                 whatspMap[message.member.voice.channel] =
                     servers[message.guild.id].queue[0];
                 // get rid of previous dispatch
-                playSongToVC(message, whatspMap[message.member.voice.channel]);
+                playSongToVC(message, whatspMap[message.member.voice.channel], message.member.voice.channel);
             } else {
                 if (message.member.voice && message.member.voice.channel) {
                     // get rid of previous dispatch
@@ -511,7 +511,7 @@ async function runCommandCases(message) {
             servers[mgid].queue.push(args[1]);
             // if queue has only 1 song then play
             if (servers[mgid] && servers[mgid].queue.length < 2) {
-                playSongToVC(message, args[1]);
+                playSongToVC(message, args[1], message.member.voice.channel);
             } else {
                 message.channel.send("*Added to queue*");
             }
@@ -546,7 +546,7 @@ async function runCommandCases(message) {
             // push to queue
             servers[mgid].queue.unshift(args[1]);
             message.channel.send("*Playing now*");
-            playSongToVC(message, args[1]);
+            playSongToVC(message, args[1], message.member.voice.channel);
             break;
         case "pn":
             if (!message.member.voice.channel) {
@@ -577,7 +577,7 @@ async function runCommandCases(message) {
             // push to queue
             servers[mgid].queue.unshift(args[1]);
             message.channel.send("*Playing now*");
-            playSongToVC(message, args[1]);
+            playSongToVC(message, args[1], message.member.voice.channel);
             break;
         // case '!pv':
         //     if (!args[1]) {
@@ -967,7 +967,7 @@ bot.on("message", (message) => {
                         message.channel.send("Congratulations!");
                     }
                 }
-                playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8");
+                playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel);
                 return;
             }
         }
@@ -1097,7 +1097,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                     // push to queue
                     if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(args[1].toUpperCase()));
-                        playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
+                        playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()), message.member.voice.channel);
                         message.channel.send("*Playing now*");
                     } else {
                         message.channel.send("There's something wrong with what you put there.");
@@ -1113,7 +1113,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
         }
         // if queue was empty then play
         if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-            playSongToVC(message, servers[message.guild.id].queue[0]);
+            playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel);
         }
     });
 }
@@ -1276,7 +1276,7 @@ function addRandomToQueue(message, numOfTimes, cdb) {
         servers[message.guild.id].queue.push(cdb.get(e));
     })
     if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-        playSongToVC(message,servers[message.guild.id].queue[0]);
+        playSongToVC(message,servers[message.guild.id].queue[0], message.member.voice.channel);
     }
 }
 
@@ -1322,8 +1322,9 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
  *  New play song function.
  * @param {*} message the message with channel info
  * @param {*} whatToPlay the link of the song to play
+ * @param voiceChannel the voice channel
  */
-function playSongToVC(message, whatToPlay) {
+function playSongToVC(message, whatToPlay, voiceChannel) {
     let server = servers[message.guild.id];
     if (!message.member.voice.channel) {
         // server.queue = [];
@@ -1333,42 +1334,42 @@ function playSongToVC(message, whatToPlay) {
     whatToPlayS = whatToPlay;
     whatsp = whatToPlayS;
     whatspMap[message.member.voice.channel] = whatToPlayS;
-    message.member.voice.channel.join().then(async function (connection) {
-        try {
-            await connection.voice.setSelfDeaf(true);
-            let dispatcher = connection.play(await ytdl(whatsp), {
-                type: "opus",
-                filter: "audioonly",
-                quality: "140",
-            });
+        message.member.voice.channel.join().then(async function (connection) {
+            try {
+                await connection.voice.setSelfDeaf(true);
+                let dispatcher = connection.play(await ytdl(whatsp), {
+                    type: "opus",
+                    filter: "audioonly",
+                    quality: "140",
+                });
 
-            dispatcherMap[message.member.voice.channel] = dispatcher;
-            dispatcher.on("finish", () => {
-                server.queue.shift();
-                if (server.queue.length > 0) {
-                    whatsp = server.queue[0];
-                    // console.log("On finish, playing; " + whatsp);
-                    whatspMap[message.member.voice.channel] = whatsp;
-                    if (!whatsp) {
-                        return;
+                dispatcherMap[message.member.voice.channel] = dispatcher;
+                dispatcher.on("finish", () => {
+                    server.queue.shift();
+                    if (server.queue.length > 0 && message.member.voice && message.member.voice.channel && message.member.voice.channel.members.size > 1) {
+                        whatsp = server.queue[0];
+                        // console.log("On finish, playing; " + whatsp);
+                        whatspMap[message.member.voice.channel] = whatsp;
+                        if (!whatsp) {
+                            return;
+                        }
+                        playSongToVC(message, whatsp, voiceChannel);
+                    } else {
+                        connection.disconnect();
+                        dispatcherMap[message.member.voice.channel] = undefined;
                     }
-                    playSongToVC(message, whatsp);
-                } else {
-                    connection.disconnect();
-                    dispatcherMap[message.member.voice.channel] = undefined;
-                }
-            });
-        } catch (e) {
-            // Error catching - fault with the yt link?
-            console.log(
-                "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
-            );
-            console.log("Error:", e);
-            server.queue.shift();
-            message.channel.send("Could not play song.");
-            connection.disconnect();
-        }
-    });
+                });
+            } catch (e) {
+                // Error catching - fault with the yt link?
+                console.log(
+                    "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
+                );
+                console.log("Error:", e);
+                server.queue.shift();
+                message.channel.send("Could not play song.");
+                connection.disconnect();
+            }
+        });
 }
 
 /**
