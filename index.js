@@ -474,9 +474,12 @@ async function runCommandCases(message) {
         }
         return;
     }
-    let statement = args[0].substr(1);
-    statement = statement.toLowerCase();
-
+    let statement = args[0].substr(1).toLowerCase();
+    if (statement.substr(0,1) === "g") {
+        if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") {
+            return;
+        }
+    }
     switch (statement) {
         //!p is just the basic rhythm bot
         case "p":
@@ -815,6 +818,9 @@ async function runCommandCases(message) {
             break;
         // !devadd
         case "devadd":
+            if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") {
+                return;
+            }
             message.channel.send(
                 "Here's link to add to the database:\n" +
                 "https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622"
