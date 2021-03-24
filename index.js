@@ -348,7 +348,12 @@ var keyArray;
 var s;
 process.setMaxListeners(0);
 
-function skipSong(message, cdb) {
+function skipSong(message) {
+    if (!servers[message.guild.id]) {
+        servers[message.guild.id] = {
+            queue: [],
+        };
+    }
     // in case of force disconnect
     if (
         !message.guild.client.voice ||
@@ -358,35 +363,6 @@ function skipSong(message, cdb) {
         servers[message.guild.id].queue = [];
         return;
     }
-    if (enumPlayingFunction === "random" || enumPlayingFunction === "randomS") {
-        if (
-            currentRandomIntMap[message.member.voice.channel] >=
-            totalRandomIntMap[message.member.voice.channel] ||
-            totalRandomIntMap[message.member.voice.channel] === 0
-        ) {
-            totalRandomIntMap[message.member.voice.channel] = 0;
-            currentRandomIntMap[message.member.voice.channel] = 0;
-            if (message.member.voice && message.member.voice.channel) {
-                message.member.voice.channel.leave();
-                dispatcherMap[message.member.voice.channel] = undefined;
-            }
-            whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
-            whatspMap[message.member.voice.channel] = whatsp;
-        } else {
-            playRandom2(
-                message,
-                totalRandomIntMap[message.member.voice.channel],
-                cdb,
-                0
-            );
-        }
-    } else {
-        if (!servers[message.guild.id] || enumPlayingFunction !== "playing") {
-            enumPlayingFunction = "playing";
-            servers[message.guild.id] = {
-                queue: [],
-            };
-        }
         // if server queue is not empty
         if (
             servers[message.guild.id].queue &&
@@ -414,7 +390,6 @@ function skipSong(message, cdb) {
                 }
             }
         }
-    }
 }
 
 /**
@@ -524,7 +499,6 @@ async function runCommandCases(message) {
                 servers[mgid] = {
                     queue: [],
                 };
-            enumPlayingFunction = "playing";
             // in case of force disconnect
             if (
                 !message.guild.client.voice ||
@@ -563,7 +537,6 @@ async function runCommandCases(message) {
                 servers[mgid] = {
                     queue: [],
                 };
-            enumPlayingFunction = "playing";
             // in case of force disconnect
             if (
                 !message.guild.client.voice ||
@@ -650,60 +623,11 @@ async function runCommandCases(message) {
         case "md":
             runDatabasePlayCommand(args, message, "p"+message.member.id);
             break;
-        // case "dv":
-        //     if (!args[1]) {
-        //         message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
-        //         return;
-        //     }
-        //     if (!message.member.voice.channel) {
-        //         return;
-        //     }
-        //     if (!servers[message.guild.id]) servers[message.guild.id] = {
-        //         queue: []
-        //     }
-        //
-        //     server = servers[message.guild.id];
-        //     try {
-        //         whatsp = referenceDatabase.get(args[1].toUpperCase());
-        //     } catch (e) {
-        //         message.channel.send("I couldn't find that key. Try '!keys' to get the full list of usable keys.");
-        //         return;
-        //     }
-        //     //let dPhrase = args[1];
-        //     //server.queue.push(referenceDatabase.get(args[1].toUpperCase()));
-        //     playSong(message, whatsp, false);
-        //     break;
-
-        // DEPRECIATED !gor plays a random song from the database
-        case "gor":
-            if (!message.member.voice.channel) {
-                return;
-            }
-            enumPlayingFunction = "random";
-            runRandomCommand(args, message, "entries");
-            break;
-        // DEPRECIATED !or is the normal random
-        case "or":
-            if (!message.member.voice.channel) {
-                return;
-            }
-            enumPlayingFunction = "randomS";
-            runRandomCommand(args, message, mgid);
-            break;
-        // DEPRECIATED !mor is the personal random
-        case "mor":
-            if (!message.member.voice.channel) {
-                return;
-            }
-            enumPlayingFunction = "randomS";
-            runRandomCommand(args, message, "p" + message.member.id);
-            break;
         // !r is a random that works with the normal queue
         case "r":
             if (!message.member.voice.channel) {
                 return;
             }
-            enumPlayingFunction = "playing";
             runRandomToQueue(args, message, mgid);
             break;
         // !gr is the global random to work with the normal queue
@@ -711,7 +635,6 @@ async function runCommandCases(message) {
             if (!message.member.voice.channel) {
                 return;
             }
-            enumPlayingFunction = "playing";
             runRandomToQueue(args, message, "entries");
             break;
         // !mr is the personal random that works with the normal queue
@@ -719,7 +642,6 @@ async function runCommandCases(message) {
             if (!message.member.voice.channel) {
                 return;
             }
-            enumPlayingFunction = "playing";
             runRandomToQueue(args, message, "p" + message.member.id);
             break;
         // !keys is server keys
@@ -826,27 +748,11 @@ async function runCommandCases(message) {
             break;
         // !skip
         case "skip":
-            // determines random type
-            if (enumPlayingFunction === "random") {
-                mgid = "entries";
-            } else {
-                mgid = message.guild.id;
-            }
-            gsrun(client2, "A", "B", mgid).then((xdb) => {
-                skipSong(message, xdb.congratsDatabase);
-            });
+                skipSong(message);
             break;
         // !sk
         case "sk":
-            // determines random type (global or local)
-            if (enumPlayingFunction === "random") {
-                mgid = "entries";
-            } else {
-                mgid = message.guild.id;
-            }
-            gsrun(client2, "A", "B", mgid).then((xdb) => {
-                skipSong(message, xdb.congratsDatabase);
-            });
+                skipSong(message);
             break;
         // !pa
         case "pa":
@@ -1092,8 +998,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
     if (!message.member.voice.channel) {
         return;
     }
-    if (!servers[message.guild.id] || enumPlayingFunction !== "playing") {
-        enumPlayingFunction = "playing";
+    if (!servers[message.guild.id] ) {
         servers[message.guild.id] = {
             queue: [],
         };
@@ -1254,176 +1159,6 @@ function sendHelp(message, prefixString) {
     );
 }
 
-/**
- * The command to play a random song from a database.
- * @param {*} args the message split by spaces into an array
- * @param {*} message the message that triggered the bot
- * @param {*} sheetname the name of the database sheet to reference
- */
-function runRandomCommand(args, message, sheetname) {
-    if (!servers[message.guild.id])
-        servers[message.guild.id] = {
-            queue: [],
-        };
-    totalRandomIntMap[message.member.voice.channel] = 0;
-    currentRandomIntMap[message.member.voice.channel] = 0;
-    servers[message.guild.id].queue = [];
-    randomQueueMap[message.guild.id] = undefined;
-    gsrun(client2, "A", "B", sheetname).then((xdb) => {
-        if (!args[1]) {
-            playRandom2(message, 1, xdb.congratsDatabase, 0);
-        } else {
-            try {
-                let num = parseInt(args[1]);
-                if (num && num > 1000) {
-                    message.channel.send("*max limit for random is 1000*");
-                    num = 1000;
-                }
-                if (num) {
-                    totalRandomIntMap[message.member.voice.channel] = num;
-                }
-                playRandom2(message, num, xdb.congratsDatabase, 0);
-            } catch (e) {
-                playRandom2(message, 1, xdb.congratsDatabase, 0);
-            }
-        }
-    });
-}
-
-/**
- * The music-centric function of play random. This function executes the music stream
- * to be played into the voice channel of the message's owner.
- * @param {*} message the message that triggered the bot
- * @param {*} numOfTimes the number of times to play random songs
- * @param {*} cdb the congrats-database
- * @param numOfRetries should be 0 unless called within itself
- * @returns
- */
-function playRandom2(message, numOfTimes, cdb, numOfRetries) {
-    currentRandomIntMap[message.member.voice.channel] += 1;
-    // server = servers[message.guild.id];
-    const rKeyArray = Array.from(cdb.keys());
-    let rn;
-    let rk;
-    // process.stdout.on("error", function (err) {
-    //     if (err.code == "EPIPE") {
-    //         console.log("error here's listeners: " + bot.getMaxListeners());
-    //     }
-    // });
-    if (numOfTimes <= 1) {
-        rn = Math.floor(Math.random() * rKeyArray.length);
-        rk = rKeyArray[rn];
-    } else {
-        try {
-            if (!randomQueueMap[message.guild.id]) {
-                let rKeyArrayFinal = [];
-                let newArray = [];
-                let executeWhileInRand = true;
-                for (let i = 0; i < numOfTimes; i++) {
-                    if (!newArray || newArray.length < 1 || executeWhileInRand) {
-                        let tempArray = [...rKeyArray];
-                        let j = 0;
-                        while (
-                            (tempArray.length > 0 && j <= numOfTimes) ||
-                            executeWhileInRand
-                            ) {
-                            let randomNumber = Math.floor(Math.random() * tempArray.length);
-                            newArray.push(tempArray[randomNumber]);
-                            tempArray.splice(randomNumber, 1);
-                            j++;
-                            executeWhileInRand = false;
-                        }
-                        // newArray has the new values
-                    }
-                    let aTest1 = newArray.pop();
-                    if (aTest1) {
-                        rKeyArrayFinal.push(aTest1);
-                    } else {
-                        executeWhileInRand = true;
-                        i--;
-                    }
-                }
-                randomQueueMap[message.guild.id] = rKeyArrayFinal;
-            }
-            rk = randomQueueMap[message.guild.id].pop();
-            console.log("random call: " + rk);
-        } catch (e) {
-            console.log("error in random: " + e);
-            rn = Math.floor(Math.random() * rKeyArray.length);
-            rk = rKeyArray[rn];
-        }
-    }
-    numOfRetries += 1;
-    //console.log("attempting to play key:" + rk);
-    whatsp = cdb.get(rk);
-    if (!whatsp) {
-        gsrun(client2, "A", "B", message.guild.id).then(() => {
-            if (cdb.length < 2) {
-                message.channel.send(
-                    "Your database needs at least two items to randomize."
-                );
-            } else {
-                message.channel.send(
-                    "It appears your database is empty.\nTry running '!keys' or add a song to the database."
-                );
-            }
-            console.log("Play random whatsp is empty.");
-        });
-        return;
-    }
-    whatspMap[message.member.voice.channel] = whatsp;
-    //server.queue.push(congratsDatabase.get(rk));
-    message.member.voice.channel.join().then(async function (connection) {
-        try {
-            await connection.voice.setSelfDeaf(true);
-
-            let dispatcher = connection.play(await ytdl(whatsp), {
-                type: "opus",
-                filter: "audioonly",
-                quality: "140",
-            });
-
-            dispatcherMap[message.member.voice.channel] = dispatcher;
-
-            if (!dispatcherMap[message.member.voice.channel]) {
-                console.log("there was an error: E5");
-                return;
-            }
-
-            dispatcher.on("finish", () => {
-                numOfTimes -= 1;
-                if (numOfTimes === 0) {
-                    totalRandomIntMap[message.member.voice.channel] = 0;
-                    currentRandomIntMap[message.member.voice.channel] = 0;
-                    connection.disconnect();
-                    whatsp = "Last Played:\n" + whatspMap[message.member.voice.channel];
-                    dispatcherMap[message.member.voice.channel] = undefined;
-                } else {
-                    playRandom2(message, numOfTimes, cdb, numOfRetries);
-                }
-            });
-        } catch (e) {
-            // Error catching - fault with the database yt link?
-            console.log("Below is a caught error message. (this broke:" + rk + ")");
-            //printErrorToChannel("!r", rk, e);
-            console.log(e);
-            if (numOfRetries > 2) {
-                message.channel.send("Could not play random songs. Sorry.");
-                printErrorToChannel("!r (third try)", rk, e);
-                connection.disconnect();
-            } else {
-                if (numOfRetries > 1) {
-                    printErrorToChannel("!r", rk, e);
-                } else {
-                    printErrorToChannel("!r (second try)", rk, e);
-                }
-                //message.channel.send("I'm sorry kiddo, couldn't find a random song in time... I'll see myself out.");
-                playRandom2(message, numOfTimes, cdb, numOfRetries);
-            }
-        }
-    });
-}
-
 function runRandomToQueue(args, message, sheetname) {
     if (!servers[message.guild.id])
         servers[message.guild.id] = {
@@ -1489,8 +1224,6 @@ function addRandomToQueue(message, numOfTimes, cdb) {
             }
             randomQueueMap[message.guild.id] = rKeyArrayFinal;
         }
-        // rk = randomQueueMap[message.guild.id].pop();
-        // console.log("random call: " + rk);
     } catch (e) {
         console.log("error in random: " + e);
         rn = Math.floor(Math.random() * rKeyArray.length);
@@ -1550,7 +1283,6 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
  * @param {*} whatToPlay the link of the song to play
  */
 function playSongToVC(message, whatToPlay) {
-    enumPlayingFunction = "playing";
     let server = servers[message.guild.id];
     if (!message.member.voice.channel) {
         // server.queue = [];
@@ -1660,19 +1392,6 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
                 return;
             }
             if (
-                enumPlayingFunction !== "playing" &&
-                totalRandomIntMap[message.member.voice.channel] &&
-                totalRandomIntMap[message.member.voice.channel] !== 0
-            ) {
-                message.channel.send(
-                    "(" +
-                    currentRandomIntMap[message.member.voice.channel] +
-                    "/" +
-                    totalRandomIntMap[message.member.voice.channel] +
-                    ")  " +
-                    whatspMap[message.member.voice.channel]
-                );
-            } else if (
                 servers[mgid] &&
                 servers[mgid].queue &&
                 servers[mgid].queue.length > 1
@@ -1692,26 +1411,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
     }
 }
 
-// process.stdout.on("error", function (err) {
-//     if (err.code == "EPIPE" || err.code == "EAGAIN") {
-//         console.log("errorz: " + bot.getMaxListeners());
-//     }
-// });
 
-/**
- * Prints the error to the testing channel.
- * @param activationType the keyword that causes the error
- * @param songKey the keyword of the song in the database
- * @param e the error message
- */
-function printErrorToChannel(activationType, songKey, e) {
-    bot.channels.cache
-        .get("730239813403410619")
-        .send("ERROR: When called " + activationType + ", song key: " + songKey);
-    bot.channels.cache.get("730239813403410619").send(e);
-}
-
-var enumPlayingFunction;
 var whatspMap = new Map();
 var prefix = new Map();
 var congratsDatabase = new Map();
