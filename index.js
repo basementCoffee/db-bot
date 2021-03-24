@@ -764,14 +764,14 @@ async function runCommandCases(message) {
             });
             args[2] = args[1];
             args[1] = mgid;
-            gsrun(client2, "A", "B", "prefixes").then(async () => {
+            await gsrun(client2, "A", "B", "prefixes").then(async () => {
                 console.log("removed item");
                 console.log(dataSize["prefixes"]);
                 await gsrun(client2, "A", "B", "prefixes").then(() => {
                     runRemoveItemCommand(message, args[1], "prefixes", false);
                 });
             });
-            gsrun(client2, "A", "B", "prefixes").then(async () => {
+            gsrun(client2, "A", "B", "prefixes").then(() => {
             runAddCommand(args, message, "prefixes", false);
             gsUpdateOverwrite(client2, -1, 1, "prefixes");
             });
