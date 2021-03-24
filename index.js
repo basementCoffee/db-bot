@@ -1,8 +1,7 @@
 const {google} = require("googleapis");
 // comment out when deploying - GIT
+// will have to replace with => process.env.stoken and make 'dotenv'
 const keys = require("./DiscordBot-d96fd2d64ee5.json");
-// process.env.stoken ||
-// const keys = [];
 
 const client2 = new google.auth.JWT(keys.client_email, null, keys.private_key, [
     "https://www.googleapis.com/auth/spreadsheets",
