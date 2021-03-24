@@ -466,7 +466,7 @@ async function runCommandCases(message) {
     }
     prefixString = prefix[mgid];
     if (args[0].substr(0, 1) !== prefix[mgid]) {
-        if (args[0] === "!changeprefix") {
+        if (args[0] === "!changeprefix" || args[0] === "!keys") {
             message.channel.send(
                 "Current prefix is: " +
                 prefix[mgid]
@@ -759,6 +759,7 @@ async function runCommandCases(message) {
             }
             if (args[1] === "+" || args[1] === "=") {
                 message.channel.send("Cannot have " + args[1] + " as a prefix.");
+                return;
             }
             await gsrun(client2, "A", "B", "prefixes").then(() => {
                 gsUpdateOverwrite(client2, -1, 1, "prefixes");
