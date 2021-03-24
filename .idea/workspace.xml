@@ -22,8 +22,7 @@
     <list default="true" id="578a6b91-adc8-4de9-b953-0672d3d9d180" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DiscordBot-d96fd2d64ee5.json" beforeDir="false" afterPath="$PROJECT_DIR$/DiscordBot-d96fd2d64ee5.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DiscordBot-d96fd2d64ee5.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -102,7 +101,7 @@
       <workItem from="1616530932658" duration="280000" />
       <workItem from="1616532765838" duration="3710000" />
       <workItem from="1616542617841" duration="756000" />
-      <workItem from="1616543764902" duration="653000" />
+      <workItem from="1616543764902" duration="1049000" />
     </task>
     <servers />
   </component>
