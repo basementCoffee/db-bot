@@ -92,7 +92,7 @@ function createSheet(message, nameOfSheet) {
     const gsapi = google.sheets({version: "v4", auth: client2});
     gsapi.spreadsheets.batchUpdate(
         {
-            spreadsheetId: "1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0",
+            spreadsheetId: process.env.spreadsheet_id || keys.spreadsheet_id,
             resource: {
                 requests: [
                     {
