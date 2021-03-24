@@ -13,7 +13,6 @@ client2.authorize(function (err, tokens) {
         console.log(err);
     } else {
         console.log("Connected to google apis.");
-        // gsrun(client2, "A", "B", "entries");
     }
 });
 
