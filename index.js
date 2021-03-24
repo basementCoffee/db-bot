@@ -910,7 +910,7 @@ async function runCommandCases(message) {
                 message.channel.send("Need to provide volume limit (1-10)");
                 return;
             }
-            if (!dispatcherMap[mgid]) {
+            if (!dispatcherMap[message.member.voice.channel]) {
                 message.channel.send("Stream could not be found.");
                 return;
             }
@@ -920,7 +920,7 @@ async function runCommandCases(message) {
                         message.channel.send("Need to provide volume limit (1-10)");
                         return;
                     }
-                    dispatcherMap[mgid].setVolume(newVol/10);
+                    dispatcherMap[message.member.voice.channel].setVolume(newVol/10);
                     message.channel.send("*Volume set to " + args[1]+"*");
                 } catch (e) {
                     message.channel.send("Need to provide volume limit (1-10)");
