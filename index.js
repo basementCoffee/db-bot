@@ -905,6 +905,29 @@ async function runCommandCases(message) {
         case "invite":
             message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1133584&scope=bot");
             break;
+        case "vol":
+            if (!args[1]) {
+                message.channel.send("Need to provide volume limit (1-10)");
+                return;
+            }
+            if (!dispatcherMap[mgid]) {
+                message.channel.send("Stream could not be found.");
+                return;
+            }
+                try {
+                    let newVol = parseInt(args[1]);
+                    if (newVol > 10 || newVol < 1) {
+                        message.channel.send("Need to provide volume limit (1-10)");
+                        return;
+                    }
+                    dispatcherMap[mgid].setVolume(newVol/10);
+                    message.channel.send("*Volume set to " + args[1]+"*");
+                } catch (e) {
+                    message.channel.send("Need to provide volume limit (1-10)");
+                    return;
+                }
+            message.channel.send("volume set to " + args[1]);
+            break;
         // !rand
         case "rand":
             if (args[1]) {
