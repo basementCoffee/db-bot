@@ -917,7 +917,7 @@ async function runCommandCases(message) {
                     let newVol = parseInt(args[1]);
                     if (newVol < 11 && newVol > 0) {
                         dispatcherMap[message.member.voice.channel].setVolume(newVol/10);
-                        message.channel.send("*volume set to " + args[1]+"*");
+                        message.channel.send("*volume set to " + newVol + "*");
 
                     } else {
                         message.channel.send("Need to provide volume limit (1-10)");
