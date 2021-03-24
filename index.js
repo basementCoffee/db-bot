@@ -420,7 +420,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                 gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
                     let foundStrings = runSearchCommand(keyName, xdb).ss;
                     if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
-                        message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + ss + "*");
+                        message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + foundStrings + "*");
                     } else {
                         message.channel.send("*Could not find '" + keyName + "'.*");
                     }
@@ -517,19 +517,13 @@ async function runCommandCases(message) {
             }
             break;
         // !pn
-        case "pn":
+        case "gpn":
             if (!message.member.voice.channel) {
                 return;
             }
             if (!args[1]) {
                 message.channel.send(
                     "Where's the link? I can't read your mind... unfortunately."
-                );
-                return;
-            }
-            if (!args[1].includes(".")) {
-                message.channel.send(
-                    "There's something wrong with what you put there."
                 );
                 return;
             }
@@ -544,6 +538,41 @@ async function runCommandCases(message) {
                 !message.guild.voice.channel
             ) {
                 servers[mgid].queue = [];
+            }
+            if (!args[1].includes(".")) {
+                runDatabasePlayCommand(args, message, "entries", true);
+                return;
+            }
+            // push to queue
+            servers[mgid].queue.unshift(args[1]);
+            message.channel.send("*Playing now*");
+            playSongToVC(message, args[1]);
+            break;
+        case "pn":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            if (!args[1]) {
+                message.channel.send(
+                    "Where's the link? I can't read your mind... unfortunately."
+                );
+                return;
+            }
+            if (!servers[mgid])
+                servers[mgid] = {
+                    queue: [],
+                };
+            // in case of force disconnect
+            if (
+                !message.guild.client.voice ||
+                !message.guild.voice ||
+                !message.guild.voice.channel
+            ) {
+                servers[mgid].queue = [];
+            }
+            if (!args[1].includes(".")) {
+                runDatabasePlayCommand(args, message, mgid, true);
+                return;
             }
             // push to queue
             servers[mgid].queue.unshift(args[1]);
@@ -613,15 +642,15 @@ async function runCommandCases(message) {
 
         // !gd is to run database songs
         case "gd":
-            runDatabasePlayCommand(args, message, "entries");
+            runDatabasePlayCommand(args, message, "entries", false);
             break;
         // !d
         case "d":
-            runDatabasePlayCommand(args, message, mgid);
+            runDatabasePlayCommand(args, message, mgid, false);
             break;
         // !md is the personal database
         case "md":
-            runDatabasePlayCommand(args, message, "p"+message.member.id);
+            runDatabasePlayCommand(args, message, "p"+message.member.id, false);
             break;
         // !r is a random that works with the normal queue
         case "r":
@@ -675,7 +704,7 @@ async function runCommandCases(message) {
                 return;
             }
             gsrun(client2, "A", "B", mgid).then(async (xdb) => {
-                ss = runSearchCommand(args, xdb).ss;
+                ss = runSearchCommand(args[1], xdb).ss;
                 if (ss && ss.length > 0) {
                     message.channel.send("Keys found: " + ss);
                 } else {
@@ -692,7 +721,7 @@ async function runCommandCases(message) {
                 return;
             }
             gsrun(client2, "A", "B", "entries").then(async (xdb) => {
-                ss = runSearchCommand(args, xdb).ss;
+                ss = runSearchCommand(args[1], xdb).ss;
                 if (ss && ss.length > 0) {
                     message.channel.send("Keys found: " + ss);
                 } else {
@@ -986,9 +1015,10 @@ function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
  * @param {*} args the message split by spaces into an array
  * @param {*} message the message that triggered the bot
  * @param {*} sheetname the name of the google sheet to reference
+ * @param playRightNow bool of whether to play now or now
  * @returns
  */
-function runDatabasePlayCommand(args, message, sheetname) {
+function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
     if (!args[1]) {
         message.channel.send(
             "There's nothing to play! ... I'm just gonna pretend that you didn't mean that."
@@ -1046,7 +1076,7 @@ function runDatabasePlayCommand(args, message, sheetname) {
             }
         } else {
             if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
-                let ss = runSearchCommand(args, xdb).ss;
+                let ss = runSearchCommand(args[1], xdb).ss;
                 if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
                     message.channel.send(
                         "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
@@ -1063,6 +1093,17 @@ function runDatabasePlayCommand(args, message, sheetname) {
                     return;
                 }
             } else {
+                if(playRightNow) {
+                    // push to queue
+                    if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
+                        servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(args[1].toUpperCase()));
+                        playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()));
+                        message.channel.send("*Playing now*");
+                    } else {
+                        message.channel.send("There's something wrong with what you put there.");
+                    }
+                    return;
+                }
                 // push to queue
                 servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
             }
@@ -1082,12 +1123,12 @@ let ss; // the search string
 let ssi; // the number of searches found
 /**
  * Searches the database for the keys matching args[1].
- * @param args the list of arguments from the message
+ * @param keyName the keyName
  * @param xdb the object containing multiple DBs
  * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values
  */
-function runSearchCommand(args, xdb) {
-    let givenSLength = args[1].length;
+function runSearchCommand(keyName, xdb) {
+    let givenSLength = keyName.length;
     let keyArray2 = Array.from(xdb.congratsDatabase.keys());
     ss = "";
     ssi = 0;
@@ -1095,10 +1136,10 @@ function runSearchCommand(args, xdb) {
     for (let ik = 0; ik < keyArray2.length; ik++) {
         searchKey = keyArray2[ik];
         if (
-            args[1].toUpperCase() ===
+            keyName.toUpperCase() ===
             searchKey.substr(0, givenSLength).toUpperCase() ||
-            (args[1].length > 1 &&
-                searchKey.toUpperCase().includes(args[1].toUpperCase()))
+            (keyName.length > 1 &&
+                searchKey.toUpperCase().includes(keyName.toUpperCase()))
         ) {
             ssi++;
             if (!ss) {
