@@ -961,11 +961,7 @@ bot.on("message", (message) => {
                 if (i + 1 === messageArray.length) {
                     message.channel.send("Congratulations!");
                 } else {
-                    if (!word.includes("on") && !word.includes("my")) {
-                        message.channel.send("Congratulations " + messageArray[i + 1] + "!");
-                    } else {
-                        message.channel.send("Congratulations!");
-                    }
+                    message.channel.send("Congratulations!");
                 }
                 playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel);
                 return;
