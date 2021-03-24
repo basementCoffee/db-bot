@@ -920,12 +920,11 @@ async function runCommandCases(message) {
                         return;
                     }
                     dispatcherMap[message.member.voice.channel].setVolume(newVol/10);
-                    message.channel.send("*Volume set to " + args[1]+"*");
+                    message.channel.send("*volume set to " + args[1]+"*");
                 } catch (e) {
                     message.channel.send("Need to provide volume limit (1-10)");
                     return;
                 }
-            message.channel.send("volume set to " + args[1]);
             break;
         // !rand
         case "rand":
