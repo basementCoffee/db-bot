@@ -1,8 +1,10 @@
 const {google} = require("googleapis");
 // comment out when deploying - GIT
-// const keys = require("./DiscordBot-d96fd2d64ee5.json");
+const keys = require("./DiscordBot-d96fd2d64ee5.json");
+// process.env.stoken ||
+// const keys = [];
 
-const client2 = new google.auth.JWT( process.env.client_email || keys.client_email, null, process.env.private_key || keys.private_key, [
+const client2 = new google.auth.JWT( keys.client_email, null, keys.private_key, [
     "https://www.googleapis.com/auth/spreadsheets",
 ]);
 
@@ -20,7 +22,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 
     nameOfSheet = nameOfSheet.toString();
     const spreadsheetSizeObjects = {
-        spreadsheetId: process.env.stoken || keys.stoken,
+        spreadsheetId: keys.stoken,
         range: nameOfSheet + "!D1",
     };
     // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
@@ -46,7 +48,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     }
 
     const songObjects = {
-        spreadsheetId: process.env.stoken || keys.stoken,
+        spreadsheetId: keys.stoken,
         range:
             nameOfSheet +
             "!" +
@@ -93,7 +95,7 @@ function createSheet(message, nameOfSheet) {
     const gsapi = google.sheets({version: "v4", auth: client2});
     gsapi.spreadsheets.batchUpdate(
         {
-            spreadsheetId: process.env.spreadsheet_id || keys.spreadsheet_id,
+            spreadsheetId: keys.spreadsheet_id,
             resource: {
                 requests: [
                     {
@@ -332,7 +334,7 @@ const latestRelease =
     +
     "- Personal database is now live! (Ex: !mkeys)";
 var servers = {};
-bot.login(process.env.token || keys.token);
+bot.login(keys.token);
 var whatsp = "";
 
 // the entire reason we built this bot
@@ -1305,11 +1307,11 @@ function playRandom2(message, numOfTimes, cdb, numOfRetries) {
     const rKeyArray = Array.from(cdb.keys());
     let rn;
     let rk;
-    process.stdout.on("error", function (err) {
-        if (err.code == "EPIPE") {
-            console.log("error here's listeners: " + bot.getMaxListeners());
-        }
-    });
+    // process.stdout.on("error", function (err) {
+    //     if (err.code == "EPIPE") {
+    //         console.log("error here's listeners: " + bot.getMaxListeners());
+    //     }
+    // });
     if (numOfTimes <= 1) {
         rn = Math.floor(Math.random() * rKeyArray.length);
         rk = rKeyArray[rn];
@@ -1692,11 +1694,11 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
     }
 }
 
-process.stdout.on("error", function (err) {
-    if (err.code == "EPIPE" || err.code == "EAGAIN") {
-        console.log("errorz: " + bot.getMaxListeners());
-    }
-});
+// process.stdout.on("error", function (err) {
+//     if (err.code == "EPIPE" || err.code == "EAGAIN") {
+//         console.log("errorz: " + bot.getMaxListeners());
+//     }
+// });
 
 /**
  * Prints the error to the testing channel.
