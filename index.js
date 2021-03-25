@@ -1452,7 +1452,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                             .addField('Duration', formatDuration(infos.duration), true)
                             .addField('Preview', `[Click here](${infos.preview_url})`, true)
                             .setThumbnail(infos.thumbnail);
-                        msg.channel.send(embed);
+                        // msg.channel.send(embed);
                     } catch (err) {
                         console.error(err);
                         msg.channel.send(`An error occurred: ${err.message}`);
