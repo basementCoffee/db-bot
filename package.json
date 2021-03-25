@@ -22,6 +22,7 @@
     "npm-install": "^1.4.1",
     "npm-start": "^1.4.2",
     "npm-start-command": "^1.0.1",
+    "spdl-core": "^1.5.1",
     "sqlite3": "^5.0.0",
     "ytdl-core": "^3.4.2",
     "ytdl-core-discord": "^1.2.5",
