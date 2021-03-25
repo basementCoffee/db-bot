@@ -1532,8 +1532,8 @@ function formatDuration(duration) {
 spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c9f2b2ca4e");
 
 bot.on('message', async (msg) => {
-  if (!msg.content.startsWith('..keith')) return;
-  const url = msg.content.split('..keith ')[1];
+  if (!msg.content.startsWith('-spotify')) return;
+  const url = msg.content.split('-spotify ')[1];
   if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
   const channel = msg.member.voice.channel;
   if (!channel) return msg.channel.send('Not in a voc channel');
