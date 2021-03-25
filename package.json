@@ -11,6 +11,7 @@
   "dependencies": {
     "@discordjs/opus": "^0.3.3",
     "cron": "^1.8.2",
+    "discord-spdl-core": "^1.0.2",
     "discord.js": "^12.2.0",
     "ffmpeg-static": "^4.2.7",
     "fs-extra": "^9.1.0",

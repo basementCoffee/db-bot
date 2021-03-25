@@ -315,8 +315,7 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
 //ABOVE IS GOOGLE API -------------------------------------------------------------
 //ABOVE IS GOOGLE API -------------------------------------------------------------
 
-const {Client} = require("discord.js");
-
+const { MessageEmbed, Client } = require('discord.js');
 // initialization
 const bot = new Client();
 const ytdl = require("ytdl-core-discord");
@@ -1513,6 +1512,56 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
         }
     }
 }
+
+
+/* Keith's testing corner
+ 3/25/21: Spotify integration attempt #1
+
+*/
+
+spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c9f2b2ca4e");
+
+const spdl = require('discord-spdl-core').default;
+
+function formatDuration(duration) {
+  let seconds = duration / 1000;
+  return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
+}
+
+client.on('message', async (msg) => {
+  if (!msg.content.startsWith('-testKeith')) return;
+  const url = msg.content.split('-testKeith ')[1];
+  if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
+  const channel = msg.member.voice.channel;
+  if (!channel) return msg.channel.send('Not in a voice channel');
+  try {
+    const connection = await channel.join();
+    connection
+      .play(await spdl(url, {
+        opusEncoded: true,
+        filter: 'audioonly',
+        encoderArgs: ['-af', 'apulsator=hz=0.09']
+      }))
+      .on('error', e => console.error(e));
+    const infos = await spdl.getInfo(url);
+    const embed = new MessageEmbed()
+      .setTitle(`Now playing: ${infos.title}`)
+      .setURL(infos.url)
+      .setColor('#1DB954')
+      .addField(`Artist${infos.artists.length > 1 ? 's': ''}`, infos.artists.join(', '), true)
+      .addField('Duration', formatDuration(infos.duration), true)
+      .addField('Preview', `[Click here](${infos.preview_url})`, true)
+      .setThumbnail(infos.thumbnail);
+    msg.channel.send(embed);
+  } catch (err) {
+    console.error(err);
+    msg.channel.send(`An error occurred: ${err.message}`);
+  }
+});
+
+
+
+
 
 
 var whatspMap = new Map();
