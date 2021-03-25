@@ -1279,6 +1279,14 @@ function runRandomToQueue(args, message, sheetname) {
         servers[message.guild.id] = {
             queue: [],
         };
+    // in case of force disconnect
+    if (
+        !message.guild.client.voice ||
+        !message.guild.voice ||
+        !message.guild.voice.channel
+    ) {
+        servers[message.guild.id].queue = [];
+    }
     randomQueueMap[message.guild.id] = undefined;
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         if (!args[1]) {
