@@ -1523,20 +1523,20 @@ spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c
 
 const spdl = require('discord-spdl-core').default;
 
-function formatDuration(duration) {
+function formatDurationK(duration) {
   let seconds = duration / 1000;
   return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
 }
 
 client.on('message', async (msg) => {
   if (!msg.content.startsWith('-testKeith')) return;
-  const url = msg.content.split('-testKeith ')[1];
-  if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
-  const channel = msg.member.voice.channel;
-  if (!channel) return msg.channel.send('Not in a voice channel');
+  const urlK = msg.content.split('-testKeith ')[1];
+  if (!spdl.validateURL(urlK)) return msg.channel.send('Invalid URL');
+  const channelK = msg.member.voice.channel;
+  if (!channelK) return msg.channel.send('Not in a voice channel');
   try {
-    const connection = await channel.join();
-    connection
+    const connectionK = await channelK.join();
+    connectionK
       .play(await spdl(url, {
         opusEncoded: true,
         filter: 'audioonly',
