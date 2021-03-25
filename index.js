@@ -408,8 +408,8 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                 if (itemToCheck.toLowerCase() === keyName.toLowerCase()) {
                     i += 1;
                     couldNotFindKey = false;
+                    await gsUpdateOverwrite(client2, -1, -1, sheetName);
                     await deleteRows(message, sheetName, i);
-                    gsUpdateOverwrite(client2, -1, -1, sheetName);
                     // console.log("Removed: " + itemToCheck);
                     if (sendMsgToChannel) {
                         message.channel.send("*Removed '" + itemToCheck + "'*");
@@ -761,19 +761,20 @@ async function runCommandCases(message) {
             }
             args[2] = args[1];
             args[1] = mgid;
+            let ds = 0;
             await gsrun(client2, "A", "B", "prefixes").then(async () => {
-                console.log("removed item");
-                console.log(dataSize["prefixes"]);
-                await gsrun(client2, "A", "B", "prefixes").then(async () => {
-                    await runRemoveItemCommand(message, args[1], "prefixes", false);
-                });
+                ds += parseInt(dataSize.get("prefixes"));
+                await runRemoveItemCommand(message, args[1], "prefixes", false);
+                await runAddCommand(args, message, "prefixes", false);
             });
-            await gsrun(client2, "A", "B", "prefixes").then(() => {
-            runAddCommand(args, message, "prefixes", false);
-            gsUpdateOverwrite(client2, -1, 1, "prefixes");
-            });
-            await gsrun(client2, "A", "B", "prefixes").then(() => {
+            console.log("ds: " + ds);
+            await gsrun(client2, "A", "B", "prefixes").then(async () => {
+            if (ds === 0) {
                 gsUpdateOverwrite(client2, -1, 1, "prefixes");
+            } else {
+                ds++;
+                gsUpdateOverwrite(client2, ds, 1, "prefixes");
+            }
             });
             prefix[mgid] = args[2];
             message.channel.send("Prefix successfully changed to " + args[2]);
@@ -1231,26 +1232,26 @@ function sendHelp(message, prefixString) {
         prefixString +
         "?  -->  What's playing\n" +
         prefixString +
-        "pa  -->  pause \n" +
+        "pa  -->  Pause \n" +
         prefixString +
-        "pl  -->  play (if paused) \n" +
+        "pl  -->  Play (if paused) \n" +
         prefixString +
         "sk  -->  Skip the current song\n" +
         prefixString +
         "e  -->  Stops playing and ends session\n" +
         prefixString +
-        "pn [youtube link]  -->  Plays the link now, even if there is a queue.\n" +
+        "pn [youtube link]  -->  Plays the link now, saves queue.\n" +
         "\n-----------  Server Music Database  -----------  \n" +
         prefixString +
-        "keys  -->  See all your saved songs \n" +
+        "keys  -->  See all of the server's saved songs \n" +
         prefixString +
-        "a [song] [url]  -->  Adds a song to your database \n" +
+        "a [song] [url]  -->  Adds a song to the server's database \n" +
         prefixString +
-        "d [key]  -->  Play a song from your database \n" +
+        "d [key]  -->  Play a song from the server's database \n" +
         prefixString +
-        "k [phrase]  -->  lookup keys with the same starting phrase\n" +
+        "k [phrase]  -->  Lookup keys with the same starting phrase\n" +
         prefixString +
-        "rm [key] -->  Removes a song from your database\n" +
+        "rm [key] -->  Removes a song from the server's database\n" +
         "*prepend 'm' to these commands to access your personal music database (ex: '!mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
