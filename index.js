@@ -1519,24 +1519,27 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
 
 */
 
-spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c9f2b2ca4e");
 
-const spdl = require('discord-spdl-core').default;
 
-function formatDurationK(duration) {
+
+const spdl = require('discord-spdl-core');
+function formatDuration(duration) {
   let seconds = duration / 1000;
   return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
 }
 
+
+spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c9f2b2ca4e");
+
 bot.on('message', async (msg) => {
-  if (!msg.content.startsWith('-testKeith')) return;
-  const urlK = msg.content.split('-testKeith ')[1];
-  if (!spdl.validateURL(urlK)) return msg.channel.send('Invalid URL');
-  const channelK = msg.member.voice.channel;
-  if (!channelK) return msg.channel.send('Not in a voice channel');
+  if (!msg.content.startsWith('..keith')) return;
+  const url = msg.content.split('..keith ')[1];
+  if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
+  const channel = msg.member.voice.channel;
+  if (!channel) return msg.channel.send('Not in a voc channel');
   try {
-    const connectionK = await channelK.join();
-    connectionK
+    const connection = await channel.join();
+    connection
       .play(await spdl(url, {
         opusEncoded: true,
         filter: 'audioonly',
