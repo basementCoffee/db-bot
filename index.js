@@ -1522,7 +1522,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
 
 
 
-const spdl = require('discord-spdl-core');
+const spdl = require('spdl-core');
 function formatDuration(duration) {
   let seconds = duration / 1000;
   return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
