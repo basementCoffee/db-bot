@@ -1528,7 +1528,7 @@ function formatDurationK(duration) {
   return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
 }
 
-client.on('message', async (msg) => {
+bot.on('message', async (msg) => {
   if (!msg.content.startsWith('-testKeith')) return;
   const urlK = msg.content.split('-testKeith ')[1];
   if (!spdl.validateURL(urlK)) return msg.channel.send('Invalid URL');
