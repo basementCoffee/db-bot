@@ -320,6 +320,19 @@ const { MessageEmbed, Client } = require('discord.js');
 const bot = new Client();
 const ytdl = require("ytdl-core-discord");
 
+
+// SPOTIFY BOT IMPORTS --------------------------
+
+const spdl = require('spdl-core');
+function formatDuration(duration) {
+    let seconds = duration / 1000;
+    return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
+}
+spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c9f2b2ca4e");
+
+// SPOTIFY BOT IMPORTS --------------------------
+
+
 // UPDATE HERE - Before Git Push
 const version = "5.1.1";
 const latestRelease =
@@ -1393,18 +1406,52 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     let whatToPlayS = "";
     whatToPlayS = whatToPlay;
     whatsp = whatToPlayS;
+    let url = whatToPlayS;
+    let isSpotify = false;
+    if (whatToPlayS.includes("spotify.com")) {
+        isSpotify = true;
+    }
     whatspMap[message.member.voice.channel] = whatToPlayS;
         voiceChannel.join().then(async function (connection) {
             try {
+                let dispatcher;
+                if (!isSpotify) {
                 await connection.voice.setSelfDeaf(true);
-                let dispatcher = connection.play(await ytdl(whatsp), {
+                dispatcher = connection.play(await ytdl(whatsp), {
                     type: "opus",
                     filter: "audioonly",
                     quality: "140",
                 });
-
+                } else {
+                    let msg = message;
+                    const channel = msg.member.voice.channel;
+                    if (!channel) return msg.channel.send('Not in a voc channel');
+                    try {
+                        const connection = await channel.join();
+                        dispatcher = connection
+                            .play(await spdl(url, {
+                                opusEncoded: true,
+                                filter: 'audioonly',
+                                encoderArgs: ['-af', 'apulsator=hz=0.09']
+                            }))
+                            .on('error', e => console.error(e));
+                        const infos = await spdl.getInfo(url);
+                        const embed = new MessageEmbed()
+                            .setTitle(`Now playing: ${infos.title}`)
+                            .setURL(infos.url)
+                            .setColor('#1DB954')
+                            .addField(`Artist${infos.artists.length > 1 ? 's': ''}`, infos.artists.join(', '), true)
+                            .addField('Duration', formatDuration(infos.duration), true)
+                            .addField('Preview', `[Click here](${infos.preview_url})`, true)
+                            .setThumbnail(infos.thumbnail);
+                        msg.channel.send(embed);
+                    } catch (err) {
+                        console.error(err);
+                        msg.channel.send(`An error occurred: ${err.message}`);
+                    }
+                }
                 dispatcherMap[message.member.voice.channel] = dispatcher;
-                dispatcher.on("finish", () => {
+                dispatcherMap[message.member.voice.channel].on("finish", () => {
                     server.queue.shift();
                     if (server.queue.length > 0 && voiceChannel.members.size > 1) {
                         whatsp = server.queue[0];
@@ -1520,16 +1567,38 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
 */
 
 
-
-
-const spdl = require('spdl-core');
-function formatDuration(duration) {
-  let seconds = duration / 1000;
-  return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
+async function spotifyPlay(msg, url) {
+    if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
+    const channel = msg.member.voice.channel;
+    if (!channel) return msg.channel.send('Not in a voc channel');
+    try {
+        const connection = await channel.join();
+        connection
+            .play(await spdl(url, {
+                opusEncoded: true,
+                filter: 'audioonly',
+                encoderArgs: ['-af', 'apulsator=hz=0.09']
+            }))
+            .on('error', e => console.error(e));
+        const infos = await spdl.getInfo(url);
+        const embed = new MessageEmbed()
+            .setTitle(`Now playing: ${infos.title}`)
+            .setURL(infos.url)
+            .setColor('#1DB954')
+            .addField(`Artist${infos.artists.length > 1 ? 's': ''}`, infos.artists.join(', '), true)
+            .addField('Duration', formatDuration(infos.duration), true)
+            .addField('Preview', `[Click here](${infos.preview_url})`, true)
+            .setThumbnail(infos.thumbnail);
+        msg.channel.send(embed);
+    } catch (err) {
+        console.error(err);
+        msg.channel.send(`An error occurred: ${err.message}`);
+    }
 }
 
 
-spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c9f2b2ca4e");
+
+
 
 bot.on('message', async (msg) => {
   if (!msg.content.startsWith('-spotify')) return;
