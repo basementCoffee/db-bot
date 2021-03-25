@@ -465,11 +465,11 @@ async function runCommandCases(message) {
         }
     }
     prefixString = prefix[mgid];
-    if (args[0].substr(0, 1) !== prefix[mgid]) {
-        if (args[0] === "!changeprefix" || args[0] === "!keys") {
+    if (args[0].substr(0, 1) !== prefixString) {
+        if (args[0] === "!changeprefix" || args[0] === "!keys" || args[0] === "!h") {
             message.channel.send(
                 "Current prefix is: " +
-                prefix[mgid]
+                prefixString
             );
         }
         return;
