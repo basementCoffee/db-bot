@@ -340,7 +340,7 @@ const version = "5.1.1";
 const latestRelease =
     "**Latest Release (5.1.x):**\n"
     +
-    "- Random command now uses the same queue as everything else. (Ex: !r [key])"
+    "- Random command now uses the same queue as everything else. (Ex: !r [number])"
     +
     "\n\n**Previous Release (5.0.x):**\n"
     +
