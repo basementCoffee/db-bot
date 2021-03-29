@@ -766,16 +766,17 @@ async function runCommandCases(message) {
                 ds += parseInt(dataSize.get("prefixes"));
                 await runRemoveItemCommand(message, args[1], "prefixes", false);
                 await runAddCommand(args, message, "prefixes", false);
+                console.log("ds: " + ds);
+                await gsrun(client2, "A", "B", "prefixes").then(async () => {
+                    if (ds === 0) {
+                        gsUpdateOverwrite(client2, -1, 1, "prefixes");
+                    } else {
+                        ds++;
+                        gsUpdateOverwrite(client2, ds, 1, "prefixes");
+                    }
+                });
             });
-            console.log("ds: " + ds);
-            await gsrun(client2, "A", "B", "prefixes").then(async () => {
-                if (ds === 0) {
-                    gsUpdateOverwrite(client2, -1, 1, "prefixes");
-                } else {
-                    ds++;
-                    gsUpdateOverwrite(client2, ds, 1, "prefixes");
-                }
-            });
+
             prefix[mgid] = args[2];
             message.channel.send("Prefix successfully changed to " + args[2]);
             break;
