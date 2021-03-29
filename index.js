@@ -563,13 +563,27 @@ async function runCommandCases(message) {
             ) {
                 servers[mgid].queue = [];
             }
-            // push to queue
-            servers[mgid].queue.push(args[1]);
-            // if queue has only 1 song then play
-            if (servers[mgid] && servers[mgid].queue.length < 2) {
+            let queueWasEmpty = false
+            if (servers[mgid].queue.length < 1) {
+                queueWasEmpty = true;
+            }
+            let pNums = 1;
+            while (args[pNums]) {
+                let linkZ = args[pNums];
+                if (linkZ.substring(linkZ.length - 1) === ",") {
+                    linkZ = linkZ.substring(0, linkZ.length - 1);
+                }
+                // push to queue
+                servers[mgid].queue.push(args[pNums]);
+                pNums += 1;
+            }
+            // if queue was empty then play
+            if (queueWasEmpty) {
                 playSongToVC(message, args[1], message.member.voice.channel);
-            } else {
+            } else if (pNums === 1) {
                 message.channel.send("*Added to queue*");
+            } else {
+                message.channel.send("*Added " + pNums + " to queue*");
             }
             break;
         // !pn
@@ -1346,9 +1360,11 @@ function addRandomToQueue(message, numOfTimes, cdb) {
     }
     randomQueueMap[message.guild.id].forEach(e => {
         servers[message.guild.id].queue.push(cdb.get(e));
-    })
+    });
     if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
         playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel);
+    } else {
+        message.channel.send("*Added to queue*");
     }
 }
 
@@ -1442,7 +1458,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                         .addField('Duration', formatDuration(infos.duration), true)
                         .addField('Preview', `[Click here](${infos.preview_url})`, true)
                         .setThumbnail(infos.thumbnail);
-                    // msg.channel.send(embed);
+                    msg.channel.send(embed);
                 } catch (err) {
                     console.error(err);
                     msg.channel.send(`An error occurred: ${err.message}`);
