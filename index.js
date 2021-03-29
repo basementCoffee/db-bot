@@ -89,7 +89,6 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 }
 
 function createSheet(message, nameOfSheet) {
-    console.log("within create sheets");
     const gsapi = google.sheets({version: "v4", auth: client2});
     gsapi.spreadsheets.batchUpdate(
         {
@@ -134,7 +133,7 @@ async function deleteRows(message, sheetName, rowNumber) {
         console.log("Error get sheetId")
     }
 
-    console.log(res.data.sheets[0].properties.sheetId);
+    // gets the sheetId
     let sheetId = res.data.sheets[0].properties.sheetId;
 
 // ----------------------------------------------------------
@@ -501,14 +500,14 @@ async function runCommandCases(message) {
     let prefixString = prefix[mgid];
     if (!prefixString) {
         try {
-            await gsrun(client2, "A", "B", "prefixes").then((xdb) => {
+            await gsrun(client2, "A", "B", "prefixes").then(async (xdb) => {
                 // console.log(xdb.congratsDatabase);
                 // console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
                 // console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
                 let newPrefix = xdb.congratsDatabase.get(mgid);
                 if (!newPrefix) {
                     prefix[mgid] = "!";
-                    gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
+                    await gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
                 } else {
                     prefix[mgid] = newPrefix;
                 }
