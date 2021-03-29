@@ -451,6 +451,45 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
 }
 
 /**
+ * Runs the play now command.
+ * @param message the message that triggered the bot
+ * @param args the message split into an array
+ * @param mgid the message guild id
+ * @param sheetName the name of the sheet to reference
+ */
+function runPlayNowCommand(message, args, mgid, sheetName) {
+    if (!message.member.voice.channel) {
+        return;
+    }
+    if (!args[1]) {
+        message.channel.send(
+            "Where's the link? I can't read your mind... unfortunately."
+        );
+        return;
+    }
+    if (!servers[mgid])
+        servers[mgid] = {
+            queue: [],
+        };
+    // in case of force disconnect
+    if (
+        !message.guild.client.voice ||
+        !message.guild.voice ||
+        !message.guild.voice.channel
+    ) {
+        servers[mgid].queue = [];
+    }
+    if (!args[1].includes(".")) {
+        runDatabasePlayCommand(args, message, sheetName, true);
+        return;
+    }
+    // push to queue
+    servers[mgid].queue.unshift(args[1]);
+    message.channel.send("*Playing now*");
+    playSongToVC(message, args[1], message.member.voice.channel);
+}
+
+/**
  * The execution for all of the bot commands
  * @param message
  * @returns {Promise<void>}
@@ -535,66 +574,13 @@ async function runCommandCases(message) {
             break;
         // !pn
         case "gpn":
-            if (!message.member.voice.channel) {
-                return;
-            }
-            if (!args[1]) {
-                message.channel.send(
-                    "Where's the link? I can't read your mind... unfortunately."
-                );
-                return;
-            }
-            if (!servers[mgid])
-                servers[mgid] = {
-                    queue: [],
-                };
-            // in case of force disconnect
-            if (
-                !message.guild.client.voice ||
-                !message.guild.voice ||
-                !message.guild.voice.channel
-            ) {
-                servers[mgid].queue = [];
-            }
-            if (!args[1].includes(".")) {
-                runDatabasePlayCommand(args, message, "entries", true);
-                return;
-            }
-            // push to queue
-            servers[mgid].queue.unshift(args[1]);
-            message.channel.send("*Playing now*");
-            playSongToVC(message, args[1], message.member.voice.channel);
+            runPlayNowCommand(message, args, mgid, "entries");
             break;
         case "pn":
-            if (!message.member.voice.channel) {
-                return;
-            }
-            if (!args[1]) {
-                message.channel.send(
-                    "Where's the link? I can't read your mind... unfortunately."
-                );
-                return;
-            }
-            if (!servers[mgid])
-                servers[mgid] = {
-                    queue: [],
-                };
-            // in case of force disconnect
-            if (
-                !message.guild.client.voice ||
-                !message.guild.voice ||
-                !message.guild.voice.channel
-            ) {
-                servers[mgid].queue = [];
-            }
-            if (!args[1].includes(".")) {
-                runDatabasePlayCommand(args, message, mgid, true);
-                return;
-            }
-            // push to queue
-            servers[mgid].queue.unshift(args[1]);
-            message.channel.send("*Playing now*");
-            playSongToVC(message, args[1], message.member.voice.channel);
+            runPlayNowCommand(message, args, mgid, mgid);
+            break;
+        case "mpn":
+            runPlayNowCommand(message, args, mgid, "p" + message.member.id);
             break;
         // case '!pv':
         //     if (!args[1]) {
@@ -1131,6 +1117,8 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                     } else {
                         servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
                     }
+                } else if (playRightNow) {
+                    message.channel.send("There's something wrong with what you put there.");
                 } else if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
