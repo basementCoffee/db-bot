@@ -311,8 +311,32 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
     gsrun(cl, "A", "B", "entries").then();
 }
 
-//ABOVE IS GOOGLE API -------------------------------------------------------------
-//ABOVE IS GOOGLE API -------------------------------------------------------------
+/*
+------------------------------------THE NOTES CORNER------------------------------------
+3/29/21 -Playlist feature: have a reserved key to signify playlists (ex: playlist_myPlaylist)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+End of Notes Corner
+*/
 
 const {MessageEmbed, Client} = require('discord.js');
 // initialization
@@ -1406,6 +1430,12 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
     });
 }
 
+// var minutes = Math.floor(info.player_response.videoDetails.lengthSeconds / 60);
+// var secs = info.player_response.videoDetails.lengthSeconds % 60;
+
+
+
+
 /**
  *  New play song function.
  * @param {*} message the message with channel info
@@ -1436,6 +1466,16 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     filter: "audioonly",
                     quality: "140",
                 });
+                const infos = await ytdl.getInfo(url);
+                console.log(infos);
+                    const embed = new MessageEmbed()
+                        .setTitle(`Now playing: ${infos.videoDetails.title}`)
+                        .setURL(infos.videoDetails.url)
+                        .setColor('#c40d00')
+                        .addField('Duration', formatDuration(infos.formats[0].approxDurationMs), true)
+                        .addField('Preview', `[Click here](${infos.videoDetails.video_url})`, true)
+                        // .setThumbnail(infos.videoDetails.thumbnails[0]); //figure out how to convert link to image
+                    message.channel.send(embed);
             } else {
                 let msg = message;
                 const channel = msg.member.voice.channel;
