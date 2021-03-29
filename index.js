@@ -1112,7 +1112,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                     // push to queue
                     if (playRightNow) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
-                        playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()), message.member.voice.channel);
+                        playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), message.member.voice.channel);
                         message.channel.send("*Playing now*");
                     } else {
                         servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
@@ -1405,7 +1405,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
  */
 function playSongToVC(message, whatToPlay, voiceChannel) {
     let server = servers[message.guild.id];
-    if (voiceChannel.members.size < 1) {
+    if (voiceChannel.members.size < 1 || !whatToPlay) {
         return;
     }
     let whatToPlayS = "";
