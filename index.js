@@ -315,7 +315,7 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
 //ABOVE IS GOOGLE API -------------------------------------------------------------
 //ABOVE IS GOOGLE API -------------------------------------------------------------
 
-const { MessageEmbed, Client } = require('discord.js');
+const {MessageEmbed, Client} = require('discord.js');
 // initialization
 const bot = new Client();
 const ytdl = require("ytdl-core-discord");
@@ -324,10 +324,12 @@ const ytdl = require("ytdl-core-discord");
 // SPOTIFY BOT IMPORTS --------------------------
 
 const spdl = require('spdl-core');
+
 function formatDuration(duration) {
     let seconds = duration / 1000;
     return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
 }
+
 spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c9f2b2ca4e");
 
 // SPOTIFY BOT IMPORTS --------------------------
@@ -375,33 +377,33 @@ function skipSong(message) {
         servers[message.guild.id].queue = [];
         return;
     }
-        // if server queue is not empty
-        if (
-            servers[message.guild.id].queue &&
-            servers[message.guild.id].queue.length > 0
-        ) {
-            servers[message.guild.id].queue.shift();
-            // if there is still items in the queue then play next song
-            if (servers[message.guild.id].queue.length > 0) {
-                whatspMap[message.member.voice.channel] =
-                    servers[message.guild.id].queue[0];
+    // if server queue is not empty
+    if (
+        servers[message.guild.id].queue &&
+        servers[message.guild.id].queue.length > 0
+    ) {
+        servers[message.guild.id].queue.shift();
+        // if there is still items in the queue then play next song
+        if (servers[message.guild.id].queue.length > 0) {
+            whatspMap[message.member.voice.channel] =
+                servers[message.guild.id].queue[0];
+            // get rid of previous dispatch
+            playSongToVC(message, whatspMap[message.member.voice.channel], message.member.voice.channel);
+        } else {
+            if (message.member.voice && message.member.voice.channel) {
                 // get rid of previous dispatch
-                playSongToVC(message, whatspMap[message.member.voice.channel], message.member.voice.channel);
-            } else {
-                if (message.member.voice && message.member.voice.channel) {
-                    // get rid of previous dispatch
-                    message.member.voice.channel.leave();
-                    dispatcherMap[message.member.voice.channel] = undefined;
-                }
-                if (
-                    whatspMap[message.member.voice.channel] &&
-                    whatspMap[message.member.voice.channel].length > 0
-                ) {
-                    whatspMap[message.member.voice.channel] =
-                        "Last Played:\n" + whatspMap[message.member.voice.channel];
-                }
+                message.member.voice.channel.leave();
+                dispatcherMap[message.member.voice.channel] = undefined;
+            }
+            if (
+                whatspMap[message.member.voice.channel] &&
+                whatspMap[message.member.voice.channel].length > 0
+            ) {
+                whatspMap[message.member.voice.channel] =
+                    "Last Played:\n" + whatspMap[message.member.voice.channel];
             }
         }
+    }
 }
 
 /**
@@ -487,7 +489,7 @@ async function runCommandCases(message) {
         return;
     }
     let statement = args[0].substr(1).toLowerCase();
-    if (statement.substr(0,1) === "g") {
+    if (statement.substr(0, 1) === "g") {
         if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") {
             return;
         }
@@ -663,7 +665,7 @@ async function runCommandCases(message) {
             break;
         // !md is the personal database
         case "md":
-            runDatabasePlayCommand(args, message, "p"+message.member.id, false);
+            runDatabasePlayCommand(args, message, "p" + message.member.id, false);
             break;
         // !r is a random that works with the normal queue
         case "r":
@@ -696,11 +698,11 @@ async function runCommandCases(message) {
             break;
         // !mkeys is personal keys
         case "mkeys":
-            runKeysCommand(message, prefixString, "p"+message.member.id, "m");
+            runKeysCommand(message, prefixString, "p" + message.member.id, "m");
             break;
         // !mkey is personal keys
         case "mkey":
-            runKeysCommand(message, prefixString, "p"+message.member.id, "m");
+            runKeysCommand(message, prefixString, "p" + message.member.id, "m");
             break;
         // !gkeys is global keys
         case "gkeys":
@@ -781,12 +783,12 @@ async function runCommandCases(message) {
             });
             console.log("ds: " + ds);
             await gsrun(client2, "A", "B", "prefixes").then(async () => {
-            if (ds === 0) {
-                gsUpdateOverwrite(client2, -1, 1, "prefixes");
-            } else {
-                ds++;
-                gsUpdateOverwrite(client2, ds, 1, "prefixes");
-            }
+                if (ds === 0) {
+                    gsUpdateOverwrite(client2, -1, 1, "prefixes");
+                } else {
+                    ds++;
+                    gsUpdateOverwrite(client2, ds, 1, "prefixes");
+                }
             });
             prefix[mgid] = args[2];
             message.channel.send("Prefix successfully changed to " + args[2]);
@@ -800,11 +802,11 @@ async function runCommandCases(message) {
             break;
         // !skip
         case "skip":
-            runSkipCommand(message,args);
+            runSkipCommand(message, args);
             break;
         // !sk
         case "sk":
-            runSkipCommand(message,args);
+            runSkipCommand(message, args);
             break;
         // !pa
         case "pa":
@@ -894,14 +896,14 @@ async function runCommandCases(message) {
                 return;
             }
             // in case the database has not been initialized
-            gsrun(client2, "A", "B", "p"+message.member.id).then(() => {
+            gsrun(client2, "A", "B", "p" + message.member.id).then(() => {
                 if (
-                    !dataSize.get("p"+message.member.id.toString()) ||
-                    dataSize.get("p"+message.member.id.toString()) < 1
+                    !dataSize.get("p" + message.member.id.toString()) ||
+                    dataSize.get("p" + message.member.id.toString()) < 1
                 ) {
                     message.channel.send("Please try again.");
                 } else {
-                    runAddCommand(args, message, "p"+message.member.id, true);
+                    runAddCommand(args, message, "p" + message.member.id, true);
                 }
             });
             break;
@@ -915,7 +917,7 @@ async function runCommandCases(message) {
             break;
         // !rm removes database entries
         case "mrm":
-            runRemoveItemCommand(message, args[1], "p"+message.member.id, true);
+            runRemoveItemCommand(message, args[1], "p" + message.member.id, true);
             break;
         case "invite":
             message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1133584&scope=bot");
@@ -929,18 +931,18 @@ async function runCommandCases(message) {
                 message.channel.send("Stream could not be found.");
                 return;
             }
-                try {
-                    let newVol = parseInt(args[1]);
-                    if (newVol < 11 && newVol > 0) {
-                        dispatcherMap[message.member.voice.channel].setVolume(newVol/10);
-                        message.channel.send("*volume set to " + newVol + "*");
+            try {
+                let newVol = parseInt(args[1]);
+                if (newVol < 11 && newVol > 0) {
+                    dispatcherMap[message.member.voice.channel].setVolume(newVol / 10);
+                    message.channel.send("*volume set to " + newVol + "*");
 
-                    } else {
-                        message.channel.send("Need to provide volume limit (1-10)");
-                    }
-                } catch (e) {
+                } else {
                     message.channel.send("Need to provide volume limit (1-10)");
                 }
+            } catch (e) {
+                message.channel.send("Need to provide volume limit (1-10)");
+            }
             break;
         // !rand
         case "rand":
@@ -1068,7 +1070,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
     if (!message.member.voice.channel) {
         return;
     }
-    if (!servers[message.guild.id] ) {
+    if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
             queue: [],
         };
@@ -1122,7 +1124,13 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                         "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
                     );
                     // push to queue
-                    servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
+                    if (playRightNow) {
+                        servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
+                        playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()), message.member.voice.channel);
+                        message.channel.send("*Playing now*");
+                    } else {
+                        servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
+                    }
                 } else if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
@@ -1133,7 +1141,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                     return;
                 }
             } else {
-                if(playRightNow) {
+                if (playRightNow) {
                     // push to queue
                     if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(args[1].toUpperCase()));
@@ -1143,12 +1151,13 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                         message.channel.send("There's something wrong with what you put there.");
                     }
                     return;
+                } else {
+                    // push to queue
+                    servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
                 }
-                // push to queue
-                servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
-            }
-            if (!queueWasEmpty) {
-                message.channel.send("*Added to queue*");
+                if (!queueWasEmpty) {
+                    message.channel.send("*Added to queue*");
+                }
             }
         }
         // if queue was empty then play
@@ -1358,7 +1367,7 @@ function addRandomToQueue(message, numOfTimes, cdb) {
         servers[message.guild.id].queue.push(cdb.get(e));
     })
     if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-        playSongToVC(message,servers[message.guild.id].queue[0], message.member.voice.channel);
+        playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel);
     }
 }
 
@@ -1420,71 +1429,71 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
         isSpotify = true;
     }
     whatspMap[message.member.voice.channel] = whatToPlayS;
-        voiceChannel.join().then(async function (connection) {
-            try {
-                let dispatcher;
-                if (!isSpotify) {
+    voiceChannel.join().then(async function (connection) {
+        try {
+            let dispatcher;
+            if (!isSpotify) {
                 await connection.voice.setSelfDeaf(true);
                 dispatcher = connection.play(await ytdl(whatsp), {
                     type: "opus",
                     filter: "audioonly",
                     quality: "140",
                 });
-                } else {
-                    let msg = message;
-                    const channel = msg.member.voice.channel;
-                    if (!channel) return msg.channel.send('Not in a voc channel');
-                    try {
-                        const connection = await channel.join();
-                        dispatcher = connection
-                            .play(await spdl(url, {
-                                opusEncoded: true,
-                                filter: 'audioonly',
-                                encoderArgs: ['-af', 'apulsator=hz=0.09']
-                            }))
-                            .on('error', e => console.error(e));
-                        const infos = await spdl.getInfo(url);
-                        const embed = new MessageEmbed()
-                            .setTitle(`Now playing: ${infos.title}`)
-                            .setURL(infos.url)
-                            .setColor('#1DB954')
-                            .addField(`Artist${infos.artists.length > 1 ? 's': ''}`, infos.artists.join(', '), true)
-                            .addField('Duration', formatDuration(infos.duration), true)
-                            .addField('Preview', `[Click here](${infos.preview_url})`, true)
-                            .setThumbnail(infos.thumbnail);
-                        // msg.channel.send(embed);
-                    } catch (err) {
-                        console.error(err);
-                        msg.channel.send(`An error occurred: ${err.message}`);
-                    }
+            } else {
+                let msg = message;
+                const channel = msg.member.voice.channel;
+                if (!channel) return msg.channel.send('Not in a voc channel');
+                try {
+                    const connection = await channel.join();
+                    dispatcher = connection
+                        .play(await spdl(url, {
+                            opusEncoded: true,
+                            filter: 'audioonly',
+                            encoderArgs: ['-af', 'apulsator=hz=0.09']
+                        }))
+                        .on('error', e => console.error(e));
+                    const infos = await spdl.getInfo(url);
+                    const embed = new MessageEmbed()
+                        .setTitle(`Now playing: ${infos.title}`)
+                        .setURL(infos.url)
+                        .setColor('#1DB954')
+                        .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
+                        .addField('Duration', formatDuration(infos.duration), true)
+                        .addField('Preview', `[Click here](${infos.preview_url})`, true)
+                        .setThumbnail(infos.thumbnail);
+                    // msg.channel.send(embed);
+                } catch (err) {
+                    console.error(err);
+                    msg.channel.send(`An error occurred: ${err.message}`);
                 }
-                dispatcherMap[message.member.voice.channel] = dispatcher;
-                dispatcherMap[message.member.voice.channel].on("finish", () => {
-                    server.queue.shift();
-                    if (server.queue.length > 0 && voiceChannel.members.size > 1) {
-                        whatsp = server.queue[0];
-                        // console.log("On finish, playing; " + whatsp);
-                        whatspMap[message.member.voice.channel] = whatsp;
-                        if (!whatsp) {
-                            return;
-                        }
-                        playSongToVC(message, whatsp, voiceChannel);
-                    } else {
-                        connection.disconnect();
-                        dispatcherMap[message.member.voice.channel] = undefined;
-                    }
-                });
-            } catch (e) {
-                // Error catching - fault with the yt link?
-                console.log(
-                    "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
-                );
-                console.log("Error:", e);
-                server.queue.shift();
-                message.channel.send("Could not play song.");
-                connection.disconnect();
             }
-        });
+            dispatcherMap[message.member.voice.channel] = dispatcher;
+            dispatcherMap[message.member.voice.channel].on("finish", () => {
+                server.queue.shift();
+                if (server.queue.length > 0 && voiceChannel.members.size > 1) {
+                    whatsp = server.queue[0];
+                    // console.log("On finish, playing; " + whatsp);
+                    whatspMap[message.member.voice.channel] = whatsp;
+                    if (!whatsp) {
+                        return;
+                    }
+                    playSongToVC(message, whatsp, voiceChannel);
+                } else {
+                    connection.disconnect();
+                    dispatcherMap[message.member.voice.channel] = undefined;
+                }
+            });
+        } catch (e) {
+            // Error catching - fault with the yt link?
+            console.log(
+                "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
+            );
+            console.log("Error:", e);
+            server.queue.shift();
+            message.channel.send("Could not play song.");
+            connection.disconnect();
+        }
+    });
 }
 
 /**
@@ -1593,7 +1602,7 @@ async function spotifyPlay(msg, url) {
             .setTitle(`Now playing: ${infos.title}`)
             .setURL(infos.url)
             .setColor('#1DB954')
-            .addField(`Artist${infos.artists.length > 1 ? 's': ''}`, infos.artists.join(', '), true)
+            .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
             .addField('Duration', formatDuration(infos.duration), true)
             .addField('Preview', `[Click here](${infos.preview_url})`, true)
             .setThumbnail(infos.thumbnail);
@@ -1605,43 +1614,36 @@ async function spotifyPlay(msg, url) {
 }
 
 
-
-
-
 bot.on('message', async (msg) => {
-  if (!msg.content.startsWith('-spotify')) return;
-  const url = msg.content.split('-spotify ')[1];
-  if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
-  const channel = msg.member.voice.channel;
-  if (!channel) return msg.channel.send('Not in a voc channel');
-  try {
-    const connection = await channel.join();
-    connection
-      .play(await spdl(url, {
-        opusEncoded: true,
-        filter: 'audioonly',
-        encoderArgs: ['-af', 'apulsator=hz=0.09']
-      }))
-      .on('error', e => console.error(e));
-    const infos = await spdl.getInfo(url);
-    const embed = new MessageEmbed()
-      .setTitle(`Now playing: ${infos.title}`)
-      .setURL(infos.url)
-      .setColor('#1DB954')
-      .addField(`Artist${infos.artists.length > 1 ? 's': ''}`, infos.artists.join(', '), true)
-      .addField('Duration', formatDuration(infos.duration), true)
-      .addField('Preview', `[Click here](${infos.preview_url})`, true)
-      .setThumbnail(infos.thumbnail);
-    msg.channel.send(embed);
-  } catch (err) {
-    console.error(err);
-    msg.channel.send(`An error occurred: ${err.message}`);
-  }
+    if (!msg.content.startsWith('-spotify')) return;
+    const url = msg.content.split('-spotify ')[1];
+    if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
+    const channel = msg.member.voice.channel;
+    if (!channel) return msg.channel.send('Not in a voc channel');
+    try {
+        const connection = await channel.join();
+        connection
+            .play(await spdl(url, {
+                opusEncoded: true,
+                filter: 'audioonly',
+                encoderArgs: ['-af', 'apulsator=hz=0.09']
+            }))
+            .on('error', e => console.error(e));
+        const infos = await spdl.getInfo(url);
+        const embed = new MessageEmbed()
+            .setTitle(`Now playing: ${infos.title}`)
+            .setURL(infos.url)
+            .setColor('#1DB954')
+            .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
+            .addField('Duration', formatDuration(infos.duration), true)
+            .addField('Preview', `[Click here](${infos.preview_url})`, true)
+            .setThumbnail(infos.thumbnail);
+        msg.channel.send(embed);
+    } catch (err) {
+        console.error(err);
+        msg.channel.send(`An error occurred: ${err.message}`);
+    }
 });
-
-
-
-
 
 
 var whatspMap = new Map();
