@@ -1355,13 +1355,13 @@ function runRandomToQueue(args, message, sheetname) {
  * @param {Map} cdb
  */
 function addRandomToQueue(message, numOfTimes, cdb) {
-    if (cdb.size < 1) {
+    const rKeyArray = Array.from(cdb.keys());
+    if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
         message.channel.send(
-            "Your music database is empty."
+            "Your music list is empty."
         );
         return;
     }
-    const rKeyArray = Array.from(cdb.keys());
     let rn;
     let queueWasEmpty = false;
     if (servers[message.guild.id].queue.length < 1) {
