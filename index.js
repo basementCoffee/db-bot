@@ -1530,7 +1530,7 @@ async function sendLinkAsEmbed(message, url, prependString) {
         imgLink = infos.videoDetails.thumbnails[0].url;
     }
     if (servers[message.guild.id] && servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
-        embed.addField('Queue', "\s 1 / " + servers[message.guild.id].queue.length, true);
+        embed.addField('Queue', " 1 / " + servers[message.guild.id].queue.length, true);
     } else {
         embed.addField('-', "Last played", true);
     }
