@@ -418,13 +418,6 @@ function skipSong(message) {
                 message.member.voice.channel.leave();
                 dispatcherMap[message.member.voice.channel] = undefined;
             }
-            if (
-                whatspMap[message.member.voice.channel] &&
-                whatspMap[message.member.voice.channel].length > 0
-            ) {
-                whatspMap[message.member.voice.channel] =
-                    "Last Played:\n" + whatspMap[message.member.voice.channel];
-            }
         }
     }
 }
@@ -660,15 +653,6 @@ async function runCommandCases(message) {
 
             if (message.member.voice && message.member.voice.channel) {
                 message.member.voice.channel.leave();
-            }
-
-            if (
-                whatspMap[message.member.voice.channel] &&
-                whatspMap[message.member.voice.channel].length > 0 &&
-                !whatspMap[message.member.voice.channel].includes("Last Played:")
-            ) {
-                whatspMap[message.member.voice.channel] =
-                    "Last Played:\n" + whatspMap[message.member.voice.channel];
             }
             break;
 
@@ -1235,9 +1219,13 @@ function runSkipCommand(message, args) {
             let skipTimes = parseInt(args[1]);
             if (skipTimes > 0 && skipTimes < 101) {
                 let skipCounter = 0;
-                while (skipTimes !== 0 && servers[message.guild.id].queue.length > 0) {
-                    skipSong(message);
+                while (skipTimes > 1 && servers[message.guild.id].queue.length > 0) {
+                    servers[message.guild.id].queue.shift();
                     skipTimes--;
+                    skipCounter++;
+                }
+                if (skipTimes === 1 && servers[message.guild.id].queue.length > 0) {
+                    skipSong(message);
                     skipCounter++;
                 }
                 if (skipCounter > 1) {
@@ -1434,8 +1422,6 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
 // var secs = info.player_response.videoDetails.lengthSeconds % 60;
 
 
-
-
 /**
  *  New play song function.
  * @param {*} message the message with channel info
@@ -1466,19 +1452,10 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     filter: "audioonly",
                     quality: "140",
                 });
-                const infos = await ytdl.getInfo(url);
-                    const embed = new MessageEmbed()
-                        .setTitle(`Now playing: ${infos.videoDetails.title}`)
-                        .setURL(infos.videoDetails.url)
-                        .setColor('#c40d00')
-                        .addField('Duration', formatDuration(infos.formats[0].approxDurationMs), true)
-                        .addField('Preview', `[Click here](${infos.videoDetails.video_url})`, true)
-                        .setThumbnail(infos.videoDetails.thumbnails[0].url); //figure out how to convert link to image
-                    message.channel.send(embed);
+                await sendLinkAsEmbed(message, url, "");
             } else {
-                let msg = message;
-                const channel = msg.member.voice.channel;
-                if (!channel) return msg.channel.send('Not in a voc channel');
+                const channel = message.member.voice.channel;
+                if (!channel) return message.channel.send('Not in a voc channel');
                 try {
                     const connection = await channel.join();
                     dispatcher = connection
@@ -1488,19 +1465,10 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                             encoderArgs: ['-af', 'apulsator=hz=0.09']
                         }))
                         .on('error', e => console.error(e));
-                    const infos = await spdl.getInfo(url);
-                    const embed = new MessageEmbed()
-                        .setTitle(`Now playing: ${infos.title}`)
-                        .setURL(infos.url)
-                        .setColor('#1DB954')
-                        .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
-                        .addField('Duration', formatDuration(infos.duration), true)
-                        .addField('Preview', `[Click here](${infos.preview_url})`, true)
-                        .setThumbnail(infos.thumbnail);
-                    msg.channel.send(embed);
+                    await sendLinkAsEmbed(message, url, "");
                 } catch (err) {
                     console.error(err);
-                    msg.channel.send(`An error occurred: ${err.message}`);
+                    message.channel.send(`An error occurred: ${err.message}`);
                 }
             }
             dispatcherMap[message.member.voice.channel] = dispatcher;
@@ -1530,6 +1498,45 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
             connection.disconnect();
         }
     });
+}
+
+
+async function sendLinkAsEmbed(message, url, prependString) {
+    let isSpotify = false;
+    if (url.toString().includes("spotify.com")) {
+        isSpotify = true;
+    }
+    let embed;
+    let imgLink;
+    if (isSpotify) {
+        const infos = await spdl.getInfo(url);
+        embed = new MessageEmbed()
+            .setTitle(`${infos.title}`)
+            .setURL(infos.url)
+            .setColor('#1DB954')
+            .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
+            .addField('Duration', formatDuration(infos.duration), true);
+        imgLink = infos.thumbnail;
+        // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
+    } else {
+        const infos = await ytdl.getInfo(url);
+        embed = new MessageEmbed()
+            .setTitle(`${infos.videoDetails.title}`)
+            .setURL(infos.videoDetails.video_url)
+            .setColor('#c40d00')
+            .addField('Duration', formatDuration(infos.formats[0].approxDurationMs), true)
+        imgLink = infos.videoDetails.thumbnails[0].url;
+    }
+    if (servers[message.guild.id] && servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
+        embed.addField('Queue', "\s 1 / " + servers[message.guild.id].queue.length, true);
+    } else {
+        embed.addField('-', "Last played", true);
+    }
+    embed.setThumbnail(imgLink);
+    if (prependString){
+        message.channel.send(prependString);
+    }
+    message.channel.send(embed);
 }
 
 /**
@@ -1576,36 +1583,19 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
                 !message.guild.voice ||
                 !message.guild.voice.channel
             ) {
-                if (
-                    whatspMap[message.member.voice.channel] &&
-                    !whatspMap[message.member.voice.channel].includes("Last Played:")
-                ) {
-                    whatspMap[message.member.voice.channel] =
-                        "Last Played:\n" + whatspMap[message.member.voice.channel];
+                try {
+                    if (
+                        whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0
+                    ) {
+                        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], "");
+                    } else {
+                        message.channel.send("Nothing is playing right now");
+                    }
+                } catch (e) {
                     message.channel.send(whatspMap[message.member.voice.channel]);
-                } else if (
-                    whatspMap[message.member.voice.channel] &&
-                    whatspMap[message.member.voice.channel].length > 0
-                ) {
-                    message.channel.send(whatspMap[message.member.voice.channel]);
-                } else {
-                    message.channel.send("Nothing is playing right now");
                 }
-                return;
-            }
-            if (
-                servers[mgid] &&
-                servers[mgid].queue &&
-                servers[mgid].queue.length > 1
-            ) {
-                message.channel.send(
-                    "(1/" +
-                    servers[mgid].queue.length +
-                    ")  " +
-                    whatspMap[message.member.voice.channel]
-                );
             } else {
-                message.channel.send(whatspMap[message.member.voice.channel]);
+                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], "");
             }
         } else {
             message.channel.send("Nothing is playing right now");
