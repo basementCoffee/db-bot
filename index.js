@@ -1467,14 +1467,13 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     quality: "140",
                 });
                 const infos = await ytdl.getInfo(url);
-                console.log(infos);
                     const embed = new MessageEmbed()
                         .setTitle(`Now playing: ${infos.videoDetails.title}`)
                         .setURL(infos.videoDetails.url)
                         .setColor('#c40d00')
                         .addField('Duration', formatDuration(infos.formats[0].approxDurationMs), true)
                         .addField('Preview', `[Click here](${infos.videoDetails.video_url})`, true)
-                        // .setThumbnail(infos.videoDetails.thumbnails[0]); //figure out how to convert link to image
+                        .setThumbnail(infos.videoDetails.thumbnails[0].url); //figure out how to convert link to image
                     message.channel.send(embed);
             } else {
                 let msg = message;
