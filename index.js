@@ -1493,7 +1493,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                 }
             }
             dispatcherMap[message.member.voice.channel] = dispatcher;
-            await sendLinkAsEmbed(message, url, "");
+            sendLinkAsEmbed(message, url, "").then();
             dispatcherMap[message.member.voice.channel].on("finish", () => {
                 server.queue.shift();
                 if (server.queue.length > 0 && voiceChannel.members.size > 1) {
