@@ -371,7 +371,7 @@ const latestRelease =
 var servers = {};
 bot.login(keys.token);
 var whatsp = "";
-const maxQueueSize = 499; // should be one less than the actual max
+const maxQueueSize = 500; // should be one less than the actual max
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
     return (
@@ -501,7 +501,7 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
     ) {
         servers[mgid].queue = [];
     }
-    if (servers[mgid].queue.length > maxQueueSize) {
+    if (servers[mgid].queue.length >= maxQueueSize) {
         message.channel.send("*max queue size has been reached*");
         return;
     }
@@ -511,7 +511,7 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
     }
     // push to queue
     servers[mgid].queue.unshift(args[1]);
-    message.channel.send("*Playing now*");
+    message.channel.send("*playing now*");
     playSongToVC(message, args[1], message.member.voice.channel);
 }
 
@@ -610,9 +610,9 @@ async function runCommandCases(message) {
             if (queueWasEmpty) {
                 playSongToVC(message, args[1], message.member.voice.channel);
             } else if (pNums < 2) {
-                message.channel.send("*Added to queue*");
+                message.channel.send("*added to queue*");
             } else {
-                message.channel.send("*Added " + pNums + " to queue*");
+                message.channel.send("*added " + pNums + " to queue*");
             }
             break;
         // !pn
@@ -648,7 +648,6 @@ async function runCommandCases(message) {
 
         //!e is the Stop feature
         case "e":
-            totalRandomIntMap[message.member.voice.channel] = 0;
             currentRandomIntMap[message.member.voice.channel] = 0;
             if (
                 !message.member ||
@@ -1052,7 +1051,7 @@ function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
     }
     if (printMsgToChannel) {
         if (songsAddedInt === 1) {
-            message.channel.send("*Song successfully added to the database.*");
+            message.channel.send("*song successfully added to the database.*");
         } else if (songsAddedInt > 1) {
             gsrun(client2, "A", "B", currentBotGuildId).then(() => {
                 gsUpdateOverwrite(client2, -1, songsAddedInt, currentBotGuildId);
@@ -1096,7 +1095,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
     ) {
         servers[message.guild.id].queue = [];
     }
-    if (servers[message.guild.id].queue.length > maxQueueSize) {
+    if (servers[message.guild.id].queue.length >= maxQueueSize) {
         message.channel.send("*max queue size has been reached*");
         return;
     }
@@ -1127,7 +1126,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                 }
                 dbAddInt++;
             }
-            message.channel.send("*Added " + dbAddedToQueue + " to queue*");
+            message.channel.send("*added " + dbAddedToQueue + " to queue*");
             if (firstUnfoundRan) {
                 unFoundString = unFoundString.concat("*");
                 message.channel.send(unFoundString);
@@ -1143,7 +1142,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                     if (playRightNow) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
                         playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), message.member.voice.channel);
-                        message.channel.send("*Playing now*");
+                        message.channel.send("*playing now*");
                     } else {
                         servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
                     }
@@ -1164,7 +1163,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                     if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(args[1].toUpperCase()));
                         playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()), message.member.voice.channel);
-                        message.channel.send("*Playing now*");
+                        message.channel.send("*playing now*");
                     } else {
                         message.channel.send("There's something wrong with what you put there.");
                     }
@@ -1175,7 +1174,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                 }
             }
             if (!queueWasEmpty && !playRightNow) {
-                message.channel.send("*Added to queue*");
+                message.channel.send("*added to queue*");
             }
         }
         // if queue was empty then play
@@ -1242,14 +1241,14 @@ function runSkipCommand(message, args) {
                 if (skipTimes === 1 && servers[message.guild.id].queue.length > 0) {
                     skipCounter++;
                 }
-                    skipSong(message);
+                skipSong(message);
                 if (skipCounter > 1) {
                     message.channel.send("*skipped " + skipCounter + " times*");
                 } else {
                     message.channel.send("*skipped 1 time*");
                 }
             } else {
-                message.channel.send("*Invalid skip amount (should be between 1-500)\n skipped 1 time*");
+                message.channel.send("*invalid skip amount (should be between 1-" + maxQueueSize + ")\n skipped 1 time*");
                 skipSong(message);
             }
         } catch (e) {
@@ -1295,12 +1294,12 @@ function sendHelp(message, prefixString) {
         "k [phrase]  -->  Lookup keys with the same starting phrase\n" +
         prefixString +
         "rm [key] -->  Removes a song from the server's database\n" +
-        "*prepend 'm' to these commands to access your personal music database (ex: '!mkeys')*\n" +
+        "*Prepend 'm' to these commands to access your personal music database (ex: '!mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
-        "changeprefix [new prefix]  -->  changes the prefix for all commands \n" +
+        "changeprefix [new prefix]  -->  Changes the prefix for all commands \n" +
         prefixString +
-        "rand  --> random roll for the number of people in the voice channel\n" +
+        "rand  --> Random roll for the number of people in the voice channel\n" +
         "\n**Or just say congrats to a friend. I will chime in too! :) **"
     );
 }
@@ -1329,14 +1328,11 @@ function runRandomToQueue(args, message, sheetname) {
         } else {
             try {
                 let num = parseInt(args[1]);
-                if (num && num > 500) {
-                    message.channel.send("*max limit for random is 500*");
-                    num = 500;
+                if (num && num >= maxQueueSize) {
+                    message.channel.send("*max limit for random is " + maxQueueSize + "*");
+                    num = maxQueueSize;
                 }
-                if (num) {
-                    totalRandomIntMap[message.member.voice.channel] = num;
-                }
-                if (servers[message.guild.id].queue.length > maxQueueSize) {
+                if (servers[message.guild.id].queue.length >= maxQueueSize) {
                     message.channel.send("*max queue size has been reached*");
                     return;
                 }
@@ -1361,6 +1357,15 @@ function addRandomToQueue(message, numOfTimes, cdb) {
             "Your music list is empty."
         );
         return;
+    }
+    let serverQueueLength = servers[message.guild.id].queue.length;
+    // mutate numberOfTimes to not exceed maxQueueSize
+    if (numOfTimes + serverQueueLength > maxQueueSize) {
+        numOfTimes = maxQueueSize - serverQueueLength;
+        if (numOfTimes === 0) {
+            message.channel.send("*max queue size has been reached*");
+            return;
+        }
     }
     let rn;
     let queueWasEmpty = false;
@@ -1411,7 +1416,7 @@ function addRandomToQueue(message, numOfTimes, cdb) {
     if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
         playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel);
     } else {
-        message.channel.send("*Added to queue*");
+        message.channel.send("*Added " + numOfTimes + " to queue*");
     }
 }
 
@@ -1567,7 +1572,7 @@ async function sendLinkAsEmbed(message, url, prependString) {
         embed.addField('-', "Last played", true);
     }
     embed.setThumbnail(imgLink);
-    if (prependString){
+    if (prependString) {
         message.channel.send(prependString);
     }
     message.channel.send(embed);
@@ -1581,6 +1586,19 @@ async function sendLinkAsEmbed(message, url, prependString) {
  * @param {*} sheetname The name of the sheet reference
  */
 function runWhatsPCommand(args, message, mgid, sheetname) {
+    if (!servers[message.guild.id]) {
+        servers[message.guild.id] = {
+            queue: [],
+        };
+    }
+    // in case of force disconnect
+    if (
+        !message.guild.client.voice ||
+        !message.guild.voice ||
+        !message.guild.voice.channel
+    ) {
+        servers[message.guild.id].queue = [];
+    }
     if (args[1]) {
         gsrun(client2, "A", "B", sheetname).then((xdb) => {
             if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
@@ -1711,7 +1729,6 @@ var prefix = new Map();
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
 var currentRandomIntMap = new Map();
-var totalRandomIntMap = new Map();
 var dataSize = new Map();
 var dispatcherMap = new Map();
 var randomQueueMap = new Map();
