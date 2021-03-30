@@ -419,6 +419,12 @@ function skipSong(message) {
                 dispatcherMap[message.member.voice.channel] = undefined;
             }
         }
+    } else {
+        if (message.member.voice && message.member.voice.channel) {
+            // get rid of previous dispatch
+            message.member.voice.channel.leave();
+            dispatcherMap[message.member.voice.channel] = undefined;
+        }
     }
 }
 
@@ -1227,9 +1233,9 @@ function runSkipCommand(message, args) {
                     skipCounter++;
                 }
                 if (skipTimes === 1 && servers[message.guild.id].queue.length > 0) {
-                    skipSong(message);
                     skipCounter++;
                 }
+                    skipSong(message);
                 if (skipCounter > 1) {
                     message.channel.send("*skipped " + skipCounter + " times*");
                 } else {
