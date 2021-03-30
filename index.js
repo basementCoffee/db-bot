@@ -594,10 +594,12 @@ async function runCommandCases(message) {
                 servers[mgid].queue.push(args[pNums]);
                 pNums += 1;
             }
+            // make pNums the number of added songs
+            pNums--;
             // if queue was empty then play
             if (queueWasEmpty) {
                 playSongToVC(message, args[1], message.member.voice.channel);
-            } else if (pNums === 1) {
+            } else if (pNums < 2) {
                 message.channel.send("*Added to queue*");
             } else {
                 message.channel.send("*Added " + pNums + " to queue*");
