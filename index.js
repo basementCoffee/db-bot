@@ -371,7 +371,7 @@ const latestRelease =
 var servers = {};
 bot.login(keys.token);
 var whatsp = "";
-const maxQueueSize = 501; // should be one more than the actual max
+const maxQueueSize = 499; // should be one less than the actual max
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
     return (
