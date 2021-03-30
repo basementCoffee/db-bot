@@ -1330,11 +1330,15 @@ function runRandomToQueue(args, message, sheetname) {
             try {
                 let num = parseInt(args[1]);
                 if (num && num > 500) {
-                    message.channel.send("*max limit for random is 1000*");
-                    num = 1000;
+                    message.channel.send("*max limit for random is 500*");
+                    num = 500;
                 }
                 if (num) {
                     totalRandomIntMap[message.member.voice.channel] = num;
+                }
+                if (servers[message.guild.id].queue.length > maxQueueSize) {
+                    message.channel.send("*max queue size has been reached*");
+                    return;
                 }
                 addRandomToQueue(message, num, xdb.congratsDatabase);
             } catch (e) {
