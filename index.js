@@ -1348,7 +1348,19 @@ function runRandomToQueue(args, message, sheetname) {
     });
 }
 
+/**
+ * Adds a number of items from the database to the queue randomly.
+ * @param message
+ * @param numOfTimes
+ * @param {Map} cdb
+ */
 function addRandomToQueue(message, numOfTimes, cdb) {
+    if (cdb.size < 1) {
+        message.channel.send(
+            "Your music database is empty."
+        );
+        return;
+    }
     const rKeyArray = Array.from(cdb.keys());
     let rn;
     let queueWasEmpty = false;
