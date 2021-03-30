@@ -359,7 +359,7 @@ spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c
 
 
 // UPDATE HERE - Before Git Push
-const version = "5.1.1";
+const version = "5.2.0";
 const latestRelease =
     "**Latest Release (5.1.x):**\n"
     +
@@ -371,7 +371,7 @@ const latestRelease =
 var servers = {};
 bot.login(keys.token);
 var whatsp = "";
-
+const maxQueueSize = 501; // should be one more than the actual max
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
     return (
@@ -500,6 +500,10 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
         !message.guild.voice.channel
     ) {
         servers[mgid].queue = [];
+    }
+    if (servers[mgid].queue.length > maxQueueSize) {
+        message.channel.send("*max queue size has been reached*");
+        return;
     }
     if (!args[1].includes(".")) {
         runDatabasePlayCommand(args, message, sheetName, true);
@@ -1092,7 +1096,10 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
     ) {
         servers[message.guild.id].queue = [];
     }
-
+    if (servers[message.guild.id].queue.length > maxQueueSize) {
+        message.channel.send("*max queue size has been reached*");
+        return;
+    }
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         let queueWasEmpty = false;
         // if the queue is empty then play
@@ -1225,7 +1232,7 @@ function runSkipCommand(message, args) {
     if (args[1]) {
         try {
             let skipTimes = parseInt(args[1]);
-            if (skipTimes > 0 && skipTimes < 101) {
+            if (skipTimes > 0 && skipTimes < 501) {
                 let skipCounter = 0;
                 while (skipTimes > 1 && servers[message.guild.id].queue.length > 0) {
                     servers[message.guild.id].queue.shift();
@@ -1242,7 +1249,7 @@ function runSkipCommand(message, args) {
                     message.channel.send("*skipped 1 time*");
                 }
             } else {
-                message.channel.send("*Invalid skip amount (should be between 1-100)\n skipped 1 time*");
+                message.channel.send("*Invalid skip amount (should be between 1-500)\n skipped 1 time*");
                 skipSong(message);
             }
         } catch (e) {
@@ -1312,13 +1319,17 @@ function runRandomToQueue(args, message, sheetname) {
         servers[message.guild.id].queue = [];
     }
     randomQueueMap[message.guild.id] = undefined;
+    if (servers[message.guild.id].queue.length > maxQueueSize) {
+        message.channel.send("*max queue size has been reached*");
+        return;
+    }
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         if (!args[1]) {
             addRandomToQueue(message, 1, xdb.congratsDatabase);
         } else {
             try {
                 let num = parseInt(args[1]);
-                if (num && num > 1000) {
+                if (num && num > 500) {
                     message.channel.send("*max limit for random is 1000*");
                     num = 1000;
                 }
