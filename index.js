@@ -1475,7 +1475,6 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     filter: "audioonly",
                     quality: "140",
                 });
-                await sendLinkAsEmbed(message, url, "");
             } else {
                 const channel = message.member.voice.channel;
                 if (!channel) return message.channel.send('Not in a voc channel');
@@ -1488,13 +1487,13 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                             encoderArgs: ['-af', 'apulsator=hz=0.09']
                         }))
                         .on('error', e => console.error(e));
-                    await sendLinkAsEmbed(message, url, "");
                 } catch (err) {
                     console.error(err);
                     message.channel.send(`An error occurred: ${err.message}`);
                 }
             }
             dispatcherMap[message.member.voice.channel] = dispatcher;
+            await sendLinkAsEmbed(message, url, "");
             dispatcherMap[message.member.voice.channel].on("finish", () => {
                 server.queue.shift();
                 if (server.queue.length > 0 && voiceChannel.members.size > 1) {
