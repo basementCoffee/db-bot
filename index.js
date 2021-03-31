@@ -1497,8 +1497,12 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     whatsp = whatToPlayS;
     let url = whatToPlayS;
     let isSpotify = false;
+    // set stream flag and validate link
     if (whatToPlayS.includes("spotify.com")) {
         isSpotify = true;
+        if (!spdl.validateURL(url)) return message.channel.send('Invalid URL');
+    } else {
+        if (!ytdl.validateURL(url)) return message.channel.send('Invalid URL');
     }
     whatspMap[message.member.voice.channel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
