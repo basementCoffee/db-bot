@@ -1,9 +1,16 @@
 const {google} = require("googleapis");
 // comment out when deploying - GIT
 // will have to replace with => process.env.stoken and make 'dotenv'
-const keys = require("./DiscordBot-d96fd2d64ee5.json");
 
-const client2 = new google.auth.JWT(keys.client_email, null, keys.private_key, [
+require('dotenv').config()
+
+let client_email = process.env.CLIENT_EMAIL.replace(/\\n/gm, '\n');
+let private_key = process.env.PRIVATE_KEY.replace(/\\n/gm, '\n');
+let stoken = process.env.STOKEN.replace(/\\n/gm, '\n');
+let token = process.env.TOKEN.replace(/\\n/gm, '\n');
+
+
+const client2 = new google.auth.JWT(client_email, null,  private_key, [
     "https://www.googleapis.com/auth/spreadsheets",
 ]);
 
@@ -20,7 +27,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 
     nameOfSheet = nameOfSheet.toString();
     const spreadsheetSizeObjects = {
-        spreadsheetId: keys.stoken,
+        spreadsheetId: stoken,
         range: nameOfSheet + "!D1",
     };
     // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
@@ -46,7 +53,7 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     }
 
     const songObjects = {
-        spreadsheetId: keys.stoken,
+        spreadsheetId: stoken,
         range:
             nameOfSheet +
             "!" +
@@ -369,7 +376,7 @@ const latestRelease =
     +
     "- Personal database is now live! (Ex: !mkeys)";
 var servers = {};
-bot.login(keys.token);
+bot.login(token);
 var whatsp = "";
 const maxQueueSize = 500; // should be one less than the actual max
 // the entire reason we built this bot
@@ -1302,7 +1309,7 @@ function sendHelp(message, prefixString) {
         "k [phrase]  -->  Lookup keys with the same starting phrase\n" +
         prefixString +
         "rm [key] -->  Removes a song from the server's database\n" +
-        "*Prepend 'm' to these commands to access your personal music database (ex: '" + prefixString+ "mkeys')*\n" +
+        "*Prepend 'm' to these commands to access your personal music database (ex: '" + prefixString + "mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
         "changeprefix [new prefix]  -->  Changes the prefix for all commands \n" +
