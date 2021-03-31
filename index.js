@@ -956,6 +956,14 @@ async function runCommandCases(message) {
                 message.channel.send("Need to provide volume limit (1-10)");
             }
             break;
+        case "silence":
+            silenceMap[mgid] = true;
+            console.log("*song notifications temporarily silenced*");
+            break;
+        case "unsilence":
+            silenceMap[mgid] = false;
+            console.log("*song notifications enabled*");
+            break;
         // !rand
         case "rand":
             if (args[1]) {
@@ -1294,12 +1302,16 @@ function sendHelp(message, prefixString) {
         "k [phrase]  -->  Lookup keys with the same starting phrase\n" +
         prefixString +
         "rm [key] -->  Removes a song from the server's database\n" +
-        "*Prepend 'm' to these commands to access your personal music database (ex: '!mkeys')*\n" +
+        "*Prepend 'm' to these commands to access your personal music database (ex: '" + prefixString+ "mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
         "changeprefix [new prefix]  -->  Changes the prefix for all commands \n" +
         prefixString +
-        "rand  --> Random roll for the number of people in the voice channel\n" +
+        "rand  -->  Random roll for the number of people in the voice channel\n" +
+        prefixString +
+        "silence  -->  Temporarily silences the now playing notifications\n" +
+        prefixString +
+        "unsilence  -->  Re-enables now playing notifications\n" +
         "\n**Or just say congrats to a friend. I will chime in too! :) **"
     );
 }
@@ -1510,7 +1522,10 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                 }
             }
             dispatcherMap[message.member.voice.channel] = dispatcher;
-            sendLinkAsEmbed(message, url, "").then();
+            // if the server is not silenced then send the embed when playing
+            if (!silenceMap[message.guild.id]) {
+                sendLinkAsEmbed(message, url, "").then();
+            }
             dispatcherMap[message.member.voice.channel].on("finish", () => {
                 server.queue.shift();
                 if (server.queue.length > 0 && voiceChannel.members.size > 1) {
@@ -1729,6 +1744,7 @@ var prefix = new Map();
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
 var currentRandomIntMap = new Map();
+var silenceMap = new Map();
 var dataSize = new Map();
 var dispatcherMap = new Map();
 var randomQueueMap = new Map();
