@@ -531,7 +531,7 @@ async function runCommandCases(message) {
     let args = message.content.replace(/\s+/g, " ").split(" ");
     console.log(args);
     let mgid = message.guild.id;
-    let prefixString = prefix[mgid];
+    let prefixString = prefixMap[mgid];
     if (!prefixString) {
         try {
             await gsrun(client2, "A", "B", "prefixes").then(async (xdb) => {
@@ -540,18 +540,18 @@ async function runCommandCases(message) {
                 // console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
                 let newPrefix = xdb.congratsDatabase.get(mgid);
                 if (!newPrefix) {
-                    prefix[mgid] = "!";
+                    prefixMap[mgid] = "!";
                     await gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
                 } else {
-                    prefix[mgid] = newPrefix;
+                    prefixMap[mgid] = newPrefix;
                 }
             });
         } catch (e) {
-            prefix[mgid] = "!";
+            prefixMap[mgid] = "!";
             gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
         }
     }
-    prefixString = prefix[mgid];
+    prefixString = prefixMap[mgid];
     if (args[0].substr(0, 1) !== prefixString) {
         if (args[0] === "!changeprefix" || args[0] === "!keys" || args[0] === "!h") {
             message.channel.send(
@@ -807,7 +807,7 @@ async function runCommandCases(message) {
                 await runAddCommand(args, message, "prefixes", false);
                 await gsrun(client2, "A", "B", "prefixes").then(async (xdb) => {
                     await gsUpdateOverwrite(client2, xdb.congratsDatabase.size + 2, 1, "prefixes");
-                    prefix[mgid] = args[2];
+                    prefixMap[mgid] = args[2];
                     message.channel.send("Prefix successfully changed to " + args[2]);
                 });
             });
@@ -1065,12 +1065,13 @@ function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
         songsAddedInt += 1;
     }
     if (printMsgToChannel) {
+        let ps = prefixMap[message.guild.id];
         if (songsAddedInt === 1) {
-            message.channel.send("*song successfully added to the database.*");
+            message.channel.send("*song added to the database. [" + ps + "keys]*");
         } else if (songsAddedInt > 1) {
             gsrun(client2, "A", "B", currentBotGuildId).then(() => {
                 gsUpdateOverwrite(client2, -1, songsAddedInt, currentBotGuildId);
-                message.channel.send("*" + songsAddedInt + " songs successfully added to the database.*");
+                message.channel.send("*" + songsAddedInt + " songs added to the database. [" + ps + "keys]*");
             });
         } else {
             message.channel.send("Please call '!keys' to initialize the database.");
@@ -1751,7 +1752,7 @@ bot.on('message', async (msg) => {
 
 
 var whatspMap = new Map();
-var prefix = new Map();
+var prefixMap = new Map();
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
 var currentRandomIntMap = new Map();
