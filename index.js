@@ -1066,12 +1066,17 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
     }
     if (printMsgToChannel) {
         let ps = prefixMap[message.guild.id];
+        // the specific database user-access character
+        let databaseType = args[0].substr(0,1);
+        if (databaseType === "a") {
+            databaseType = "";
+        }
         if (songsAddedInt === 1) {
-            message.channel.send("*song added to the database. (within '" + args[0].substr(0,1) + "keys')*");
+            message.channel.send("*song added to the database. (within '" + ps + databaseType + "keys')*");
         } else if (songsAddedInt > 1) {
             gsrun(client2, "A", "B", sheetName).then(() => {
                 gsUpdateOverwrite(client2, -1, songsAddedInt, sheetName);
-                message.channel.send("*" + songsAddedInt + " songs added to the database. (within '" + args[0].substr(0,1) + "keys')*");
+                message.channel.send("*" + songsAddedInt + " songs added to the database. (within '" + ps + databaseType + "keys')*");
             });
         } else {
             message.channel.send("Please call '!keys' to initialize the database.");
