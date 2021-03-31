@@ -1067,7 +1067,7 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
     if (printMsgToChannel) {
         let ps = prefixMap[message.guild.id];
         // the specific database user-access character
-        let databaseType = args[0].substr(0,1);
+        let databaseType = args[0].substr(1,1);
         if (databaseType === "a") {
             databaseType = "";
         }
