@@ -1049,10 +1049,10 @@ bot.on("message", (message) => {
  * The command to add a song to a given database.
  * @param {*} args The command arguments
  * @param {*} message The message that triggered the command
- * @param {*} currentBotGuildId the server/guild id
+ * @param {string} sheetName the name of the sheet to add to
  * @param printMsgToChannel whether to print response to channel
  */
-function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
+function runAddCommand(args, message, sheetName, printMsgToChannel) {
     let songsAddedInt = 0;
     let z = 1;
     while (args[z] && args[z + 1]) {
@@ -1060,18 +1060,18 @@ function runAddCommand(args, message, currentBotGuildId, printMsgToChannel) {
         if (linkZ.substring(linkZ.length - 1) === ",") {
             linkZ = linkZ.substring(0, linkZ.length - 1);
         }
-        gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", currentBotGuildId);
+        gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", sheetName);
         z = z + 2;
         songsAddedInt += 1;
     }
     if (printMsgToChannel) {
         let ps = prefixMap[message.guild.id];
         if (songsAddedInt === 1) {
-            message.channel.send("*song added to the database. [" + ps + "keys]*");
+            message.channel.send("*song added to the database. (within '" + args[0].substr(0,1) + "keys')*");
         } else if (songsAddedInt > 1) {
-            gsrun(client2, "A", "B", currentBotGuildId).then(() => {
-                gsUpdateOverwrite(client2, -1, songsAddedInt, currentBotGuildId);
-                message.channel.send("*" + songsAddedInt + " songs added to the database. [" + ps + "keys]*");
+            gsrun(client2, "A", "B", sheetName).then(() => {
+                gsUpdateOverwrite(client2, -1, songsAddedInt, sheetName);
+                message.channel.send("*" + songsAddedInt + " songs added to the database. (within '" + args[0].substr(0,1) + "keys')*");
             });
         } else {
             message.channel.send("Please call '!keys' to initialize the database.");
