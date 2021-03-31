@@ -958,11 +958,11 @@ async function runCommandCases(message) {
             break;
         case "silence":
             silenceMap[mgid] = true;
-            console.log("*song notifications temporarily silenced*");
+            message.channel.send("*song notifications temporarily silenced*");
             break;
         case "unsilence":
             silenceMap[mgid] = false;
-            console.log("*song notifications enabled*");
+            message.channel.send("*song notifications enabled*");
             break;
         // !rand
         case "rand":
