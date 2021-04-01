@@ -455,7 +455,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                     await deleteRows(message, sheetName, i);
                     // console.log("Removed: " + itemToCheck);
                     if (sendMsgToChannel) {
-                        message.channel.send("*Removed '" + itemToCheck + "'*");
+                        message.channel.send("*removed '" + itemToCheck + "'*");
                     }
                 }
             }
@@ -1131,7 +1131,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
         }
         if (args[2]) {
             let dbAddInt = 1;
-            let unFoundString = "*Could not find: ";
+            let unFoundString = "*could not find: ";
             let firstUnfoundRan = false;
             let dbAddedToQueue = 0;
             while (args[dbAddInt]) {
@@ -1160,7 +1160,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                 let ss = runSearchCommand(args[1], xdb).ss;
                 if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
                     message.channel.send(
-                        "Could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
+                        "could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
                     );
                     // push to queue
                     if (playRightNow) {
