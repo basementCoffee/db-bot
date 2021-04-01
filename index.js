@@ -971,6 +971,9 @@ async function runCommandCases(message) {
             silenceMap[mgid] = false;
             message.channel.send("*song notifications enabled*");
             break;
+        case "gzs":
+            message.channel.send(bot.guilds.cache.size);
+            break;
         // !rand
         case "rand":
             if (args[1]) {
@@ -1072,11 +1075,11 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
             databaseType = "";
         }
         if (songsAddedInt === 1) {
-            message.channel.send("*song added to the database. (within '" + ps + databaseType + "keys')*");
+            message.channel.send("*song added to the database. (see '" + ps + databaseType + "keys')*");
         } else if (songsAddedInt > 1) {
             gsrun(client2, "A", "B", sheetName).then(() => {
                 gsUpdateOverwrite(client2, -1, songsAddedInt, sheetName);
-                message.channel.send("*" + songsAddedInt + " songs added to the database. (within '" + ps + databaseType + "keys')*");
+                message.channel.send("*" + songsAddedInt + " songs added to the database. (see '" + ps + databaseType + "keys')*");
             });
         } else {
             message.channel.send("Please call '!keys' to initialize the database.");
