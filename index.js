@@ -598,26 +598,6 @@ async function runCommandCases(message) {
         case "mpn":
             runPlayNowCommand(message, args, mgid, "p" + message.member.id);
             break;
-        // case '!pv':
-        //     if (!args[1]) {
-        //         message.channel.send("Where's the link? I can't read your mind... unfortunately.");
-        //         return;
-        //     }
-        //     if (!(args[1].includes("youtube")) || !(args[1].includes(".com"))) {
-        //         message.channel.send("There's something wrong with what you put there.");
-        //         return;
-        //     }
-        //     if (!message.member.voice.channel) {
-        //         return;
-        //     }
-        //     if (!servers[message.guild.id]) servers[message.guild.id] = {
-        //         queue: []
-        //     }
-        //
-        //     server = servers[message.guild.id];
-        //     server.queue.push(args[1]);
-        //     playSong(message, args[1], false);
-        //     break;
 
         //!e is the Stop feature
         case "e":
@@ -1665,68 +1645,6 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
         }
     }
 }
-
-
-// async function spotifyPlay(msg, url) {
-//     if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
-//     const channel = msg.member.voice.channel;
-//     if (!channel) return msg.channel.send('Not in a voc channel');
-//     try {
-//         const connection = await channel.join();
-//         connection
-//             .play(await spdl(url, {
-//                 opusEncoded: true,
-//                 filter: 'audioonly',
-//                 encoderArgs: ['-af', 'apulsator=hz=0.09']
-//             }))
-//             .on('error', e => console.error(e));
-//         const infos = await spdl.getInfo(url);
-//         const embed = new MessageEmbed()
-//             .setTitle(`Now playing: ${infos.title}`)
-//             .setURL(infos.url)
-//             .setColor('#1DB954')
-//             .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
-//             .addField('Duration', formatDuration(infos.duration), true)
-//             .addField('Preview', `[Click here](${infos.preview_url})`, true)
-//             .setThumbnail(infos.thumbnail);
-//         msg.channel.send(embed);
-//     } catch (err) {
-//         console.error(err);
-//         msg.channel.send(`An error occurred: ${err.message}`);
-//     }
-// }
-
-
-// bot.on('message', async (msg) => {
-//     if (!msg.content.startsWith('-spotify')) return;
-//     const url = msg.content.split('-spotify ')[1];
-//     if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
-//     const channel = msg.member.voice.channel;
-//     if (!channel) return msg.channel.send('Not in a voc channel');
-//     try {
-//         const connection = await channel.join();
-//         connection
-//             .play(await spdl(url, {
-//                 opusEncoded: true,
-//                 filter: 'audioonly',
-//                 encoderArgs: ['-af', 'apulsator=hz=0.09']
-//             }))
-//             .on('error', e => console.error(e));
-//         const infos = await spdl.getInfo(url);
-//         const embed = new MessageEmbed()
-//             .setTitle(`Now playing: ${infos.title}`)
-//             .setURL(infos.url)
-//             .setColor('#1DB954')
-//             .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
-//             .addField('Duration', formatDuration(infos.duration), true)
-//             .addField('Preview', `[Click here](${infos.preview_url})`, true)
-//             .setThumbnail(infos.thumbnail);
-//         msg.channel.send(embed);
-//     } catch (err) {
-//         console.error(err);
-//         msg.channel.send(`An error occurred: ${err.message}`);
-//     }
-// });
 
 
 var whatspMap = new Map();
