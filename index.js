@@ -1482,7 +1482,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     } else {
         if (!ytdl.validateURL(url)) return message.channel.send('Invalid URL');
     }
-    whatspMap[message.member.voice.channel] = whatToPlayS;
+    whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
         try {
             let dispatcher;
@@ -1492,7 +1492,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     type: "opus",
                     filter: "audioonly",
                     quality: "140",
-                });
+                }).on('error', e => console.error(e));
             } else {
                 dispatcher = connection
                     .play(await spdl(url, {
@@ -1502,24 +1502,24 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     }))
                     .on('error', e => console.error(e));
             }
-            dispatcherMap[message.member.voice.channel] = dispatcher;
+            dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id]) {
                 sendLinkAsEmbed(message, url, "").then();
             }
-            dispatcherMap[message.member.voice.channel].on("finish", () => {
+            dispatcherMap[voiceChannel].on("finish", () => {
                 server.queue.shift();
                 if (server.queue.length > 0 && voiceChannel.members.size > 1) {
                     whatsp = server.queue[0];
                     // console.log("On finish, playing; " + whatsp);
-                    whatspMap[message.member.voice.channel] = whatsp;
+                    whatspMap[voiceChannel] = whatsp;
                     if (!whatsp) {
                         return;
                     }
                     playSongToVC(message, whatsp, voiceChannel);
                 } else {
                     connection.disconnect();
-                    dispatcherMap[message.member.voice.channel] = undefined;
+                    dispatcherMap[voiceChannel] = undefined;
                 }
             });
         } catch (e) {
