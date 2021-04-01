@@ -315,32 +315,8 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
     gsrun(cl, "A", "B", "entries").then();
 }
 
-/*
-------------------------------------THE NOTES CORNER------------------------------------
-3/29/21 -Playlist feature: have a reserved key to signify playlists (ex: playlist_myPlaylist)
+//---------------------------------- Above is Google Api --------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-End of Notes Corner
-*/
 
 const {MessageEmbed, Client} = require('discord.js');
 // initialization
@@ -1287,7 +1263,9 @@ function sendHelp(message, prefixString) {
         "Help list:\n" +
         "--------------  Music Commands  -----------------\n" +
         prefixString +
-        "p [youtube link]  -->  Plays YouTube video \n" +
+        "p [link]  -->  Plays YouTube/Spotify links \n" +
+        prefixString +
+        "pn [youtube link]  -->  Plays the link now, overrides queue \n" +
         prefixString +
         "?  -->  What's playing\n" +
         prefixString +
@@ -1297,9 +1275,7 @@ function sendHelp(message, prefixString) {
         prefixString +
         "sk  -->  Skip the current song\n" +
         prefixString +
-        "e  -->  Stops playing and ends session\n" +
-        prefixString +
-        "pn [youtube link]  -->  Plays the link now, saves queue.\n" +
+        "e  -->  Stops playing and ends session \n" +
         "\n-----------  Server Music Database  -----------\n" +
         prefixString +
         "keys  -->  See all of the server's saved songs \n" +
@@ -1308,19 +1284,19 @@ function sendHelp(message, prefixString) {
         prefixString +
         "d [key]  -->  Play a song from the server's database \n" +
         prefixString +
-        "k [phrase]  -->  Lookup keys with the same phrase\n" +
+        "k [phrase]  -->  Lookup keys with the same phrase \n" +
         prefixString +
-        "rm [key] -->  Removes a song from the server's database\n" +
+        "rm [key] -->  Removes a song from the server's database \n" +
         "*Prepend 'm' to these commands to access your personal music database (ex: '" + prefixString + "mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
         "changeprefix [new prefix]  -->  Changes the prefix for all commands \n" +
         prefixString +
-        "rand  -->  Random roll for the number of people in the voice channel\n" +
+        "rand  -->  Random roll for the number of people in the voice channel \n" +
         prefixString +
-        "silence  -->  Temporarily silences the now playing notifications\n" +
+        "silence  -->  Temporarily silences the now playing notifications \n" +
         prefixString +
-        "unsilence  -->  Re-enables now playing notifications\n" +
+        "unsilence  -->  Re-enables now playing notifications \n" +
         "\n**Or just say congrats to a friend. I will chime in too! :) **"
     );
 }
