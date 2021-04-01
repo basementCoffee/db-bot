@@ -1492,15 +1492,14 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     type: "opus",
                     filter: "audioonly",
                     quality: "140",
-                }).on('error', e => console.error(e));
+                });
             } else {
                 dispatcher = connection
                     .play(await spdl(url, {
                         opusEncoded: true,
                         filter: 'audioonly',
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
-                    }))
-                    .on('error', e => console.error(e));
+                    }));
             }
             dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
