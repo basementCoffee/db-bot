@@ -1,3 +1,3 @@
 # db-bot
 
-![](assets/images/dbBotTextLogo2.jpg)
+<img src="assets/dbBotLogoBanner2.jpg" height=400>
