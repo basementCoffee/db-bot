@@ -1,3 +1,3 @@
 # db-bot
 
-![](assets/images/dbBotTextlogo2.jpg)
+![](assets/images/dbBotTextLogo2.jpg)
