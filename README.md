@@ -1,3 +1,3 @@
 # db-bot
 
-<img src="assets/dbBotLogoBanner2.jpg" height=300>
+<img src="assets/dbBotLogoBanner2.jpg" height=400>
