@@ -7,3 +7,4 @@ _MacOS.npm-start.command
 .idea
 .idea/workspace.xml
 .env
+.vscode
