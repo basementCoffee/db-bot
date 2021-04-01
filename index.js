@@ -1,7 +1,4 @@
 const {google} = require("googleapis");
-// comment out when deploying - GIT
-// will have to replace with => process.env.stoken and make 'dotenv'
-
 require('dotenv').config()
 
 let client_email = process.env.CLIENT_EMAIL.replace(/\\n/gm, '\n');
@@ -10,7 +7,7 @@ let stoken = process.env.STOKEN.replace(/\\n/gm, '\n');
 let token = process.env.TOKEN.replace(/\\n/gm, '\n');
 
 
-const client2 = new google.auth.JWT(client_email, null,  private_key, [
+const client2 = new google.auth.JWT(client_email, null, private_key, [
     "https://www.googleapis.com/auth/spreadsheets",
 ]);
 
@@ -366,15 +363,7 @@ spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c
 
 
 // UPDATE HERE - Before Git Push
-const version = "5.2.0";
-const latestRelease =
-    "**Latest Release (5.1.x):**\n"
-    +
-    "- Random command now uses the same queue as everything else. (Ex: !r [number])"
-    +
-    "\n\n**Previous Release (5.0.x):**\n"
-    +
-    "- Personal database is now live! (Ex: !mkeys)";
+const version = "1.0.1";
 var servers = {};
 bot.login(token);
 var whatsp = "";
@@ -465,7 +454,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                     if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
                         message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + foundStrings + "*");
                     } else {
-                        message.channel.send("*Could not find '" + keyName + "'.*");
+                        message.channel.send("*Could not find '" + keyName + "'*");
                     }
 
                 });
@@ -528,8 +517,6 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
  * @returns {Promise<void>}
  */
 async function runCommandCases(message) {
-    let args = message.content.replace(/\s+/g, " ").split(" ");
-    console.log(args);
     let mgid = message.guild.id;
     let prefixString = prefixMap[mgid];
     if (!prefixString) {
@@ -552,8 +539,9 @@ async function runCommandCases(message) {
         }
     }
     prefixString = prefixMap[mgid];
-    if (args[0].substr(0, 1) !== prefixString) {
-        if (args[0] === "!changeprefix" || args[0] === "!keys" || args[0] === "!h") {
+    let firstWordBegin = message.content.substr(0, 14).trim() + " ";
+    if (firstWordBegin.substr(0, 1) !== prefixString) {
+        if (firstWordBegin === "!changeprefix " || firstWordBegin === "!keys " || firstWordBegin === "!h " || firstWordBegin === "!help ") {
             message.channel.send(
                 "Current prefix is: " +
                 prefixString
@@ -561,6 +549,8 @@ async function runCommandCases(message) {
         }
         return;
     }
+    let args = message.content.replace(/\s+/g, " ").split(" ");
+    console.log(args); // see recent bot commands within console
     let statement = args[0].substr(1).toLowerCase();
     if (statement.substr(0, 1) === "g") {
         if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") {
@@ -865,7 +855,7 @@ async function runCommandCases(message) {
         case "ga":
             if (!args[1] || !args[2]) {
                 message.channel.send(
-                    "Could not add to the database. Put a song key followed by a link."
+                    "Could not add to the database. Put a song name followed by a link."
                 );
                 return;
             }
@@ -882,7 +872,7 @@ async function runCommandCases(message) {
         case "a":
             if (!args[1] || !args[2]) {
                 message.channel.send(
-                    "Could not add to the database. Put a song key followed by a link."
+                    "Could not add to the database. Put a song name followed by a link."
                 );
                 return;
             }
@@ -906,7 +896,7 @@ async function runCommandCases(message) {
         case "ma":
             if (!args[1] || !args[2]) {
                 message.channel.send(
-                    "Could not add to the database. Put a song key followed by a link."
+                    "Could not add to the database. Put a song name followed by a link."
                 );
                 return;
             }
@@ -973,6 +963,9 @@ async function runCommandCases(message) {
             break;
         case "gzs":
             message.channel.send(bot.guilds.cache.size);
+            break;
+        case "gzup":
+            message.channel.send(bot.uptime);
             break;
         // !rand
         case "rand":
@@ -1070,7 +1063,7 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
     if (printMsgToChannel) {
         let ps = prefixMap[message.guild.id];
         // the specific database user-access character
-        let databaseType = args[0].substr(1,1);
+        let databaseType = args[0].substr(1, 1);
         if (databaseType === "a") {
             databaseType = "";
         }
@@ -1307,7 +1300,7 @@ function sendHelp(message, prefixString) {
         "e  -->  Stops playing and ends session\n" +
         prefixString +
         "pn [youtube link]  -->  Plays the link now, saves queue.\n" +
-        "\n-----------  Server Music Database  -----------  \n" +
+        "\n-----------  Server Music Database  -----------\n" +
         prefixString +
         "keys  -->  See all of the server's saved songs \n" +
         prefixString +
@@ -1315,7 +1308,7 @@ function sendHelp(message, prefixString) {
         prefixString +
         "d [key]  -->  Play a song from the server's database \n" +
         prefixString +
-        "k [phrase]  -->  Lookup keys with the same starting phrase\n" +
+        "k [phrase]  -->  Lookup keys with the same phrase\n" +
         prefixString +
         "rm [key] -->  Removes a song from the server's database\n" +
         "*Prepend 'm' to these commands to access your personal music database (ex: '" + prefixString + "mkeys')*\n" +
@@ -1525,21 +1518,13 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     quality: "140",
                 });
             } else {
-                const channel = message.member.voice.channel;
-                if (!channel) return message.channel.send('Not in a voc channel');
-                try {
-                    const connection = await channel.join();
-                    dispatcher = connection
-                        .play(await spdl(url, {
-                            opusEncoded: true,
-                            filter: 'audioonly',
-                            encoderArgs: ['-af', 'apulsator=hz=0.09']
-                        }))
-                        .on('error', e => console.error(e));
-                } catch (err) {
-                    console.error(err);
-                    message.channel.send(`An error occurred: ${err.message}`);
-                }
+                dispatcher = connection
+                    .play(await spdl(url, {
+                        opusEncoded: true,
+                        filter: 'audioonly',
+                        encoderArgs: ['-af', 'apulsator=hz=0.09']
+                    }))
+                    .on('error', e => console.error(e));
             }
             dispatcherMap[message.member.voice.channel] = dispatcher;
             // if the server is not silenced then send the embed when playing
@@ -1562,13 +1547,29 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                 }
             });
         } catch (e) {
-            // Error catching - fault with the yt link?
-            console.log(
-                "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
-            );
-            console.log("Error:", e);
-            server.queue.shift();
-            message.channel.send("Could not play song.");
+            // Error catching - fault with the link?
+
+            // prints out the error to console
+            // console.log(
+            //     "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
+            // );
+            // console.log("Error:", e);
+
+            message.channel.send("Could not play <" + whatToPlayS + ">");
+            gsrun(client2,"A","B", message.channel.guild.id).then((xdb) => {
+                xdb.congratsDatabase.forEach((value, key, map) => {
+                    if (value === whatToPlayS) {
+                        return message.channel.send("Possible broken link within the server db: " + key);
+                    }
+                })
+            });
+                gsrun(client2, "A", "B", "p" + message.member.id).then((xdb) => {
+                    xdb.congratsDatabase.forEach((value, key, map) => {
+                        if (value === whatToPlayS) {
+                            return message.channel.send("Possible broken link within the personal db: " + key);
+                        }
+                    })
+                });
             connection.disconnect();
         }
     });
@@ -1691,72 +1692,66 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
 }
 
 
-/* Keith's testing corner
- 3/25/21: Spotify integration attempt #1
-
-*/
-
-
-async function spotifyPlay(msg, url) {
-    if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
-    const channel = msg.member.voice.channel;
-    if (!channel) return msg.channel.send('Not in a voc channel');
-    try {
-        const connection = await channel.join();
-        connection
-            .play(await spdl(url, {
-                opusEncoded: true,
-                filter: 'audioonly',
-                encoderArgs: ['-af', 'apulsator=hz=0.09']
-            }))
-            .on('error', e => console.error(e));
-        const infos = await spdl.getInfo(url);
-        const embed = new MessageEmbed()
-            .setTitle(`Now playing: ${infos.title}`)
-            .setURL(infos.url)
-            .setColor('#1DB954')
-            .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
-            .addField('Duration', formatDuration(infos.duration), true)
-            .addField('Preview', `[Click here](${infos.preview_url})`, true)
-            .setThumbnail(infos.thumbnail);
-        msg.channel.send(embed);
-    } catch (err) {
-        console.error(err);
-        msg.channel.send(`An error occurred: ${err.message}`);
-    }
-}
+// async function spotifyPlay(msg, url) {
+//     if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
+//     const channel = msg.member.voice.channel;
+//     if (!channel) return msg.channel.send('Not in a voc channel');
+//     try {
+//         const connection = await channel.join();
+//         connection
+//             .play(await spdl(url, {
+//                 opusEncoded: true,
+//                 filter: 'audioonly',
+//                 encoderArgs: ['-af', 'apulsator=hz=0.09']
+//             }))
+//             .on('error', e => console.error(e));
+//         const infos = await spdl.getInfo(url);
+//         const embed = new MessageEmbed()
+//             .setTitle(`Now playing: ${infos.title}`)
+//             .setURL(infos.url)
+//             .setColor('#1DB954')
+//             .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
+//             .addField('Duration', formatDuration(infos.duration), true)
+//             .addField('Preview', `[Click here](${infos.preview_url})`, true)
+//             .setThumbnail(infos.thumbnail);
+//         msg.channel.send(embed);
+//     } catch (err) {
+//         console.error(err);
+//         msg.channel.send(`An error occurred: ${err.message}`);
+//     }
+// }
 
 
-bot.on('message', async (msg) => {
-    if (!msg.content.startsWith('-spotify')) return;
-    const url = msg.content.split('-spotify ')[1];
-    if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
-    const channel = msg.member.voice.channel;
-    if (!channel) return msg.channel.send('Not in a voc channel');
-    try {
-        const connection = await channel.join();
-        connection
-            .play(await spdl(url, {
-                opusEncoded: true,
-                filter: 'audioonly',
-                encoderArgs: ['-af', 'apulsator=hz=0.09']
-            }))
-            .on('error', e => console.error(e));
-        const infos = await spdl.getInfo(url);
-        const embed = new MessageEmbed()
-            .setTitle(`Now playing: ${infos.title}`)
-            .setURL(infos.url)
-            .setColor('#1DB954')
-            .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
-            .addField('Duration', formatDuration(infos.duration), true)
-            .addField('Preview', `[Click here](${infos.preview_url})`, true)
-            .setThumbnail(infos.thumbnail);
-        msg.channel.send(embed);
-    } catch (err) {
-        console.error(err);
-        msg.channel.send(`An error occurred: ${err.message}`);
-    }
-});
+// bot.on('message', async (msg) => {
+//     if (!msg.content.startsWith('-spotify')) return;
+//     const url = msg.content.split('-spotify ')[1];
+//     if (!spdl.validateURL(url)) return msg.channel.send('Invalid URL');
+//     const channel = msg.member.voice.channel;
+//     if (!channel) return msg.channel.send('Not in a voc channel');
+//     try {
+//         const connection = await channel.join();
+//         connection
+//             .play(await spdl(url, {
+//                 opusEncoded: true,
+//                 filter: 'audioonly',
+//                 encoderArgs: ['-af', 'apulsator=hz=0.09']
+//             }))
+//             .on('error', e => console.error(e));
+//         const infos = await spdl.getInfo(url);
+//         const embed = new MessageEmbed()
+//             .setTitle(`Now playing: ${infos.title}`)
+//             .setURL(infos.url)
+//             .setColor('#1DB954')
+//             .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
+//             .addField('Duration', formatDuration(infos.duration), true)
+//             .addField('Preview', `[Click here](${infos.preview_url})`, true)
+//             .setThumbnail(infos.thumbnail);
+//         msg.channel.send(embed);
+//     } catch (err) {
+//         console.error(err);
+//         msg.channel.send(`An error occurred: ${err.message}`);
+//     }
+// });
 
 
 var whatspMap = new Map();
