@@ -474,6 +474,7 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
         !message.guild.voice.channel
     ) {
         servers[mgid].queue = [];
+        servers[mgid].queueHistory = [];
     }
     if (servers[mgid].queue.length >= maxQueueSize) {
         message.channel.send("*max queue size has been reached*");
@@ -564,6 +565,7 @@ async function runCommandCases(message) {
                 !message.guild.voice.channel
             ) {
                 servers[mgid].queue = [];
+                servers[mgid].queueHistory = [];
             }
             let queueWasEmpty = false
             if (servers[mgid].queue.length < 1) {
@@ -603,23 +605,7 @@ async function runCommandCases(message) {
 
         //!e is the Stop feature
         case "e":
-            currentRandomIntMap[message.member.voice.channel] = 0;
-            if (
-                !message.member ||
-                !message.member.voice ||
-                !message.member.voice.channel
-            ) {
-                return;
-            }
-            dispatcherMap[message.member.voice.channel] = undefined;
-
-            if (servers[mgid] && servers[mgid].queue) {
-                servers[mgid].queue = [];
-            }
-
-            if (message.member.voice && message.member.voice.channel) {
-                message.member.voice.channel.leave();
-            }
+            runStopPlayingCommand(message, mgid, message.member.voice.channel);
             break;
 
         // !s prints out the database size
@@ -1473,7 +1459,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     } else {
         if (!ytdl.validateURL(url)) return message.channel.send('Invalid URL');
     }
-    if(embedMessageMap[voiceChannel]) {
+    if (embedMessageMap[voiceChannel]) {
         embedMessageMap[voiceChannel].reactions.removeAll().then();
         embedMessageMap[voiceChannel] = "";
     }
@@ -1513,7 +1499,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     }
                     playSongToVC(message, whatsp, voiceChannel);
                 } else {
-                    if(embedMessageMap[voiceChannel]) {
+                    if (embedMessageMap[voiceChannel]) {
                         embedMessageMap[voiceChannel].reactions.removeAll().then();
                         embedMessageMap[voiceChannel] = "";
                     }
@@ -1531,20 +1517,20 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
             // console.log("Error:", e);
 
             message.channel.send("Could not play <" + whatToPlayS + ">");
-            gsrun(client2,"A","B", message.channel.guild.id).then((xdb) => {
+            gsrun(client2, "A", "B", message.channel.guild.id).then((xdb) => {
                 xdb.congratsDatabase.forEach((value, key, map) => {
                     if (value === whatToPlayS) {
                         return message.channel.send("Possible broken link within the server db: " + key);
                     }
                 })
             });
-                gsrun(client2, "A", "B", "p" + message.member.id).then((xdb) => {
-                    xdb.congratsDatabase.forEach((value, key, map) => {
-                        if (value === whatToPlayS) {
-                            return message.channel.send("Possible broken link within the personal db: " + key);
-                        }
-                    })
-                });
+            gsrun(client2, "A", "B", "p" + message.member.id).then((xdb) => {
+                xdb.congratsDatabase.forEach((value, key, map) => {
+                    if (value === whatToPlayS) {
+                        return message.channel.send("Possible broken link within the personal db: " + key);
+                    }
+                })
+            });
             connection.disconnect();
         }
     });
@@ -1559,6 +1545,8 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
     let embed;
     let imgLink;
     let timeMS = 0;
+    let showButtons = true;
+    let mgid = message.member.guild.id;
     if (isSpotify) {
         const infos = await spdl.getInfo(url);
         embed = new MessageEmbed()
@@ -1580,10 +1568,11 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
         imgLink = infos.videoDetails.thumbnails[0].url;
         timeMS = parseInt(infos.formats[0].approxDurationMs);
     }
-    if (servers[message.guild.id] && servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
-        embed.addField('Queue', " 1 / " + servers[message.guild.id].queue.length, true);
+    if (servers[mgid] && servers[mgid].queue && servers[mgid].queue.length > 0) {
+        embed.addField('Queue', " 1 / " + servers[mgid].queue.length, true);
     } else {
         embed.addField('-', "Last played", true);
+        showButtons = false;
     }
     embed.setThumbnail(imgLink);
     if (prependString) {
@@ -1591,48 +1580,73 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
     }
     message.channel.send(embed)
         .then(async function (sentMsg) {
+            if (!showButtons) return;
             await sentMsg.react('⏪');
             await sentMsg.react('⏯');
-            await sentMsg.react('⏸');
+            await sentMsg.react('⏹');
             await sentMsg.react('⏩');
+
             embedMessageMap[voiceChannel] = sentMsg;
 
             const filter = (reaction, user) => {
-                return ['⏯','⏸','⏩','⏪'].includes(reaction.emoji.name); // && user.id === message.author.id
+                return ['⏯', '⏩', '⏪', '⏹'].includes(reaction.emoji.name); // && user.id === message.author.id
             };
 
-            const collector = sentMsg.createReactionCollector(filter, { time: timeMS });
+            const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
 
             collector.on('collect', (reaction, reactionCollector) => {
-                if (!dispatcherMap[message.member.voice.channel] || !voiceChannel) {
+                if (!dispatcherMap[voiceChannel] || !voiceChannel) {
                     return;
                 }
-                if ((reaction.emoji.name === '⏸' || reaction.emoji.name === '⏯') &&
-                    !dispatcherMapStatus[message.member.voice.channel] ||
-                    dispatcherMapStatus[message.member.voice.channel] === "resume") {
-                    dispatcherMap[message.member.voice.channel].pause();
-                    dispatcherMapStatus[message.member.voice.channel] = "pause";
-                } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[message.member.voice.channel] === "pause") {
-                    dispatcherMap[message.member.voice.channel].resume();
-                    dispatcherMapStatus[message.member.voice.channel] = "resume";
-                } else if (reaction.emoji.name === '⏩'){
+                if (reaction.emoji.name === '⏩') {
                     message.channel.send("*skipped*");
                     skipSong(message);
+                } else if (reaction.emoji.name === '⏯' &&
+                    (!dispatcherMapStatus[voiceChannel] ||
+                    dispatcherMapStatus[voiceChannel] === "resume")) {
+                    dispatcherMap[voiceChannel].pause();
+                    dispatcherMapStatus[voiceChannel] = "pause";
+                } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel] === "pause") {
+                    dispatcherMap[voiceChannel].resume();
+                    dispatcherMapStatus[voiceChannel] = "resume";
                 } else if (reaction.emoji.name === '⏪') {
-                    if (servers[message.member.guild.id].queue.length > (maxQueueSize + 99)) {
+                    if (servers[mgid].queue.length > (maxQueueSize + 99)) {
                         message.channel.send("*max queue size has been reached, cannot rewind further*");
                         return;
                     }
-                    let song = servers[message.member.guild.id].queueHistory.pop();
+                    let song = servers[mgid].queueHistory.pop();
                     if (!song) {
                         message.channel.send("*could not rewind*");
                         return;
                     }
-                servers[message.member.guild.id].queue.unshift(song);
-                playSongToVC(message,song, voiceChannel);
+                    servers[mgid].queue.unshift(song);
+                    playSongToVC(message, song, voiceChannel);
+                } else if (reaction.emoji.name === '⏹') {
+                    runStopPlayingCommand(message, mgid, voiceChannel);
                 }
             });
         });
+}
+
+/**
+ * Stops playing in the given voice channel and leaves.
+ * @param message The given message that triggered the bot
+ * @param mgid The current guild id
+ * @param voiceChannel The current voice channel
+ */
+function runStopPlayingCommand(message, mgid, voiceChannel) {
+    dispatcherMap[voiceChannel] = undefined;
+    if (servers[mgid].queue) {
+        servers[mgid].queue = [];
+        servers[mgid].queueHistory = [];
+    }
+    if (embedMessageMap[voiceChannel]) {
+        embedMessageMap[voiceChannel].reactions.removeAll().then();
+        embedMessageMap[voiceChannel] = "";
+    }
+    if (voiceChannel) {
+        voiceChannel.leave();
+    }
 }
 
 /**
@@ -1719,7 +1733,6 @@ var whatspMap = new Map();
 var prefixMap = new Map();
 var congratsDatabase = new Map();
 var referenceDatabase = new Map();
-var currentRandomIntMap = new Map();
 var silenceMap = new Map();
 var dataSize = new Map();
 // The song stream, sorted via voiceChannel
