@@ -477,6 +477,9 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
         !message.guild.voice ||
         !message.guild.voice.channel
     ) {
+        if (silenceMap[mgid]) {
+            message.channel.send("*silence mode is on*");
+        }
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
     }
@@ -505,9 +508,6 @@ async function runCommandCases(message) {
     if (!prefixString) {
         try {
             await gsrun(client2, "A", "B", "prefixes").then(async (xdb) => {
-                // console.log(xdb.congratsDatabase);
-                // console.log("Z1 Breakpoint: " + xdb.congratsDatabase.get(mgid));
-                // console.log("Z2 Breakpoint: " + xdb.congratsDatabase.get(mgid.toString()));
                 let newPrefix = xdb.congratsDatabase.get(mgid);
                 if (!newPrefix) {
                     prefixMap[mgid] = "!";
@@ -887,7 +887,7 @@ async function runCommandCases(message) {
                 return;
             }
             if (!dispatcherMap[message.member.voice.channel]) {
-                message.channel.send("Stream could not be found.");
+                message.channel.send("*Stream could not be found*");
                 return;
             }
             try {
@@ -904,12 +904,31 @@ async function runCommandCases(message) {
             }
             break;
         case "silence":
+            if (!message.member.voice.channel) {
+                message.channel.send("You must be in a voice channel to silence");
+                return;
+            }
+            if(silenceMap[mgid]) {
+                message.channel.send("*song notifications already silenced*");
+                return;
+            }
             silenceMap[mgid] = true;
             message.channel.send("*song notifications temporarily silenced*");
             break;
         case "unsilence":
+            if (!message.member.voice.channel) {
+                message.channel.send("You must be in a voice channel to unsilence");
+                return;
+            }
+            if(!silenceMap[mgid]) {
+                message.channel.send("*song notifications already unsilenced*");
+                return;
+            }
             silenceMap[mgid] = false;
             message.channel.send("*song notifications enabled*");
+            if (dispatcherMap[message.member.voice.channel]) {
+                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then();
+            }
             break;
         case "gzs":
             message.channel.send(bot.guilds.cache.size);
@@ -1490,7 +1509,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
             dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id]) {
-                sendLinkAsEmbed(message, url, "", voiceChannel).then();
+                sendLinkAsEmbed(message, url, voiceChannel).then();
             }
             dispatcherMap[voiceChannel].on("finish", () => {
                 servers[message.guild.id].queueHistory.push(server.queue.shift());
@@ -1540,8 +1559,15 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     });
 }
 
-
-async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
+/**
+ * Sends an embed to the channel depending on the given link.
+ * If not given a voice channel then playback buttons will not appear.
+ * @param message the message to send the channel to
+ * @param url the url to generate the embed for
+ * @param voiceChannel the voice channel that the song is being played in
+ * @returns {Promise<void>}
+ */
+async function sendLinkAsEmbed(message, url, voiceChannel) {
     let isSpotify = false;
     if (url.toString().includes("spotify.com")) {
         isSpotify = true;
@@ -1583,9 +1609,6 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
         embedMessageMap[voiceChannel].reactions.removeAll().then();
         embedMessageMap[voiceChannel] = "";
     }
-    if (prependString) {
-        message.channel.send(prependString);
-    }
     message.channel.send(embed)
         .then(async function (sentMsg) {
             if (!showButtons) return;
@@ -1597,7 +1620,14 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
             embedMessageMap[voiceChannel] = sentMsg;
 
             const filter = (reaction, user) => {
-                return ['⏯', '⏩', '⏪', '⏹'].includes(reaction.emoji.name); // && user.id === message.author.id
+                if (voiceChannel) {
+                    for (let mem of voiceChannel.members) {
+                        if (user.id === mem[1].id ) {
+                            return ['⏯', '⏩', '⏪', '⏹'].includes(reaction.emoji.name);
+                        }
+                    }
+                }
+                return false;
             };
 
             const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
@@ -1721,7 +1751,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
                     if (
                         whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0
                     ) {
-                        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], "", message.member.voice.channel);
+                        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel);
                     } else {
                         message.channel.send("Nothing is playing right now");
                     }
@@ -1729,7 +1759,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
                     message.channel.send(whatspMap[message.member.voice.channel]);
                 }
             } else {
-                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], "", message.member.voice.channel);
+                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel);
             }
         } else {
             message.channel.send("Nothing is playing right now");
@@ -1737,16 +1767,21 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
     }
 }
 
-
+// What's playing, uses voice channel
 var whatspMap = new Map();
+// The server's prefix, uses guild id
 var prefixMap = new Map();
+// What is returned when searching the db, uses key-name
 var congratsDatabase = new Map();
+// Reference for the congrats database, uses uppercase key-name
 var referenceDatabase = new Map();
+// Whether silence mode is on (true, false), uses guild id
 var silenceMap = new Map();
+// The dataSize, uses sheet name
 var dataSize = new Map();
-// The song stream, uses voiceChannel
+// The song stream, uses voice channel
 var dispatcherMap = new Map();
-// The list of embeds, uses voiceChannel
+// The list of embeds, uses voice channel
 var embedMessageMap = new Map();
-// The list of dispatchers, uses voiceChannel
+// The status of a dispatcher, either "pause" or "resume"
 var dispatcherMapStatus = new Map();
