@@ -1622,7 +1622,7 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
                     skipSong(message, voiceChannel);
                 } else if (reaction.emoji.name === '⏯' &&
                     (!dispatcherMapStatus[voiceChannel] ||
-                    dispatcherMapStatus[voiceChannel] === "resume")) {
+                        dispatcherMapStatus[voiceChannel] === "resume")) {
                     dispatcherMap[voiceChannel].pause();
                     dispatcherMapStatus[voiceChannel] = "pause";
                 } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel] === "pause") {
