@@ -1575,6 +1575,10 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
         showButtons = false;
     }
     embed.setThumbnail(imgLink);
+    if (embedMessageMap[voiceChannel]) {
+        embedMessageMap[voiceChannel].reactions.removeAll().then();
+        embedMessageMap[voiceChannel] = "";
+    }
     if (prependString) {
         message.channel.send(prependString);
     }
