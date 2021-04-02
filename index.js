@@ -339,7 +339,7 @@ spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c
 
 
 // UPDATE HERE - Before Git Push
-const version = "1.0.1";
+const version = "1.0.2";
 var servers = {};
 bot.login(token);
 var whatsp = "";
@@ -361,6 +361,7 @@ function skipSong(message) {
     if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
             queue: [],
+            queueHistory: []
         };
     }
     // in case of force disconnect
@@ -370,6 +371,7 @@ function skipSong(message) {
         !message.guild.voice.channel
     ) {
         servers[message.guild.id].queue = [];
+        servers[message.guild.id].queueHistory = [];
         return;
     }
     // if server queue is not empty
@@ -377,7 +379,7 @@ function skipSong(message) {
         servers[message.guild.id].queue &&
         servers[message.guild.id].queue.length > 0
     ) {
-        servers[message.guild.id].queue.shift();
+        servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
         // if there is still items in the queue then play next song
         if (servers[message.guild.id].queue.length > 0) {
             whatspMap[message.member.voice.channel] =
@@ -780,6 +782,7 @@ async function runCommandCases(message) {
                 dispatcherMap[message.member.voice.channel]
             ) {
                 dispatcherMap[message.member.voice.channel].pause();
+                dispatcherMapStatus[message.member.voice.channel] = "pause";
                 message.channel.send("*paused*");
             }
             break;
@@ -790,6 +793,7 @@ async function runCommandCases(message) {
                 dispatcherMap[message.member.voice.channel]
             ) {
                 dispatcherMap[message.member.voice.channel].resume();
+                dispatcherMapStatus[message.member.voice.channel] = "resume";
                 message.channel.send("*playing*");
             }
             break;
@@ -977,6 +981,7 @@ bot.on("message", (message) => {
             if (!servers[message.guild.id])
                 servers[message.guild.id] = {
                     queue: [],
+                    queueHistory: []
                 };
             //servers[message.guild.id].queue.push(args[1]);
             let word = messageArray[i];
@@ -1058,6 +1063,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
     if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
             queue: [],
+            queueHistory: []
         };
     }
     // in case of force disconnect
@@ -1067,6 +1073,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
         !message.guild.voice.channel
     ) {
         servers[message.guild.id].queue = [];
+        servers[message.guild.id].queueHistory = [];
     }
     if (servers[message.guild.id].queue.length >= maxQueueSize) {
         message.channel.send("*max queue size has been reached*");
@@ -1207,7 +1214,7 @@ function runSkipCommand(message, args) {
             if (skipTimes > 0 && skipTimes < 501) {
                 let skipCounter = 0;
                 while (skipTimes > 1 && servers[message.guild.id].queue.length > 0) {
-                    servers[message.guild.id].queue.shift();
+                    servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
                     skipTimes--;
                     skipCounter++;
                 }
@@ -1245,7 +1252,7 @@ function sendHelp(message, prefixString) {
         prefixString +
         "p [link]  -->  Plays YouTube/Spotify links \n" +
         prefixString +
-        "pn [youtube link]  -->  Plays the link now, overrides queue \n" +
+        "pn [link]  -->  Plays the link now, overrides queue \n" +
         prefixString +
         "?  -->  What's playing\n" +
         prefixString +
@@ -1263,6 +1270,8 @@ function sendHelp(message, prefixString) {
         "a [song] [url]  -->  Adds a song to the server's database \n" +
         prefixString +
         "d [key]  -->  Play a song from the server's database \n" +
+        prefixString +
+        "r [key]  -->  Play a random song from the server's database \n" +
         prefixString +
         "k [phrase]  -->  Lookup keys with the same phrase \n" +
         prefixString +
@@ -1285,6 +1294,7 @@ function runRandomToQueue(args, message, sheetname) {
     if (!servers[message.guild.id])
         servers[message.guild.id] = {
             queue: [],
+            queueHistory: []
         };
     // in case of force disconnect
     if (
@@ -1293,6 +1303,7 @@ function runRandomToQueue(args, message, sheetname) {
         !message.guild.voice.channel
     ) {
         servers[message.guild.id].queue = [];
+        servers[message.guild.id].queueHistory = [];
     }
     randomQueueMap[message.guild.id] = undefined;
     if (servers[message.guild.id].queue.length > maxQueueSize) {
@@ -1462,6 +1473,11 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     } else {
         if (!ytdl.validateURL(url)) return message.channel.send('Invalid URL');
     }
+    if(embedMessageMap[voiceChannel]) {
+        embedMessageMap[voiceChannel].reactions.removeAll().then();
+        embedMessageMap[voiceChannel] = "";
+    }
+
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
         try {
@@ -1484,10 +1500,10 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
             dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id]) {
-                sendLinkAsEmbed(message, url, "").then();
+                sendLinkAsEmbed(message, url, "", voiceChannel).then();
             }
             dispatcherMap[voiceChannel].on("finish", () => {
-                server.queue.shift();
+                servers[message.guild.id].queueHistory.push(server.queue.shift());
                 if (server.queue.length > 0 && voiceChannel.members.size > 1) {
                     whatsp = server.queue[0];
                     // console.log("On finish, playing; " + whatsp);
@@ -1497,6 +1513,10 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     }
                     playSongToVC(message, whatsp, voiceChannel);
                 } else {
+                    if(embedMessageMap[voiceChannel]) {
+                        embedMessageMap[voiceChannel].reactions.removeAll().then();
+                        embedMessageMap[voiceChannel] = "";
+                    }
                     connection.disconnect();
                     dispatcherMap[voiceChannel] = undefined;
                 }
@@ -1531,13 +1551,14 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
 }
 
 
-async function sendLinkAsEmbed(message, url, prependString) {
+async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
     let isSpotify = false;
     if (url.toString().includes("spotify.com")) {
         isSpotify = true;
     }
     let embed;
     let imgLink;
+    let timeMS = 0;
     if (isSpotify) {
         const infos = await spdl.getInfo(url);
         embed = new MessageEmbed()
@@ -1547,6 +1568,7 @@ async function sendLinkAsEmbed(message, url, prependString) {
             .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
             .addField('Duration', formatDuration(infos.duration), true);
         imgLink = infos.thumbnail;
+        timeMS = parseInt(infos.duration);
         // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
     } else {
         const infos = await ytdl.getInfo(url);
@@ -1556,6 +1578,7 @@ async function sendLinkAsEmbed(message, url, prependString) {
             .setColor('#c40d00')
             .addField('Duration', formatDuration(infos.formats[0].approxDurationMs), true)
         imgLink = infos.videoDetails.thumbnails[0].url;
+        timeMS = parseInt(infos.formats[0].approxDurationMs);
     }
     if (servers[message.guild.id] && servers[message.guild.id].queue && servers[message.guild.id].queue.length > 0) {
         embed.addField('Queue', " 1 / " + servers[message.guild.id].queue.length, true);
@@ -1566,7 +1589,50 @@ async function sendLinkAsEmbed(message, url, prependString) {
     if (prependString) {
         message.channel.send(prependString);
     }
-    message.channel.send(embed);
+    message.channel.send(embed)
+        .then(async function (sentMsg) {
+            await sentMsg.react('⏪');
+            await sentMsg.react('⏯');
+            await sentMsg.react('⏸');
+            await sentMsg.react('⏩');
+            embedMessageMap[voiceChannel] = sentMsg;
+
+            const filter = (reaction, user) => {
+                return ['⏯','⏸','⏩','⏪'].includes(reaction.emoji.name); // && user.id === message.author.id
+            };
+
+            const collector = sentMsg.createReactionCollector(filter, { time: timeMS });
+
+            collector.on('collect', (reaction, reactionCollector) => {
+                if (!dispatcherMap[message.member.voice.channel] || !voiceChannel) {
+                    return;
+                }
+                if ((reaction.emoji.name === '⏸' || reaction.emoji.name === '⏯') &&
+                    !dispatcherMapStatus[message.member.voice.channel] ||
+                    dispatcherMapStatus[message.member.voice.channel] === "resume") {
+                    dispatcherMap[message.member.voice.channel].pause();
+                    dispatcherMapStatus[message.member.voice.channel] = "pause";
+                } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[message.member.voice.channel] === "pause") {
+                    dispatcherMap[message.member.voice.channel].resume();
+                    dispatcherMapStatus[message.member.voice.channel] = "resume";
+                } else if (reaction.emoji.name === '⏩'){
+                    message.channel.send("*skipped*");
+                    skipSong(message);
+                } else if (reaction.emoji.name === '⏪') {
+                    if (servers[message.member.guild.id].queue.length > (maxQueueSize + 99)) {
+                        message.channel.send("*max queue size has been reached, cannot rewind further*");
+                        return;
+                    }
+                    let song = servers[message.member.guild.id].queueHistory.pop();
+                    if (!song) {
+                        message.channel.send("*could not rewind*");
+                        return;
+                    }
+                servers[message.member.guild.id].queue.unshift(song);
+                playSongToVC(message,song, voiceChannel);
+                }
+            });
+        });
 }
 
 /**
@@ -1580,6 +1646,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
     if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
             queue: [],
+            queueHistory: []
         };
     }
     // in case of force disconnect
@@ -1589,6 +1656,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
         !message.guild.voice.channel
     ) {
         servers[message.guild.id].queue = [];
+        servers[message.guild.id].queueHistory = [];
     }
     if (args[1]) {
         gsrun(client2, "A", "B", sheetname).then((xdb) => {
@@ -1630,7 +1698,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
                     if (
                         whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0
                     ) {
-                        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], "");
+                        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], "", message.member.voice.channel);
                     } else {
                         message.channel.send("Nothing is playing right now");
                     }
@@ -1638,7 +1706,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
                     message.channel.send(whatspMap[message.member.voice.channel]);
                 }
             } else {
-                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], "");
+                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], "", message.member.voice.channel);
             }
         } else {
             message.channel.send("Nothing is playing right now");
@@ -1654,5 +1722,8 @@ var referenceDatabase = new Map();
 var currentRandomIntMap = new Map();
 var silenceMap = new Map();
 var dataSize = new Map();
+// The song stream, sorted via voiceChannel
 var dispatcherMap = new Map();
+var embedMessageMap = new Map();
+var dispatcherMapStatus = new Map();
 var randomQueueMap = new Map();
