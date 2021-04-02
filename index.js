@@ -5,6 +5,8 @@ let client_email = process.env.CLIENT_EMAIL.replace(/\\n/gm, '\n');
 let private_key = process.env.PRIVATE_KEY.replace(/\\n/gm, '\n');
 let stoken = process.env.STOKEN.replace(/\\n/gm, '\n');
 let token = process.env.TOKEN.replace(/\\n/gm, '\n');
+let spotifyCID = process.env.SPOTIFY_CLIENT_ID.replace(/\\n/gm, '\n');
+let spotifySCID = process.env.SPOTIFY_SECRET_CLIENT_ID.replace(/\\n/gm, '\n');
 
 
 const client2 = new google.auth.JWT(client_email, null, private_key, [
@@ -333,7 +335,7 @@ function formatDuration(duration) {
     return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
 }
 
-spdl.setCredentials("a2d81d4ec2534d6b84287c5cd2258484", "5b571d5e3bb64056b43137c9f2b2ca4e");
+spdl.setCredentials(spotifyCID, spotifySCID);
 
 // SPOTIFY BOT IMPORTS --------------------------
 
