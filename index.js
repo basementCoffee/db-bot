@@ -359,7 +359,12 @@ var keyArray;
 var s;
 process.setMaxListeners(0);
 
-function skipSong(message) {
+/**
+ * Skips the song that is currently being played
+ * @param message the message that triggered the bot
+ * @param voiceChannel the voice channel that the bot is in
+ */
+function skipSong(message, voiceChannel) {
     if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
             queue: [],
@@ -376,6 +381,9 @@ function skipSong(message) {
         servers[message.guild.id].queueHistory = [];
         return;
     }
+    if (!voiceChannel) {
+        voiceChannel = message.member.voice.channel;
+    }
     // if server queue is not empty
     if (
         servers[message.guild.id].queue &&
@@ -387,7 +395,7 @@ function skipSong(message) {
             whatspMap[message.member.voice.channel] =
                 servers[message.guild.id].queue[0];
             // get rid of previous dispatch
-            playSongToVC(message, whatspMap[message.member.voice.channel], message.member.voice.channel);
+            playSongToVC(message, whatspMap[voiceChannel], voiceChannel);
         } else {
             if (message.member.voice && message.member.voice.channel) {
                 // get rid of previous dispatch
@@ -1214,7 +1222,7 @@ function runSkipCommand(message, args) {
                 if (skipTimes === 1 && servers[message.guild.id].queue.length > 0) {
                     skipCounter++;
                 }
-                skipSong(message);
+                skipSong(message, message.member.voice.channel);
                 if (skipCounter > 1) {
                     message.channel.send("*skipped " + skipCounter + " times*");
                 } else {
@@ -1222,14 +1230,14 @@ function runSkipCommand(message, args) {
                 }
             } else {
                 message.channel.send("*invalid skip amount (should be between 1-" + maxQueueSize + ")\n skipped 1 time*");
-                skipSong(message);
+                skipSong(message, message.member.voice.channel);
             }
         } catch (e) {
-            skipSong(message);
+            skipSong(message, message.member.voice.channel);
             message.channel.send("*skipped*");
         }
     } else {
-        skipSong(message);
+        skipSong(message, message.member.voice.channel);
     }
 }
 
@@ -1611,7 +1619,7 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
                 }
                 if (reaction.emoji.name === '⏩') {
                     message.channel.send("*skipped*");
-                    skipSong(message);
+                    skipSong(message, voiceChannel);
                 } else if (reaction.emoji.name === '⏯' &&
                     (!dispatcherMapStatus[voiceChannel] ||
                     dispatcherMapStatus[voiceChannel] === "resume")) {
