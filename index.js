@@ -956,6 +956,11 @@ async function runCommandCases(message) {
     }
 }
 
+bot.on('guildCreate', guild => {
+    guild.systemChannel.send("Hello! Call '!h' to see my commands.");
+});
+
+
 // parses message, provides a response
 bot.on("message", (message) => {
     if (message.author.bot) return;
