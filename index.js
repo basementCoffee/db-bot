@@ -363,8 +363,9 @@ process.setMaxListeners(0);
  * Skips the song that is currently being played
  * @param message the message that triggered the bot
  * @param voiceChannel the voice channel that the bot is in
+ * @param playMessageToChannel whether to play message on successful skip
  */
-function skipSong(message, voiceChannel) {
+function skipSong(message, voiceChannel, playMessageToChannel) {
     if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
             queue: [],
@@ -390,6 +391,7 @@ function skipSong(message, voiceChannel) {
         servers[message.guild.id].queue.length > 0
     ) {
         servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
+        if (playMessageToChannel) message.channel.send("*skipped*");
         // if there is still items in the queue then play next song
         if (servers[message.guild.id].queue.length > 0) {
             whatspMap[message.member.voice.channel] =
@@ -397,18 +399,10 @@ function skipSong(message, voiceChannel) {
             // get rid of previous dispatch
             playSongToVC(message, whatspMap[voiceChannel], voiceChannel);
         } else {
-            if (message.member.voice && message.member.voice.channel) {
-                // get rid of previous dispatch
-                message.member.voice.channel.leave();
-                dispatcherMap[message.member.voice.channel] = undefined;
-            }
+            runStopPlayingCommand(message, message.guild.id, voiceChannel);
         }
     } else {
-        if (message.member.voice && message.member.voice.channel) {
-            // get rid of previous dispatch
-            message.member.voice.channel.leave();
-            dispatcherMap[message.member.voice.channel] = undefined;
-        }
+        runStopPlayingCommand(message, message.guild.id, voiceChannel);
     }
 }
 
@@ -1222,7 +1216,7 @@ function runSkipCommand(message, args) {
                 if (skipTimes === 1 && servers[message.guild.id].queue.length > 0) {
                     skipCounter++;
                 }
-                skipSong(message, message.member.voice.channel);
+                skipSong(message, message.member.voice.channel, false);
                 if (skipCounter > 1) {
                     message.channel.send("*skipped " + skipCounter + " times*");
                 } else {
@@ -1230,14 +1224,13 @@ function runSkipCommand(message, args) {
                 }
             } else {
                 message.channel.send("*invalid skip amount (should be between 1-" + maxQueueSize + ")\n skipped 1 time*");
-                skipSong(message, message.member.voice.channel);
+                skipSong(message, message.member.voice.channel, false);
             }
         } catch (e) {
-            skipSong(message, message.member.voice.channel);
-            message.channel.send("*skipped*");
+            skipSong(message, message.member.voice.channel, true);
         }
     } else {
-        skipSong(message, message.member.voice.channel);
+        skipSong(message, message.member.voice.channel, true);
     }
 }
 
@@ -1306,7 +1299,6 @@ function runRandomToQueue(args, message, sheetname) {
         servers[message.guild.id].queue = [];
         servers[message.guild.id].queueHistory = [];
     }
-    randomQueueMap[message.guild.id] = undefined;
     if (servers[message.guild.id].queue.length > maxQueueSize) {
         message.channel.send("*max queue size has been reached*");
         return;
@@ -1361,9 +1353,9 @@ function addRandomToQueue(message, numOfTimes, cdb) {
     if (servers[message.guild.id].queue.length < 1) {
         queueWasEmpty = true;
     }
+    // the final random array to be added to the queue
+    let rKeyArrayFinal = [];
     try {
-        if (!randomQueueMap[message.guild.id]) {
-            let rKeyArrayFinal = [];
             let newArray = [];
             let executeWhileInRand = true;
             for (let i = 0; i < numOfTimes; i++) {
@@ -1390,16 +1382,13 @@ function addRandomToQueue(message, numOfTimes, cdb) {
                     i--;
                 }
             }
-            randomQueueMap[message.guild.id] = rKeyArrayFinal;
-        }
+            //rKeyArrayFinal should have list of randoms here
     } catch (e) {
         console.log("error in random: " + e);
         rn = Math.floor(Math.random() * rKeyArray.length);
-        randomQueueMap[message.guild.id] = [];
-        randomQueueMap.push(rKeyArray[rn]);
-
+        rKeyArrayFinal.push(rKeyArray[rn]);
     }
-    randomQueueMap[message.guild.id].forEach(e => {
+    rKeyArrayFinal.forEach(e => {
         servers[message.guild.id].queue.push(cdb.get(e));
     });
     if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
@@ -1458,10 +1447,10 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
  * @param voiceChannel the voice channel
  */
 function playSongToVC(message, whatToPlay, voiceChannel) {
-    let server = servers[message.guild.id];
     if (voiceChannel.members.size < 1 || !whatToPlay) {
         return;
     }
+    let server = servers[message.guild.id];
     let whatToPlayS = "";
     whatToPlayS = whatToPlay;
     whatsp = whatToPlayS;
@@ -1470,15 +1459,15 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     // set stream flag and validate link
     if (whatToPlayS.includes("spotify.com")) {
         isSpotify = true;
-        if (!spdl.validateURL(url)) return message.channel.send('Invalid URL');
+        if (!spdl.validateURL(url)) return message.channel.send('Invalid link');
     } else {
-        if (!ytdl.validateURL(url)) return message.channel.send('Invalid URL');
+        if (!ytdl.validateURL(url)) return message.channel.send('Invalid link');
     }
+    // remove previous embed buttons
     if (embedMessageMap[voiceChannel]) {
         embedMessageMap[voiceChannel].reactions.removeAll().then();
         embedMessageMap[voiceChannel] = "";
     }
-
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
         try {
@@ -1618,8 +1607,7 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
                     return;
                 }
                 if (reaction.emoji.name === '⏩') {
-                    message.channel.send("*skipped*");
-                    skipSong(message, voiceChannel);
+                    skipSong(message, voiceChannel, true);
                 } else if (reaction.emoji.name === '⏯' &&
                     (!dispatcherMapStatus[voiceChannel] ||
                         dispatcherMapStatus[voiceChannel] === "resume")) {
@@ -1638,6 +1626,7 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
                         message.channel.send("*could not rewind*");
                         return;
                     }
+                    message.channel.send("*rewound*");
                     servers[mgid].queue.unshift(song);
                     playSongToVC(message, song, voiceChannel);
                 } else if (reaction.emoji.name === '⏹') {
@@ -1654,6 +1643,7 @@ async function sendLinkAsEmbed(message, url, prependString, voiceChannel) {
  * @param voiceChannel The current voice channel
  */
 function runStopPlayingCommand(message, mgid, voiceChannel) {
+    if (!voiceChannel) return;
     dispatcherMap[voiceChannel] = undefined;
     if (servers[mgid].queue) {
         servers[mgid].queue = [];
@@ -1754,8 +1744,9 @@ var congratsDatabase = new Map();
 var referenceDatabase = new Map();
 var silenceMap = new Map();
 var dataSize = new Map();
-// The song stream, sorted via voiceChannel
+// The song stream, uses voiceChannel
 var dispatcherMap = new Map();
+// The list of embeds, uses voiceChannel
 var embedMessageMap = new Map();
+// The list of dispatchers, uses voiceChannel
 var dispatcherMapStatus = new Map();
-var randomQueueMap = new Map();
