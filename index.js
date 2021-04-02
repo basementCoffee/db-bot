@@ -1284,7 +1284,7 @@ function sendHelp(message, prefixString) {
         prefixString +
         "d [key]  -->  Play a song from the server's database \n" +
         prefixString +
-        "r [key]  -->  Play a random song from the server's database \n" +
+        "r [# of times]  -->  Play a random song from the server's database \n" +
         prefixString +
         "k [phrase]  -->  Lookup keys with the same phrase \n" +
         prefixString +
