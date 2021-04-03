@@ -1502,7 +1502,7 @@ function addRandomToQueue(message, numOfTimes, cdb) {
     if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
         playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel);
     } else {
-        message.channel.send("*Added " + numOfTimes + " to queue*");
+        message.channel.send("*added " + numOfTimes + " to queue*");
     }
 }
 
@@ -1548,15 +1548,15 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                     name = message.author.username
                 }
                 if (name) {
-                    dbName = name + "'s keys";
                     keysMessage += "**" + name + "'s keys ** ";
+                    dbName = keysMessage;
                 } else {
-                    dbName = name + "personal keys";
                     keysMessage += "** Personal keys ** ";
+                    dbName = keysMessage;
                 }
             } else if (cmdType === "") {
-                dbName = "server keys";
                 keysMessage += "**Server keys ** ";
+                dbName = keysMessage;
             }
             keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
             message.channel.send(keysMessage).then(async sentMsg => {
@@ -1581,11 +1581,10 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                             + prefixString + cmdType + "rm [key]*");
                     } else if (reaction.emoji.name === '🔀') {
                         if (dbName) {
-                            message.channel.send("*randomizing from " + dbName + "...");
+                            message.channel.send("*randomizing from " + dbName + "...*");
                         } else {
                             message.channel.send("*randomizing...*");
                         }
-
                         runRandomToQueue(10, message, sheetname);
                     }
                 });
