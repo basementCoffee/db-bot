@@ -1448,16 +1448,17 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                 "a'"
             );
         } else {
-            message.channel.send(
-                "*(use '" + prefixString + cmdType + "d' to play)*\n **Keys:** " + s
-            );
+            let keysMessage = "";
+            if (cmdType === "m") {
+                keysMessage += "**" + message.member.nickname + "'s keys ** ";
+            } else if (cmdType === "") {
+                keysMessage += "**Server keys ** ";
+            }
+            keysMessage += "*(prepend '" + prefixString + cmdType + "d' to play)*\n" + s;
+            message.channel.send(keysMessage);
         }
     });
 }
-
-// var minutes = Math.floor(info.player_response.videoDetails.lengthSeconds / 60);
-// var secs = info.player_response.videoDetails.lengthSeconds % 60;
-
 
 /**
  *  New play song function.
@@ -1616,6 +1617,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
             await sentMsg.react('⏯');
             await sentMsg.react('⏹');
             await sentMsg.react('⏩');
+            await sentMsg.react('🔐');
 
             embedMessageMap[voiceChannel] = sentMsg;
 
@@ -1623,7 +1625,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                 if (voiceChannel) {
                     for (let mem of voiceChannel.members) {
                         if (user.id === mem[1].id ) {
-                            return ['⏯', '⏩', '⏪', '⏹'].includes(reaction.emoji.name);
+                            return ['⏯', '⏩', '⏪', '⏹','🔐'].includes(reaction.emoji.name);
                         }
                     }
                 }
@@ -1661,6 +1663,8 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                     playSongToVC(message, song, voiceChannel);
                 } else if (reaction.emoji.name === '⏹') {
                     runStopPlayingCommand(message, mgid, voiceChannel);
+                } else if (reaction.emoji.name === '🔐') {
+                    runKeysCommand(message, prefixMap[mgid], mgid, "");
                 }
             });
         });
