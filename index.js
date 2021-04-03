@@ -502,6 +502,68 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
 }
 
 /**
+ * Runs the commands and checks to play a link
+ * @param message The message that triggered the bot
+ * @param args The message broken into args
+ * @param mgid The message guild id
+ * @param url The url to play
+ */
+function runPlayLinkCommand(message, args, mgid) {
+    if (!message.member.voice.channel) {
+        return;
+    }
+    if (!args[1]) {
+        message.channel.send(
+            "Where's the link? I can't read your mind... unfortunately."
+        );
+        return;
+    }
+    if (!args[1].includes(".")) {
+        message.channel.send(
+            "There's something wrong with what you put there."
+        );
+        return;
+    }
+    if (!servers[mgid])
+        servers[mgid] = {
+            queue: [],
+        };
+    // in case of force disconnect
+    if (
+        !message.guild.client.voice ||
+        !message.guild.voice ||
+        !message.guild.voice.channel
+    ) {
+        servers[mgid].queue = [];
+        servers[mgid].queueHistory = [];
+    }
+    let queueWasEmpty = false
+    if (servers[mgid].queue.length < 1) {
+        queueWasEmpty = true;
+    }
+    let pNums = 1;
+    while (args[pNums]) {
+        let linkZ = args[pNums];
+        if (linkZ.substring(linkZ.length - 1) === ",") {
+            linkZ = linkZ.substring(0, linkZ.length - 1);
+        }
+        // push to queue
+        servers[mgid].queue.push(args[pNums]);
+        pNums += 1;
+    }
+    // make pNums the number of added songs
+    pNums--;
+    // if queue was empty then play
+    if (queueWasEmpty) {
+        playSongToVC(message, args[1], message.member.voice.channel);
+    } else if (pNums < 2) {
+        message.channel.send("*added to queue*");
+    } else {
+        message.channel.send("*added " + pNums + " to queue*");
+    }
+}
+
+/**
  * The execution for all of the bot commands
  * @param message
  * @returns {Promise<void>}
@@ -547,58 +609,10 @@ async function runCommandCases(message) {
     switch (statement) {
         //!p is just the basic rhythm bot
         case "p":
-            if (!message.member.voice.channel) {
-                return;
-            }
-            if (!args[1]) {
-                message.channel.send(
-                    "Where's the link? I can't read your mind... unfortunately."
-                );
-                return;
-            }
-            if (!args[1].includes(".")) {
-                message.channel.send(
-                    "There's something wrong with what you put there."
-                );
-                return;
-            }
-            if (!servers[mgid])
-                servers[mgid] = {
-                    queue: [],
-                };
-            // in case of force disconnect
-            if (
-                !message.guild.client.voice ||
-                !message.guild.voice ||
-                !message.guild.voice.channel
-            ) {
-                servers[mgid].queue = [];
-                servers[mgid].queueHistory = [];
-            }
-            let queueWasEmpty = false
-            if (servers[mgid].queue.length < 1) {
-                queueWasEmpty = true;
-            }
-            let pNums = 1;
-            while (args[pNums]) {
-                let linkZ = args[pNums];
-                if (linkZ.substring(linkZ.length - 1) === ",") {
-                    linkZ = linkZ.substring(0, linkZ.length - 1);
-                }
-                // push to queue
-                servers[mgid].queue.push(args[pNums]);
-                pNums += 1;
-            }
-            // make pNums the number of added songs
-            pNums--;
-            // if queue was empty then play
-            if (queueWasEmpty) {
-                playSongToVC(message, args[1], message.member.voice.channel);
-            } else if (pNums < 2) {
-                message.channel.send("*added to queue*");
-            } else {
-                message.channel.send("*added " + pNums + " to queue*");
-            }
+            runPlayLinkCommand(message, args, mgid);
+            break;
+        case "play":
+            runPlayLinkCommand(message, args, mgid);
             break;
         // !pn
         case "gpn":
@@ -622,7 +636,6 @@ async function runCommandCases(message) {
                 "Database size: " + Array.from(congratsDatabase.keys()).length
             );
             break;
-
         // !gd is to run database songs
         case "gd":
             runDatabasePlayCommand(args, message, "entries", false);
@@ -640,21 +653,21 @@ async function runCommandCases(message) {
             if (!message.member.voice.channel) {
                 return;
             }
-            runRandomToQueue(args, message, mgid);
+            runRandomToQueue(args[1], message, mgid);
             break;
         // !gr is the global random to work with the normal queue
         case "gr":
             if (!message.member.voice.channel) {
                 return;
             }
-            runRandomToQueue(args, message, "entries");
+            runRandomToQueue(args[1], message, "entries");
             break;
         // !mr is the personal random that works with the normal queue
         case "mr":
             if (!message.member.voice.channel) {
                 return;
             }
-            runRandomToQueue(args, message, "p" + message.member.id);
+            runRandomToQueue(args[1], message, "p" + message.member.id);
             break;
         // !keys is server keys
         case "keys":
@@ -826,12 +839,13 @@ async function runCommandCases(message) {
         case "a":
             if (!args[1] || !args[2]) {
                 message.channel.send(
-                    "Could not add to the database. Put a song name followed by a link."
+                    "Could not add to the database. Put a desired name followed by a link. *(ex: "
+                    + prefixString + "a [key] [link])*"
                 );
                 return;
             }
             if (!args[2].includes(".")) {
-                message.channel.send("You can only add links to the database.");
+                message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
                 return;
             }
             // in case the database has not been initialized
@@ -846,16 +860,65 @@ async function runCommandCases(message) {
                 }
             });
             break;
-        // !a is normal add
-        case "ma":
+        case "add":
             if (!args[1] || !args[2]) {
                 message.channel.send(
-                    "Could not add to the database. Put a song name followed by a link."
+                    "Could not add to the database. Put a desired name followed by a link. *(ex: "
+                    + prefixString + "a [key] [link])*"
                 );
                 return;
             }
             if (!args[2].includes(".")) {
-                message.channel.send("You can only add links to the database.");
+                message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
+                return;
+            }
+            // in case the database has not been initialized
+            gsrun(client2, "A", "B", mgid).then(() => {
+                if (
+                    !dataSize.get(mgid.toString()) ||
+                    dataSize.get(mgid.toString()) < 1
+                ) {
+                    message.channel.send("Please try again.");
+                } else {
+                    runAddCommand(args, message, mgid, true);
+                }
+            });
+            break;
+        // !ma is personal add
+        case "ma":
+            if (!args[1] || !args[2]) {
+                message.channel.send(
+                    "Could not add to the database. Put a desired name followed by a link. *(ex: "
+                    + prefixString + "ma [key] [link])*"
+                );
+                return;
+            }
+            if (!args[2].includes(".")) {
+                message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
+                return;
+            }
+            // in case the database has not been initialized
+            gsrun(client2, "A", "B", "p" + message.member.id).then(() => {
+                if (
+                    !dataSize.get("p" + message.member.id.toString()) ||
+                    dataSize.get("p" + message.member.id.toString()) < 1
+                ) {
+                    message.channel.send("Please try again.");
+                } else {
+                    runAddCommand(args, message, "p" + message.member.id, true);
+                }
+            });
+            break;
+        case "madd":
+            if (!args[1] || !args[2]) {
+                message.channel.send(
+                    "Could not add to the database. Put a desired name followed by a link. *(ex: "
+                    + prefixString + "ma [key] [link])*"
+                );
+                return;
+            }
+            if (!args[2].includes(".")) {
+                message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
                 return;
             }
             // in case the database has not been initialized
@@ -874,12 +937,18 @@ async function runCommandCases(message) {
         case "rm":
             runRemoveItemCommand(message, args[1], mgid, true);
             break;
+        case "remove":
+            runRemoveItemCommand(message, args[1], mgid, true);
+            break;
         // !grm removes database entries
         case "grm":
             runRemoveItemCommand(message, args[1], "entries", true);
             break;
         // !rm removes database entries
         case "mrm":
+            runRemoveItemCommand(message, args[1], "p" + message.member.id, true);
+            break;
+        case "mremove":
             runRemoveItemCommand(message, args[1], "p" + message.member.id, true);
             break;
         case "invite":
@@ -984,7 +1053,7 @@ async function runCommandCases(message) {
 }
 
 bot.on('guildCreate', guild => {
-    guild.systemChannel.send("Hello! Call '!h' to see my commands.");
+    guild.systemChannel.send("Hello! Type '!h' to see my commands.");
 });
 
 
@@ -1047,7 +1116,13 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
             databaseType = "";
         }
         if (songsAddedInt === 1) {
-            message.channel.send("*song added to the database. (see '" + ps + databaseType + "keys')*");
+            let typeString;
+            if (databaseType === "m") {
+                typeString = "your personal";
+            } else {
+                typeString = "the server's";
+            }
+            message.channel.send("*song added to " + typeString + " database. (see '" + ps + databaseType + "keys')*");
         } else if (songsAddedInt > 1) {
             gsrun(client2, "A", "B", sheetName).then(() => {
                 gsUpdateOverwrite(client2, -1, songsAddedInt, sheetName);
@@ -1307,7 +1382,18 @@ function sendHelp(message, prefixString) {
     );
 }
 
-function runRandomToQueue(args, message, sheetname) {
+/**
+ * Runs the checks to add random songs to the queue
+ * @param num The number of songs to be added to random, could be string
+ * @param message The message that triggered the bot
+ * @param sheetname The name of the sheet to reference
+ */
+function runRandomToQueue(num, message, sheetname) {
+    try {
+        num = parseInt(num);
+    } catch (e) {
+        num = 1;
+    }
     if (!servers[message.guild.id])
         servers[message.guild.id] = {
             queue: [],
@@ -1327,11 +1413,10 @@ function runRandomToQueue(args, message, sheetname) {
         return;
     }
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
-        if (!args[1]) {
+        if (!num) {
             addRandomToQueue(message, 1, xdb.congratsDatabase);
         } else {
             try {
-                let num = parseInt(args[1]);
                 if (num && num >= maxQueueSize) {
                     message.channel.send("*max limit for random is " + maxQueueSize + "*");
                     num = maxQueueSize;
@@ -1452,8 +1537,8 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
             } else {
                 emptyDBMessage = "Your ";
             }
-            message.channel.send(emptyDBMessage + "music database is empty. Add a song by calling '" +
-                prefixString + cmdType + "a'");
+            message.channel.send(emptyDBMessage + "music database is empty.\n*Add a song by putting a word followed by a link -> "
+                + prefixString + cmdType + "a [key] [link]*");
         } else {
             let keysMessage = "";
             if (cmdType === "m") {
@@ -1470,7 +1555,32 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                 keysMessage += "**Server keys ** ";
             }
             keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
-            message.channel.send(keysMessage);
+            message.channel.send(keysMessage).then(async sentMsg => {
+                sentMsg.react('➕').then(() => {
+                    sentMsg.react('➖').then(() => {
+                        sentMsg.react('🔀').then();
+                    });
+                });
+
+                const filter = (reaction, user) => {
+                    return ['➕', '➖', '🔀'].includes(reaction.emoji.name) && user.id !== bot.user.id;
+                };
+
+                const keysButtonCollector = sentMsg.createReactionCollector(filter);
+
+                keysButtonCollector.on('collect', (reaction, reactionCollector) => {
+                    if (reaction.emoji.name === '➕') {
+                        message.channel.send("*add a song by putting a word followed by a link -> "
+                            + prefixString + cmdType + "a [key] [link]'*");
+                    } else if (reaction.emoji.name === '➖') {
+                        message.channel.send("*remove a song by entering the name you want to remove -> "
+                            + prefixString + cmdType + "rm [key]*");
+                    } else if (reaction.emoji.name === '🔀') {
+                        message.channel.send("*randomizing...*");
+                        runRandomToQueue(10, message, sheetname);
+                    }
+                });
+            });
         }
     });
 }
