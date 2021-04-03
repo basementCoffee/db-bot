@@ -11,4 +11,4 @@
 
 ## Invite - add to your server
 
-https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1133584&scope=bot
+https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot
