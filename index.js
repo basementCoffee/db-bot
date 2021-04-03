@@ -1560,9 +1560,9 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
             }
             keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
             message.channel.send(keysMessage).then(async sentMsg => {
-                sentMsg.react('➕').then(() => {
-                    sentMsg.react('➖').then(() => {
-                        sentMsg.react('🔀').then();
+                sentMsg.react('🔀').then(() => {
+                    sentMsg.react('➕').then(() => {
+                        sentMsg.react('➖').then();
                     });
                 });
 
