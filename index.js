@@ -1561,23 +1561,20 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
             keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
             message.channel.send(keysMessage).then(async sentMsg => {
                 sentMsg.react('🔀').then(() => {
-                    sentMsg.react('➕').then(() => {
-                        sentMsg.react('➖').then();
-                    });
+                    sentMsg.react('❔').then();
                 });
 
                 const filter = (reaction, user) => {
-                    return ['➕', '➖', '🔀'].includes(reaction.emoji.name) && user.id !== bot.user.id;
+                    return ['🔀', '❔'].includes(reaction.emoji.name) && user.id !== bot.user.id;
                 };
 
                 const keysButtonCollector = sentMsg.createReactionCollector(filter);
 
                 keysButtonCollector.on('collect', (reaction, reactionCollector) => {
-                    if (reaction.emoji.name === '➕') {
+                    if (reaction.emoji.name === '❔') {
                         message.channel.send("*add a song by putting a word followed by a link -> "
-                            + prefixString + cmdType + "a [key] [link]'*");
-                    } else if (reaction.emoji.name === '➖') {
-                        message.channel.send("*remove a song by entering the name you want to remove -> "
+                            + prefixString + cmdType + "a [key] [link]'\n" +
+                            "remove a song by putting the name you want to remove -> "
                             + prefixString + cmdType + "rm [key]*");
                     } else if (reaction.emoji.name === '🔀') {
                         if (dbName) {
