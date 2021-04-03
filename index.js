@@ -1450,7 +1450,15 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
         } else {
             let keysMessage = "";
             if (cmdType === "m") {
-                keysMessage += "**" + message.member.nickname + "'s keys ** ";
+                let name = message.member.nickname;
+                if (!name) {
+                    name = message.author.username
+                }
+                if (name) {
+                    keysMessage += "**" + name + "'s keys ** ";
+                } else {
+                    keysMessage += "** Personal keys ** ";
+                }
             } else if (cmdType === "") {
                 keysMessage += "**Server keys ** ";
             }
