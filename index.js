@@ -1549,14 +1549,14 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                 }
                 if (name) {
                     keysMessage += "**" + name + "'s keys ** ";
-                    dbName = keysMessage;
+                    dbName = name.toLowerCase() + "'s keys";
                 } else {
                     keysMessage += "** Personal keys ** ";
-                    dbName = keysMessage;
+                    dbName = "personal keys";
                 }
             } else if (cmdType === "") {
                 keysMessage += "**Server keys ** ";
-                dbName = keysMessage;
+                dbName = "server's keys";
             }
             keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
             message.channel.send(keysMessage).then(async sentMsg => {
