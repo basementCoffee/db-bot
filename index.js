@@ -912,7 +912,7 @@ async function runCommandCases(message) {
                 message.channel.send("You must be in a voice channel to silence");
                 return;
             }
-            if(silenceMap[mgid]) {
+            if (silenceMap[mgid]) {
                 message.channel.send("*song notifications already silenced*");
                 return;
             }
@@ -924,7 +924,7 @@ async function runCommandCases(message) {
                 message.channel.send("You must be in a voice channel to unsilence");
                 return;
             }
-            if(!silenceMap[mgid]) {
+            if (!silenceMap[mgid]) {
                 message.channel.send("*song notifications already unsilenced*");
                 return;
             }
@@ -1379,33 +1379,33 @@ function addRandomToQueue(message, numOfTimes, cdb) {
     // the final random array to be added to the queue
     let rKeyArrayFinal = [];
     try {
-            let newArray = [];
-            let executeWhileInRand = true;
-            for (let i = 0; i < numOfTimes; i++) {
-                if (!newArray || newArray.length < 1 || executeWhileInRand) {
-                    let tempArray = [...rKeyArray];
-                    let j = 0;
-                    while (
-                        (tempArray.length > 0 && j <= numOfTimes) ||
-                        executeWhileInRand
-                        ) {
-                        let randomNumber = Math.floor(Math.random() * tempArray.length);
-                        newArray.push(tempArray[randomNumber]);
-                        tempArray.splice(randomNumber, 1);
-                        j++;
-                        executeWhileInRand = false;
-                    }
-                    // newArray has the new values
+        let newArray = [];
+        let executeWhileInRand = true;
+        for (let i = 0; i < numOfTimes; i++) {
+            if (!newArray || newArray.length < 1 || executeWhileInRand) {
+                let tempArray = [...rKeyArray];
+                let j = 0;
+                while (
+                    (tempArray.length > 0 && j <= numOfTimes) ||
+                    executeWhileInRand
+                    ) {
+                    let randomNumber = Math.floor(Math.random() * tempArray.length);
+                    newArray.push(tempArray[randomNumber]);
+                    tempArray.splice(randomNumber, 1);
+                    j++;
+                    executeWhileInRand = false;
                 }
-                let aTest1 = newArray.pop();
-                if (aTest1) {
-                    rKeyArrayFinal.push(aTest1);
-                } else {
-                    executeWhileInRand = true;
-                    i--;
-                }
+                // newArray has the new values
             }
-            //rKeyArrayFinal should have list of randoms here
+            let aTest1 = newArray.pop();
+            if (aTest1) {
+                rKeyArrayFinal.push(aTest1);
+            } else {
+                executeWhileInRand = true;
+                i--;
+            }
+        }
+        //rKeyArrayFinal should have list of randoms here
     } catch (e) {
         console.log("error in random: " + e);
         rn = Math.floor(Math.random() * rKeyArray.length);
@@ -1446,11 +1446,14 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
             }
         }
         if (!s || s.length < 1) {
-            message.channel.send(
-                "Your music database is empty. Add a song by calling '" +
-                prefixString + cmdType +
-                "a'"
-            );
+            let emptyDBMessage;
+            if (!cmdType) {
+                emptyDBMessage = "The server's ";
+            } else {
+                emptyDBMessage = "Your ";
+            }
+            message.channel.send(emptyDBMessage + "music database is empty. Add a song by calling '" +
+                prefixString + cmdType + "a'");
         } else {
             let keysMessage = "";
             if (cmdType === "m") {
@@ -1466,7 +1469,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
             } else if (cmdType === "") {
                 keysMessage += "**Server keys ** ";
             }
-            keysMessage += "*(use '" + prefixString + cmdType + "d [name]' to play)*\n" + s;
+            keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
             message.channel.send(keysMessage);
         }
     });
@@ -1626,23 +1629,27 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
         .then(async function (sentMsg) {
             if (!showButtons) return;
             let wsp = whatspMap[voiceChannel];
-            sentMsg.react('⏪').then(() =>{
+            sentMsg.react('⏪').then(() => {
                 if (whatspMap[voiceChannel] !== wsp) return;
-                sentMsg.react('⏯').then(()=>{
+                sentMsg.react('⏯').then(() => {
                     if (whatspMap[voiceChannel] !== wsp) return;
-                    sentMsg.react('⏹').then(()=> {
+                    sentMsg.react('⏹').then(() => {
                         if (whatspMap[voiceChannel] !== wsp) return;
                         sentMsg.react('⏩').then(() => {
                             if (whatspMap[voiceChannel] !== wsp) return;
-                            sentMsg.react('🔑').then(sentMsg.react('🔐'));});});});});
+                            sentMsg.react('🔑').then(sentMsg.react('🔐'));
+                        });
+                    });
+                });
+            });
 
             embedMessageMap[voiceChannel] = sentMsg;
 
             const filter = (reaction, user) => {
                 if (voiceChannel) {
                     for (let mem of voiceChannel.members) {
-                        if (user.id === mem[1].id ) {
-                            return ['⏯', '⏩', '⏪', '⏹','🔑', '🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
+                        if (user.id === mem[1].id) {
+                            return ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
                         }
                     }
                 }
