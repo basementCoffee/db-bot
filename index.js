@@ -1280,15 +1280,15 @@ function sendHelp(message, prefixString) {
         prefixString +
         "keys  -->  See all of the server's saved songs \n" +
         prefixString +
-        "a [song] [url]  -->  Adds a song to the server's database \n" +
+        "a [song] [url]  -->  Adds a song to the server keys \n" +
         prefixString +
-        "d [key]  -->  Play a song from the server's database \n" +
+        "d [key]  -->  Play a song from the server keys \n" +
         prefixString +
-        "r [# of times]  -->  Play a random song from the server's database \n" +
+        "r [# of times]  -->  Play a random song from server keys \n" +
         prefixString +
-        "k [phrase]  -->  Lookup keys with the same phrase \n" +
+        "k [name]  -->  Search keys \n" +
         prefixString +
-        "rm [key] -->  Removes a song from the server's database \n" +
+        "rm [key] -->  Removes a song from the server keys \n" +
         "*Prepend 'm' to these commands to access your personal music database (ex: '" + prefixString + "mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
@@ -1620,11 +1620,17 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
     message.channel.send(embed)
         .then(async function (sentMsg) {
             if (!showButtons) return;
-            await sentMsg.react('⏪');
-            await sentMsg.react('⏯');
-            await sentMsg.react('⏹');
-            await sentMsg.react('⏩');
-            await sentMsg.react('🔐');
+            let wsp = whatspMap[voiceChannel];
+            sentMsg.react('⏪').then(() =>{
+                if (whatspMap[voiceChannel] !== wsp) return;
+                sentMsg.react('⏯').then(()=>{
+                    if (whatspMap[voiceChannel] !== wsp) return;
+                    sentMsg.react('⏹').then(()=> {
+                        if (whatspMap[voiceChannel] !== wsp) return;
+                        sentMsg.react('⏩').then(sentMsg.react('🔐'));
+                    });
+                });
+            });
 
             embedMessageMap[voiceChannel] = sentMsg;
 
@@ -1632,7 +1638,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                 if (voiceChannel) {
                     for (let mem of voiceChannel.members) {
                         if (user.id === mem[1].id ) {
-                            return ['⏯', '⏩', '⏪', '⏹','🔐'].includes(reaction.emoji.name);
+                            return ['⏯', '⏩', '⏪', '⏹','🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
                         }
                     }
                 }
