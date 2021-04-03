@@ -94,6 +94,11 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     };
 }
 
+/**
+ * Creates a sheet within the database for new users
+ * @param message A message within the guild that triggered the bot
+ * @param nameOfSheet The name of the sheet to create
+ */
 function createSheet(message, nameOfSheet) {
     const gsapi = google.sheets({version: "v4", auth: client2});
     gsapi.spreadsheets.batchUpdate(
@@ -1461,11 +1466,12 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
             } else if (cmdType === "") {
                 keysMessage += "**Server keys ** ";
             }
-            keysMessage += "*(prepend '" + prefixString + cmdType + "d' to play)*\n" + s;
+            keysMessage += "*(use '" + prefixString + cmdType + "d [name]' to play)*\n" + s;
             message.channel.send(keysMessage);
         }
     });
 }
+
 
 /**
  *  New play song function.
@@ -1626,10 +1632,9 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                     if (whatspMap[voiceChannel] !== wsp) return;
                     sentMsg.react('⏹').then(()=> {
                         if (whatspMap[voiceChannel] !== wsp) return;
-                        sentMsg.react('⏩').then(sentMsg.react('🔐'));
-                    });
-                });
-            });
+                        sentMsg.react('⏩').then(() => {
+                            if (whatspMap[voiceChannel] !== wsp) return;
+                            sentMsg.react('🔑').then(sentMsg.react('🔐'));});});});});
 
             embedMessageMap[voiceChannel] = sentMsg;
 
@@ -1637,7 +1642,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                 if (voiceChannel) {
                     for (let mem of voiceChannel.members) {
                         if (user.id === mem[1].id ) {
-                            return ['⏯', '⏩', '⏪', '⏹','🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
+                            return ['⏯', '⏩', '⏪', '⏹','🔑', '🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
                         }
                     }
                 }
@@ -1675,8 +1680,10 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                     playSongToVC(message, song, voiceChannel);
                 } else if (reaction.emoji.name === '⏹') {
                     runStopPlayingCommand(message, mgid, voiceChannel);
-                } else if (reaction.emoji.name === '🔐') {
+                } else if (reaction.emoji.name === '🔑') {
                     runKeysCommand(message, prefixMap[mgid], mgid, "");
+                } else if (reaction.emoji.name === '🔐') {
+                    runKeysCommand(message, prefixMap[mgid], "p" + reactionCollector.id, "m");
                 }
             });
         });
