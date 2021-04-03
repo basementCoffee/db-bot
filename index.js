@@ -1540,6 +1540,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
             message.channel.send(emptyDBMessage + "music database is empty.\n*Add a song by putting a word followed by a link -> "
                 + prefixString + cmdType + "a [key] [link]*");
         } else {
+            let dbName = "";
             let keysMessage = "";
             if (cmdType === "m") {
                 let name = message.member.nickname;
@@ -1547,11 +1548,14 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                     name = message.author.username
                 }
                 if (name) {
+                    dbName = name + "'s keys";
                     keysMessage += "**" + name + "'s keys ** ";
                 } else {
+                    dbName = name + "personal keys";
                     keysMessage += "** Personal keys ** ";
                 }
             } else if (cmdType === "") {
+                dbName = "server keys";
                 keysMessage += "**Server keys ** ";
             }
             keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
@@ -1576,7 +1580,12 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                         message.channel.send("*remove a song by entering the name you want to remove -> "
                             + prefixString + cmdType + "rm [key]*");
                     } else if (reaction.emoji.name === '🔀') {
-                        message.channel.send("*randomizing...*");
+                        if (dbName) {
+                            message.channel.send("*randomizing from " + dbName + "...");
+                        } else {
+                            message.channel.send("*randomizing...*");
+                        }
+
                         runRandomToQueue(10, message, sheetname);
                     }
                 });
