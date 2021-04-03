@@ -879,7 +879,7 @@ async function runCommandCases(message) {
             runRemoveItemCommand(message, args[1], "p" + message.member.id, true);
             break;
         case "invite":
-            message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1133584&scope=bot");
+            message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot");
             break;
         case "vol":
             if (!args[1]) {
@@ -1524,7 +1524,6 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                 servers[message.guild.id].queueHistory.push(server.queue.shift());
                 if (server.queue.length > 0 && voiceChannel.members.size > 1) {
                     whatsp = server.queue[0];
-                    // console.log("On finish, playing; " + whatsp);
                     whatspMap[voiceChannel] = whatsp;
                     if (!whatsp) {
                         return;
