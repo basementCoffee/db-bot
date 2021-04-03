@@ -1560,29 +1560,38 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
             }
             keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
             message.channel.send(keysMessage).then(async sentMsg => {
-                sentMsg.react('🔀').then(() => {
-                    sentMsg.react('❔').then();
-                });
-
+                sentMsg.react('❔').then(() => sentMsg.react('🔀'));
                 const filter = (reaction, user) => {
                     return ['🔀', '❔'].includes(reaction.emoji.name) && user.id !== bot.user.id;
                 };
-
                 const keysButtonCollector = sentMsg.createReactionCollector(filter);
-
                 keysButtonCollector.on('collect', (reaction, reactionCollector) => {
                     if (reaction.emoji.name === '❔') {
-                        message.channel.send("*add a song by putting a word followed by a link -> "
-                            + prefixString + cmdType + "a [key] [link]'\n" +
-                            "remove a song by putting the name you want to remove -> "
-                            + prefixString + cmdType + "rm [key]*");
+                        let nameToSend;
+                        if (dbName === "server's keys") {
+                            nameToSend = "the server's key";
+                        } else {
+                            nameToSend = "your personal key";
+                        }
+                        let embed = new MessageEmbed()
+                            .setTitle("How to add/remove to " + nameToSend + " list")
+                            .setDescription("add a song by putting a word followed by a link -> "
+                                + prefixString + cmdType + "a [key] [link]\n" +
+                                "remove a song by putting the name you want to remove -> "
+                                + prefixString + cmdType + "rm [key]");
+                        message.channel.send(embed);
+                        // message.channel.send("**How to add/remove to the keys list**\n" +
+                        //     "*add a song by putting a word followed by a link -> "
+                        //     + prefixString + cmdType + "a [key] [link]'\n" +
+                        //     "remove a song by putting the name you want to remove -> "
+                        //     + prefixString + cmdType + "rm [key]*\n-------");
                     } else if (reaction.emoji.name === '🔀') {
                         if (dbName) {
                             message.channel.send("*randomizing from " + dbName + "...*");
                         } else {
                             message.channel.send("*randomizing...*");
                         }
-                        runRandomToQueue(10, message, sheetname);
+                        runRandomToQueue(100, message, sheetname);
                     }
                 });
             });
