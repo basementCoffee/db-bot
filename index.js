@@ -1564,7 +1564,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                 const filter = (reaction, user) => {
                     return ['🔀', '❔'].includes(reaction.emoji.name) && user.id !== bot.user.id;
                 };
-                const keysButtonCollector = sentMsg.createReactionCollector(filter);
+                const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
                 keysButtonCollector.on('collect', (reaction, reactionCollector) => {
                     if (reaction.emoji.name === '❔') {
                         let nameToSend;
