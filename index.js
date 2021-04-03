@@ -1107,7 +1107,7 @@ async function runCommandCases(message) {
 }
 
 bot.on('guildCreate', guild => {
-    guild.systemChannel.send("Hello! Type '!h' to see my commands.");
+    guild.systemChannel.send("Thanks for adding me :) \nType '!h' to see my commands.");
 });
 
 
@@ -1435,7 +1435,7 @@ function sendHelp(message, prefixString) {
         "k [name]  -->  Search keys \n" +
         prefixString +
         "remove [key] -->  Removes a song from the server keys (" + prefixString + "rm)\n" +
-        "-----------  Personal Music Database  -----------\n" +
+        "\n-----------  Personal Music Database  -----------\n" +
         "*Prepend 'm' to the above commands to access your personal music database (ex: '" + prefixString + "mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
