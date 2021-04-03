@@ -467,13 +467,14 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
     }
     if (!args[1]) {
         message.channel.send(
-            "Where's the link? I can't read your mind... unfortunately."
+            "What should I play now? Put a link or a db key."
         );
         return;
     }
     if (!servers[mgid])
         servers[mgid] = {
             queue: [],
+            queueHistory: []
         };
     // in case of force disconnect
     if (
@@ -492,7 +493,7 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
         return;
     }
     if (!args[1].includes(".")) {
-        runDatabasePlayCommand(args, message, sheetName, true);
+        runDatabasePlayCommand(args, message, sheetName, true, false);
         return;
     }
     // push to queue
@@ -527,6 +528,7 @@ function runPlayLinkCommand(message, args, mgid) {
     if (!servers[mgid])
         servers[mgid] = {
             queue: [],
+            queueHistory: []
         };
     // in case of force disconnect
     if (
@@ -621,15 +623,22 @@ async function runCommandCases(message) {
         case "pn":
             runPlayNowCommand(message, args, mgid, mgid);
             break;
+        case "playnow":
+            runPlayNowCommand(message, args, mgid, mgid);
+            break;
         case "mpn":
             runPlayNowCommand(message, args, mgid, "p" + message.member.id);
             break;
-
+        case "mplaynow":
+            runPlayNowCommand(message, args, mgid, "p" + message.member.id);
+            break;
         //!e is the Stop feature
         case "e":
             runStopPlayingCommand(message, mgid, message.member.voice.channel);
             break;
-
+        case "end":
+            runStopPlayingCommand(message, mgid, message.member.voice.channel);
+            break;
         // !s prints out the database size
         case "s":
             message.channel.send(
@@ -638,15 +647,15 @@ async function runCommandCases(message) {
             break;
         // !gd is to run database songs
         case "gd":
-            runDatabasePlayCommand(args, message, "entries", false);
+            runDatabasePlayCommand(args, message, "entries", false, true);
             break;
         // !d
         case "d":
-            runDatabasePlayCommand(args, message, mgid, false);
+            runDatabasePlayCommand(args, message, mgid, false, true);
             break;
         // !md is the personal database
         case "md":
-            runDatabasePlayCommand(args, message, "p" + message.member.id, false);
+            runDatabasePlayCommand(args, message, "p" + message.member.id, false, true);
             break;
         // !r is a random that works with the normal queue
         case "r":
@@ -793,8 +802,38 @@ async function runCommandCases(message) {
                 message.channel.send("*paused*");
             }
             break;
+        case "pause":
+            if (
+                message.member.voice &&
+                dispatcherMap[message.member.voice.channel]
+            ) {
+                dispatcherMap[message.member.voice.channel].pause();
+                dispatcherMapStatus[message.member.voice.channel] = "pause";
+                message.channel.send("*paused*");
+            }
+            break;
         // !pl
         case "pl":
+            if (
+                message.member.voice &&
+                dispatcherMap[message.member.voice.channel]
+            ) {
+                dispatcherMap[message.member.voice.channel].resume();
+                dispatcherMapStatus[message.member.voice.channel] = "resume";
+                message.channel.send("*playing*");
+            }
+            break;
+        case "res":
+            if (
+                message.member.voice &&
+                dispatcherMap[message.member.voice.channel]
+            ) {
+                dispatcherMap[message.member.voice.channel].resume();
+                dispatcherMapStatus[message.member.voice.channel] = "resume";
+                message.channel.send("*playing*");
+            }
+            break;
+        case "resume":
             if (
                 message.member.voice &&
                 dispatcherMap[message.member.voice.channel]
@@ -821,14 +860,17 @@ async function runCommandCases(message) {
         // !ga adds to the server database
         case "ga":
             if (!args[1] || !args[2]) {
-                message.channel.send(
+                return message.channel.send(
                     "Could not add to the database. Put a song name followed by a link."
                 );
-                return;
             }
             if (!args[2].includes(".")) {
-                message.channel.send("You can only add links to the database.");
-                return;
+                return message.channel.send("You can only add links to the database.");
+            }
+            if (args[2].includes("spotify.com")) {
+                if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
+            } else {
+                if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
             }
             // in case the database has not been initialized
             gsrun(client2, "A", "B", "entries").then(() => {
@@ -838,15 +880,18 @@ async function runCommandCases(message) {
         // !a is normal add
         case "a":
             if (!args[1] || !args[2]) {
-                message.channel.send(
+                return message.channel.send(
                     "Could not add to the database. Put a desired name followed by a link. *(ex: "
                     + prefixString + "a [key] [link])*"
                 );
-                return;
             }
             if (!args[2].includes(".")) {
-                message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
-                return;
+                return message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
+            }
+            if (args[2].includes("spotify.com")) {
+                if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
+            } else {
+                if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
             }
             // in case the database has not been initialized
             gsrun(client2, "A", "B", mgid).then(() => {
@@ -862,15 +907,18 @@ async function runCommandCases(message) {
             break;
         case "add":
             if (!args[1] || !args[2]) {
-                message.channel.send(
+                return message.channel.send(
                     "Could not add to the database. Put a desired name followed by a link. *(ex: "
                     + prefixString + "a [key] [link])*"
                 );
-                return;
             }
             if (!args[2].includes(".")) {
-                message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
-                return;
+                return message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
+            }
+            if (args[2].includes("spotify.com")) {
+                if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
+            } else {
+                if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
             }
             // in case the database has not been initialized
             gsrun(client2, "A", "B", mgid).then(() => {
@@ -887,15 +935,18 @@ async function runCommandCases(message) {
         // !ma is personal add
         case "ma":
             if (!args[1] || !args[2]) {
-                message.channel.send(
+                return message.channel.send(
                     "Could not add to the database. Put a desired name followed by a link. *(ex: "
                     + prefixString + "ma [key] [link])*"
                 );
-                return;
             }
             if (!args[2].includes(".")) {
-                message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
-                return;
+                return message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
+            }
+            if (args[2].includes("spotify.com")) {
+                if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
+            } else {
+                if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
             }
             // in case the database has not been initialized
             gsrun(client2, "A", "B", "p" + message.member.id).then(() => {
@@ -911,15 +962,18 @@ async function runCommandCases(message) {
             break;
         case "madd":
             if (!args[1] || !args[2]) {
-                message.channel.send(
+                return message.channel.send(
                     "Could not add to the database. Put a desired name followed by a link. *(ex: "
                     + prefixString + "ma [key] [link])*"
                 );
-                return;
             }
             if (!args[2].includes(".")) {
-                message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
-                return;
+                return message.channel.send("You can only add links to the database. (Names cannot be more than one word)");
+            }
+            if (args[2].includes("spotify.com")) {
+                if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
+            } else {
+                if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
             }
             // in case the database has not been initialized
             gsrun(client2, "A", "B", "p" + message.member.id).then(() => {
@@ -1010,7 +1064,7 @@ async function runCommandCases(message) {
             message.channel.send(bot.uptime);
             break;
         // !rand
-        case "rand":
+        case "guess":
             if (args[1]) {
                 const numToCheck = parseInt(args[1]);
                 if (!numToCheck || numToCheck < 1) {
@@ -1141,17 +1195,18 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
  * @param {*} message the message that triggered the bot
  * @param {*} sheetname the name of the google sheet to reference
  * @param playRightNow bool of whether to play now or now
- * @returns
+ * @param printErrorMsg prints error message, should be true unless attempting a followup db run
+ * @returns whether the play command has been handled accordingly, no followup
  */
-function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
+function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErrorMsg) {
     if (!args[1]) {
         message.channel.send(
             "There's nothing to play! ... I'm just gonna pretend that you didn't mean that."
         );
-        return;
+        return true;
     }
     if (!message.member.voice.channel) {
-        return;
+        return true;
     }
     if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
@@ -1170,7 +1225,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
     }
     if (servers[message.guild.id].queue.length >= maxQueueSize) {
         message.channel.send("*max queue size has been reached*");
-        return;
+        return true;
     }
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         let queueWasEmpty = false;
@@ -1178,7 +1233,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
         if (servers[message.guild.id].queue.length < 1) {
             queueWasEmpty = true;
         }
-        if (args[2]) {
+        if (args[2] && !playRightNow) {
             let dbAddInt = 1;
             let unFoundString = "*could not find: ";
             let firstUnfoundRan = false;
@@ -1216,19 +1271,25 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
                         playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), message.member.voice.channel);
                         message.channel.send("*playing now*");
+                        return true;
                     } else {
                         servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
                     }
                 } else if (playRightNow) {
-                    message.channel.send("There's something wrong with what you put there.");
+                    if (printErrorMsg) {
+                        message.channel.send("There's something wrong with what you put there.");
+                    } else {
+                        runDatabasePlayCommand(args, message, "p" + message.member.id, playRightNow, true);
+                    }
+                    return false;
                 } else if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
                     );
-                    return;
+                    return true;
                 } else {
                     message.channel.send("Could not find '" + args[1] + "' in database.");
-                    return;
+                    return true;
                 }
             } else {
                 if (playRightNow) {
@@ -1237,10 +1298,15 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(args[1].toUpperCase()));
                         playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()), message.member.voice.channel);
                         message.channel.send("*playing now*");
+                        return true;
                     } else {
-                        message.channel.send("There's something wrong with what you put there.");
+                        if (printErrorMsg) {
+                            message.channel.send("There's something wrong with what you put there.");
+                        } else {
+                            runDatabasePlayCommand(args, message, "p" + message.member.id, playRightNow, true);
+                        }
+                        return false;
                     }
-                    return;
                 } else {
                     // push to queue
                     servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
@@ -1255,6 +1321,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow) {
             playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel);
         }
     });
+    return true;
 }
 
 // The search command
@@ -1342,38 +1409,39 @@ function sendHelp(message, prefixString) {
         "Help list:\n" +
         "--------------  Music Commands  -----------------\n" +
         prefixString +
-        "p [link]  -->  Plays YouTube/Spotify links \n" +
+        "play [link]  -->  Plays YouTube/Spotify links (" + prefixString + "p) \n" +
         prefixString +
-        "pn [link]  -->  Plays the link now, overrides queue \n" +
+        "playnow [link]  -->  Plays the link now, overrides queue (" + prefixString + "pn)\n" +
         prefixString +
         "?  -->  What's playing\n" +
         prefixString +
-        "pa  -->  Pause \n" +
+        "pause  -->  Pause (" + prefixString + "pa)\n" +
         prefixString +
-        "pl  -->  Play (if paused) \n" +
+        "resume  -->  Resume if paused (" + prefixString + "res) \n" +
         prefixString +
-        "sk  -->  Skip the current song\n" +
+        "skip  -->  Skip the current song (" + prefixString + "sk)\n" +
         prefixString +
-        "e  -->  Stops playing and ends session \n" +
+        "end  -->  Stops playing and ends session (" + prefixString + "e)\n" +
         "\n-----------  Server Music Database  -----------\n" +
         prefixString +
         "keys  -->  See all of the server's saved songs \n" +
         prefixString +
-        "a [song] [url]  -->  Adds a song to the server keys \n" +
+        "add [song] [url]  -->  Adds a song to the server keys (" + prefixString + "a)\n" +
         prefixString +
         "d [key]  -->  Play a song from the server keys \n" +
         prefixString +
-        "r [# of times]  -->  Play a random song from server keys \n" +
+        "rand [# of times]  -->  Play a random song from server keys (" + prefixString + "r)\n" +
         prefixString +
         "k [name]  -->  Search keys \n" +
         prefixString +
-        "rm [key] -->  Removes a song from the server keys \n" +
-        "*Prepend 'm' to these commands to access your personal music database (ex: '" + prefixString + "mkeys')*\n" +
+        "remove [key] -->  Removes a song from the server keys (" + prefixString + "rm)\n" +
+        "-----------  Personal Music Database  -----------\n" +
+        "*Prepend 'm' to the above commands to access your personal music database (ex: '" + prefixString + "mkeys')*\n" +
         "\n--------------  Other Commands  -----------------\n" +
         prefixString +
         "changeprefix [new prefix]  -->  Changes the prefix for all commands \n" +
         prefixString +
-        "rand  -->  Random roll for the number of people in the voice channel \n" +
+        "guess  -->  Random roll for the number of people in the voice channel \n" +
         prefixString +
         "silence  -->  Temporarily silences the now playing notifications \n" +
         prefixString +
