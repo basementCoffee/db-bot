@@ -664,6 +664,12 @@ async function runCommandCases(message) {
             }
             runRandomToQueue(args[1], message, mgid);
             break;
+        case "rand":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            runRandomToQueue(args[1], message, mgid);
+            break;
         // !gr is the global random to work with the normal queue
         case "gr":
             if (!message.member.voice.channel) {
@@ -673,6 +679,12 @@ async function runCommandCases(message) {
             break;
         // !mr is the personal random that works with the normal queue
         case "mr":
+            if (!message.member.voice.channel) {
+                return;
+            }
+            runRandomToQueue(args[1], message, "p" + message.member.id);
+            break;
+        case "mrand":
             if (!message.member.voice.channel) {
                 return;
             }
