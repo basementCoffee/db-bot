@@ -344,7 +344,6 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 const version = "1.0.2";
 var servers = {};
 bot.login(token);
-var whatsp = "";
 const maxQueueSize = 500; // should be one less than the actual max
 // the entire reason we built this bot
 function contentsContainCongrats(message) {
@@ -1481,7 +1480,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     let server = servers[message.guild.id];
     let whatToPlayS = "";
     whatToPlayS = whatToPlay;
-    whatsp = whatToPlayS;
+    let whatsp = whatToPlayS;
     let url = whatToPlayS;
     let isSpotify = false;
     // set stream flag and validate link
@@ -1502,7 +1501,7 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
             let dispatcher;
             if (!isSpotify) {
                 await connection.voice.setSelfDeaf(true);
-                dispatcher = connection.play(await ytdl(whatsp), {
+                dispatcher = connection.play(await ytdl(url), {
                     type: "opus",
                     filter: "audioonly",
                     quality: "140",
