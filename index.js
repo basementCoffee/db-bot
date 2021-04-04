@@ -1676,7 +1676,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
 
 bot.on("voiceStateUpdate", update => {
     if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions)
-    embedMessageMap[update.guild.id].reactions.removeAll().then();
+        embedMessageMap[update.guild.id].reactions.removeAll().then();
 });
 
 
@@ -1751,13 +1751,6 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                 }
             });
         } catch (e) {
-            // Error catching - fault with the link?
-
-            // prints out the error to console
-            // console.log(
-            //     "Below is a caught error message. (tried to play:" + whatToPlayS + ")"
-            // );
-            // console.log("Error:", e);
 
             message.channel.send("Could not play <" + whatToPlayS + ">");
             gsrun(client2, "A", "B", message.channel.guild.id).then((xdb) => {
@@ -2019,4 +2012,3 @@ var dispatcherMap = new Map();
 var embedMessageMap = new Map();
 // The status of a dispatcher, either "pause" or "resume"
 var dispatcherMapStatus = new Map();
-// the voiceChannel numbers of all the embeds within the guild, uses guild id
