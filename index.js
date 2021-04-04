@@ -1675,7 +1675,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
 
 
 bot.on("voiceStateUpdate", update => {
-    if (!update.connection && embedMessageMap[update.guild.id].reactions)
+    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions)
     embedMessageMap[update.guild.id].reactions.removeAll().then();
 });
 
