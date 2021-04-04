@@ -1126,7 +1126,6 @@ bot.on('guildCreate', guild => {
 // parses message, provides a response
 bot.on("message", (message) => {
     if (message.author.bot) return;
-
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
         const messageArray = message.content.split(" ");
@@ -1649,22 +1648,17 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                     if (reaction.emoji.name === '❔') {
                         let nameToSend;
                         if (dbName === "server's keys") {
-                            nameToSend = "the server's key";
+                            nameToSend = "the server";
                         } else {
-                            nameToSend = "your personal key";
+                            nameToSend = "your personal";
                         }
                         let embed = new MessageEmbed()
-                            .setTitle("How to add/remove to " + nameToSend + " list")
+                            .setTitle("How to add/remove keys from " + nameToSend + " list")
                             .setDescription("add a song by putting a word followed by a link -> "
                                 + prefixString + cmdType + "a [key] [link]\n" +
                                 "remove a song by putting the name you want to remove -> "
                                 + prefixString + cmdType + "rm [key]");
                         message.channel.send(embed);
-                        // message.channel.send("**How to add/remove to the keys list**\n" +
-                        //     "*add a song by putting a word followed by a link -> "
-                        //     + prefixString + cmdType + "a [key] [link]'\n" +
-                        //     "remove a song by putting the name you want to remove -> "
-                        //     + prefixString + cmdType + "rm [key]*\n-------");
                     } else if (reaction.emoji.name === '🔀') {
                         if (dbName) {
                             message.channel.send("*randomizing from " + dbName + "...*");
@@ -1678,6 +1672,12 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
         }
     });
 }
+
+
+bot.on("voiceStateUpdate", update => {
+    if (!update.connection && embedMessageMap[update.guild.id].reactions)
+    embedMessageMap[update.guild.id].reactions.removeAll().then();
+});
 
 
 /**
@@ -1704,9 +1704,9 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
         if (!ytdl.validateURL(url)) return message.channel.send('Invalid link');
     }
     // remove previous embed buttons
-    if (embedMessageMap[voiceChannel]) {
-        embedMessageMap[voiceChannel].reactions.removeAll().then();
-        embedMessageMap[voiceChannel] = "";
+    if (embedMessageMap[message.guild.id]) {
+        embedMessageMap[message.guild.id].reactions.removeAll().then();
+        embedMessageMap[message.guild.id] = "";
     }
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
@@ -1742,9 +1742,9 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     }
                     playSongToVC(message, whatsp, voiceChannel);
                 } else {
-                    if (embedMessageMap[voiceChannel]) {
-                        embedMessageMap[voiceChannel].reactions.removeAll().then();
-                        embedMessageMap[voiceChannel] = "";
+                    if (embedMessageMap[message.guild.id]) {
+                        embedMessageMap[message.guild.id].reactions.removeAll().then();
+                        embedMessageMap[message.guild.id] = "";
                     }
                     connection.disconnect();
                     dispatcherMap[voiceChannel] = undefined;
@@ -1825,29 +1825,29 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
         showButtons = false;
     }
     embed.setThumbnail(imgLink);
-    if (embedMessageMap[voiceChannel]) {
-        embedMessageMap[voiceChannel].reactions.removeAll().then();
-        embedMessageMap[voiceChannel] = "";
+    if (embedMessageMap[message.guild.id]) {
+        embedMessageMap[message.guild.id].reactions.removeAll().then();
+        embedMessageMap[message.guild.id] = "";
     }
     message.channel.send(embed)
         .then(async function (sentMsg) {
-            if (!showButtons) return;
+            if (!showButtons || !dispatcherMap[voiceChannel]) return;
             let wsp = whatspMap[voiceChannel];
             sentMsg.react('⏪').then(() => {
-                if (whatspMap[voiceChannel] !== wsp) return;
+                if (whatspMap[voiceChannel] !== wsp && !dispatcherMap[voiceChannel]) return;
                 sentMsg.react('⏯').then(() => {
                     if (whatspMap[voiceChannel] !== wsp) return;
                     sentMsg.react('⏹').then(() => {
                         if (whatspMap[voiceChannel] !== wsp) return;
                         sentMsg.react('⏩').then(() => {
-                            if (whatspMap[voiceChannel] !== wsp) return;
+                            if (whatspMap[voiceChannel] !== wsp && !dispatcherMap[voiceChannel]) return;
                             sentMsg.react('🔑').then(sentMsg.react('🔐'));
                         });
                     });
                 });
             });
 
-            embedMessageMap[voiceChannel] = sentMsg;
+            embedMessageMap[message.guild.id] = sentMsg;
 
             const filter = (reaction, user) => {
                 if (voiceChannel) {
@@ -1913,9 +1913,9 @@ function runStopPlayingCommand(message, mgid, voiceChannel) {
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
     }
-    if (embedMessageMap[voiceChannel]) {
-        embedMessageMap[voiceChannel].reactions.removeAll().then();
-        embedMessageMap[voiceChannel] = "";
+    if (embedMessageMap[message.guild.id]) {
+        embedMessageMap[message.guild.id].reactions.removeAll().then();
+        embedMessageMap[message.guild.id] = "";
     }
     if (voiceChannel) {
         voiceChannel.leave();
@@ -2015,7 +2015,8 @@ var silenceMap = new Map();
 var dataSize = new Map();
 // The song stream, uses voice channel
 var dispatcherMap = new Map();
-// The list of embeds, uses voice channel
+// The list of embeds, uses guild id
 var embedMessageMap = new Map();
 // The status of a dispatcher, either "pause" or "resume"
 var dispatcherMapStatus = new Map();
+// the voiceChannel numbers of all the embeds within the guild, uses guild id
