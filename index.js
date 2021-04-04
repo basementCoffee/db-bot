@@ -692,27 +692,27 @@ async function runCommandCases(message) {
             break;
         // !keys is server keys
         case "keys":
-            runKeysCommand(message, prefixString, mgid, "");
+            runKeysCommand(message, prefixString, mgid, "", "");
             break;
         // !key
         case "key":
-            runKeysCommand(message, prefixString, mgid, "");
+            runKeysCommand(message, prefixString, mgid, "", "");
             break;
         // !mkeys is personal keys
         case "mkeys":
-            runKeysCommand(message, prefixString, "p" + message.member.id, "m");
+            runKeysCommand(message, prefixString, "p" + message.member.id, "m", "");
             break;
         // !mkey is personal keys
         case "mkey":
-            runKeysCommand(message, prefixString, "p" + message.member.id, "m");
+            runKeysCommand(message, prefixString, "p" + message.member.id, "m", "");
             break;
         // !gkeys is global keys
         case "gkeys":
-            runKeysCommand(message, prefixString, "entries", "g");
+            runKeysCommand(message, prefixString, "entries", "g", "");
             break;
         // !gkey is global keys
         case "gkey":
-            runKeysCommand(message, prefixString, "entries", "g");
+            runKeysCommand(message, prefixString, "entries", "g", "");
             break;
         // !k is the search
         case "k":
@@ -1591,13 +1591,17 @@ function addRandomToQueue(message, numOfTimes, cdb) {
  * @param prefixString The character of the prefix
  * @param {*} sheetname The name of the sheet to retrieve
  * @param cmdType the prefix to call the keys being displayed
+ * @param voiceChannel optional, a specific voice channel to use besides the message's
  */
-function runKeysCommand(message, prefixString, sheetname, cmdType) {
+function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel) {
     if (
         !dataSize.get(sheetname.toString()) ||
         dataSize.get(sheetname.toString()) < 1
     ) {
         createSheet(message, sheetname);
+    }
+    if (!voiceChannel) {
+        voiceChannel = message.member.voice.channel;
     }
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
@@ -1660,12 +1664,18 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
                                 + prefixString + cmdType + "rm [key]");
                         message.channel.send(embed);
                     } else if (reaction.emoji.name === '🔀') {
-                        if (dbName) {
-                            message.channel.send("*randomizing from " + dbName + "...*");
-                        } else {
-                            message.channel.send("*randomizing...*");
+                        for (let mem of voiceChannel.members) {
+                            if (reactionCollector.id === mem[1].id) {
+                                if (dbName) {
+                                    message.channel.send("*randomizing from " + dbName + "...*");
+                                } else {
+                                    message.channel.send("*randomizing...*");
+                                }
+                                runRandomToQueue(100, message, sheetname);
+                                return;
+                            }
                         }
-                        runRandomToQueue(100, message, sheetname);
+                        return message.channel.send("*must be in a voice channel to shuffle play*");
                     }
                 });
             });
@@ -1675,7 +1685,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType) {
 
 
 bot.on("voiceStateUpdate", update => {
-    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions)
+    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions && update.member.id === bot.id)
         embedMessageMap[update.guild.id].reactions.removeAll().then();
 });
 
@@ -1751,8 +1761,9 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                 }
             });
         } catch (e) {
-
+            // Error catching - fault with the link?
             message.channel.send("Could not play <" + whatToPlayS + ">");
+            // search the db to find possible broken keys
             gsrun(client2, "A", "B", message.channel.guild.id).then((xdb) => {
                 xdb.congratsDatabase.forEach((value, key, map) => {
                     if (value === whatToPlayS) {
@@ -1885,9 +1896,9 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                 } else if (reaction.emoji.name === '⏹') {
                     runStopPlayingCommand(message, mgid, voiceChannel);
                 } else if (reaction.emoji.name === '🔑') {
-                    runKeysCommand(message, prefixMap[mgid], mgid, "");
+                    runKeysCommand(message, prefixMap[mgid], mgid, "", voiceChannel);
                 } else if (reaction.emoji.name === '🔐') {
-                    runKeysCommand(message, prefixMap[mgid], "p" + reactionCollector.id, "m");
+                    runKeysCommand(message, prefixMap[mgid], "p" + reactionCollector.id, "m", voiceChannel);
                 }
             });
         });
