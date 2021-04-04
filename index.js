@@ -443,7 +443,11 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                     if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
                         message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + foundStrings + "*");
                     } else {
-                        message.channel.send("*Could not find '" + keyName + "'*");
+                        let dbType = "the server's";
+                        if (message.content.substr(1,1) === "m") {
+                            dbType = "your";
+                        }
+                        message.channel.send("*could not find '" + keyName + "' in " + dbType + " database*");
                     }
 
                 });
@@ -896,7 +900,7 @@ async function runCommandCases(message) {
         case "a":
             if (!args[1] || !args[2]) {
                 return message.channel.send(
-                    "Could not add to the database. Put a desired name followed by a link. *(ex: "
+                    "Incorrect format. Put a desired key-name followed by a link. *(ex: "
                     + prefixString + "a [key] [link])*"
                 );
             }
@@ -1712,9 +1716,17 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     // set stream flag and validate link
     if (whatToPlayS.includes("spotify.com")) {
         isSpotify = true;
-        if (!spdl.validateURL(url)) return message.channel.send('Invalid link');
+        if (!spdl.validateURL(url)) {
+            message.channel.send('Invalid link');
+            searchForBrokenLinkWithinDB(message, whatToPlayS);
+            return;
+        }
     } else {
-        if (!ytdl.validateURL(url)) return message.channel.send('Invalid link');
+        if (!ytdl.validateURL(url)) {
+            message.channel.send('Invalid link');
+            searchForBrokenLinkWithinDB(message, whatToPlayS);
+            return;
+        }
     }
     // remove previous embed buttons
     if (embedMessageMap[message.guild.id]) {
@@ -1767,22 +1779,31 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
             // Error catching - fault with the link?
             message.channel.send("Could not play <" + whatToPlayS + ">");
             // search the db to find possible broken keys
-            gsrun(client2, "A", "B", message.channel.guild.id).then((xdb) => {
-                xdb.congratsDatabase.forEach((value, key, map) => {
-                    if (value === whatToPlayS) {
-                        return message.channel.send("Possible broken link within the server db: " + key);
-                    }
-                })
-            });
-            gsrun(client2, "A", "B", "p" + message.member.id).then((xdb) => {
-                xdb.congratsDatabase.forEach((value, key, map) => {
-                    if (value === whatToPlayS) {
-                        return message.channel.send("Possible broken link within the personal db: " + key);
-                    }
-                })
-            });
+            searchForBrokenLinkWithinDB(message, whatToPlayS);
             connection.disconnect();
         }
+    });
+}
+
+/**
+ * Searches the guild db and personal message db for a broken link
+ * @param message The message
+ * @param whatToPlayS The broken link provided as a string
+ */
+function searchForBrokenLinkWithinDB(message, whatToPlayS) {
+    gsrun(client2, "A", "B", message.channel.guild.id).then((xdb) => {
+        xdb.congratsDatabase.forEach((value, key, map) => {
+            if (value === whatToPlayS) {
+                return message.channel.send("*possible broken link within the server db: " + key + "*");
+            }
+        })
+    });
+    gsrun(client2, "A", "B", "p" + message.member.id).then((xdb) => {
+        xdb.congratsDatabase.forEach((value, key, map) => {
+            if (value === whatToPlayS) {
+                return message.channel.send("*possible broken link within the personal db: " + key + "*");
+            }
+        })
     });
 }
 
@@ -1840,7 +1861,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
     if (url === whatspMap[voiceChannel])
     message.channel.send(embed)
         .then(async function (sentMsg) {
-            if (!showButtons || !dispatcherMap[voiceChannel]) return;
+            if (!showButtons || whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
             sentMsg.react('⏪').then(() => {
                 if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                 sentMsg.react('⏯').then(() => {
@@ -1955,6 +1976,10 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
     }
     if (args[1]) {
         gsrun(client2, "A", "B", sheetname).then((xdb) => {
+            let dbType = "the server's";
+            if (args[0].substr(1,1) === "m") {
+                dbType = "your";
+            }
             if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
                 message.channel.send(xdb.referenceDatabase.get(args[1].toUpperCase()));
             } else if (
@@ -1964,18 +1989,18 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
                 message.channel.send(
                     "Could not find '" +
                     args[1] +
-                    "' in database.\nCurrently playing: " +
+                    "' in " + dbType + " database.\nCurrently playing: " +
                     whatspMap[message.member.voice.channel]
                 );
             } else if (whatspMap[message.member.voice.channel]) {
                 message.channel.send(
                     "Could not find '" +
                     args[1] +
-                    "' in database.\n" +
+                    "' in " + dbType + " database.\n" +
                     whatspMap[message.member.voice.channel]
                 );
             } else {
-                message.channel.send("Could not find '" + args[1] + "' in database.");
+                message.channel.send("Could not find '" + args[1] + "' in " + dbType + " database.");
             }
         });
     } else {
