@@ -1841,13 +1841,13 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
             if (!showButtons || !dispatcherMap[voiceChannel]) return;
             let wsp = whatspMap[voiceChannel];
             sentMsg.react('⏪').then(() => {
-                if (whatspMap[voiceChannel] !== wsp && !dispatcherMap[voiceChannel]) return;
+                if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                 sentMsg.react('⏯').then(() => {
-                    if (whatspMap[voiceChannel] !== wsp) return;
+                    if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                     sentMsg.react('⏹').then(() => {
-                        if (whatspMap[voiceChannel] !== wsp) return;
+                        if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                         sentMsg.react('⏩').then(() => {
-                            if (whatspMap[voiceChannel] !== wsp && !dispatcherMap[voiceChannel]) return;
+                            if (whatspMap[voiceChannel] !== wsp) return;
                             sentMsg.react('🔑').then(sentMsg.react('🔐'));
                         });
                     });
