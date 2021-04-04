@@ -1836,10 +1836,11 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
         embedMessageMap[message.guild.id].reactions.removeAll().then();
         embedMessageMap[message.guild.id] = "";
     }
+    let wsp = whatspMap[voiceChannel];
+    if (url === whatspMap[voiceChannel])
     message.channel.send(embed)
         .then(async function (sentMsg) {
             if (!showButtons || !dispatcherMap[voiceChannel]) return;
-            let wsp = whatspMap[voiceChannel];
             sentMsg.react('⏪').then(() => {
                 if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                 sentMsg.react('⏯').then(() => {
