@@ -388,6 +388,9 @@ function skipSong(message, voiceChannel, playMessageToChannel) {
     }
     if (!voiceChannel) {
         voiceChannel = message.member.voice.channel;
+        if (!voiceChannel) {
+            return;
+        }
     }
     // if server queue is not empty
     if (
@@ -1697,7 +1700,7 @@ bot.on("voiceStateUpdate", update => {
  * @param voiceChannel the voice channel
  */
 function playSongToVC(message, whatToPlay, voiceChannel) {
-    if (voiceChannel.members.size < 1 || !whatToPlay) {
+    if (!voiceChannel || voiceChannel.members.size < 1 || !whatToPlay) {
         return;
     }
     let server = servers[message.guild.id];
