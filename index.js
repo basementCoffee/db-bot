@@ -1806,12 +1806,8 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
     }
     // remove previous embed buttons
     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
-        try {
-            embedMessageMap[message.guild.id].reactions.removeAll().then();
-            embedMessageMap[message.guild.id] = "";
-        } catch (e) {
-            console.log("CAUGHT11");
-        }
+        embedMessageMap[message.guild.id].reactions.removeAll().then();
+        embedMessageMap[message.guild.id] = "";
     }
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
@@ -1848,12 +1844,8 @@ function playSongToVC(message, whatToPlay, voiceChannel) {
                     playSongToVC(message, whatsp, voiceChannel);
                 } else {
                     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
-                        try {
-                            embedMessageMap[message.guild.id].reactions.removeAll().then();
-                            embedMessageMap[message.guild.id] = "";
-                        } catch (e) {
-                            console.log("CAUGHT112");
-                        }
+                        embedMessageMap[message.guild.id].reactions.removeAll().then();
+                        embedMessageMap[message.guild.id] = "";
                     }
                     connection.disconnect();
                     dispatcherMap[voiceChannel] = undefined;
@@ -1911,7 +1903,6 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
     if (url.toString().includes("spotify.com")) {
         isSpotify = true;
     }
-
     if (isSpotify) {
         const infos = await spdl.getInfo(url);
         embed = new MessageEmbed()
@@ -1941,12 +1932,8 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
     }
     embed.setThumbnail(imgLink);
     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
-        try {
-            embedMessageMap[message.guild.id].reactions.removeAll().then();
-            embedMessageMap[message.guild.id] = "";
-        } catch (e) {
-            console.log("CAUGHT13");
-        }
+        embedMessageMap[message.guild.id].reactions.removeAll().then();
+        embedMessageMap[message.guild.id] = "";
     }
     let wsp = whatspMap[voiceChannel];
     if (url === whatspMap[voiceChannel])
@@ -1957,18 +1944,18 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                     newWhat = false;
                     return;
                 }
-                if (!showButtons || whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel] || embedMessageMap[mgid].id !== sentMsg.id) return;
+                if (!showButtons || whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                 sentMsg.react('⏪').then(() => {
-                    if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel] || embedMessageMap[mgid].id !== sentMsg.id) return;
+                    if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                     sentMsg.react('⏯').then(() => {
-                        if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel] || embedMessageMap[mgid].id !== sentMsg.id) return;
+                        if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                         sentMsg.react('⏹').then(() => {
-                            if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel] || embedMessageMap[mgid].id !== sentMsg.id) return;
+                            if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                             sentMsg.react('⏩').then(() => {
-                                if (whatspMap[voiceChannel] !== wsp || embedMessageMap[mgid].id !== sentMsg.id) return;
+                                if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                                 sentMsg.react('🔑').then(() => {
+                                    if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
                                     sentMsg.react('🔐').then(() => {
-                                        if (whatspMap[voiceChannel] !== wsp || embedMessageMap[mgid].id !== sentMsg.id) return;
                                         generatingEmbedMap[mgid] = false
                                     });
                                 });
@@ -2043,12 +2030,8 @@ function runStopPlayingCommand(message, mgid, voiceChannel) {
         servers[mgid].queueHistory = [];
     }
     if (embedMessageMap[message.guild.id]) {
-        try {
-            embedMessageMap[message.guild.id].reactions.removeAll().then();
-            embedMessageMap[message.guild.id] = "";
-        } catch (e) {
-            console.log("CAUGHT14");
-        }
+        embedMessageMap[message.guild.id].reactions.removeAll().then();
+        embedMessageMap[message.guild.id] = "";
     }
     if (voiceChannel) {
         voiceChannel.leave();
