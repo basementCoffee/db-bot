@@ -715,35 +715,20 @@ async function runCommandCases(message) {
             break;
         // !r is a random that works with the normal queue
         case "r":
-            if (!message.member.voice.channel) {
-                return;
-            }
             runRandomToQueue(args[1], message, mgid);
             break;
         case "rand":
-            if (!message.member.voice.channel) {
-                return;
-            }
             runRandomToQueue(args[1], message, mgid);
             break;
         // !gr is the global random to work with the normal queue
         case "gr":
-            if (!message.member.voice.channel) {
-                return;
-            }
             runRandomToQueue(args[1], message, "entries");
             break;
         // !mr is the personal random that works with the normal queue
         case "mr":
-            if (!message.member.voice.channel) {
-                return;
-            }
             runRandomToQueue(args[1], message, "p" + message.member.id);
             break;
         case "mrand":
-            if (!message.member.voice.channel) {
-                return;
-            }
             runRandomToQueue(args[1], message, "p" + message.member.id);
             break;
         // !keys is server keys
@@ -1291,6 +1276,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
         return true;
     }
     if (!message.member.voice.channel) {
+        message.channel.send("must be in a voice channel");
         return true;
     }
     if (!servers[message.guild.id]) {
@@ -1542,6 +1528,10 @@ function sendHelp(message, prefixString) {
  * @param sheetname The name of the sheet to reference
  */
 function runRandomToQueue(num, message, sheetname) {
+    if (!message.member.voice.channel) {
+        message.channel.send("must be in a voice channel");
+        return;
+    }
     try {
         num = parseInt(num);
     } catch (e) {
@@ -1770,7 +1760,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
 
 
 bot.on("voiceStateUpdate", update => {
-    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions || update.member.id === bot.id) {
+    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions && update.member.id === bot.id) {
         dispatcherMap[update.channel] = undefined;
         embedMessageMap[update.guild.id].reactions.removeAll().then()
     }
