@@ -551,7 +551,6 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
  * @param message The message that triggered the bot
  * @param args The message broken into args
  * @param mgid The message guild id
- * @param url The url to play
  */
 function runPlayLinkCommand(message, args, mgid) {
     if (!message.member.voice.channel) {
@@ -2108,45 +2107,35 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
             whatspMap[message.member.voice.channel] &&
             whatspMap[message.member.voice.channel] !== ""
         ) {
-            // in case of force disconnect
-            if (
-                !message.guild.client.voice ||
-                !message.guild.voice ||
-                !message.guild.voice.channel
-            ) {
-                try {
+            try {
+                if (
+                    whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0
+                ) {
+
+                    // in case of force disconnect
                     if (
-                        whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0
+                        !message.guild.client.voice ||
+                        !message.guild.voice ||
+                        !message.guild.voice.channel
                     ) {
-                        let msg = embedMessageMap[mgid];
-                        if (msg) {
-                            if (!generatingEmbedMap[mgid]) {
-                                embedMessageMap[mgid] = "";
-                                await msg.reactions.removeAll();
-                                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then().catch()
-                            } else {
-                                message.channel.send("*previous embed is generating...*");
-                            }
-                        }
-                    } else {
-                        message.channel.send("Nothing is playing right now");
-                    }
-                } catch (e) {
-                    message.channel.send(whatspMap[message.member.voice.channel]);
-                }
-            } else {
-                let msg = embedMessageMap[mgid];
-                if (msg) {
-                    if (!generatingEmbedMap[mgid]) {
-                        embedMessageMap[mgid] = "";
-                        await msg.reactions.removeAll();
                         sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then().catch()
-                    } else {
-                        message.channel.send("*previous embed is generating...*");
+                        return;
+                    }
+                    let msg = embedMessageMap[mgid];
+                    if (msg) {
+                        if (!generatingEmbedMap[mgid]) {
+                            embedMessageMap[mgid] = "";
+                            await msg.reactions.removeAll();
+                            sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then().catch()
+                        } else {
+                            message.channel.send("*previous embed is generating...*");
+                        }
                     }
                 } else {
                     message.channel.send("Nothing is playing right now");
                 }
+            } catch (e) {
+                message.channel.send(whatspMap[message.member.voice.channel]);
             }
         } else {
             message.channel.send("Nothing is playing right now");
