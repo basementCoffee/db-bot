@@ -1768,7 +1768,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
 
 
 bot.on("voiceStateUpdate", update => {
-    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions || update.member.id === bot.id){
+    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions || update.member.id === bot.id) {
         dispatcherMap[update.channel] = undefined;
         embedMessageMap[update.guild.id].reactions.removeAll().then()
     }
@@ -2000,7 +2000,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                         }
                         let song = servers[mgid].queueHistory.pop();
                         if (!song) {
-                            // message.channel.send("*could not rewind*");
+                            message.channel.send("*could not rewind*");
                             return;
                         }
                         message.channel.send("*rewound*");
