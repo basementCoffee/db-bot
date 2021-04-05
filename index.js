@@ -685,9 +685,22 @@ async function runCommandCases(message) {
             break;
         // !s prints out the database size
         case "s":
-            message.channel.send(
-                "Database size: " + Array.from(congratsDatabase.keys()).length
-            );
+            if (!args[1]){
+                message.channel.send(
+                    "Database size: " + Array.from(congratsDatabase.keys()).length
+                );
+                return;
+            }
+            gsrun(client2, "A", "B", mgid).then(async (xdb) => {
+                ss = runSearchCommand(args[1], xdb).ss;
+                if (ss && ss.length > 0) {
+                    message.channel.send("Keys found: " + ss);
+                } else {
+                    message.channel.send(
+                        "Could not find any keys that start with the given letters."
+                    );
+                }
+            });
             break;
         // !gd is to run database songs
         case "gd":
@@ -760,6 +773,23 @@ async function runCommandCases(message) {
             break;
         // !k is the search
         case "k":
+            if (!args[1]) {
+                message.channel.send("No argument was given.");
+                return;
+            }
+            gsrun(client2, "A", "B", mgid).then(async (xdb) => {
+                ss = runSearchCommand(args[1], xdb).ss;
+                if (ss && ss.length > 0) {
+                    message.channel.send("Keys found: " + ss);
+                } else {
+                    message.channel.send(
+                        "Could not find any keys that start with the given letters."
+                    );
+                }
+            });
+            break;
+        // !search is the search
+        case "search":
             if (!args[1]) {
                 message.channel.send("No argument was given.");
                 return;
@@ -1142,10 +1172,11 @@ async function runCommandCases(message) {
                     message.member.voice.channel
                 ) {
                     const numToCheck = message.member.voice.channel.members.size;
-                    if (numToCheck <= 1) {
+                    if (numToCheck < 1) {
                         message.channel.send(
-                            "Need at least 2 people your voice channel."
+                            "Need at least 1 person in a voice channel."
                         );
+                        return;
                     }
                     let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
                     message.channel.send(
