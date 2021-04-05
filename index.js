@@ -1768,16 +1768,18 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
 
 
 bot.on("voiceStateUpdate", update => {
-    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions && update.member.id === bot.id)
-        embedMessageMap[update.guild.id].reactions.removeAll().then();
+    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions || update.member.id === bot.id){
+        dispatcherMap[update.channel] = undefined;
+        embedMessageMap[update.guild.id].reactions.removeAll().then()
+    }
 });
 
 
 /**
- *  New play song function.
- * @param {*} message the message with channel info
+ *  The play song function. Plays a song to the voice channel.
+ * @param {*} message the message that triggered the bot
  * @param {*} whatToPlay the link of the song to play
- * @param voiceChannel the voice channel
+ * @param voiceChannel the voice channel to play the song in
  */
 function playSongToVC(message, whatToPlay, voiceChannel) {
     if (!voiceChannel || voiceChannel.members.size < 1 || !whatToPlay) {
@@ -1998,7 +2000,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                         }
                         let song = servers[mgid].queueHistory.pop();
                         if (!song) {
-                            message.channel.send("*could not rewind*");
+                            // message.channel.send("*could not rewind*");
                             return;
                         }
                         message.channel.send("*rewound*");
