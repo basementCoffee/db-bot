@@ -444,7 +444,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                         message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + foundStrings + "*");
                     } else {
                         let dbType = "the server's";
-                        if (message.content.substr(1,1) === "m") {
+                        if (message.content.substr(1,1).toLowerCase() === "m") {
                             dbType = "your";
                         }
                         message.channel.send("*could not find '" + keyName + "' in " + dbType + " database*");
@@ -1183,7 +1183,7 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
     if (printMsgToChannel) {
         let ps = prefixMap[message.guild.id];
         // the specific database user-access character
-        let databaseType = args[0].substr(1, 1);
+        let databaseType = args[0].substr(1, 1).toLowerCase();
         if (databaseType === "a") {
             databaseType = "";
         }
@@ -1599,8 +1599,9 @@ function addRandomToQueue(message, numOfTimes, cdb) {
  * @param {*} sheetname The name of the sheet to retrieve
  * @param cmdType the prefix to call the keys being displayed
  * @param voiceChannel optional, a specific voice channel to use besides the message's
+ * @param user optional user name, overrides the message owner's name
  */
-function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel) {
+function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel, user) {
     if (
         !dataSize.get(sheetname.toString()) ||
         dataSize.get(sheetname.toString()) < 1
@@ -1632,8 +1633,14 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel)
         } else {
             let dbName = "";
             let keysMessage = "";
+
             if (cmdType === "m") {
-                let name = message.member.nickname;
+                let name;
+                if (user){
+                    name = user.username;
+                } else {
+                    name = message.member.nickname;
+                }
                 if (!name) {
                     name = message.author.username
                 }
@@ -1673,12 +1680,13 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel)
                     } else if (reaction.emoji.name === '🔀') {
                         for (let mem of voiceChannel.members) {
                             if (reactionCollector.id === mem[1].id) {
-                                if (dbName) {
-                                    message.channel.send("*randomizing from " + dbName + "...*");
+                                if (reactionCollector.username) {
+                                    message.channel.send("*randomizing from " + reactionCollector.username + "'s keys...*");
                                 } else {
                                     message.channel.send("*randomizing...*");
                                 }
-                                runRandomToQueue(100, message, sheetname);
+                                    runRandomToQueue(100, message, "p"+ reactionCollector.id);
+
                                 return;
                             }
                         }
@@ -1859,74 +1867,75 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
     }
     let wsp = whatspMap[voiceChannel];
     if (url === whatspMap[voiceChannel])
-    message.channel.send(embed)
-        .then(async function (sentMsg) {
-            if (!showButtons || whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
-            sentMsg.react('⏪').then(() => {
-                if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
-                sentMsg.react('⏯').then(() => {
+        message.channel.send(embed)
+            .then(async function (sentMsg) {
+                if (!showButtons || whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
+                sentMsg.react('⏪').then(() => {
                     if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
-                    sentMsg.react('⏹').then(() => {
+                    sentMsg.react('⏯').then(() => {
                         if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
-                        sentMsg.react('⏩').then(() => {
-                            if (whatspMap[voiceChannel] !== wsp) return;
-                            sentMsg.react('🔑').then(sentMsg.react('🔐'));
+                        sentMsg.react('⏹').then(() => {
+                            if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
+                            sentMsg.react('⏩').then(() => {
+                                if (whatspMap[voiceChannel] !== wsp) return;
+                                sentMsg.react('🔑').then(sentMsg.react('🔐'));
+                            });
                         });
                     });
                 });
-            });
 
-            embedMessageMap[message.guild.id] = sentMsg;
+                embedMessageMap[message.guild.id] = sentMsg;
 
-            const filter = (reaction, user) => {
-                if (voiceChannel) {
-                    for (let mem of voiceChannel.members) {
-                        if (user.id === mem[1].id) {
-                            return ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
+                const filter = (reaction, user) => {
+                    if (voiceChannel) {
+                        for (let mem of voiceChannel.members) {
+                            if (user.id === mem[1].id) {
+                                return ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
+                            }
                         }
                     }
-                }
-                return false;
-            };
+                    return false;
+                };
 
-            const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
+                const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
 
-            collector.on('collect', (reaction, reactionCollector) => {
-                if (!dispatcherMap[voiceChannel] || !voiceChannel) {
-                    return;
-                }
-                if (reaction.emoji.name === '⏩') {
-                    skipSong(message, voiceChannel, true);
-                } else if (reaction.emoji.name === '⏯' &&
-                    (!dispatcherMapStatus[voiceChannel] ||
-                        dispatcherMapStatus[voiceChannel] === "resume")) {
-                    dispatcherMap[voiceChannel].pause();
-                    dispatcherMapStatus[voiceChannel] = "pause";
-                } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel] === "pause") {
-                    dispatcherMap[voiceChannel].resume();
-                    dispatcherMapStatus[voiceChannel] = "resume";
-                } else if (reaction.emoji.name === '⏪') {
-                    if (servers[mgid].queue.length > (maxQueueSize + 99)) {
-                        message.channel.send("*max queue size has been reached, cannot rewind further*");
+                collector.on('collect', (reaction, reactionCollector) => {
+                    if (!dispatcherMap[voiceChannel] || !voiceChannel) {
                         return;
                     }
-                    let song = servers[mgid].queueHistory.pop();
-                    if (!song) {
-                        message.channel.send("*could not rewind*");
-                        return;
+                    if (reaction.emoji.name === '⏩') {
+                        skipSong(message, voiceChannel, true);
+                    } else if (reaction.emoji.name === '⏯' &&
+                        (!dispatcherMapStatus[voiceChannel] ||
+                            dispatcherMapStatus[voiceChannel] === "resume")) {
+                        dispatcherMap[voiceChannel].pause();
+                        dispatcherMapStatus[voiceChannel] = "pause";
+                    } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel] === "pause") {
+                        dispatcherMap[voiceChannel].resume();
+                        dispatcherMapStatus[voiceChannel] = "resume";
+                    } else if (reaction.emoji.name === '⏪') {
+                        if (servers[mgid].queue.length > (maxQueueSize + 99)) {
+                            message.channel.send("*max queue size has been reached, cannot rewind further*");
+                            return;
+                        }
+                        let song = servers[mgid].queueHistory.pop();
+                        if (!song) {
+                            message.channel.send("*could not rewind*");
+                            return;
+                        }
+                        message.channel.send("*rewound*");
+                        servers[mgid].queue.unshift(song);
+                        playSongToVC(message, song, voiceChannel);
+                    } else if (reaction.emoji.name === '⏹') {
+                        runStopPlayingCommand(message, mgid, voiceChannel);
+                    } else if (reaction.emoji.name === '🔑') {
+                        runKeysCommand(message, prefixMap[mgid], mgid, "", voiceChannel, "");
+                    } else if (reaction.emoji.name === '🔐') {
+                        // console.log(reaction.users.valueOf().array().pop());
+                        runKeysCommand(message, prefixMap[mgid], "p" + reactionCollector.id, "m", voiceChannel, reactionCollector);
                     }
-                    message.channel.send("*rewound*");
-                    servers[mgid].queue.unshift(song);
-                    playSongToVC(message, song, voiceChannel);
-                } else if (reaction.emoji.name === '⏹') {
-                    runStopPlayingCommand(message, mgid, voiceChannel);
-                } else if (reaction.emoji.name === '🔑') {
-                    runKeysCommand(message, prefixMap[mgid], mgid, "", voiceChannel);
-                } else if (reaction.emoji.name === '🔐') {
-                    runKeysCommand(message, prefixMap[mgid], "p" + reactionCollector.id, "m", voiceChannel);
-                }
+                });
             });
-        });
 }
 
 /**
@@ -1977,7 +1986,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
     if (args[1]) {
         gsrun(client2, "A", "B", sheetname).then((xdb) => {
             let dbType = "the server's";
-            if (args[0].substr(1,1) === "m") {
+            if (args[0].substr(1,1).toLowerCase() === "m") {
                 dbType = "your";
             }
             if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
