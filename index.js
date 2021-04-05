@@ -377,12 +377,12 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 const version = "1.1.0";
-var servers = {};
+const servers = {};
 bot.login(token);
 // the max size of the queue
 const maxQueueSize = 500;
-var keyArray;
-var s;
+let keyArray;
+let s;
 
 /**
  * Determines whether the message contains a form of congratulations
@@ -1224,7 +1224,7 @@ bot.on("message", (message) => {
             }
         }
     } else {
-        runCommandCases(message);
+        runCommandCases(message).then();
     }
 });
 
@@ -1681,9 +1681,11 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
     gsrun(client2, "A", "B", sheetname).then((xdb) => {
         keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
         s = "";
+        let firstLetter = true;
         for (let key in keyArray) {
-            if (key == 0) {
+            if (firstLetter) {
                 s = keyArray[key];
+                firstLetter = false;
             } else {
                 s = s + ", " + keyArray[key];
             }
@@ -1722,8 +1724,9 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
                 keysMessage += "**Server keys ** ";
                 dbName = "server's keys";
             }
-            keysMessage += "*(use '" + prefixString + cmdType + "d [key]' to play)*\n" + s;
-            message.channel.send(keysMessage).then(async sentMsg => {
+            let embedKeysMessage = new MessageEmbed();
+            embedKeysMessage.setTitle(keysMessage).setDescription(s).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
+            message.channel.send(embedKeysMessage).then(async sentMsg => {
                 sentMsg.react('❔').then(() => sentMsg.react('🔀'));
                 const filter = (reaction, user) => {
                     return ['🔀', '❔'].includes(reaction.emoji.name) && user.id !== bot.user.id;
@@ -1936,7 +1939,6 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
         embedMessageMap[message.guild.id].reactions.removeAll().then();
         embedMessageMap[message.guild.id] = "";
     }
-    let wsp = whatspMap[voiceChannel];
     if (url === whatspMap[voiceChannel])
         message.channel.send(embed)
             .then(await function (sentMsg) {
@@ -1945,17 +1947,18 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                     newWhat = false;
                     return;
                 }
-                if (!showButtons || whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
+                let serverSize = servers[mgid].queue.length;
+                if (!showButtons || !dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
                 sentMsg.react('⏪').then(() => {
-                    if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
+                    if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
                     sentMsg.react('⏯').then(() => {
-                        if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
+                        if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
                         sentMsg.react('⏹').then(() => {
-                            if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
+                            if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
                             sentMsg.react('⏩').then(() => {
-                                if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
+                                if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
                                 sentMsg.react('🔑').then(() => {
-                                    if (whatspMap[voiceChannel] !== wsp || !dispatcherMap[voiceChannel]) return;
+                                    if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
                                     sentMsg.react('🔐').then(() => {
                                         generatingEmbedMap[mgid] = false
                                     });
@@ -2144,23 +2147,23 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
 }
 
 // What's playing, uses voice channel
-var whatspMap = new Map();
+let whatspMap = new Map();
 // The server's prefix, uses guild id
-var prefixMap = new Map();
+let prefixMap = new Map();
 // What is returned when searching the db, uses key-name
-var congratsDatabase = new Map();
+let congratsDatabase = new Map();
 // Reference for the congrats database, uses uppercase key-name
-var referenceDatabase = new Map();
+let referenceDatabase = new Map();
 // Whether silence mode is on (true, false), uses guild id
-var silenceMap = new Map();
+let silenceMap = new Map();
 // The dataSize, uses sheet name
-var dataSize = new Map();
+let dataSize = new Map();
 // The song stream, uses voice channel
-var dispatcherMap = new Map();
+let dispatcherMap = new Map();
 // The list of embeds, uses guild id
-var embedMessageMap = new Map();
+let embedMessageMap = new Map();
 // The status of a dispatcher, either "pause" or "resume"
-var dispatcherMapStatus = new Map();
+let dispatcherMapStatus = new Map();
 // status of generating embed for a guild
-var generatingEmbedMap = new Map();
+let generatingEmbedMap = new Map();
 
