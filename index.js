@@ -438,7 +438,7 @@ function skipSong(message, voiceChannel, playMessageToChannel) {
         if (playMessageToChannel) message.channel.send("*skipped*");
         // if there is still items in the queue then play next song
         if (servers[message.guild.id].queue.length > 0) {
-            whatspMap[message.member.voice.channel] =
+            whatspMap[voiceChannel] =
                 servers[message.guild.id].queue[0];
             // get rid of previous dispatch
             playSongToVC(message, whatspMap[voiceChannel], voiceChannel);
