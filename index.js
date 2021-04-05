@@ -13,6 +13,9 @@ const client2 = new google.auth.JWT(client_email, null, private_key, [
     "https://www.googleapis.com/auth/spreadsheets",
 ]);
 
+/**
+ * Authorizes the google client
+ */
 client2.authorize(function (err, tokens) {
     if (err) {
         console.log(err);
@@ -21,6 +24,16 @@ client2.authorize(function (err, tokens) {
     }
 });
 
+/**
+ * Runs an update over the sheet and updates local variables. Returns the respective keys
+ * and values within two maps. The CDB is unaltered keys and values while the RDB containes toUpper values.
+ * keys
+ * @param cl The google client
+ * @param columnToRun The column letter/string to get the keys
+ * @param secondColumn The column letter/string to get the values
+ * @param nameOfSheet The name of the sheet to get the values from
+ * @returns {Promise<{congratsDatabase: Map<any, any>, line: [], referenceDatabase: Map<any, any>}|*>}
+ */
 async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
     const gsapi = google.sheets({version: "v4", auth: cl});
 
@@ -128,6 +141,13 @@ function createSheet(message, nameOfSheet) {
     );
 }
 
+/**
+ * Deletes the respective rows within the google sheets
+ * @param message The message that triggered the command
+ * @param sheetName The name of the sheet to edit
+ * @param rowNumber The row to delete
+ * @returns {Promise<void>}
+ */
 async function deleteRows(message, sheetName, rowNumber) {
     const gsapi = google.sheets({version: "v4", auth: client2});
     let res;
@@ -178,7 +198,12 @@ async function deleteRows(message, sheetName, rowNumber) {
     );
 }
 
-
+/**
+ * Creates a google sheet with the given name and adds an initial
+ * value to the database size column d.
+ * @param nameOfSheet The name of the sheet to create
+ * @returns {{}}
+ */
 function createSheetNoMessage(nameOfSheet) {
     console.log("within create sheets");
     const gsapi = google.sheets({version: "v4", auth: client2});
@@ -211,13 +236,13 @@ function createSheetNoMessage(nameOfSheet) {
 }
 
 /**
- * Adds the entry into the column
- * @param {*} cl
- * @param {*} key
- * @param {*} link
+ * Adds the entry into the column as a key, value pair.
+ * @param {*} cl The google client
+ * @param {*} key The name of the key to add, goes into the last row of the firstColumnLetter
+ * @param {*} link The name of the value to add, goes into the last row of the LastColumnLetter
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
- * @param nameOfSheet
+ * @param nameOfSheet The name of the sheet to update
  */
 function gsUpdateAdd(
     cl,
@@ -255,6 +280,13 @@ function gsUpdateAdd(
     gsUpdateOverwrite(cl, -1, 1, nameOfSheet);
 }
 
+/**
+ * Single cell add to the respective google sheets. Adds to the first row by default.
+ * @param cl The google client
+ * @param givenValue The value to input into the cell
+ * @param firstColumnLetter The column name to update
+ * @param nameOfSheet The name of the sheet to add to
+ */
 function gsUpdateAdd2(cl, givenValue, firstColumnLetter, nameOfSheet) {
     const gsapi = google.sheets({version: "v4", auth: cl});
     gsapi.spreadsheets.values
@@ -332,7 +364,6 @@ const ytdl = require("ytdl-core-discord");
 
 
 // SPOTIFY BOT IMPORTS --------------------------
-
 const spdl = require('spdl-core');
 
 function formatDuration(duration) {
@@ -344,13 +375,20 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // SPOTIFY BOT IMPORTS --------------------------
 
-
 // UPDATE HERE - Before Git Push
-const version = "1.0.2";
+const version = "1.1.0";
 var servers = {};
 bot.login(token);
-const maxQueueSize = 500; // should be one less than the actual max
-// the entire reason we built this bot
+// the max size of the queue
+const maxQueueSize = 500;
+var keyArray;
+var s;
+
+/**
+ * Determines whether the message contains a form of congratulations
+ * @param message The message that the discord client is parsing
+ * @returns {*} true if congrats is detected
+ */
 function contentsContainCongrats(message) {
     return (
         message.content.includes("grats") ||
@@ -359,8 +397,7 @@ function contentsContainCongrats(message) {
     );
 }
 
-var keyArray;
-var s;
+
 process.setMaxListeners(0);
 
 /**
@@ -444,7 +481,7 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                         message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + foundStrings + "*");
                     } else {
                         let dbType = "the server's";
-                        if (message.content.substr(1,1).toLowerCase() === "m") {
+                        if (message.content.substr(1, 1).toLowerCase() === "m") {
                             dbType = "your";
                         }
                         message.channel.send("*could not find '" + keyName + "' in " + dbType + " database*");
@@ -1636,7 +1673,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
 
             if (cmdType === "m") {
                 let name;
-                if (user){
+                if (user) {
                     name = user.username;
                 } else {
                     name = message.member.nickname;
@@ -1685,7 +1722,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
                                 } else {
                                     message.channel.send("*randomizing...*");
                                 }
-                                    runRandomToQueue(100, message, "p"+ reactionCollector.id);
+                                runRandomToQueue(100, message, "p" + reactionCollector.id);
 
                                 return;
                             }
@@ -1986,7 +2023,7 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
     if (args[1]) {
         gsrun(client2, "A", "B", sheetname).then((xdb) => {
             let dbType = "the server's";
-            if (args[0].substr(1,1).toLowerCase() === "m") {
+            if (args[0].substr(1, 1).toLowerCase() === "m") {
                 dbType = "your";
             }
             if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
@@ -2061,3 +2098,4 @@ var dispatcherMap = new Map();
 var embedMessageMap = new Map();
 // The status of a dispatcher, either "pause" or "resume"
 var dispatcherMapStatus = new Map();
+
