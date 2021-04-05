@@ -2110,6 +2110,10 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
             }
         });
     } else {
+        if (!message.member.voice.channel) {
+            message.channel.send("Must be in a voice channel");
+            return;
+        }
         if (
             whatspMap[message.member.voice.channel] &&
             whatspMap[message.member.voice.channel] !== ""
@@ -2134,8 +2138,6 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
                                 message.channel.send("*previous embed is generating...*");
                             }
                         }
-
-
                     } else {
                         message.channel.send("Nothing is playing right now");
                     }
@@ -2152,8 +2154,9 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
                     } else {
                         message.channel.send("*previous embed is generating...*");
                     }
+                } else {
+                    message.channel.send("Nothing is playing right now");
                 }
-
             }
         } else {
             message.channel.send("Nothing is playing right now");
