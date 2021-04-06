@@ -78,9 +78,6 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
 
     let dataSO = await gsapi.spreadsheets.values.get(songObjects);
     const arrayOfSpreadsheetValues = dataSO.data.values;
-    //console.log(arrayOfSpreadsheetValues);
-
-    // console.log("Database size: " + dataSize.get(nameOfSheet));
 
     let line;
     let keyT;
@@ -1085,6 +1082,26 @@ async function runCommandCases(message) {
                 message.channel.send("Need to provide volume limit (1-10)");
             }
             break;
+        case "volume":
+            if (!args[1]) {
+                return message.channel.send("Need to provide volume limit (1-10)");
+            }
+            if (!dispatcherMap[message.member.voice.channel]) {
+                return message.channel.send("*Stream could not be found*");
+            }
+            try {
+                let newVol = parseInt(args[1]);
+                if (newVol < 11 && newVol > 0) {
+                    dispatcherMap[message.member.voice.channel].setVolume(newVol / 10);
+                    message.channel.send("*volume set to " + newVol + "*");
+
+                } else {
+                    message.channel.send("Need to provide volume limit (1-10)");
+                }
+            } catch (e) {
+                message.channel.send("Need to provide volume limit (1-10)");
+            }
+            break;
         case "silence":
             if (!message.member.voice.channel) {
                 return message.channel.send("You must be in a voice channel to silence");
@@ -1157,25 +1174,14 @@ bot.on("message", (message) => {
     if (message.author.bot) return;
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
-        const messageArray = message.content.split(" ");
-        if (!servers[message.guild.id])
+        if (!servers[message.guild.id]) {
             servers[message.guild.id] = {
                 queue: [],
                 queueHistory: []
             };
-        for (let i = 0; i < messageArray.length; i++) {
-            let word = messageArray[i];
-            console.log(word);
-            if (
-                (word.includes("grats") ||
-                    word.includes("gratz") ||
-                    word.includes("ongratulation"))
-
-            ) {
-                message.channel.send("Congratulations!");
-                return playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel, true);
-            }
         }
+        message.channel.send("Congratulations!").then();
+        return playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel, false);
     } else {
         runCommandCases(message).then();
     }
