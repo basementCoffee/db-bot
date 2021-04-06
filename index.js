@@ -1811,6 +1811,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
                     }));
             }
+            dispatcher.destroy();
             dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id] && sendEmbed) {
@@ -1824,6 +1825,8 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                     if (!whatsp) {
                         return;
                     }
+                    setTimeout(() => dispatcher.pause(), 3000);
+                    setTimeout(() => dispatcher.destroy(), 5000);
                     playSongToVC(message, whatsp, voiceChannel, true);
                 } else {
                     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
