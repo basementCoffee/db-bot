@@ -1796,8 +1796,10 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
         embedMessageMap[message.guild.id] = "";
     }
     whatspMap[voiceChannel] = whatToPlayS;
-    if (!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel)
     voiceChannel.join().then(async function (connection) {
+        if (dispatcherMap[voiceChannel]) {
+            dispatcherMap[voiceChannel].destroy();
+        }
         try {
             let dispatcher;
             if (!isSpotify) {
@@ -1836,6 +1838,10 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
                         embedMessageMap[message.guild.id].reactions.removeAll().then();
                         embedMessageMap[message.guild.id] = "";
+                    }
+                    if (dispatcherMap[voiceChannel]) {
+                        dispatcherMap[voiceChannel].destroy();
+                        dispatcherMap[voiceChannel] = undefined;
                     }
                     connection.disconnect();
                     dispatcherMap[voiceChannel] = undefined;
