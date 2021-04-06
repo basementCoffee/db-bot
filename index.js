@@ -365,10 +365,10 @@ const spdl = require('spdl-core');
 
 function formatDuration(duration) {
     let seconds = duration / 1000;
-    let min = seconds / 60;
+    let min = (seconds / 60);
     let hours = Math.floor(min / 60);
     if (hours > 0) {
-        return `${hours}h ${Math.floor(min)}m`;
+        return `${hours}h ${Math.floor(min % 60)}m`;
     }
     return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
 }
@@ -2023,9 +2023,9 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                         let song = servers[mgid].queueHistory.pop();
                         if (!song) {
                             if (generatingEmbedMap[mgid]) {
-                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, false, true);
+                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, false, false);
                             } else {
-                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, true, true);
+                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, true, false);
                             }
                             message.channel.send("*replaying first song*");
                             return;
