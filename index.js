@@ -373,7 +373,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.1.4";
+const version = "1.2.0";
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -1798,7 +1798,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
         if (dispatcherMap[voiceChannel]) {
-            dispatcherMap[voiceChannel].destroy();
+            await dispatcherMap[voiceChannel].destroy();
         }
         try {
             let dispatcher;
@@ -1839,11 +1839,10 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                         embedMessageMap[message.guild.id].reactions.removeAll().then();
                         embedMessageMap[message.guild.id] = "";
                     }
+                    connection.disconnect();
                     if (dispatcherMap[voiceChannel]) {
                         dispatcherMap[voiceChannel].destroy();
-                        dispatcherMap[voiceChannel] = undefined;
                     }
-                    connection.disconnect();
                     dispatcherMap[voiceChannel] = undefined;
                 }
             });
@@ -1853,6 +1852,9 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
             // search the db to find possible broken keys
             searchForBrokenLinkWithinDB(message, whatToPlayS);
             connection.disconnect();
+            if (dispatcherMap[voiceChannel]) {
+                dispatcherMap[voiceChannel].destroy();
+            }
         }
     });
 }
