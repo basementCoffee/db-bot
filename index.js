@@ -365,7 +365,12 @@ const spdl = require('spdl-core');
 
 function formatDuration(duration) {
     let seconds = duration / 1000;
-    return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
+    let min = seconds / 60;
+    let hours = Math.floor(min / 60);
+    if (hours > 0) {
+        return `${hours}h ${Math.floor(min)}m`;
+    }
+    return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
 }
 
 spdl.setCredentials(spotifyCID, spotifySCID);
@@ -715,6 +720,9 @@ async function runCommandCases(message) {
             break;
         // !gr is the global random to work with the normal queue
         case "gr":
+            runRandomToQueue(args[1], message, "entries");
+            break;
+        case "gr2":
             runRandomToQueue(args[1], message, "entries");
             break;
         // !mr is the personal random that works with the normal queue
@@ -1128,11 +1136,14 @@ async function runCommandCases(message) {
                 sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then();
             }
             break;
-        case "gzs":
-            message.channel.send(bot.guilds.cache.size);
+        case "gzh":
+            message.channel.send("gzs - servers, gzu - uptime");
             break;
-        case "gzup":
-            message.channel.send(bot.uptime);
+        case "gzs":
+            message.channel.send("servers: " + bot.guilds.cache.size);
+            break;
+        case "gzu":
+            message.channel.send("bot uptime: " + formatDuration(bot.uptime));
             break;
         // !rand
         case "guess":
@@ -1752,7 +1763,6 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
 
 bot.on("voiceStateUpdate", update => {
     if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions && update.member.id === bot.id) {
-        dispatcherMap[update.channel] = undefined;
         embedMessageMap[update.guild.id].reactions.removeAll().then()
     }
 });
@@ -1796,12 +1806,15 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
         embedMessageMap[message.guild.id] = "";
     }
     whatspMap[voiceChannel] = whatToPlayS;
+
     voiceChannel.join().then(async function (connection) {
         if (dispatcherMap[voiceChannel]) {
             try {
                 await dispatcherMap[voiceChannel].play();
                 await dispatcherMap[voiceChannel].destroy();
-            } catch (e) {}
+            } catch (e) {
+                console.log("did not destroy");
+            }
             dispatcherMap[voiceChannel] = false;
         }
         try {
@@ -1846,9 +1859,10 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                         try {
                             dispatcherMap[voiceChannel].play();
                             dispatcherMap[voiceChannel].destroy();
-                        } catch (e) {}
+                        } catch (e) {
+                        }
                     }
-                        dispatcherMap[voiceChannel] = false;
+                    dispatcherMap[voiceChannel] = false;
                 }
             });
         } catch (e) {
@@ -1860,7 +1874,8 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
             try {
                 dispatcherMap[voiceChannel].play();
                 dispatcherMap[voiceChannel].destroy();
-            } catch (e) {}
+            } catch (e) {
+            }
         }
     });
 }
@@ -2033,13 +2048,6 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
  */
 function runStopPlayingCommand(message, mgid, voiceChannel) {
     if (!voiceChannel) return;
-    if (dispatcherMap[voiceChannel]) {
-        try {
-            dispatcherMap[voiceChannel].play();
-            dispatcherMap[voiceChannel].destroy();
-        } catch (e) {}
-    }
-    dispatcherMap[voiceChannel] = false;
     if (servers[mgid].queue) {
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
@@ -2050,6 +2058,15 @@ function runStopPlayingCommand(message, mgid, voiceChannel) {
     }
     if (voiceChannel) {
         voiceChannel.leave();
+    }
+    if (dispatcherMap[voiceChannel]) {
+        try {
+            dispatcherMap[voiceChannel].play();
+            dispatcherMap[voiceChannel].destroy();
+            dispatcherMap[voiceChannel] = false;
+        } catch (e) {
+
+        }
     }
 }
 
