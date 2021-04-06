@@ -378,7 +378,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.2.4";
+const version = "1.2.5";
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -443,7 +443,7 @@ function skipSong(message, voiceChannel, playMessageToChannel) {
             whatspMap[voiceChannel] =
                 servers[message.guild.id].queue[0];
             // get rid of previous dispatch
-            playSongToVC(message, whatspMap[voiceChannel], voiceChannel, true);
+            playSongToVC(message, whatspMap[voiceChannel], voiceChannel, true, false);
         } else {
             runStopPlayingCommand(message, message.guild.id, voiceChannel);
         }
@@ -540,7 +540,7 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
     // push to queue
     servers[mgid].queue.unshift(args[1]);
     message.channel.send("*playing now*");
-    playSongToVC(message, args[1], message.member.voice.channel, true);
+    playSongToVC(message, args[1], message.member.voice.channel, true, true);
 }
 
 /**
@@ -595,7 +595,7 @@ function runPlayLinkCommand(message, args, mgid) {
     pNums--;
     // if queue was empty then play
     if (queueWasEmpty) {
-        playSongToVC(message, args[1], message.member.voice.channel, true);
+        playSongToVC(message, args[1], message.member.voice.channel, true, false);
     } else if (pNums < 2) {
         message.channel.send("*added to queue*");
     } else {
@@ -1192,7 +1192,7 @@ bot.on("message", (message) => {
             };
         }
         message.channel.send("Congratulations!").then();
-        return playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel, false);
+        return playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel, false, true);
     } else {
         runCommandCases(message).then();
     }
@@ -1330,7 +1330,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
                     // push to queue
                     if (playRightNow) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
-                        playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), message.member.voice.channel, true);
+                        playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), message.member.voice.channel, true, false);
                         message.channel.send("*playing now*");
                         return true;
                     } else {
@@ -1366,7 +1366,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
                     // push to queue
                     if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
                         servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(args[1].toUpperCase()));
-                        playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()), message.member.voice.channel, true);
+                        playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()), message.member.voice.channel, true, false);
                         message.channel.send("*playing now*");
                         return true;
                     } else {
@@ -1389,7 +1389,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
         }
         // if queue was empty then play
         if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-            playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel, true);
+            playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel, true, false);
         }
     });
     return true;
@@ -1638,7 +1638,7 @@ function addRandomToQueue(message, numOfTimes, cdb) {
         servers[message.guild.id].queue.push(cdb.get(e));
     });
     if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-        playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel, true);
+        playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel, true, false);
     } else {
         message.channel.send("*added " + numOfTimes + " to queue*");
     }
@@ -1767,8 +1767,9 @@ bot.on("voiceStateUpdate", update => {
  * @param {*} whatToPlay the link of the song to play
  * @param voiceChannel the voice channel to play the song in
  * @param sendEmbed whether to send an embed to the text channel
+ * @param isRewind should be true if the queue increases in size with this call
  */
-function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
+function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
     if (!voiceChannel || voiceChannel.members.size < 1 || !whatToPlay) {
         return;
     }
@@ -1831,7 +1832,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
             dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id] && sendEmbed) {
-                sendLinkAsEmbed(message, url, voiceChannel).then();
+                sendLinkAsEmbed(message, url, voiceChannel, isRewind).then();
             }
             dispatcherMap[voiceChannel].on("finish", () => {
                 servers[message.guild.id].queueHistory.push(server.queue.shift());
@@ -1902,9 +1903,10 @@ function searchForBrokenLinkWithinDB(message, whatToPlayS) {
  * @param message the message to send the channel to
  * @param url the url to generate the embed for
  * @param voiceChannel the voice channel that the song is being played in
+ * @param isRewind whether the play function came from a rewind
  * @returns {Promise<void>}
  */
-async function sendLinkAsEmbed(message, url, voiceChannel) {
+async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
     let embed;
     let imgLink;
     let timeMS = 0;
@@ -1956,17 +1958,23 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                     return;
                 }
                 let serverSize = servers[mgid].queue.length; // right becomes greater on queue add, keep generating
-                if (!showButtons || !dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
+                if (!showButtons || !dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                    (isRewind && serverSize !== servers[mgid].queue.length)) return;
                 sentMsg.react('⏪').then(() => {
-                    if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
+                    if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                        (isRewind && serverSize !== servers[mgid].queue.length)) return;
                     sentMsg.react('⏯').then(() => {
-                        if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
+                        if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                            (isRewind && serverSize !== servers[mgid].queue.length)) return;
                         sentMsg.react('⏹').then(() => {
-                            if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
+                            if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                                (isRewind && serverSize !== servers[mgid].queue.length)) return;
                             sentMsg.react('⏩').then(() => {
-                                if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
+                                if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                                    (isRewind && serverSize !== servers[mgid].queue.length)) return;
                                 sentMsg.react('🔑').then(() => {
-                                    if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
+                                    if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                                        (isRewind && serverSize !== servers[mgid].queue.length)) return;
                                     sentMsg.react('🔐').then(() => {
                                         generatingEmbedMap[mgid] = false
                                     });
@@ -2013,16 +2021,16 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                         let song = servers[mgid].queueHistory.pop();
                         if (!song) {
                             if (generatingEmbedMap[mgid]) {
-                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, false);
+                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, false, true);
                             } else {
-                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, true, true);
                             }
                             message.channel.send("*replaying first song*");
                             return;
                         }
                         message.channel.send("*rewound*");
                         servers[mgid].queue.unshift(song);
-                        playSongToVC(message, song, voiceChannel, true);
+                        playSongToVC(message, song, voiceChannel, true, true);
                     } else if (reaction.emoji.name === '⏹') {
                         runStopPlayingCommand(message, mgid, voiceChannel);
                     } else if (reaction.emoji.name === '🔑') {
