@@ -633,8 +633,8 @@ async function runCommandCases(message) {
         }
         return;
     }
-    console.log(args); // see recent bot commands within console for testing
     let args = message.content.replace(/\s+/g, " ").split(" ");
+    console.log(args); // see recent bot commands within console for testing
     let statement = args[0].substr(1).toLowerCase();
     if (statement.substr(0, 1) === "g") {
         if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") {
