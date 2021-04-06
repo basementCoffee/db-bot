@@ -2004,6 +2004,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                         return;
                     }
                     if (reaction.emoji.name === '⏩') {
+                        collector.stop();
                         skipSong(message, voiceChannel, true);
                     } else if (reaction.emoji.name === '⏯' &&
                         (!dispatcherMapStatus[voiceChannel] ||
@@ -2014,6 +2015,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                         dispatcherMap[voiceChannel].resume();
                         dispatcherMapStatus[voiceChannel] = "resume";
                     } else if (reaction.emoji.name === '⏪') {
+                        collector.stop();
                         if (servers[mgid].queue.length > (maxQueueSize + 99)) {
                             message.channel.send("*max queue size has been reached, cannot rewind further*");
                             return;
@@ -2032,6 +2034,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                         servers[mgid].queue.unshift(song);
                         playSongToVC(message, song, voiceChannel, true, true);
                     } else if (reaction.emoji.name === '⏹') {
+                        collector.stop();
                         runStopPlayingCommand(message, mgid, voiceChannel);
                     } else if (reaction.emoji.name === '🔑') {
                         runKeysCommand(message, prefixMap[mgid], mgid, "", voiceChannel, "");
