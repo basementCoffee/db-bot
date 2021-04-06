@@ -722,9 +722,6 @@ async function runCommandCases(message) {
         case "gr":
             runRandomToQueue(args[1], message, "entries");
             break;
-        case "gr2":
-            runRandomToQueue(args[1], message, "entries");
-            break;
         // !mr is the personal random that works with the normal queue
         case "mr":
             runRandomToQueue(args[1], message, "p" + message.member.id);
@@ -1553,7 +1550,7 @@ function runRandomToQueue(num, message, sheetname) {
         servers[message.guild.id].queue = [];
         servers[message.guild.id].queueHistory = [];
     }
-    if (servers[message.guild.id].queue.length > maxQueueSize) {
+    if (servers[message.guild.id].queue.length >= maxQueueSize) {
         message.channel.send("*max queue size has been reached*");
         return;
     }
@@ -1565,10 +1562,6 @@ function runRandomToQueue(num, message, sheetname) {
                 if (num && num >= maxQueueSize) {
                     message.channel.send("*max limit for random is " + maxQueueSize + "*");
                     num = maxQueueSize;
-                }
-                if (servers[message.guild.id].queue.length >= maxQueueSize) {
-                    message.channel.send("*max queue size has been reached*");
-                    return;
                 }
                 addRandomToQueue(message, num, xdb.congratsDatabase);
             } catch (e) {
@@ -1962,18 +1955,18 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                     newWhat = false;
                     return;
                 }
-                let serverSize = servers[mgid].queue.length;
-                if (!showButtons || !dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
+                let serverSize = servers[mgid].queue.length; // right becomes greater on queue add, keep generating
+                if (!showButtons || !dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
                 sentMsg.react('⏪').then(() => {
-                    if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
+                    if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
                     sentMsg.react('⏯').then(() => {
-                        if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
+                        if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
                         sentMsg.react('⏹').then(() => {
-                            if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
+                            if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
                             sentMsg.react('⏩').then(() => {
-                                if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
+                                if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
                                 sentMsg.react('🔑').then(() => {
-                                    if (!dispatcherMap[voiceChannel] || serverSize !== servers[mgid].queue.length) return;
+                                    if (!dispatcherMap[voiceChannel] || serverSize > servers[mgid].queue.length) return;
                                     sentMsg.react('🔐').then(() => {
                                         generatingEmbedMap[mgid] = false
                                     });
@@ -1993,7 +1986,9 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
                     }
                     return false;
                 };
-
+                if (timeMS < 3600000) {
+                    timeMS = 3600000;
+                }
                 const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
 
                 collector.on('collect', (reaction, reactionCollector) => {
