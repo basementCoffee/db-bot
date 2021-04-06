@@ -510,10 +510,7 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
         return;
     }
     if (!args[1]) {
-        message.channel.send(
-            "What should I play now? Put a link or a db key."
-        );
-        return;
+        return message.channel.send("What should I play now? Put a link or a db key.");
     }
     if (!servers[mgid])
         servers[mgid] = {
@@ -533,12 +530,10 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
         servers[mgid].queueHistory = [];
     }
     if (servers[mgid].queue.length >= maxQueueSize) {
-        message.channel.send("*max queue size has been reached*");
-        return;
+        return message.channel.send("*max queue size has been reached*");
     }
     if (!args[1].includes(".")) {
-        runDatabasePlayCommand(args, message, sheetName, true, false);
-        return;
+        return runDatabasePlayCommand(args, message, sheetName, true, false);
     }
     // push to queue
     servers[mgid].queue.unshift(args[1]);
@@ -560,18 +555,11 @@ function runPlayLinkCommand(message, args, mgid) {
         if (dispatcherMap[mgid] && dispatcherMapStatus[message.member.voice.channel] === "pause") {
             message.channel.send("*playing*");
         }
-        message.channel.send("Where's the link? I can't read your mind... unfortunately.");
-        return;
+        return message.channel.send("Where's the link? I can't read your mind... unfortunately.");
     }
     if (!args[1].includes(".")) {
         // message.channel.send("*I think you should be using " + prefixMap[mgid] + "d but ok then...*");
-        runDatabasePlayCommand(args, message, mgid, false, false);
-        return;
-    }
-    if (args[1].includes("spotify.com")) {
-        if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
-    } else {
-        if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
+        return runDatabasePlayCommand(args, message, mgid, false, false);
     }
     if (!servers[mgid])
         servers[mgid] = {
@@ -641,15 +629,12 @@ async function runCommandCases(message) {
     let firstWordBegin = message.content.substr(0, 14).trim() + " ";
     if (firstWordBegin.substr(0, 1) !== prefixString) {
         if (firstWordBegin === "!changeprefix " || firstWordBegin === "!keys " || firstWordBegin === "!h " || firstWordBegin === "!help ") {
-            message.channel.send(
-                "Current prefix is: " +
-                prefixString
-            );
+            message.channel.send("Current prefix is: " + prefixString);
         }
         return;
     }
+    console.log(args); // see recent bot commands within console for testing
     let args = message.content.replace(/\s+/g, " ").split(" ");
-    console.log(args); // see recent bot commands within console
     let statement = args[0].substr(1).toLowerCase();
     if (statement.substr(0, 1) === "g") {
         if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") {
@@ -696,10 +681,7 @@ async function runCommandCases(message) {
         // !s prints out the database size
         case "s":
             if (!args[1]) {
-                message.channel.send(
-                    "Database size: " + Array.from(congratsDatabase.keys()).length
-                );
-                return;
+                return message.channel.send("Database size: " + Array.from(congratsDatabase.keys()).length);
             }
             gsrun(client2, "A", "B", mgid).then(async (xdb) => {
                 ss = runSearchCommand(args[1], xdb).ss;
@@ -744,27 +726,27 @@ async function runCommandCases(message) {
             break;
         // !keys is server keys
         case "keys":
-            runKeysCommand(message, prefixString, mgid, "", "");
+            runKeysCommand(message, prefixString, mgid, "", "", "");
             break;
         // !key
         case "key":
-            runKeysCommand(message, prefixString, mgid, "", "");
+            runKeysCommand(message, prefixString, mgid, "", "", "");
             break;
         // !mkeys is personal keys
         case "mkeys":
-            runKeysCommand(message, prefixString, "p" + message.member.id, "m", "");
+            runKeysCommand(message, prefixString, "p" + message.member.id, "m", "", "");
             break;
         // !mkey is personal keys
         case "mkey":
-            runKeysCommand(message, prefixString, "p" + message.member.id, "m", "");
+            runKeysCommand(message, prefixString, "p" + message.member.id, "m", "", "");
             break;
         // !gkeys is global keys
         case "gkeys":
-            runKeysCommand(message, prefixString, "entries", "g", "");
+            runKeysCommand(message, prefixString, "entries", "g", "", "");
             break;
         // !gkey is global keys
         case "gkey":
-            runKeysCommand(message, prefixString, "entries", "g", "");
+            runKeysCommand(message, prefixString, "entries", "g", "", "");
             break;
         // !k is the search
         case "k":
@@ -803,8 +785,7 @@ async function runCommandCases(message) {
         // !gk
         case "gk":
             if (!args[1]) {
-                message.channel.send("No argument was given.");
-                return;
+                return message.channel.send("No argument was given.");
             }
             gsrun(client2, "A", "B", "entries").then(async (xdb) => {
                 ss = runSearchCommand(args[1], xdb).ss;
@@ -829,20 +810,15 @@ async function runCommandCases(message) {
             break;
         case "changeprefix":
             if (!args[1]) {
-                message.channel.send(
-                    "No argument was given. Enter the new prefix after the command."
-                );
-                return;
+                return message.channel.send("No argument was given. Enter the new prefix after the command.");
             }
             if (args[1].length > 1) {
-                message.channel.send(
+                return message.channel.send(
                     "Prefix length cannot be greater than 1."
                 );
-                return;
             }
             if (args[1] === "+" || args[1] === "=") {
-                message.channel.send("Cannot have " + args[1] + " as a prefix.");
-                return;
+                return message.channel.send("Cannot have " + args[1] + " as a prefix.");
             }
             args[2] = args[1];
             args[1] = mgid;
@@ -1091,12 +1067,10 @@ async function runCommandCases(message) {
             break;
         case "vol":
             if (!args[1]) {
-                message.channel.send("Need to provide volume limit (1-10)");
-                return;
+                return message.channel.send("Need to provide volume limit (1-10)");
             }
             if (!dispatcherMap[message.member.voice.channel]) {
-                message.channel.send("*Stream could not be found*");
-                return;
+                return message.channel.send("*Stream could not be found*");
             }
             try {
                 let newVol = parseInt(args[1]);
@@ -1113,24 +1087,20 @@ async function runCommandCases(message) {
             break;
         case "silence":
             if (!message.member.voice.channel) {
-                message.channel.send("You must be in a voice channel to silence");
-                return;
+                return message.channel.send("You must be in a voice channel to silence");
             }
             if (silenceMap[mgid]) {
-                message.channel.send("*song notifications already silenced*");
-                return;
+                return message.channel.send("*song notifications already silenced*");
             }
             silenceMap[mgid] = true;
             message.channel.send("*song notifications temporarily silenced*");
             break;
         case "unsilence":
             if (!message.member.voice.channel) {
-                message.channel.send("You must be in a voice channel to unsilence");
-                return;
+                return message.channel.send("You must be in a voice channel to unsilence");
             }
             if (!silenceMap[mgid]) {
-                message.channel.send("*song notifications already unsilenced*");
-                return;
+                return message.channel.send("*song notifications already unsilenced*");
             }
             silenceMap[mgid] = false;
             message.channel.send("*song notifications enabled*");
@@ -1149,23 +1119,12 @@ async function runCommandCases(message) {
             if (args[1]) {
                 const numToCheck = parseInt(args[1]);
                 if (!numToCheck || numToCheck < 1) {
-                    message.channel.send("Number has to be positive.");
-                    return;
+                    return message.channel.send("Number has to be positive.");
                 }
                 let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-                message.channel.send(
-                    "Assuming " +
-                    numToCheck +
-                    " in total. Your number is " +
-                    randomInt2 +
-                    "."
-                );
+                message.channel.send("Assuming " + numToCheck + " in total. Your number is " + randomInt2 + ".");
             } else {
-                if (
-                    message.member &&
-                    message.member.voice &&
-                    message.member.voice.channel
-                ) {
+                if (message.member && message.member.voice && message.member.voice.channel) {
                     const numToCheck = message.member.voice.channel.members.size;
                     if (numToCheck < 1) {
                         message.channel.send(
@@ -1199,24 +1158,22 @@ bot.on("message", (message) => {
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
         const messageArray = message.content.split(" ");
+        if (!servers[message.guild.id])
+            servers[message.guild.id] = {
+                queue: [],
+                queueHistory: []
+            };
         for (let i = 0; i < messageArray.length; i++) {
-            if (!servers[message.guild.id])
-                servers[message.guild.id] = {
-                    queue: [],
-                    queueHistory: []
-                };
-            //servers[message.guild.id].queue.push(args[1]);
             let word = messageArray[i];
             console.log(word);
             if (
                 (word.includes("grats") ||
                     word.includes("gratz") ||
-                    word.includes("ongratulation")) &&
-                !word.substring(0, 1).includes("!")
+                    word.includes("ongratulation"))
+
             ) {
                 message.channel.send("Congratulations!");
-                playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel, true);
-                return;
+                return playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel, true);
             }
         }
     } else {
@@ -1555,8 +1512,7 @@ function sendHelp(message, prefixString) {
  */
 function runRandomToQueue(num, message, sheetname) {
     if (!message.member.voice.channel) {
-        message.channel.send("must be in a voice channel to play random");
-        return;
+        return message.channel.send("must be in a voice channel to play random");
     }
     try {
         num = parseInt(num);
@@ -2120,8 +2076,7 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
         });
     } else {
         if (!message.member.voice.channel) {
-            message.channel.send("must be in a voice channel");
-            return;
+            return message.channel.send("must be in a voice channel");
         }
         if (
             whatspMap[message.member.voice.channel] &&
@@ -2138,15 +2093,14 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
                         !message.guild.voice ||
                         !message.guild.voice.channel
                     ) {
-                        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then().catch()
-                        return;
+                        return sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then()
                     }
                     let msg = embedMessageMap[mgid];
                     if (msg) {
                         if (!generatingEmbedMap[mgid]) {
                             embedMessageMap[mgid] = "";
                             await msg.reactions.removeAll();
-                            sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then().catch()
+                            sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then()
                         } else {
                             message.channel.send("*previous embed is generating...*");
                         }
