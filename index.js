@@ -373,7 +373,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.1.2";
+const version = "1.1.3";
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -1814,7 +1814,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
                     }));
             }
-            dispatcher.destroy();
+            // dispatcher.destroy();
             dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id] && sendEmbed) {
