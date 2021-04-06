@@ -378,7 +378,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.2.5";
+const version = "1.2.6";
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -609,7 +609,7 @@ function runPlayLinkCommand(message, args, mgid) {
  * @returns {Promise<void>}
  */
 async function runCommandCases(message) {
-    if (message.member.id.toString() !== "443150640823271436") return; // DEBUG MODE
+    // if (message.member.id.toString() !== "443150640823271436") return; // DEBUG MODE
     let mgid = message.guild.id;
     let prefixString = prefixMap[mgid];
     if (!prefixString) {
@@ -628,7 +628,7 @@ async function runCommandCases(message) {
             gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
         }
     }
-    prefixMap[mgid] = "&"; // DEBUG MODE
+    // prefixMap[mgid] = ","; // DEBUG MODE
     prefixString = prefixMap[mgid];
     let firstWordBegin = message.content.substr(0, 14).trim() + " ";
     if (firstWordBegin.substr(0, 1) !== prefixString) {
@@ -697,9 +697,6 @@ async function runCommandCases(message) {
                     );
                 }
             });
-            break;
-        case "gv":
-            message.channel.send("version: " + version);
             break;
         // !gd is to run database songs
         case "gd":
@@ -1136,13 +1133,16 @@ async function runCommandCases(message) {
             }
             break;
         case "gzh":
-            message.channel.send("gzs - servers, gzu - uptime");
+            message.channel.send("version: " + version + "\nDev commands: gzs - servers, gzu - uptime");
             break;
         case "gzs":
             message.channel.send("servers: " + bot.guilds.cache.size);
             break;
         case "gzu":
             message.channel.send("bot uptime: " + formatDuration(bot.uptime));
+            break;
+        case "gv":
+            message.channel.send("version: " + version);
             break;
         // !rand
         case "guess":
@@ -1762,8 +1762,10 @@ bot.on("voiceStateUpdate", update => {
     }
 });
 
+bot.on('warning', console.warn);
+process.on('warning', console.warn)
 
-/**
+/**&
  *  The play song function. Plays a song to the voice channel.
  * @param {*} message the message that triggered the bot
  * @param {*} whatToPlay the link of the song to play
@@ -1809,7 +1811,6 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                 await dispatcherMap[voiceChannel].play();
                 await dispatcherMap[voiceChannel].destroy();
             } catch (e) {
-                console.log("did not destroy");
             }
             dispatcherMap[voiceChannel] = false;
         }
@@ -1836,7 +1837,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
             if (!silenceMap[message.guild.id] && sendEmbed) {
                 sendLinkAsEmbed(message, url, voiceChannel, isRewind).then();
             }
-            dispatcherMap[voiceChannel].on("finish", () => {
+            dispatcherMap[voiceChannel].on("finish", async () => {
                 servers[message.guild.id].queueHistory.push(server.queue.shift());
                 if (server.queue.length > 0 && voiceChannel.members.size > 1) {
                     whatsp = server.queue[0];
@@ -1844,7 +1845,16 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                     if (!whatsp) {
                         return;
                     }
-                    playSongToVC(message, whatsp, voiceChannel, true);
+
+                    if (dispatcherMap[voiceChannel]) {
+                        try {
+                            dispatcherMap[voiceChannel].play();
+                            dispatcherMap[voiceChannel].destroy();
+                        } catch (e) {
+                        }
+                    }
+                    await playSongToVC(message, whatsp, voiceChannel, true, false);
+                    connection.disconnect();
                 } else {
                     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
                         embedMessageMap[message.guild.id].reactions.removeAll().then();
