@@ -1796,6 +1796,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
         embedMessageMap[message.guild.id] = "";
     }
     whatspMap[voiceChannel] = whatToPlayS;
+    if (!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel)
     voiceChannel.join().then(async function (connection) {
         try {
             let dispatcher;
