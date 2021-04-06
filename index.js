@@ -1797,10 +1797,10 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
     }
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
-        if (dispatcherMap[voiceChannel]) {
+        if (await dispatcherMap[voiceChannel]) {
             await dispatcherMap[voiceChannel].play();
             await dispatcherMap[voiceChannel].destroy();
-            dispatcherMap[voiceChannel] = undefined;
+            dispatcherMap[voiceChannel] = false;
         }
         try {
             let dispatcher;
