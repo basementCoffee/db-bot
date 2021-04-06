@@ -2015,7 +2015,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                         dispatcherMap[voiceChannel].resume();
                         dispatcherMapStatus[voiceChannel] = "resume";
                     } else if (reaction.emoji.name === '⏪') {
-                        collector.stop();
+
                         if (servers[mgid].queue.length > (maxQueueSize + 99)) {
                             message.channel.send("*max queue size has been reached, cannot rewind further*");
                             return;
@@ -2025,11 +2025,13 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                             if (generatingEmbedMap[mgid]) {
                                 playSongToVC(message, servers[mgid].queue[0], voiceChannel, false, false);
                             } else {
+                                collector.stop();
                                 playSongToVC(message, servers[mgid].queue[0], voiceChannel, true, false);
                             }
                             message.channel.send("*replaying first song*");
                             return;
                         }
+                        collector.stop();
                         message.channel.send("*rewound*");
                         servers[mgid].queue.unshift(song);
                         playSongToVC(message, song, voiceChannel, true, true);
