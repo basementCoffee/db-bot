@@ -691,6 +691,9 @@ async function runCommandCases(message) {
                 }
             });
             break;
+        case "gv":
+            message.channel.send("version: " + version);
+            break;
         // !gd is to run database songs
         case "gd":
             runDatabasePlayCommand(args, message, "entries", false, true);
@@ -1825,9 +1828,9 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                     if (!whatsp) {
                         return;
                     }
-                    setTimeout(() => dispatcher.pause(), 3000);
-                    setTimeout(() => dispatcher.destroy(), 5000);
                     playSongToVC(message, whatsp, voiceChannel, true);
+                    setTimeout(() => dispatcher.play(), 3000);
+                    setTimeout(() => dispatcher.destroy(), 5000);
                 } else {
                     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
                         embedMessageMap[message.guild.id].reactions.removeAll().then();
