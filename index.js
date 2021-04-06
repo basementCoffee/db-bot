@@ -373,7 +373,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.2.1";
+const version = "1.2.2";
 const servers = {};
 bot.login(token);
 // the max size of the queue
