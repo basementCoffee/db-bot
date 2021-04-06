@@ -373,7 +373,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.2.3";
+const version = "1.2.4";
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -1797,12 +1797,11 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
     }
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
-        if (await dispatcherMap[voiceChannel]) {
+        if (dispatcherMap[voiceChannel]) {
             try {
                 await dispatcherMap[voiceChannel].play();
                 await dispatcherMap[voiceChannel].destroy();
-            } catch (e) {
-            }
+            } catch (e) {}
             dispatcherMap[voiceChannel] = false;
         }
         try {
@@ -1847,11 +1846,9 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                         try {
                             dispatcherMap[voiceChannel].play();
                             dispatcherMap[voiceChannel].destroy();
-                        } catch (e) {
-                        }
-                        dispatcherMap[voiceChannel] = false;
+                        } catch (e) {}
                     }
-                    dispatcherMap[voiceChannel] = undefined;
+                        dispatcherMap[voiceChannel] = false;
                 }
             });
         } catch (e) {
@@ -1860,9 +1857,10 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
             // search the db to find possible broken keys
             searchForBrokenLinkWithinDB(message, whatToPlayS);
             connection.disconnect();
-            if (dispatcherMap[voiceChannel]) {
+            try {
+                dispatcherMap[voiceChannel].play();
                 dispatcherMap[voiceChannel].destroy();
-            }
+            } catch (e) {}
         }
     });
 }
@@ -2035,7 +2033,13 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
  */
 function runStopPlayingCommand(message, mgid, voiceChannel) {
     if (!voiceChannel) return;
-    dispatcherMap[voiceChannel] = undefined;
+    if (dispatcherMap[voiceChannel]) {
+        try {
+            dispatcherMap[voiceChannel].play();
+            dispatcherMap[voiceChannel].destroy();
+        } catch (e) {}
+    }
+    dispatcherMap[voiceChannel] = false;
     if (servers[mgid].queue) {
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
