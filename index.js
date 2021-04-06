@@ -373,7 +373,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.2.2";
+const version = "1.2.3";
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -1798,8 +1798,11 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
         if (await dispatcherMap[voiceChannel]) {
-            await dispatcherMap[voiceChannel].play();
-            await dispatcherMap[voiceChannel].destroy();
+            try {
+                await dispatcherMap[voiceChannel].play();
+                await dispatcherMap[voiceChannel].destroy();
+            } catch (e) {
+            }
             dispatcherMap[voiceChannel] = false;
         }
         try {
@@ -1841,8 +1844,12 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                     }
                     connection.disconnect();
                     if (dispatcherMap[voiceChannel]) {
-                        dispatcherMap[voiceChannel].play();
-                        dispatcherMap[voiceChannel].destroy();
+                        try {
+                            dispatcherMap[voiceChannel].play();
+                            dispatcherMap[voiceChannel].destroy();
+                        } catch (e) {
+                        }
+                        dispatcherMap[voiceChannel] = false;
                     }
                     dispatcherMap[voiceChannel] = undefined;
                 }
