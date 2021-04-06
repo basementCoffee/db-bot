@@ -609,6 +609,7 @@ function runPlayLinkCommand(message, args, mgid) {
  * @returns {Promise<void>}
  */
 async function runCommandCases(message) {
+    if (message.member.id.toString() !== "443150640823271436") return; // DEBUG MODE
     let mgid = message.guild.id;
     let prefixString = prefixMap[mgid];
     if (!prefixString) {
@@ -627,6 +628,7 @@ async function runCommandCases(message) {
             gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
         }
     }
+    prefixMap[mgid] = "&"; // DEBUG MODE
     prefixString = prefixMap[mgid];
     let firstWordBegin = message.content.substr(0, 14).trim() + " ";
     if (firstWordBegin.substr(0, 1) !== prefixString) {
@@ -1755,8 +1757,8 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
 
 
 bot.on("voiceStateUpdate", update => {
-    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions && update.member.id === bot.id) {
-        embedMessageMap[update.guild.id].reactions.removeAll().then()
+    if (embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions && update.member.id === bot.user.id) {
+        embedMessageMap[update.guild.id].reactions.removeAll().then();
     }
 });
 
@@ -2023,9 +2025,8 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                         let song = servers[mgid].queueHistory.pop();
                         if (!song) {
                             if (generatingEmbedMap[mgid]) {
-                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, false, false);
+                                playSongToVC(message, servers[mgid].queue[0], voiceChannel, true, false);
                             } else {
-                                collector.stop();
                                 playSongToVC(message, servers[mgid].queue[0], voiceChannel, true, false);
                             }
                             message.channel.send("*replaying first song*");
