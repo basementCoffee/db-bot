@@ -373,7 +373,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.2.0";
+const version = "1.2.1";
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -1798,7 +1798,9 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
         if (dispatcherMap[voiceChannel]) {
+            await dispatcherMap[voiceChannel].play();
             await dispatcherMap[voiceChannel].destroy();
+            dispatcherMap[voiceChannel] = undefined;
         }
         try {
             let dispatcher;
@@ -1817,7 +1819,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
                     }));
             }
-            // dispatcher.destroy();
+
             dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id] && sendEmbed) {
@@ -1832,8 +1834,6 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                         return;
                     }
                     playSongToVC(message, whatsp, voiceChannel, true);
-                    setTimeout(() => dispatcher.play(), 3000);
-                    setTimeout(() => dispatcher.destroy(), 5000);
                 } else {
                     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
                         embedMessageMap[message.guild.id].reactions.removeAll().then();
@@ -1841,6 +1841,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                     }
                     connection.disconnect();
                     if (dispatcherMap[voiceChannel]) {
+                        dispatcherMap[voiceChannel].play();
                         dispatcherMap[voiceChannel].destroy();
                     }
                     dispatcherMap[voiceChannel] = undefined;
