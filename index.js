@@ -557,16 +557,21 @@ function runPlayLinkCommand(message, args, mgid) {
         return;
     }
     if (!args[1]) {
-        message.channel.send(
-            "Where's the link? I can't read your mind... unfortunately."
-        );
+        if (dispatcherMap[mgid] && dispatcherMapStatus[message.member.voice.channel] === "pause") {
+            message.channel.send("*playing*");
+        }
+        message.channel.send("Where's the link? I can't read your mind... unfortunately.");
         return;
     }
     if (!args[1].includes(".")) {
-        message.channel.send(
-            "There's something wrong with what you put there."
-        );
+        // message.channel.send("*I think you should be using " + prefixMap[mgid] + "d but ok then...*");
+        runDatabasePlayCommand(args, message, mgid, false, false);
         return;
+    }
+    if (args[1].includes("spotify.com")) {
+        if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
+    } else {
+        if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
     }
     if (!servers[mgid])
         servers[mgid] = {
@@ -680,6 +685,12 @@ async function runCommandCases(message) {
             runStopPlayingCommand(message, mgid, message.member.voice.channel);
             break;
         case "end":
+            runStopPlayingCommand(message, mgid, message.member.voice.channel);
+            break;
+        case "leave":
+            runStopPlayingCommand(message, mgid, message.member.voice.channel);
+            break;
+        case "stop":
             runStopPlayingCommand(message, mgid, message.member.voice.channel);
             break;
         // !s prints out the database size
@@ -1228,7 +1239,12 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
         if (linkZ.substring(linkZ.length - 1) === ",") {
             linkZ = linkZ.substring(0, linkZ.length - 1);
         }
-        gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", sheetName);
+        if (args[z].includes(".")) {
+            message.channel.send("did not add '" + args[z] + "', names cannot include links");
+            songsAddedInt--;
+        } else {
+            gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", sheetName);
+        }
         z = z + 2;
         songsAddedInt += 1;
     }
@@ -1253,7 +1269,7 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
                 message.channel.send("*" + songsAddedInt + " songs added to the database. (see '" + ps + databaseType + "keys')*");
             });
         } else {
-            message.channel.send("Please call '!keys' to initialize the database.");
+            // message.channel.send("Please call '!keys' to initialize the database.");
         }
     }
 }
@@ -1276,7 +1292,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
         return true;
     }
     if (!message.member.voice.channel) {
-        message.channel.send("must be in a voice channel");
+        message.channel.send("must be in a voice channel to play keys");
         return true;
     }
     if (!servers[message.guild.id]) {
@@ -1349,10 +1365,19 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
                 } else if (playRightNow) {
                     if (printErrorMsg) {
                         message.channel.send("There's something wrong with what you put there.");
+                        return true;
                     } else {
                         runDatabasePlayCommand(args, message, "p" + message.member.id, playRightNow, true);
                     }
                     return false;
+                } else if (!printErrorMsg) {
+                    if (sheetname.includes("p")) {
+                        message.channel.send("There's something wrong with what you put there.");
+                        return true;
+                    } else {
+                        runDatabasePlayCommand(args, message, "p" + message.member.id, playRightNow, false);
+                        return true;
+                    }
                 } else if (ss && ss.length > 0) {
                     message.channel.send(
                         "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + "*"
@@ -1362,7 +1387,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
                     message.channel.send("Could not find '" + args[1] + "' in database.");
                     return true;
                 }
-            } else {
+            } else { // did find in database
                 if (playRightNow) {
                     // push to queue
                     if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
@@ -1384,6 +1409,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
                 }
             }
             if (!queueWasEmpty && !playRightNow) {
+                console.log("hi")
                 message.channel.send("*added to queue*");
             }
         }
@@ -1529,7 +1555,7 @@ function sendHelp(message, prefixString) {
  */
 function runRandomToQueue(num, message, sheetname) {
     if (!message.member.voice.channel) {
-        message.channel.send("must be in a voice channel");
+        message.channel.send("must be in a voice channel to play random");
         return;
     }
     try {
@@ -1750,7 +1776,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
                                 return;
                             }
                         }
-                        return message.channel.send("*must be in a voice channel to shuffle play*");
+                        return message.channel.send("must be in a voice channel to shuffle play");
                     }
                 });
             });
@@ -1772,6 +1798,7 @@ bot.on("voiceStateUpdate", update => {
  * @param {*} message the message that triggered the bot
  * @param {*} whatToPlay the link of the song to play
  * @param voiceChannel the voice channel to play the song in
+ * @param sendEmbed whether to send an embed to the text channel
  */
 function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
     if (!voiceChannel || voiceChannel.members.size < 1 || !whatToPlay) {
@@ -2093,7 +2120,7 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
         });
     } else {
         if (!message.member.voice.channel) {
-            message.channel.send("Must be in a voice channel");
+            message.channel.send("must be in a voice channel");
             return;
         }
         if (
