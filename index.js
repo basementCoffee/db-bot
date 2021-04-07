@@ -1824,23 +1824,15 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
             let dispatcher;
             if (!isSpotify) {
                 const infos = await ytdl.getInfo(url);
-                let hwmTime = 25;
+                let hwmTime = 30;
                 let duration = infos.formats[0].approxDurationMs;
-                if (parseInt(duration) > 350000) { // ~5 min
-                    hwmTime = 30;
-                } else if (parseInt(duration) > 600000) { // 10 min
+                if (parseInt(duration) > 600000) { // ~5 min
                     hwmTime = 32;
                 }
-                else if (parseInt(duration) > 1200000) { // 20 min
-                    hwmTime = 34;
-                }  else if (parseInt(duration) > 2400000) { // 40 min
-                    hwmTime = 50;
-                }
-                console.log(hwmTime);
                 await connection.voice.setSelfDeaf(true);
                 dispatcher = connection.play(await ytdl(url), {
                     type: "opus",
-                    filter: "audioonly",
+                    filter: "audio",
                     quality: "140",
                     highWaterMark: 1 << hwmTime
                 });
@@ -1848,7 +1840,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                 dispatcher = connection
                     .play(await spdl(url, {
                         opusEncoded: true,
-                        filter: 'audioonly',
+                        filter: 'audio',
                         highWaterMark: 1 << 26,
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
                     }), {highWaterMark: 1 << 26});
