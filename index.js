@@ -369,7 +369,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.3.0";
+const version = "1.3.1";
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -618,7 +618,7 @@ async function runCommandCases(message) {
     let mgid = message.guild.id;
     let prefixString = prefixMap[mgid];
     if (debugMode) {
-        if (message.member.id.toString() !== "443150640823271436") return; // dev id, debug purposes
+        if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") return; // dev id, debug purposes
         prefixMap[mgid] = ",";
     } else if (!prefixString) {
         try {
@@ -1813,24 +1813,45 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
     }
     whatspMap[voiceChannel] = whatToPlayS;
     voiceChannel.join().then(async function (connection) {
+        if (dispatcherMap[voiceChannel.id]) {
+            try {
+                dispatcherMap[voiceChannel.id].play();
+                dispatcherMap[voiceChannel.id].destroy();
+            } catch (e) {
+            }
+        }
         try {
             let dispatcher;
             if (!isSpotify) {
-                // await connection.voice.setSelfDeaf(true);
+                const infos = await ytdl.getInfo(url);
+                let hwmTime = 25;
+                let duration = infos.formats[0].approxDurationMs;
+                if (parseInt(duration) > 350000) { // ~5 min
+                    hwmTime = 30;
+                } else if (parseInt(duration) > 600000) { // 10 min
+                    hwmTime = 32;
+                }
+                else if (parseInt(duration) > 1200000) { // 20 min
+                    hwmTime = 34;
+                }  else if (parseInt(duration) > 2400000) { // 40 min
+                    hwmTime = 50;
+                }
+                console.log(hwmTime);
+                await connection.voice.setSelfDeaf(true);
                 dispatcher = connection.play(await ytdl(url), {
                     type: "opus",
                     filter: "audioonly",
                     quality: "140",
-                    highWaterMark: 1 << 25
+                    highWaterMark: 1 << hwmTime
                 });
             } else {
                 dispatcher = connection
                     .play(await spdl(url, {
                         opusEncoded: true,
                         filter: 'audioonly',
-                        highWaterMark: 1 << 25,
+                        highWaterMark: 1 << 26,
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
-                    }), {highWaterMark: 1 << 25});
+                    }), {highWaterMark: 1 << 26});
             }
 
             dispatcherMap[voiceChannel.id] = dispatcher;
@@ -1847,13 +1868,13 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                         return;
                     }
 
-                    // if (dispatcherMap[voiceChannel.id]) {
-                    //     try {
-                    //         dispatcherMap[voiceChannel.id].play();
-                    //         dispatcherMap[voiceChannel.id].destroy();
-                    //     } catch (e) {
-                    //     }
-                    // }
+                    if (dispatcherMap[voiceChannel.id]) {
+                        try {
+                            dispatcherMap[voiceChannel.id].play();
+                            dispatcherMap[voiceChannel.id].destroy();
+                        } catch (e) {
+                        }
+                    }
                     playSongToVC(message, whatsp, voiceChannel, true, false);
                     connection.disconnect();
                 } else {
