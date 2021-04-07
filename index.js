@@ -1841,7 +1841,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                     .play(await spdl(url, {
                         opusEncoded: true,
                         filter: 'audio',
-                        highWaterMark: 1 << 25,
+                        // highWaterMark: 1 << 25,
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
                     }), {highWaterMark: 1 << 25});
             }
