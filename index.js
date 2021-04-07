@@ -362,7 +362,7 @@ const ytdl = require("ytdl-core-discord");
 
 // SPOTIFY BOT IMPORTS --------------------------
 const spdl = require('spdl-core').default;
-;
+
 
 spdl.setCredentials(spotifyCID, spotifySCID);
 
@@ -608,7 +608,7 @@ function runPlayLinkCommand(message, args, mgid) {
     }
 }
 
-let debugMode = false; // DEBUG MODE / DEV MODE -> prefix is ,
+let debugMode = true; // DEBUG MODE / DEV MODE -> prefix is ,
 /**
  * The execution for all of the bot commands
  * @param message
@@ -1824,7 +1824,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
             let dispatcher;
             if (!isSpotify) {
                 const infos = await ytdl.getInfo(url);
-                let hwmTime = 30;
+                let hwmTime = 25;
                 let duration = infos.formats[0].approxDurationMs;
                 if (!duration || parseInt(duration) > 600000) { // 10 min
                     hwmTime = 32;
@@ -1841,9 +1841,8 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                     .play(await spdl(url, {
                         opusEncoded: true,
                         filter: 'audio',
-                        // highWaterMark: 1 << 25,
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
-                    }), {highWaterMark: 1 << 25});
+                    }), {});
             }
 
             dispatcherMap[voiceChannel.id] = dispatcher;
