@@ -361,22 +361,7 @@ const ytdl = require("ytdl-core-discord");
 
 
 // SPOTIFY BOT IMPORTS --------------------------
-const spdl = require('spdl-core').default;
-
-
-spdl.setCredentials(spotifyCID, spotifySCID);
-
-// SPOTIFY BOT IMPORTS --------------------------
-
-// UPDATE HERE - Before Git Push
-const version = "1.3.3";
-const servers = {};
-bot.login(token);
-// the max size of the queue
-const maxQueueSize = 500;
-let keyArray;
-let s;
-
+const spdl = require('spdl-core');
 
 function formatDuration(duration) {
     let seconds = duration / 1000;
@@ -387,6 +372,19 @@ function formatDuration(duration) {
     }
     return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
 }
+
+spdl.setCredentials(spotifyCID, spotifySCID);
+
+// SPOTIFY BOT IMPORTS --------------------------
+
+// UPDATE HERE - Before Git Push
+const version = "1.2.6";
+const servers = {};
+bot.login(token);
+// the max size of the queue
+const maxQueueSize = 500;
+let keyArray;
+let s;
 
 /**
  * Determines whether the message contains a form of congratulations
@@ -556,11 +554,8 @@ function runPlayLinkCommand(message, args, mgid) {
         return;
     }
     if (!args[1]) {
-        if (dispatcherMap[message.member.voice.channel.id] && dispatcherMapStatus[message.member.voice.channel] === "pause") {
-            dispatcherMap[message.member.voice.channel.id].resume();
-            dispatcherMapStatus[message.member.voice.channel] = "resume";
+        if (dispatcherMap[mgid] && dispatcherMapStatus[message.member.voice.channel] === "pause") {
             message.channel.send("*playing*");
-            return;
         }
         return message.channel.send("Where's the link? I can't read your mind... unfortunately.");
     }
@@ -608,19 +603,16 @@ function runPlayLinkCommand(message, args, mgid) {
     }
 }
 
-let debugMode = true; // DEBUG MODE / DEV MODE -> prefix is ,
 /**
  * The execution for all of the bot commands
  * @param message
  * @returns {Promise<void>}
  */
 async function runCommandCases(message) {
+    // if (message.member.id.toString() !== "443150640823271436") return; // DEBUG MODE
     let mgid = message.guild.id;
     let prefixString = prefixMap[mgid];
-    if (debugMode) {
-        if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") return; // dev id, debug purposes
-        prefixMap[mgid] = ",";
-    } else if (!prefixString) {
+    if (!prefixString) {
         try {
             await gsrun(client2, "A", "B", "prefixes").then(async (xdb) => {
                 let newPrefix = xdb.congratsDatabase.get(mgid);
@@ -636,7 +628,7 @@ async function runCommandCases(message) {
             gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
         }
     }
-
+    // prefixMap[mgid] = ","; // DEBUG MODE
     prefixString = prefixMap[mgid];
     let firstWordBegin = message.content.substr(0, 14).trim() + " ";
     if (firstWordBegin.substr(0, 1) !== prefixString) {
@@ -864,9 +856,9 @@ async function runCommandCases(message) {
         case "pa":
             if (
                 message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
+                dispatcherMap[message.member.voice.channel]
             ) {
-                dispatcherMap[message.member.voice.channel.id].pause();
+                dispatcherMap[message.member.voice.channel].pause();
                 dispatcherMapStatus[message.member.voice.channel] = "pause";
                 message.channel.send("*paused*");
             }
@@ -874,9 +866,9 @@ async function runCommandCases(message) {
         case "pause":
             if (
                 message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
+                dispatcherMap[message.member.voice.channel]
             ) {
-                dispatcherMap[message.member.voice.channel.id].pause();
+                dispatcherMap[message.member.voice.channel].pause();
                 dispatcherMapStatus[message.member.voice.channel] = "pause";
                 message.channel.send("*paused*");
             }
@@ -885,9 +877,9 @@ async function runCommandCases(message) {
         case "pl":
             if (
                 message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
+                dispatcherMap[message.member.voice.channel]
             ) {
-                dispatcherMap[message.member.voice.channel.id].resume();
+                dispatcherMap[message.member.voice.channel].resume();
                 dispatcherMapStatus[message.member.voice.channel] = "resume";
                 message.channel.send("*playing*");
             }
@@ -895,9 +887,9 @@ async function runCommandCases(message) {
         case "res":
             if (
                 message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
+                dispatcherMap[message.member.voice.channel]
             ) {
-                dispatcherMap[message.member.voice.channel.id].resume();
+                dispatcherMap[message.member.voice.channel].resume();
                 dispatcherMapStatus[message.member.voice.channel] = "resume";
                 message.channel.send("*playing*");
             }
@@ -905,9 +897,9 @@ async function runCommandCases(message) {
         case "resume":
             if (
                 message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
+                dispatcherMap[message.member.voice.channel]
             ) {
-                dispatcherMap[message.member.voice.channel.id].resume();
+                dispatcherMap[message.member.voice.channel].resume();
                 dispatcherMapStatus[message.member.voice.channel] = "resume";
                 message.channel.send("*playing*");
             }
@@ -1081,13 +1073,13 @@ async function runCommandCases(message) {
             if (!args[1]) {
                 return message.channel.send("Need to provide volume limit (1-10)");
             }
-            if (!dispatcherMap[message.member.voice.channel.id]) {
+            if (!dispatcherMap[message.member.voice.channel]) {
                 return message.channel.send("*Stream could not be found*");
             }
             try {
                 let newVol = parseInt(args[1]);
                 if (newVol < 11 && newVol > 0) {
-                    dispatcherMap[message.member.voice.channel.id].setVolume(newVol / 10);
+                    dispatcherMap[message.member.voice.channel].setVolume(newVol / 10);
                     message.channel.send("*volume set to " + newVol + "*");
 
                 } else {
@@ -1101,13 +1093,13 @@ async function runCommandCases(message) {
             if (!args[1]) {
                 return message.channel.send("Need to provide volume limit (1-10)");
             }
-            if (!dispatcherMap[message.member.voice.channel.id]) {
+            if (!dispatcherMap[message.member.voice.channel]) {
                 return message.channel.send("*Stream could not be found*");
             }
             try {
                 let newVol = parseInt(args[1]);
                 if (newVol < 11 && newVol > 0) {
-                    dispatcherMap[message.member.voice.channel.id].setVolume(newVol / 10);
+                    dispatcherMap[message.member.voice.channel].setVolume(newVol / 10);
                     message.channel.send("*volume set to " + newVol + "*");
 
                 } else {
@@ -1136,12 +1128,12 @@ async function runCommandCases(message) {
             }
             silenceMap[mgid] = false;
             message.channel.send("*song notifications enabled*");
-            if (dispatcherMap[message.member.voice.channel.id]) {
+            if (dispatcherMap[message.member.voice.channel]) {
                 sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then();
             }
             break;
         case "gzh":
-            message.channel.send("version: " + version + "\nDev commands:\n gzs - servers\n gzu - uptime");
+            message.channel.send("version: " + version + "\nDev commands: gzs - servers, gzu - uptime");
             break;
         case "gzs":
             message.channel.send("servers: " + bot.guilds.cache.size);
@@ -1812,45 +1804,40 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
         embedMessageMap[message.guild.id] = "";
     }
     whatspMap[voiceChannel] = whatToPlayS;
+
     voiceChannel.join().then(async function (connection) {
-        if (dispatcherMap[voiceChannel.id]) {
+        if (dispatcherMap[voiceChannel]) {
             try {
-                dispatcherMap[voiceChannel.id].play();
-                dispatcherMap[voiceChannel.id].destroy();
+                await dispatcherMap[voiceChannel].play();
+                await dispatcherMap[voiceChannel].destroy();
             } catch (e) {
             }
+            dispatcherMap[voiceChannel] = false;
         }
         try {
             let dispatcher;
             if (!isSpotify) {
-                const infos = await ytdl.getInfo(url);
-                let hwmTime = 25;
-                let duration = infos.formats[0].approxDurationMs;
-                if (!duration || parseInt(duration) > 600000) { // 10 min
-                    hwmTime = 32;
-                }
                 await connection.voice.setSelfDeaf(true);
                 dispatcher = connection.play(await ytdl(url), {
                     type: "opus",
-                    filter: "audio",
+                    filter: "audioonly",
                     quality: "140",
-                    highWaterMark: 1 << hwmTime
                 });
             } else {
                 dispatcher = connection
                     .play(await spdl(url, {
                         opusEncoded: true,
-                        filter: 'audio',
+                        filter: 'audioonly',
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
-                    }), {});
+                    }));
             }
 
-            dispatcherMap[voiceChannel.id] = dispatcher;
+            dispatcherMap[voiceChannel] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id] && sendEmbed) {
                 sendLinkAsEmbed(message, url, voiceChannel, isRewind).then();
             }
-            dispatcher.on("finish", () => {
+            dispatcherMap[voiceChannel].on("finish", async () => {
                 servers[message.guild.id].queueHistory.push(server.queue.shift());
                 if (server.queue.length > 0 && voiceChannel.members.size > 1) {
                     whatsp = server.queue[0];
@@ -1859,14 +1846,14 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                         return;
                     }
 
-                    if (dispatcherMap[voiceChannel.id]) {
+                    if (dispatcherMap[voiceChannel]) {
                         try {
-                            dispatcherMap[voiceChannel.id].play();
-                            dispatcherMap[voiceChannel.id].destroy();
+                            dispatcherMap[voiceChannel].play();
+                            dispatcherMap[voiceChannel].destroy();
                         } catch (e) {
                         }
                     }
-                    playSongToVC(message, whatsp, voiceChannel, true, false);
+                    await playSongToVC(message, whatsp, voiceChannel, true, false);
                     connection.disconnect();
                 } else {
                     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
@@ -1874,17 +1861,16 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                         embedMessageMap[message.guild.id] = "";
                     }
                     connection.disconnect();
-                    if (dispatcherMap[voiceChannel.id]) {
+                    if (dispatcherMap[voiceChannel]) {
                         try {
-                            dispatcherMap[voiceChannel.id].play();
-                            dispatcherMap[voiceChannel.id].destroy();
+                            dispatcherMap[voiceChannel].play();
+                            dispatcherMap[voiceChannel].destroy();
                         } catch (e) {
                         }
                     }
-                    dispatcherMap[voiceChannel.id] = false;
+                    dispatcherMap[voiceChannel] = false;
                 }
             });
-
         } catch (e) {
             // Error catching - fault with the link?
             message.channel.send("Could not play <" + whatToPlayS + ">");
@@ -1892,8 +1878,8 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
             searchForBrokenLinkWithinDB(message, whatToPlayS);
             connection.disconnect();
             try {
-                dispatcherMap[voiceChannel.id].play();
-                dispatcherMap[voiceChannel.id].destroy();
+                dispatcherMap[voiceChannel].play();
+                dispatcherMap[voiceChannel].destroy();
             } catch (e) {
             }
         }
@@ -1979,40 +1965,41 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
         message.channel.send(embed)
             .then(await function (sentMsg) {
                 embedMessageMap[mgid] = sentMsg;
+                if (newWhat) {
+                    newWhat = false;
+                    return;
+                }
                 let serverSize = servers[mgid].queue.length; // right becomes greater on queue add, keep generating
-                if (!showButtons || !dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                if (!showButtons || !dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
                     (isRewind && serverSize !== servers[mgid].queue.length)) return;
                 sentMsg.react('⏪').then(() => {
-                    if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                    if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
                         (isRewind && serverSize !== servers[mgid].queue.length)) return;
                     sentMsg.react('⏯').then(() => {
-                        if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                        if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
                             (isRewind && serverSize !== servers[mgid].queue.length)) return;
                         sentMsg.react('⏹').then(() => {
-                            if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                            if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
                                 (isRewind && serverSize !== servers[mgid].queue.length)) return;
                             sentMsg.react('⏩').then(() => {
-                                if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                                if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
                                     (isRewind && serverSize !== servers[mgid].queue.length)) return;
                                 sentMsg.react('🔑').then(() => {
-                                    if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
+                                    if (!dispatcherMap[voiceChannel] || (!isRewind && serverSize > servers[mgid].queue.length) ||
                                         (isRewind && serverSize !== servers[mgid].queue.length)) return;
                                     sentMsg.react('🔐').then(() => {
-                                        generatingEmbedMap[mgid] = false;
+                                        generatingEmbedMap[mgid] = false
                                     });
                                 });
                             });
                         });
                     });
-                }); // end reactions
+                });
 
                 const filter = (reaction, user) => {
                     if (voiceChannel) {
                         for (let mem of voiceChannel.members) {
                             if (user.id === mem[1].id) {
-                                if (generatingEmbedMap[mgid]) {
-                                    return ['⏯', '🔑', '🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id
-                                }
                                 return ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
                             }
                         }
@@ -2023,19 +2010,21 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                     timeMS = 3600000;
                 }
                 const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
+
                 collector.on('collect', (reaction, reactionCollector) => {
-                    if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
+                    if (!dispatcherMap[voiceChannel] || !voiceChannel) {
                         return;
                     }
                     if (reaction.emoji.name === '⏩') {
+                        collector.stop();
                         skipSong(message, voiceChannel, true);
                     } else if (reaction.emoji.name === '⏯' &&
                         (!dispatcherMapStatus[voiceChannel] ||
-                            dispatcherMapStatus[voiceChannel] !== "pause")) {
-                        dispatcherMap[voiceChannel.id].pause();
+                            dispatcherMapStatus[voiceChannel] === "resume")) {
+                        dispatcherMap[voiceChannel].pause();
                         dispatcherMapStatus[voiceChannel] = "pause";
-                    } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel] !== "resume") {
-                        dispatcherMap[voiceChannel.id].resume();
+                    } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel] === "pause") {
+                        dispatcherMap[voiceChannel].resume();
                         dispatcherMapStatus[voiceChannel] = "resume";
                     } else if (reaction.emoji.name === '⏪') {
 
@@ -2067,10 +2056,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                         runKeysCommand(message, prefixMap[mgid], "p" + reactionCollector.id, "m", voiceChannel, reactionCollector);
                     }
                 });
-
-            }); // end send message
-
-
+            });
 }
 
 /**
@@ -2088,22 +2074,22 @@ function runStopPlayingCommand(message, mgid, voiceChannel) {
     if (embedMessageMap[message.guild.id]) {
         embedMessageMap[message.guild.id].reactions.removeAll().then();
         embedMessageMap[message.guild.id] = "";
-
     }
     if (voiceChannel) {
         voiceChannel.leave();
     }
-    if (dispatcherMap[voiceChannel.id]) {
+    if (dispatcherMap[voiceChannel]) {
         try {
-            dispatcherMap[voiceChannel.id].play();
-            dispatcherMap[voiceChannel.id].destroy();
-            dispatcherMap[voiceChannel.id] = false;
+            dispatcherMap[voiceChannel].play();
+            dispatcherMap[voiceChannel].destroy();
+            dispatcherMap[voiceChannel] = false;
         } catch (e) {
 
         }
     }
 }
 
+var newWhat = false;
 
 /**
  * Runs the what's playing command. Can also look up database values if args[2] is present.
@@ -2220,4 +2206,3 @@ let embedMessageMap = new Map();
 let dispatcherMapStatus = new Map();
 // status of generating embed for a guild
 let generatingEmbedMap = new Map();
-
