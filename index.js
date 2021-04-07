@@ -1826,7 +1826,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                 const infos = await ytdl.getInfo(url);
                 let hwmTime = 30;
                 let duration = infos.formats[0].approxDurationMs;
-                if (parseInt(duration) > 600000) { // ~5 min
+                if (!duration || parseInt(duration) > 600000) { // 10 min
                     hwmTime = 32;
                 }
                 await connection.voice.setSelfDeaf(true);
@@ -1841,9 +1841,9 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                     .play(await spdl(url, {
                         opusEncoded: true,
                         filter: 'audio',
-                        highWaterMark: 1 << 26,
+                        highWaterMark: 1 << 25,
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
-                    }), {highWaterMark: 1 << 26});
+                    }), {highWaterMark: 1 << 25});
             }
 
             dispatcherMap[voiceChannel.id] = dispatcher;
