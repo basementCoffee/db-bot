@@ -363,29 +363,40 @@ const ytdl = require("ytdl-core-discord");
 // SPOTIFY BOT IMPORTS --------------------------
 const spdl = require('spdl-core');
 
-function formatDuration(duration) {
-    let seconds = duration / 1000;
-    let min = (seconds / 60);
-    let hours = Math.floor(min / 60);
-    if (hours > 0) {
-        return `${hours}h ${Math.floor(min % 60)}m`;
-    }
-    return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
-}
-
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.4.0";
-let devMode = false;
+const version = "1.4.1";
+let devMode = false; // default false
+let doNotActivate = false; // default false
 const servers = {};
 bot.login(token);
 // the max size of the queue
 const maxQueueSize = 500;
 let keyArray;
 let s;
+
+/**
+ * Given a duration in ms, it returns a formatted string separating
+ * the hours, minutes, and seconds.
+ * @param duration a duration in milliseconds
+ * @returns {string} a formatted string duration
+ */
+function formatDuration(duration) {
+    let seconds = duration / 1000;
+    let min = (seconds / 60);
+    let hours = Math.floor(min / 60);
+    let days = Math.floor(hours / 24);
+    if (days > 0) {
+        return `${days}d ${Math.floor(hours % 24)}h`;
+    }
+    if (hours > 0) {
+        return `${hours}h ${Math.floor(min % 60)}m`;
+    }
+    return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
+}
 
 /**
  * Determines whether the message contains a form of congratulations
@@ -615,7 +626,7 @@ async function runCommandCases(message) {
     let mgid = message.guild.id;
     if (devMode) {
         if (message.member.id.toString() !== "443150640823271436" && message.member.id.toString() !== "268554823283113985") return; // DEBUG MODE
-        prefixMap[mgid] = ",";
+        prefixMap[mgid] = "=";
     }
     let prefixString = prefixMap[mgid];
     if (!prefixString) {
@@ -756,15 +767,6 @@ async function runCommandCases(message) {
         // !gkey is global keys
         case "gkey":
             runKeysCommand(message, prefixString, "entries", "g", "", "");
-            break;
-        case "!gzdm":
-            if (devMode) {
-                devMode = false;
-                message.channel.send("*devmode is off*");
-            } else {
-                devMode = true;
-                message.channel.send("*devmode is on*");
-            }
             break;
         // !k is the search
         case "k":
@@ -1147,25 +1149,50 @@ async function runCommandCases(message) {
             }
             break;
         case "gzh":
-            message.channel.send("version: " + version + "\nDev commands: gzs - # of servers\ngzu - uptime");
+            message.channel.send("*version: " + version + "*\nDev Commands:" +
+                "\ngzs - statistics" +
+                "\ngzi - bot id" +
+                "\ngzd - toggle dev mode" +
+                "\ngzk - kill a process" +
+                "\ngzp - start a process"
+            );
             break;
         case "gzs":
-            message.channel.send("servers: " + bot.guilds.cache.size);
+            let embed = new MessageEmbed()
+                .setTitle("db bot - statistics")
+                .setDescription("version: " + version +
+                    "\nservers: " + bot.guilds.cache.size +
+                    "\nuptime: " + formatDuration(bot.uptime) +
+                    "\nup since: " + bot.readyAt.toString().substr(0, 21)
+                );
+            message.channel.send(embed);
             break;
-        case "gzu":
-            message.channel.send("bot uptime: " + formatDuration(bot.uptime));
+        case "gzi":
+            message.channel.send("bot id: " + bot.user.id);
+            message.channel.send("your id: " + message.member.id);
+            break;
+        case "gzd":
+            if (message.member.id.toString() !== "443150640823271436") return message.channel.send("are you sure?");
+            if (devMode) {
+                devMode = false;
+                message.channel.send("*devmode is off*");
+            } else {
+                devMode = true;
+                message.channel.send("*devmode is on*");
+            }
+            break;
+        case "gzk":
+            if (!args[1]) {
+                message.channel.send("active: " + process.pid + " (" + version + ")");
+                return;
+            } else if (args[1] === process.pid.toString()) {
+                message.channel.send("db bot " + process.pid + " has been sidelined");
+                doNotActivate = true;
+                console.log("-sidelined-");
+            }
             break;
         case "gv":
             message.channel.send("version: " + version);
-            break;
-        case "gzd":
-            if (devMode){
-                devMode = false;
-                message.channel.send("devmode is now off");
-            } else {
-                devMode = true;
-                message.channel.send("devmode is now on");
-            }
             break;
         // !rand
         case "guess":
@@ -1201,12 +1228,28 @@ async function runCommandCases(message) {
 }
 
 bot.on('guildCreate', guild => {
+    if (doNotActivate) return;
     guild.systemChannel.send("Thanks for adding me :) \nType '!h' to see my commands.");
 });
 
 
 // parses message, provides a response
 bot.on("message", (message) => {
+    if (doNotActivate) {
+        if (message.member.id.toString() === "443150640823271436" &&
+            message.content.substr(0, 4) === "=gzp") {
+            let zargs = message.content.split(" ");
+            if (!zargs[1]) {
+                message.channel.send("Bot sidelined: " + process.pid + " (" + version + ")");
+            } else if (zargs[1] === process.pid.toString()) {
+                doNotActivate = false;
+                devMode = true;
+                message.channel.send("db bot " + process.pid + " is now active & in dev mode (prefix '=')");
+                console.log("-active-");
+            }
+        }
+        return;
+    }
     if (message.author.bot) return;
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
@@ -1782,6 +1825,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
 
 
 bot.on("voiceStateUpdate", update => {
+    if (doNotActivate) return;
     if (embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions && update.member.id === bot.user.id) {
         embedMessageMap[update.guild.id].reactions.removeAll().then();
     }
@@ -1975,19 +2019,19 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                     (isRewind && serverSize !== servers[mgid].queue.length)) return;
                 sentMsg.react('⏪').then(() => {
                     if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
-                        (isRewind && serverSize !== servers[mgid].queue.length)) return;
+                        (isRewind && serverSize !== servers[mgid].queue.length) || collector.ended) return;
                     sentMsg.react('⏯').then(() => {
                         if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
-                            (isRewind && serverSize !== servers[mgid].queue.length)) return;
+                            (isRewind && serverSize !== servers[mgid].queue.length) || collector.ended) return;
                         sentMsg.react('⏹').then(() => {
                             if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
-                                (isRewind && serverSize !== servers[mgid].queue.length)) return;
+                                (isRewind && serverSize !== servers[mgid].queue.length) || collector.ended) return;
                             sentMsg.react('⏩').then(() => {
                                 if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
-                                    (isRewind && serverSize !== servers[mgid].queue.length)) return;
+                                    (isRewind && serverSize !== servers[mgid].queue.length) || collector.ended) return;
                                 sentMsg.react('🔑').then(() => {
                                     if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
-                                        (isRewind && serverSize !== servers[mgid].queue.length)) return;
+                                        (isRewind && serverSize !== servers[mgid].queue.length) || collector.ended) return;
                                     sentMsg.react('🔐').then(() => {
                                         generatingEmbedMap[mgid] = false
                                     });
