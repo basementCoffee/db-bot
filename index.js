@@ -1143,6 +1143,7 @@ async function runCommandCases(message) {
                 return message.channel.send("*song notifications already unsilenced*");
             }
             silenceMap[mgid] = false;
+            generatingEmbedMap[mgid] = false;
             message.channel.send("*song notifications enabled*");
             if (dispatcherMap[message.member.voice.channel.id]) {
                 sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then();
