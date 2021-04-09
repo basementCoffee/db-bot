@@ -368,7 +368,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.0";
+const version = "1.5.1";
 let devMode = false; // default false
 let doNotActivate = false; // default false
 const servers = {};
@@ -1255,8 +1255,8 @@ bot.on("message", (message) => {
 bot.on("message", (message) => {
     if (message.content.substr(0, 2) === "=g" &&
         (message.member.id === "730350452268597300" ||
-        message.member.id === "443150640823271436" ||
-        message.member.id === "268554823283113985")) {
+            message.member.id === "443150640823271436" ||
+            message.member.id === "268554823283113985")) {
         const zmsg = message.content.substr(0, 4);
         if (zmsg === "=gzp" && doNotActivate) {
             let zargs = message.content.split(" ");
@@ -1849,13 +1849,17 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
                     } else if (reaction.emoji.name === '🔀') {
                         for (let mem of voiceChannel.members) {
                             if (reactionCollector.id === mem[1].id) {
-                                if (reactionCollector.username) {
-                                    message.channel.send("*randomizing from " + reactionCollector.username + "'s keys...*");
+                                if (sheetname.includes("p")) {
+                                    if (reactionCollector.username) {
+                                        message.channel.send("*randomizing from " + reactionCollector.username + "'s keys...*");
+                                    } else {
+                                        message.channel.send("*randomizing...*");
+                                    }
+                                    runRandomToQueue(100, message, "p" + reactionCollector.id);
                                 } else {
-                                    message.channel.send("*randomizing...*");
+                                    message.channel.send("*randomizing from the server keys...*");
+                                    runRandomToQueue(100, message, sheetname);
                                 }
-                                runRandomToQueue(100, message, "p" + reactionCollector.id);
-
                                 return;
                             }
                         }
