@@ -368,7 +368,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.4.1";
+const version = "1.5.0";
 let devMode = false; // default false
 let doNotActivate = false; // default false
 const servers = {};
@@ -1153,8 +1153,8 @@ async function runCommandCases(message) {
                 "\ngzs - statistics" +
                 "\ngzi - bot id" +
                 "\ngzd - toggle dev mode" +
-                "\ngzk - kill a process" +
-                "\ngzp - start a process"
+                "\n=gzk - kill a process" +
+                "\n=gzp - start a process"
             );
             break;
         case "gzs":
@@ -1172,23 +1172,15 @@ async function runCommandCases(message) {
             message.channel.send("your id: " + message.member.id);
             break;
         case "gzd":
-            if (message.member.id.toString() !== "443150640823271436") return message.channel.send("are you sure?");
-            if (devMode) {
-                devMode = false;
-                message.channel.send("*devmode is off*");
-            } else {
-                devMode = true;
-                message.channel.send("*devmode is on*");
-            }
-            break;
-        case "gzk":
             if (!args[1]) {
-                message.channel.send("active: " + process.pid + " (" + version + ")");
-                return;
+                message.channel.send("bot id: " + process.pid.toString() + "(" + "dev mode: " + devMode + ")");
+            }
+            if (devMode && args[1] === process.pid.toString()) {
+                devMode = false;
+                message.channel.send("*devmode is off* " + process.pid.toString());
             } else if (args[1] === process.pid.toString()) {
-                message.channel.send("db bot " + process.pid + " has been sidelined");
-                doNotActivate = true;
-                console.log("-sidelined-");
+                devMode = true;
+                message.channel.send("*devmode is on* " + process.pid.toString());
             }
             break;
         case "gv":
@@ -1233,21 +1225,72 @@ bot.on('guildCreate', guild => {
 });
 
 
+bot.once('ready', () => {
+    bot.channels.cache.get("827195452507160627").send("=gzc");
+});
+
+// calibrate on startup
+bot.on("message", (message) => {
+    if (message.content.substr(0, 16) === "=db-bot-process&" &&
+        (message.member.id.toString() === "730350452268597300" ||
+            message.member.id.toString() === "443150640823271436" ||
+            message.member.id.toString() === "268554823283113985")) {
+        console.log("-calibrating-")
+        let versionNum = message.content.substr(17, 3);
+        if (parseInt(versionNum) > parseInt(process.version.toString().substr(0, 3))) {
+            doNotActivate = true;
+            console.log("-sidelined-");
+            return;
+        }
+        if (parseInt(message.content.substr(message.content.lastIndexOf("ver") + 3, 10)) > process.pid) {
+            doNotActivate = true;
+            console.log("-sidelined-");
+        }
+    }
+});
+
+
 // parses message, provides a response
 bot.on("message", (message) => {
-    if (doNotActivate) {
-        if (message.member.id.toString() === "443150640823271436" &&
-            message.content.substr(0, 4) === "=gzp") {
+    if (message.content.substr(0, 2) === "=g" &&
+        (message.member.id === "730350452268597300" ||
+        message.member.id === "443150640823271436" ||
+        message.member.id === "268554823283113985")) {
+        const zmsg = message.content.substr(0, 4);
+        if (zmsg === "=gzp" && doNotActivate) {
             let zargs = message.content.split(" ");
             if (!zargs[1]) {
                 message.channel.send("Bot sidelined: " + process.pid + " (" + version + ")");
-            } else if (zargs[1] === process.pid.toString()) {
+            } else if (zargs[1] === process.pid.toString() || zargs[1] === "all") {
                 doNotActivate = false;
                 devMode = true;
                 message.channel.send("db bot " + process.pid + " is now active & in dev mode (prefix '=')");
                 console.log("-active-");
             }
+            return;
+        } else if (zmsg === "=gzk" && !doNotActivate) {
+            let zargs = message.content.split(" ");
+            if (!zargs[1]) {
+                let dm = "";
+                if (devMode) {
+                    dm = "(dev mode)"
+                }
+                message.channel.send("active: " + process.pid + " (" + version + ") " + dm);
+                return;
+            } else if (zargs[1] === process.pid.toString() || zargs[1] === "all") {
+                message.channel.send("db bot " + process.pid + " has been sidelined");
+                doNotActivate = true;
+                console.log("-sidelined-");
+            }
+            return;
+        } else if (zmsg === "=gzc") {
+            if (doNotActivate) {
+                return;
+            }
+            message.channel.send("=db-bot-process&" + process.version.toString().replace(".", "") + "ver" + process.pid);
         }
+    }
+    if (doNotActivate) {
         return;
     }
     if (message.author.bot) return;
