@@ -369,7 +369,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 const version = "1.5.4";
-const buildNo = "01050401"; // major, minor, patch, build
+const buildNo = "01050402"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = false; // default false - (see: bot.on('ready'))
 const servers = {};
@@ -2013,23 +2013,24 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                     filter: "audioonly",
                     quality: "140",
                     volume: false,
-                    highWaterMark: 1 << 26
+                    highWaterMark: 1 << 25
                 });
             } else {
                 dispatcher = connection
                     .play(await spdl(url, {
                         opusEncoded: true,
                         filter: 'audioonly',
-                        highWaterMark: 1 << 26,
+                        highWaterMark: 1 << 25,
                         volume: false,
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
                     }));
             }
-
             dispatcherMap[voiceChannel.id] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id] && sendEmbed) {
-                sendLinkAsEmbed(message, url, voiceChannel, isRewind).then();
+                sendLinkAsEmbed(message, url, voiceChannel, isRewind).then(
+                    dispatcher.setVolume(0.5)
+                );
             }
             dispatcher.once("finish", async () => {
                 let server = servers[message.guild.id];
