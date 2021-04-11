@@ -368,10 +368,10 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.3";
-const buildNo = "01050304"; // major, minor, patch, build
+const version = "1.5.4";
+const buildNo = "01050401"; // major, minor, patch, build
 let devMode = false; // default false
-let isInactive = false; // toggles true - (see: bot.on('ready'))
+let isInactive = false; // default false - (see: bot.on('ready'))
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -1175,18 +1175,18 @@ async function runCommandCases(message) {
             message.channel.send("bot id: " + bot.user.id);
             message.channel.send("your id: " + message.member.id);
             break;
-        case "gzd":
-            if (!args[1]) {
-                message.channel.send("bot id: " + process.pid.toString() + "(" + "dev mode: " + devMode + ")");
-            }
-            if (devMode && args[1] === process.pid.toString()) {
-                devMode = false;
-                message.channel.send("*devmode is off* " + process.pid.toString());
-            } else if (args[1] === process.pid.toString()) {
-                devMode = true;
-                message.channel.send("*devmode is on* " + process.pid.toString());
-            }
-            break;
+        // case "gzd":
+        //     if (!args[1]) {
+        //         message.channel.send("bot id: " + process.pid.toString() + "(" + "dev mode: " + devMode + ")");
+        //     }
+        //     if (devMode && args[1] === process.pid.toString()) {
+        //         devMode = false;
+        //         message.channel.send("*devmode is off* " + process.pid.toString());
+        //     } else if (args[1] === process.pid.toString()) {
+        //         devMode = true;
+        //         message.channel.send("*devmode is on* " + process.pid.toString());
+        //     }
+        //     break;
         case "gv":
             message.channel.send("version: " + version);
             break;
@@ -1233,10 +1233,13 @@ bot.once('ready', () => {
     // if (!devMode && !isInactive) bot.channels.cache.get("827195452507160627").send("=gzc");
     // bot starts up as inactive, if no response from the channel then activates itself
     if (!devMode) {
-        isInactive = true;
-        mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
-        console.log("-sidelined-");
-        checkToSeeActive();
+        if (isInactive) {
+            mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
+            console.log("-sidelined-");
+            checkToSeeActive();
+        } else {
+            bot.channels.cache.get("827195452507160627").send("=gzc");
+        }
     } else {
         console.log("-devmode enabled-")
     }
@@ -1303,7 +1306,6 @@ function checkToSeeActive() {
 function responseHandler() {
     if (numOfBotsOn < 1) {
         isInactive = false;
-        devMode = false;
         bot.channels.cache.get("827195452507160627").send("=gzk");
         clearInterval(resHandlerTimer);
         clearInterval(mainActiveTimer);
@@ -1331,8 +1333,7 @@ bot.on("message", (message) => {
                 message.channel.send("sidelined: " + process.pid + " (" + version + ")");
             } else if (zargs[1] === process.pid.toString() || zargs[1] === "all") {
                 isInactive = false;
-                devMode = true;
-                message.channel.send("db bot " + process.pid + " is now active & in dev mode (prefix '=')");
+                message.channel.send("db bot " + process.pid + " is now active");
                 console.log("-active-");
             }
             return;
