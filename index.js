@@ -368,8 +368,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.5";
-const buildNo = "01050500"; // major, minor, patch, build
+const version = "1.5.6";
+const buildNo = "01050600"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = true; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -572,7 +572,9 @@ function runPlayLinkCommand(message, args, mgid) {
     }
     if (!args[1]) {
         if (dispatcherMap[message.member.voice.channel.id] && dispatcherMapStatus[message.member.voice.channel] === "pause") {
+            dispatcherMap[message.member.voice.channel.id].resume();
             message.channel.send("*playing*");
+            return;
         }
         return message.channel.send("Where's the link? I can't read your mind... unfortunately.");
     }
@@ -933,9 +935,24 @@ async function runCommandCases(message) {
                 message.channel.send("*playing*");
             }
             break;
+        case "time":
+            if (dispatcherMap[message.member.voice.channel.id]) {
+                message.channel.send("timestamp: " + formatDuration(dispatcherMap[message.member.voice.channel.id].streamTime))
+            }
+            break;
+        case "timestamp":
+            if (dispatcherMap[message.member.voice.channel.id]) {
+                message.channel.send("timestamp: " + formatDuration(dispatcherMap[message.member.voice.channel.id].streamTime))
+            }
+            break;
+        case "ts":
+            if (dispatcherMap[message.member.voice.channel.id]) {
+                message.channel.send("timestamp: " + formatDuration(dispatcherMap[message.member.voice.channel.id].streamTime))
+            }
+            break;
         // !v prints out the version number
         case "v":
-            message.channel.send("version: " + version + "\n" + latestRelease);
+            message.channel.send("version: " + version + "\n" + "build: " + buildNo);
             break;
         // !devadd
         case "devadd":
@@ -1112,15 +1129,15 @@ async function runCommandCases(message) {
                     message.channel.send("*volume set to " + newVol + "*");
 
                 } else {
-                    message.channel.send("Need to provide volume limit (1-10)");
+                    message.channel.send("Need to provide a volume limit between 1-10");
                 }
             } catch (e) {
-                message.channel.send("Need to provide volume limit (1-10)");
+                message.channel.send("Need to provide a volume limit between 1-10");
             }
             break;
         case "volume":
             if (!args[1]) {
-                return message.channel.send("Need to provide volume limit (1-10)");
+                return message.channel.send("Need to provide a volume limit between 1-10");
             }
             if (!dispatcherMap[message.member.voice.channel.id]) {
                 return message.channel.send("*Stream could not be found*");
@@ -1132,10 +1149,10 @@ async function runCommandCases(message) {
                     message.channel.send("*volume set to " + newVol + "*");
 
                 } else {
-                    message.channel.send("Need to provide volume limit (1-10)");
+                    message.channel.send("Need to provide a volume limit between 1-10");
                 }
             } catch (e) {
-                message.channel.send("Need to provide volume limit (1-10)");
+                message.channel.send("Need to provide a volume limit between 1-10");
             }
             break;
         case "silence":
@@ -1176,6 +1193,7 @@ async function runCommandCases(message) {
             let embed = new MessageEmbed()
                 .setTitle("db bot - statistics")
                 .setDescription("version: " + version +
+                    "\nbuild: " + buildNo +
                     "\nservers: " + bot.guilds.cache.size +
                     "\nuptime: " + formatDuration(bot.uptime) +
                     "\nup since: " + bot.readyAt.toString().substr(0, 21)
@@ -1186,18 +1204,18 @@ async function runCommandCases(message) {
             message.channel.send("bot id: " + bot.user.id);
             message.channel.send("your id: " + message.member.id);
             break;
-        // case "gzd":
-        //     if (!args[1]) {
-        //         message.channel.send("bot id: " + process.pid.toString() + "(" + "dev mode: " + devMode + ")");
-        //     }
-        //     if (devMode && args[1] === process.pid.toString()) {
-        //         devMode = false;
-        //         message.channel.send("*devmode is off* " + process.pid.toString());
-        //     } else if (args[1] === process.pid.toString()) {
-        //         devMode = true;
-        //         message.channel.send("*devmode is on* " + process.pid.toString());
-        //     }
-        //     break;
+        case "gzd":
+            if (!args[1]) {
+                message.channel.send("bot id: " + process.pid.toString() + "(" + "dev mode: " + devMode + ")");
+            }
+            if (devMode && args[1] === process.pid.toString()) {
+                devMode = false;
+                message.channel.send("*devmode is off* " + process.pid.toString());
+            } else if (args[1] === process.pid.toString()) {
+                devMode = true;
+                message.channel.send("*devmode is on* " + process.pid.toString());
+            }
+            break;
         case "gv":
             message.channel.send("version: " + version);
             break;
@@ -1317,6 +1335,7 @@ function checkToSeeActive() {
 function responseHandler() {
     if (numOfBotsOn < 1) {
         isInactive = false;
+        devMode = false;
         bot.channels.cache.get("827195452507160627").send("=gzk");
         clearInterval(resHandlerTimer);
         clearInterval(mainActiveTimer);
@@ -1382,10 +1401,9 @@ bot.on("message", (message) => {
             }
         }
     }
-    if (isInactive) {
+    if (message.author.bot || isInactive) {
         return;
     }
-    if (message.author.bot) return;
     if (contentsContainCongrats(message)) {
         if (message.author.bot) return;
         if (!servers[message.guild.id]) {
@@ -2038,6 +2056,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
                     }));
             }
+            dispatcher.get
             dispatcherMap[voiceChannel.id] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id] && sendEmbed) {
