@@ -367,8 +367,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.9";
-const buildNo = "01050900"; // major, minor, patch, build
+const version = "1.5.10";
+const buildNo = "01051000"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = true; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -2026,8 +2026,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                     type: "opus",
                     filter: "audioonly",
                     quality: "140",
-                    volume: false,
-                    highWaterMark: 1 << 25
+                    volume: false
                 });
             } else {
                 dispatcher = connection
@@ -2275,17 +2274,24 @@ function runStopPlayingCommand(message, mgid, voiceChannel) {
         servers[mgid].queueHistory = [];
         servers[mgid].loop = false;
     }
+
     if (embedMessageMap[message.guild.id]) {
         embedMessageMap[message.guild.id].reactions.removeAll().then();
         embedMessageMap[message.guild.id] = "";
     }
-
     if (voiceChannel) {
-        voiceChannel.leave();
+        if (generatingEmbedMap[message.guild.id]) {
+            let waitForInit = setInterval(() => {
+                voiceChannel.leave();
+                clearInterval(waitForInit);
+            }, 1000)
+        } else {
+            voiceChannel.leave();
+        }
     }
 }
 
-var newWhat = false;
+let newWhat = false;
 
 /**
  * Runs the what's playing command. Can also look up database values if args[2] is present.
@@ -2385,5 +2391,5 @@ let dispatcherMap = new Map();
 let embedMessageMap = new Map();
 // The status of a dispatcher, either "pause" or "resume"
 let dispatcherMapStatus = new Map();
-// status of generating embed for a guild
+// boolean status of generating embed for a guild
 let generatingEmbedMap = new Map();
