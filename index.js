@@ -367,8 +367,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.7";
-const buildNo = "01050700"; // major, minor, patch, build
+const version = "1.5.8";
+const buildNo = "01050800"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = true; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -1972,8 +1972,8 @@ bot.on("voiceStateUpdate", update => {
     }
 });
 
-bot.on('warning', console.warn);
-process.on('warning', console.warn);
+// bot.on('warning', console.warn);
+// process.on('warning', console.warn);
 
 /**
  *  The play function. Plays a given link to the voice channel.
@@ -2045,21 +2045,22 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
             if (!silenceMap[message.guild.id] && sendEmbed) {
                 sendLinkAsEmbed(message, url, voiceChannel, isRewind).then(dispatcher.setVolume(0.5));
             }
-            dispatcher.once("finish", async () => {
-                let server = servers[message.guild.id];
-                if (server.loop) {
-                    await playSongToVC(message, whatsp, voiceChannel, true, false);
-                } else {
-                    server.queueHistory.push(server.queue.shift());
-                    if (server.queue.length > 0 && voiceChannel.members.size > 1) {
-                        whatsp = server.queue[0];
-                        whatspMap[voiceChannel] = whatsp;
-                        if (!whatsp) {
-                            return;
-                        }
+            dispatcher.once("finish", () => {
+                let songFinish = setInterval(async () => {
+                    let server = servers[message.guild.id];
+                    if (server.loop) {
                         await playSongToVC(message, whatsp, voiceChannel, true, false);
                     } else {
-                        let songFinish = setInterval(() => {
+                        server.queueHistory.push(server.queue.shift());
+                        if (voiceChannel.members.size < 2) {
+                            if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
+                                embedMessageMap[message.guild.id].reactions.removeAll().then();
+                                embedMessageMap[message.guild.id] = "";
+                            }
+                            connection.disconnect();
+                        } else if (server.queue.length > 0) {
+                            await playSongToVC(message, server.queue[0], voiceChannel, true, false);
+                        } else {
                             if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
                                 embedMessageMap[message.guild.id].reactions.removeAll().then();
                                 embedMessageMap[message.guild.id] = "";
@@ -2068,10 +2069,10 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                             servers[message.guild.id].queueHistory = [];
                             servers[message.guild.id].loop = false;
                             dispatcherMap[voiceChannel.id] = false;
-                            clearInterval(songFinish);
-                        }, 1500);
+                        }
                     }
-                }
+                    clearInterval(songFinish);
+                }, 1400);
             });
         } catch (e) {
             // Error catching - fault with the link?
