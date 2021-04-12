@@ -367,8 +367,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.8";
-const buildNo = "01050800"; // major, minor, patch, build
+const version = "1.5.9";
+const buildNo = "01050900"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = true; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -2017,7 +2017,6 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
         embedMessageMap[message.guild.id] = "";
     }
     whatspMap[voiceChannel] = whatToPlayS;
-
     voiceChannel.join().then(async connection => {
         try {
             let dispatcher;
@@ -2077,6 +2076,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
         } catch (e) {
             // Error catching - fault with the link?
             message.channel.send("Could not play <" + whatToPlayS + ">");
+            whatspMap[voiceChannel] = "";
             // search the db to find possible broken keys
             searchForBrokenLinkWithinDB(message, whatToPlayS);
             connection.disconnect();
@@ -2294,7 +2294,7 @@ var newWhat = false;
  * @param {*} mgid The guild id
  * @param {*} sheetname The name of the sheet reference
  */
-function runWhatsPCommand(args, message, mgid, sheetname) {
+async function runWhatsPCommand(args, message, mgid, sheetname) {
     if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
             queue: [],
@@ -2341,39 +2341,25 @@ function runWhatsPCommand(args, message, mgid, sheetname) {
         if (!message.member.voice.channel) {
             return message.channel.send("must be in a voice channel");
         }
-        if (
-            whatspMap[message.member.voice.channel] &&
-            whatspMap[message.member.voice.channel] !== ""
-        ) {
-            try {
-                if (
-                    whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel].length > 0
-                ) {
-
-                    // in case of force disconnect
-                    if (
-                        !message.guild.client.voice ||
-                        !message.guild.voice ||
-                        !message.guild.voice.channel
-                    ) {
-                        return sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then()
-                    }
-                    let msg = embedMessageMap[mgid];
-                    if (msg) {
-                        if (!generatingEmbedMap[mgid]) {
-                            embedMessageMap[mgid] = "";
-                            msg.reactions.removeAll().then(() =>
-                                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel)
-                            );
-                        } else {
-                            message.channel.send("*previous embed is generating...*");
-                        }
-                    }
+        if (whatspMap[message.member.voice.channel] && whatspMap[message.member.voice.channel] !== "") {
+            // in case of force disconnect
+            if (
+                !message.guild.client.voice ||
+                !message.guild.voice ||
+                !message.guild.voice.channel
+            ) {
+                return await sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel);
+            }
+            let msg = embedMessageMap[mgid];
+            if (msg) {
+                if (!generatingEmbedMap[mgid]) {
+                    embedMessageMap[mgid] = "";
+                    msg.reactions.removeAll().then(() =>
+                        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel)
+                    );
                 } else {
-                    message.channel.send("Nothing is playing right now");
+                    message.channel.send("*previous embed is generating...*");
                 }
-            } catch (e) {
-                message.channel.send(whatspMap[message.member.voice.channel]);
             }
         } else {
             message.channel.send("Nothing is playing right now");
