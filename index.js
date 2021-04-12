@@ -56,7 +56,6 @@ async function gsrun(cl, columnToRun, secondColumn, nameOfSheet) {
         return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
     }
 
-    // console.log("Data Size: " + dataSize.get(nameOfSheet));
     if (!dataSize.get(nameOfSheet)) {
         dataSize.set(nameOfSheet, 1);
         gsUpdateAdd2(cl, 1, "D", nameOfSheet);
@@ -368,8 +367,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.6";
-const buildNo = "01050600"; // major, minor, patch, build
+const version = "1.5.7";
+const buildNo = "01050700"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = true; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -448,10 +447,7 @@ function skipSong(message, voiceChannel, playMessageToChannel) {
         }
     }
     // if server queue is not empty
-    if (
-        servers[message.guild.id].queue &&
-        servers[message.guild.id].queue.length > 0
-    ) {
+    if (servers[message.guild.id].queue.length > 0) {
         servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
         if (playMessageToChannel) message.channel.send("*skipped*");
         // if there is still items in the queue then play next song
@@ -486,7 +482,6 @@ function runRemoveItemCommand(message, keyName, sheetName, sendMsgToChannel) {
                     couldNotFindKey = false;
                     await gsUpdateOverwrite(client2, -1, -1, sheetName);
                     await deleteRows(message, sheetName, i);
-                    // console.log("Removed: " + itemToCheck);
                     if (sendMsgToChannel) {
                         message.channel.send("*removed '" + itemToCheck + "'*");
                     }
@@ -542,11 +537,9 @@ function runPlayNowCommand(message, args, mgid, sheetName) {
         !message.guild.voice ||
         !message.guild.voice.channel
     ) {
-        if (silenceMap[mgid]) {
-            message.channel.send("*silence mode is on*");
-        }
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
+        servers[mgid].loop = false;
     }
     if (servers[mgid].queue.length >= maxQueueSize) {
         return message.channel.send("*max queue size has been reached*");
@@ -589,13 +582,11 @@ function runPlayLinkCommand(message, args, mgid) {
             loop: false
         };
     // in case of force disconnect
-    if (
-        !message.guild.client.voice ||
-        !message.guild.voice ||
-        !message.guild.voice.channel
+    if (!message.guild.voice || !message.guild.voice.channel
     ) {
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
+        servers[mgid].loop = false;
     }
     let queueWasEmpty = false
     if (servers[mgid].queue.length < 1) {
@@ -1405,7 +1396,6 @@ bot.on("message", (message) => {
         return;
     }
     if (contentsContainCongrats(message)) {
-        if (message.author.bot) return;
         if (!servers[message.guild.id]) {
             servers[message.guild.id] = {
                 queue: [],
@@ -1499,10 +1489,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
         };
     }
     // in case of force disconnect
-    if (
-        !message.guild.client.voice ||
-        !message.guild.voice ||
-        !message.guild.voice.channel
+    if (!message.guild.voice || !message.guild.voice.channel
     ) {
         servers[message.guild.id].queue = [];
         servers[message.guild.id].queueHistory = [];
@@ -1765,13 +1752,10 @@ function runRandomToQueue(num, message, sheetname) {
             loop: false
         };
     // in case of force disconnect
-    if (
-        !message.guild.client.voice ||
-        !message.guild.voice ||
-        !message.guild.voice.channel
-    ) {
+    if (!message.guild.voice || !message.guild.voice.channel) {
         servers[message.guild.id].queue = [];
         servers[message.guild.id].queueHistory = [];
+        servers[message.guild.id].loop = false;
     }
     if (servers[message.guild.id].queue.length >= maxQueueSize) {
         message.channel.send("*max queue size has been reached*");
@@ -1983,7 +1967,7 @@ function runKeysCommand(message, prefixString, sheetname, cmdType, voiceChannel,
 
 bot.on("voiceStateUpdate", update => {
     if (isInactive) return;
-    if (!update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions && update.member.id === bot.user.id) {
+    if (update.member.id === bot.user.id && !update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions) {
         embedMessageMap[update.guild.id].reactions.removeAll().then();
     }
 });
@@ -2056,7 +2040,6 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                         encoderArgs: ['-af', 'apulsator=hz=0.09']
                     }));
             }
-            dispatcher.get
             dispatcherMap[voiceChannel.id] = dispatcher;
             // if the server is not silenced then send the embed when playing
             if (!silenceMap[message.guild.id] && sendEmbed) {
@@ -2076,12 +2059,17 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
                         }
                         await playSongToVC(message, whatsp, voiceChannel, true, false);
                     } else {
-                        if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
-                            embedMessageMap[message.guild.id].reactions.removeAll().then();
-                            embedMessageMap[message.guild.id] = "";
-                        }
-                        connection.disconnect();
-                        dispatcherMap[voiceChannel.id] = false;
+                        let songFinish = setInterval(() => {
+                            if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
+                                embedMessageMap[message.guild.id].reactions.removeAll().then();
+                                embedMessageMap[message.guild.id] = "";
+                            }
+                            servers[message.guild.id].queue = [];
+                            servers[message.guild.id].queueHistory = [];
+                            servers[message.guild.id].loop = false;
+                            dispatcherMap[voiceChannel.id] = false;
+                            clearInterval(songFinish);
+                        }, 1500);
                     }
                 }
             });
@@ -2305,7 +2293,7 @@ var newWhat = false;
  * @param {*} mgid The guild id
  * @param {*} sheetname The name of the sheet reference
  */
-async function runWhatsPCommand(args, message, mgid, sheetname) {
+function runWhatsPCommand(args, message, mgid, sheetname) {
     if (!servers[message.guild.id]) {
         servers[message.guild.id] = {
             queue: [],
@@ -2314,13 +2302,10 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
         };
     }
     // in case of force disconnect
-    if (
-        !message.guild.client.voice ||
-        !message.guild.voice ||
-        !message.guild.voice.channel
-    ) {
+    if (!message.guild.voice || !message.guild.voice.channel) {
         servers[message.guild.id].queue = [];
         servers[message.guild.id].queueHistory = [];
+        servers[message.guild.id].loop = false;
     }
     if (args[1]) {
         gsrun(client2, "A", "B", sheetname).then((xdb) => {
@@ -2376,8 +2361,9 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
                     if (msg) {
                         if (!generatingEmbedMap[mgid]) {
                             embedMessageMap[mgid] = "";
-                            await msg.reactions.removeAll();
-                            sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel).then()
+                            msg.reactions.removeAll().then(() =>
+                                sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel)
+                            );
                         } else {
                             message.channel.send("*previous embed is generating...*");
                         }
