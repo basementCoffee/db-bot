@@ -350,7 +350,7 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
     gsrun(cl, "A", "B", "entries").then();
 }
 
-//---------------------------------- Above is Google Api --------------------
+//----------------------------------Above is Google API implementation --------------------
 
 
 const {MessageEmbed, Client} = require('discord.js');
@@ -361,14 +361,12 @@ const ytdl = require("ytdl-core-discord");
 
 // SPOTIFY BOT IMPORTS --------------------------
 const spdl = require('spdl-core');
-
 spdl.setCredentials(spotifyCID, spotifySCID);
 
-// SPOTIFY BOT IMPORTS --------------------------
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.10";
-const buildNo = "01051000"; // major, minor, patch, build
+const version = "1.5.11";
+const buildNo = "01051101"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = true; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -572,7 +570,6 @@ function runPlayLinkCommand(message, args, mgid) {
         return message.channel.send("Where's the link? I can't read your mind... unfortunately.");
     }
     if (!args[1].includes(".")) {
-        // message.channel.send("*I think you should be using " + prefixMap[mgid] + "d but ok then...*");
         return runDatabasePlayCommand(args, message, mgid, false, false);
     }
     if (!servers[mgid])
@@ -616,7 +613,7 @@ function runPlayLinkCommand(message, args, mgid) {
 
 /**
  * The execution for all of the bot commands
- * @param message
+ * @param message the message that triggered the bot
  * @returns {Promise<void>}
  */
 async function runCommandCases(message) {
@@ -826,13 +823,13 @@ async function runCommandCases(message) {
             break;
         // !? is the command for what's playing?
         case "?":
-            runWhatsPCommand(args, message, mgid, mgid);
+            await runWhatsPCommand(args, message, mgid, mgid);
             break;
         case "g?":
-            runWhatsPCommand(args, message, mgid, "entries");
+            await runWhatsPCommand(args, message, mgid, "entries");
             break;
         case "m?":
-            runWhatsPCommand(args, message, mgid, "p" + message.member.id);
+            await runWhatsPCommand(args, message, mgid, "p" + message.member.id);
             break;
         case "changeprefix":
             if (!args[1]) {
@@ -1230,13 +1227,8 @@ async function runCommandCases(message) {
                     }
                     let randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
                     message.channel.send(
-                        "Assuming " +
-                        numToCheck +
-                        " people. Your number is " +
-                        randomInt2 +
-                        "."
+                        "Assuming " + numToCheck + " people. Your number is " + randomInt2 + "."
                     );
-                    // message.channel.send("You need to input a upper limit");
                 }
             }
             break;
@@ -1268,7 +1260,7 @@ bot.once('ready', () => {
 
 let numOfBotsOn = 0;
 // calibrate on startup
-bot.on("message", (message) => {
+bot.on("message", async (message) => {
     // turn off active bots -- activates on '~db-bot-process'
     if (message.content.substr(0, 15) === "~db-bot-process" &&
         message.member.id.toString() === "730350452268597300" && !devMode) {
@@ -1327,11 +1319,12 @@ function responseHandler() {
     if (numOfBotsOn < 1) {
         isInactive = false;
         devMode = false;
-        bot.channels.cache.get("827195452507160627").send("=gzk");
         clearInterval(resHandlerTimer);
         clearInterval(mainActiveTimer);
-        console.log("-active-");
-        bot.channels.cache.get("827195452507160627").send("=gzc");
+        bot.channels.cache.get("827195452507160627").send("=gzk").then(() => {
+            console.log("-active-");
+            bot.channels.cache.get("827195452507160627").send("=gzc");
+        });
         return true;
     } else if (numOfBotsOn > 1) {
         bot.channels.cache.get("827195452507160627").send("=gzc");
@@ -1342,7 +1335,7 @@ function responseHandler() {
 
 
 // parses message, provides a response
-bot.on("message", (message) => {
+bot.on("message", async (message) => {
     if (message.content.substr(0, 2) === "=g" &&
         (message.member.id === "730350452268597300" ||
             message.member.id === "443150640823271436" ||
@@ -1387,9 +1380,8 @@ bot.on("message", (message) => {
                 let variation = Math.floor(Math.random() * 15000);
                 clearInterval(mainActiveTimer);
                 mainActiveTimer = setInterval(checkToSeeActive, 5000 + variation);
-            } else {
-                return message.channel.send("~db-bot-process" + buildNo + "ver" + process.pid);
             }
+            return bot.channels.cache.get("827195452507160627").send("~db-bot-process" + buildNo + "ver" + process.pid);
         }
     }
     if (message.author.bot || isInactive) {
@@ -1406,7 +1398,7 @@ bot.on("message", (message) => {
         message.channel.send("Congratulations!").then();
         return playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel, false, true);
     } else {
-        runCommandCases(message).then();
+        await runCommandCases(message);
     }
 });
 
@@ -1420,20 +1412,32 @@ bot.on("message", (message) => {
 function runAddCommand(args, message, sheetName, printMsgToChannel) {
     let songsAddedInt = 0;
     let z = 1;
-    while (args[z] && args[z + 1]) {
-        let linkZ = args[z + 1];
-        if (linkZ.substring(linkZ.length - 1) === ",") {
-            linkZ = linkZ.substring(0, linkZ.length - 1);
+    gsrun(client2, "A", "B", sheetName).then(async (xdb) => {
+        while (args[z] && args[z + 1]) {
+            let linkZ = args[z + 1];
+            if (linkZ.substring(linkZ.length - 1) === ",") {
+                linkZ = linkZ.substring(0, linkZ.length - 1);
+            }
+            if (args[z].includes(".")) {
+                message.channel.send("did not add '" + args[z] + "', names cannot include '.'");
+                songsAddedInt--;
+            } else {
+                let alreadyExists = false;
+                for (let x of xdb.congratsDatabase.keys()) {
+                    if (x === args[z]) {
+                        message.channel.send("'" + args[z] + "' is already in your list");
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+                if (!alreadyExists) {
+                    gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", sheetName);
+                }
+            }
+            z = z + 2;
+            songsAddedInt += 1;
         }
-        if (args[z].includes(".")) {
-            message.channel.send("did not add '" + args[z] + "', names cannot include links");
-            songsAddedInt--;
-        } else {
-            gsUpdateAdd(client2, args[z], args[z + 1], "A", "B", sheetName);
-        }
-        z = z + 2;
-        songsAddedInt += 1;
-    }
+    });
     if (printMsgToChannel) {
         let ps = prefixMap[message.guild.id];
         // the specific database user-access character
@@ -1454,8 +1458,6 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
                 gsUpdateOverwrite(client2, -1, songsAddedInt, sheetName);
                 message.channel.send("*" + songsAddedInt + " songs added to the database. (see '" + ps + databaseType + "keys')*");
             });
-        } else {
-            // message.channel.send("Please call '!keys' to initialize the database.");
         }
     }
 }
@@ -1465,12 +1467,12 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
  * The database referenced depends on what is passed in via mgid.
  * @param {*} args the message split by spaces into an array
  * @param {*} message the message that triggered the bot
- * @param {*} sheetname the name of the google sheet to reference
+ * @param {*} sheetName the name of the google sheet to reference
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
  * @returns whether the play command has been handled accordingly, no followup
  */
-function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErrorMsg) {
+function runDatabasePlayCommand(args, message, sheetName, playRightNow, printErrorMsg) {
     if (!args[1]) {
         message.channel.send(
             "There's nothing to play! ... I'm just gonna pretend that you didn't mean that."
@@ -1498,7 +1500,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
         message.channel.send("*max queue size has been reached*");
         return true;
     }
-    gsrun(client2, "A", "B", sheetname).then((xdb) => {
+    gsrun(client2, "A", "B", sheetName).then((xdb) => {
         let queueWasEmpty = false;
         // if the queue is empty then play
         if (servers[message.guild.id].queue.length < 1) {
@@ -1555,7 +1557,7 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
                     }
                     return false;
                 } else if (!printErrorMsg) {
-                    if (sheetname.includes("p")) {
+                    if (sheetName.includes("p")) {
                         message.channel.send("There's something wrong with what you put there.");
                         return true;
                     } else {
@@ -1604,9 +1606,12 @@ function runDatabasePlayCommand(args, message, sheetname, playRightNow, printErr
     return true;
 }
 
-// The search command
-let ss; // the search string
-let ssi; // the number of searches found
+
+// the search string
+let ss;
+// the number of searches found
+let ssi;
+
 /**
  * Searches the database for the keys matching args[1].
  * @param keyName the keyName
@@ -2189,7 +2194,7 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                                     if (!dispatcherMap[voiceChannel.id] || (!isRewind && serverSize > servers[mgid].queue.length) ||
                                         (isRewind && serverSize !== servers[mgid].queue.length) || collector.ended) return;
                                     sentMsg.react('🔐').then(() => {
-                                        generatingEmbedMap[mgid] = false
+                                        generatingEmbedMap[mgid] = false;
                                     });
                                 });
                             });
@@ -2207,9 +2212,9 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                     }
                     return false;
                 };
-                if (timeMS < 3600000) {
-                    timeMS = 3600000;
-                }
+
+                timeMS += 3600000;
+
                 const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
 
                 collector.on('collect', (reaction, reactionCollector) => {
@@ -2387,7 +2392,7 @@ let silenceMap = new Map();
 let dataSize = new Map();
 // The song stream, uses voice channel
 let dispatcherMap = new Map();
-// The list of embeds, uses guild id
+// The messages containing embeds, uses guild id
 let embedMessageMap = new Map();
 // The status of a dispatcher, either "pause" or "resume"
 let dispatcherMapStatus = new Map();
