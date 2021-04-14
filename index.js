@@ -365,9 +365,9 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.12";
-const buildNo = "01051102"; // major, minor, patch, build
-let devMode = false; // default false
+const version = "1.5.13";
+const buildNo = "01051301"; // major, minor, patch, build
+let devMode = true; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 bot.login(token);
@@ -2151,12 +2151,12 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
     }
     embed.setThumbnail(imgLink);
     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
-        embedMessageMap[message.guild.id].reactions.removeAll().then();
+        await embedMessageMap[message.guild.id].reactions.removeAll();
         embedMessageMap[message.guild.id] = "";
     }
     if (url === whatspMap[voiceChannel])
         message.channel.send(embed)
-            .then(await function (sentMsg) {
+            .then(async function (sentMsg) {
                 embedMessageMap[mgid] = sentMsg;
                 if (newWhat) {
                     newWhat = false;
@@ -2354,7 +2354,7 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
             if (msg) {
                 if (!generatingEmbedMap[mgid]) {
                     embedMessageMap[mgid] = "";
-                    return msg.reactions.removeAll().then(() =>
+                    return await msg.reactions.removeAll().then(() =>
                         sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel)
                     );
                 } else {
