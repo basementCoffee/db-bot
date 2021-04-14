@@ -365,10 +365,10 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.11";
-const buildNo = "01051101"; // major, minor, patch, build
+const version = "1.5.12";
+const buildNo = "01051102"; // major, minor, patch, build
 let devMode = false; // default false
-let isInactive = true; // default true - (see: bot.on('ready'))
+let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 bot.login(token);
 // the max size of the queue
@@ -873,20 +873,14 @@ async function runCommandCases(message) {
             break;
         // !pa
         case "pa":
-            if (
-                message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
-            ) {
+            if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
                 dispatcherMap[message.member.voice.channel.id].pause();
                 dispatcherMapStatus[message.member.voice.channel] = "pause";
                 message.channel.send("*paused*");
             }
             break;
         case "pause":
-            if (
-                message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
-            ) {
+            if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
                 dispatcherMap[message.member.voice.channel.id].pause();
                 dispatcherMapStatus[message.member.voice.channel] = "pause";
                 message.channel.send("*paused*");
@@ -894,30 +888,21 @@ async function runCommandCases(message) {
             break;
         // !pl
         case "pl":
-            if (
-                message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
-            ) {
+            if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
                 dispatcherMap[message.member.voice.channel.id].resume();
                 dispatcherMapStatus[message.member.voice.channel] = "resume";
                 message.channel.send("*playing*");
             }
             break;
         case "res":
-            if (
-                message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
-            ) {
+            if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
                 dispatcherMap[message.member.voice.channel.id].resume();
                 dispatcherMapStatus[message.member.voice.channel] = "resume";
                 message.channel.send("*playing*");
             }
             break;
         case "resume":
-            if (
-                message.member.voice &&
-                dispatcherMap[message.member.voice.channel.id]
-            ) {
+            if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
                 dispatcherMap[message.member.voice.channel.id].resume();
                 dispatcherMapStatus[message.member.voice.channel] = "resume";
                 message.channel.send("*playing*");
@@ -1233,6 +1218,7 @@ async function runCommandCases(message) {
             }
             break;
     }
+    // message.channel.send(`Latency is ${Date.now() - message.createdTimestamp}ms.\nAPI Latency is ${Math.round(bot.ws.ping)}ms`);
 }
 
 bot.on('guildCreate', guild => {
@@ -1333,7 +1319,6 @@ function responseHandler() {
     return false;
 }
 
-
 // parses message, provides a response
 bot.on("message", async (message) => {
     if (message.content.substr(0, 2) === "=g" &&
@@ -1381,7 +1366,10 @@ bot.on("message", async (message) => {
                 clearInterval(mainActiveTimer);
                 mainActiveTimer = setInterval(checkToSeeActive, 5000 + variation);
             }
-            return bot.channels.cache.get("827195452507160627").send("~db-bot-process" + buildNo + "ver" + process.pid);
+            if (!devMode) {
+                return bot.channels.cache.get("827195452507160627").send("~db-bot-process" + buildNo + "ver" + process.pid);
+            }
+            return;
         }
     }
     if (message.author.bot || isInactive) {
@@ -1398,7 +1386,7 @@ bot.on("message", async (message) => {
         message.channel.send("Congratulations!").then();
         return playSongToVC(message, "https://www.youtube.com/watch?v=oyFQVZ2h0V8", message.member.voice.channel, false, true);
     } else {
-        await runCommandCases(message);
+        runCommandCases(message).then();
     }
 });
 
@@ -1437,29 +1425,29 @@ function runAddCommand(args, message, sheetName, printMsgToChannel) {
             z = z + 2;
             songsAddedInt += 1;
         }
-    });
-    if (printMsgToChannel) {
-        let ps = prefixMap[message.guild.id];
-        // the specific database user-access character
-        let databaseType = args[0].substr(1, 1).toLowerCase();
-        if (databaseType === "a") {
-            databaseType = "";
-        }
-        if (songsAddedInt === 1) {
-            let typeString;
-            if (databaseType === "m") {
-                typeString = "your personal";
-            } else {
-                typeString = "the server's";
+        if (printMsgToChannel) {
+            let ps = prefixMap[message.guild.id];
+            // the specific database user-access character
+            let databaseType = args[0].substr(1, 1).toLowerCase();
+            if (databaseType === "a") {
+                databaseType = "";
             }
-            message.channel.send("*song added to " + typeString + " database. (see '" + ps + databaseType + "keys')*");
-        } else if (songsAddedInt > 1) {
-            gsrun(client2, "A", "B", sheetName).then(() => {
-                gsUpdateOverwrite(client2, -1, songsAddedInt, sheetName);
-                message.channel.send("*" + songsAddedInt + " songs added to the database. (see '" + ps + databaseType + "keys')*");
-            });
+            if (songsAddedInt === 1) {
+                let typeString;
+                if (databaseType === "m") {
+                    typeString = "your personal";
+                } else {
+                    typeString = "the server's";
+                }
+                message.channel.send("*song added to " + typeString + " database. (see '" + ps + databaseType + "keys')*");
+            } else if (songsAddedInt > 1) {
+                gsrun(client2, "A", "B", sheetName).then(() => {
+                    gsUpdateOverwrite(client2, -1, songsAddedInt, sheetName);
+                    message.channel.send("*" + songsAddedInt + " songs added to the database. (see '" + ps + databaseType + "keys')*");
+                });
+            }
         }
-    }
+    });
 }
 
 /**
@@ -1642,8 +1630,7 @@ function runSearchCommand(keyName, xdb) {
     }
 
     return {
-        ss: ss,
-        ssi: ssi
+        ss: ss, ssi: ssi
     };
 }
 
@@ -1739,9 +1726,9 @@ function sendHelp(message, prefixString) {
  * Runs the checks to add random songs to the queue
  * @param num The number of songs to be added to random, could be string
  * @param message The message that triggered the bot
- * @param sheetname The name of the sheet to reference
+ * @param sheetName The name of the sheet to reference
  */
-function runRandomToQueue(num, message, sheetname) {
+function runRandomToQueue(num, message, sheetName) {
     if (!message.member.voice.channel) {
         return message.channel.send("must be in a voice channel to play random");
     }
@@ -1766,7 +1753,7 @@ function runRandomToQueue(num, message, sheetname) {
         message.channel.send("*max queue size has been reached*");
         return;
     }
-    gsrun(client2, "A", "B", sheetname).then((xdb) => {
+    gsrun(client2, "A", "B", sheetName).then((xdb) => {
         if (!num) {
             addRandomToQueue(message, 1, xdb.congratsDatabase);
         } else {
@@ -2263,7 +2250,9 @@ async function sendLinkAsEmbed(message, url, voiceChannel, isRewind) {
                         runKeysCommand(message, prefixMap[mgid], "p" + reactionCollector.id, "m", voiceChannel, reactionCollector);
                     }
                 });
+                // message.channel.send(`Button creation latency is ${Date.now() - message.createdTimestamp}ms`);
             });
+    // message.channel.send(`Embed creation latency is ${Date.now() - message.createdTimestamp}ms`);
 }
 
 /**
@@ -2365,7 +2354,7 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
             if (msg) {
                 if (!generatingEmbedMap[mgid]) {
                     embedMessageMap[mgid] = "";
-                    msg.reactions.removeAll().then(() =>
+                    return msg.reactions.removeAll().then(() =>
                         sendLinkAsEmbed(message, whatspMap[message.member.voice.channel], message.member.voice.channel)
                     );
                 } else {
@@ -2376,6 +2365,7 @@ async function runWhatsPCommand(args, message, mgid, sheetname) {
             message.channel.send("Nothing is playing right now");
         }
     }
+    // message.channel.send(`WhatsP: Latency is ${Date.now() - message.createdTimestamp}ms.`);
 }
 
 // What's playing, uses voice channel
