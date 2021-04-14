@@ -367,7 +367,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 // UPDATE HERE - Before Git Push
 const version = "1.5.13";
 const buildNo = "01051301"; // major, minor, patch, build
-let devMode = true; // default false
+let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 bot.login(token);
