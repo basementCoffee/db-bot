@@ -1287,16 +1287,16 @@ bot.on("message", async (message) => {
         if (!isInactive) {
             console.log("calibrating...");
             let oBuildNo = message.content.substr(15, 8);
-            if (parseInt(oBuildNo) > buildNo) {
+            if (parseInt(oBuildNo) > parseInt(buildNo)) {
                 isInactive = true;
                 clearInterval(mainActiveTimer);
                 mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
-                return console.log("-sidelined-");
-            } else if (parseInt(message.content.substr(message.content.lastIndexOf("ver") + 3, 10)) > process.pid) {
+                return console.log("-sidelined(1)-");
+            } else if (parseInt(oBuildNo) === parseInt(buildNo) && parseInt(message.content.substr(message.content.lastIndexOf("ver") + 3, 10)) > process.pid) {
                 isInactive = true;
                 clearInterval(mainActiveTimer);
                 mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
-                return console.log("-sidelined-");
+                return console.log("-sidelined(2)-");
             }
         }
     }
