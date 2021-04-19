@@ -1,6 +1,4 @@
-const {
-    google
-} = require("googleapis");
+const {google} = require("googleapis");
 require('dotenv').config()
 
 let client_email = process.env.CLIENT_EMAIL.replace(/\\n/gm, '\n');
@@ -383,8 +381,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.16";
-const buildNo = "01051600"; // major, minor, patch, build
+const version = "1.5.17";
+const buildNo = "01051701"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -1979,10 +1977,8 @@ bot.on("voiceStateUpdate", update => {
     // if the bot is the one leaving
     if (update.member.id === bot.user.id && !update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions) {
         embedMessageMap[update.guild.id].reactions.removeAll().then();
-        if (servers[update.guild.id].collector) {
-            servers[update.guild.id].collector.stop();
-            servers[update.guild.id].collector = false;
-        }
+        servers[update.guild.id].collector.stop();
+        servers[update.guild.id].collector = false;
     } else {
         let leaveVCTimeout = setInterval(() => {
             if (update.channel && !dispatcherMap[update.channel.id] && update.channel.members.size < 2) {
@@ -2034,12 +2030,11 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
     }
     // remove previous embed buttons
     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions && sendEmbed) {
-        embedMessageMap[message.guild.id].reactions.removeAll().then();
+        embedMessageMap[message.guild.id].reactions.removeAll();
         embedMessageMap[message.guild.id] = "";
-        if (servers[message.guild.id].collector) {
-            servers[message.guild.id].collector.stop();
-            servers[message.guild.id].collector = false;
-        }
+        servers[message.guild.id].collector.stop();
+        servers[message.guild.id].collector = false;
+
     }
 
     whatspMap[voiceChannel] = whatToPlayS;
@@ -2081,10 +2076,8 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
                     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
                         embedMessageMap[message.guild.id].reactions.removeAll().then();
                         embedMessageMap[message.guild.id] = false;
-                        if (servers[message.guild.id].collector) {
-                            servers[message.guild.id].collector.stop();
-                            servers[message.guild.id].collector = false;
-                        }
+                        servers[message.guild.id].collector.stop();
+                        servers[message.guild.id].collector = false;
                     }
                     let server = servers[message.guild.id];
                     if (voiceChannel.members.size < 2) {
@@ -2193,10 +2186,8 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
     if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
         await embedMessageMap[message.guild.id].reactions.removeAll();
         embedMessageMap[message.guild.id] = "";
-        if (servers[message.guild.id].collector) {
-            servers[message.guild.id].collector.stop();
-            servers[message.guild.id].collector = false;
-        }
+        servers[message.guild.id].collector.stop();
+        servers[message.guild.id].collector = false;
     }
 
     if (url === whatspMap[voiceChannel])
@@ -2309,12 +2300,10 @@ function runStopPlayingCommand(message, mgid, voiceChannel) {
         servers[mgid].loop = false;
     }
     if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
-        embedMessageMap[mgid].reactions.removeAll().then();
+        embedMessageMap[mgid].reactions.removeAll();
         embedMessageMap[mgid] = "";
-        if (servers[mgid].collector) {
-            servers[mgid].collector.stop();
-            servers[mgid].collector = false;
-        }
+        servers[mgid].collector.stop();
+        servers[mgid].collector = false;
     }
     if (voiceChannel) {
         if (generatingEmbedMap[message.guild.id]) {
