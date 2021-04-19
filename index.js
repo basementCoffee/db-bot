@@ -387,7 +387,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 const version = "1.5.15";
-const buildNo = "01051501"; // major, minor, patch, build
+const buildNo = "01051503"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -2070,7 +2070,7 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, isRewind) {
             let tempInterval = setInterval(() => {
                 clearInterval(tempInterval);
                 dispatcher.resume();
-            }, 900);
+            }, 200);
             dispatcher.once("finish", () => {
                 let songFinish = setInterval(async () => {
                     let server = servers[message.guild.id];
