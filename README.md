@@ -7,7 +7,7 @@
 
 #### How to use
 
-<img src="assets/commands-list.png" height=400>
+<img src="assets/commands-list.png" height=700>
 
 ## Invite - add to your server
 
