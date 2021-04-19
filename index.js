@@ -371,10 +371,7 @@ function gsUpdateOverwrite(cl, value, addOn, nameOfSheet) {
 //----------------------------------Above is Google API implementation --------------------
 
 
-const {
-    MessageEmbed,
-    Client
-} = require('discord.js');
+const {MessageEmbed, Client} = require('discord.js');
 // initialization
 const bot = new Client();
 const ytdl = require("ytdl-core-discord");
@@ -648,21 +645,21 @@ async function runCommandCases(message) {
             await gsrun(client2, "A", "B", "prefixes").then(async (xdb) => {
                 let newPrefix = xdb.congratsDatabase.get(mgid);
                 if (!newPrefix) {
-                    prefixMap[mgid] = "!";
-                    await gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
+                    prefixMap[mgid] = ".";
+                    await gsUpdateAdd(client2, mgid, ".", "A", "B", "prefixes");
                 } else {
                     prefixMap[mgid] = newPrefix;
                 }
             });
         } catch (e) {
-            prefixMap[mgid] = "!";
-            gsUpdateAdd(client2, mgid, "!", "A", "B", "prefixes");
+            prefixMap[mgid] = ".";
+            gsUpdateAdd(client2, mgid, ".", "A", "B", "prefixes");
         }
         prefixString = prefixMap[mgid];
     }
     let firstWordBegin = message.content.substr(0, 14).trim() + " ";
     if (firstWordBegin.substr(0, 1) !== prefixString) {
-        if (firstWordBegin === "!changeprefix " || firstWordBegin === "!keys " || firstWordBegin === "!h " || firstWordBegin === "!help ") {
+        if (firstWordBegin === ".changeprefix " || firstWordBegin === ".keys " || firstWordBegin === ".h " || firstWordBegin === ".help ") {
             message.channel.send("Current prefix is: " + prefixString);
         }
         return;
