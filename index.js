@@ -381,8 +381,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 
 // UPDATE HERE - Before Git Push
-const version = "1.5.17";
-const buildNo = "01051701"; // major, minor, patch, build
+const version = "1.5.18";
+const buildNo = "01051800"; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -1977,6 +1977,7 @@ bot.on("voiceStateUpdate", update => {
     // if the bot is the one leaving
     if (update.member.id === bot.user.id && !update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions) {
         embedMessageMap[update.guild.id].reactions.removeAll().then();
+        embedMessageMap[update.guild.id] = false;
         servers[update.guild.id].collector.stop();
         servers[update.guild.id].collector = false;
     } else {
@@ -2034,7 +2035,6 @@ function playSongToVC(message, whatToPlay, voiceChannel, sendEmbed) {
         embedMessageMap[message.guild.id] = "";
         servers[message.guild.id].collector.stop();
         servers[message.guild.id].collector = false;
-
     }
 
     whatspMap[voiceChannel] = whatToPlayS;
@@ -2193,22 +2193,18 @@ async function sendLinkAsEmbed(message, url, voiceChannel) {
     if (url === whatspMap[voiceChannel])
         message.channel.send(embed)
             .then(await function (sentMsg) {
-                embedMessageMap[mgid] = sentMsg;
-                if (newWhat) {
-                    newWhat = false;
-                    return;
-                }
                 if (!showButtons || !dispatcherMap[voiceChannel.id]) return;
+                embedMessageMap[mgid] = sentMsg;
                 sentMsg.react('⏪').then(() => {
-                    if (!dispatcherMap[voiceChannel.id] || collector.ended) return;
+                    if (collector.ended) return;
                     sentMsg.react('⏯').then(() => {
-                        if (!dispatcherMap[voiceChannel.id] || collector.ended) return;
+                        if (collector.ended) return;
                         sentMsg.react('⏩').then(() => {
-                            if (!dispatcherMap[voiceChannel.id] || collector.ended) return;
+                            if (collector.ended) return;
                             sentMsg.react('⏹').then(() => {
-                                if (!dispatcherMap[voiceChannel.id] || collector.ended) return;
+                                if (collector.ended) return;
                                 sentMsg.react('🔑').then(() => {
-                                    if (!dispatcherMap[voiceChannel.id] || collector.ended) return;
+                                    if (collector.ended) return;
                                     sentMsg.react('🔐').then(() => {
                                         generatingEmbedMap[mgid] = false;
                                     });
@@ -2317,7 +2313,6 @@ function runStopPlayingCommand(message, mgid, voiceChannel) {
     }
 }
 
-let newWhat = false;
 
 /**
  * Runs the what's playing command. Can also look up database values if args[2] is present.
