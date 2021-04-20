@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.20';
-const buildNo = '01052003'; // major, minor, patch, build
+const version = '1.5.21';
+const buildNo = '01052100'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -2026,21 +2026,23 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
               encoderArgs: ['-af', 'apulsator=hz=0.09']
             }),
             {
-              volume: false,
-              highWaterMark: 1 << 25
+              quality: '140',
+              highWaterMark: 1 << 25,
+              volume: false
             });
       }
       dispatcher.pause();
-
       dispatcherMap[voiceChannel.id] = dispatcher;
       // if the server is not silenced then send the embed when playing
       if (!silenceMap[message.guild.id] && sendEmbed) {
         await sendLinkAsEmbed(message, url, voiceChannel).then(() => dispatcher.setVolume(0.5));
       }
+      let playBufferTime = 300;
+      if (isSpotify) playBufferTime = 1100;
       const tempInterval = setInterval(() => {
         clearInterval(tempInterval);
         dispatcher.resume();
-      }, 250);
+      }, playBufferTime);
       dispatcher.once('finish', () => {
         if (url !== whatspMap[voiceChannel]) return;
         const songFinish = setInterval(async () => {
