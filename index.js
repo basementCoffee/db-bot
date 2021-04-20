@@ -378,7 +378,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 const version = '1.5.21';
-const buildNo = '01052100'; // major, minor, patch, build
+const buildNo = '01052101'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -2038,7 +2038,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
         await sendLinkAsEmbed(message, url, voiceChannel).then(() => dispatcher.setVolume(0.5));
       }
       let playBufferTime = 300;
-      if (isSpotify) playBufferTime = 1100;
+      if (isSpotify) playBufferTime = 3000;
       const tempInterval = setInterval(() => {
         clearInterval(tempInterval);
         dispatcher.resume();
