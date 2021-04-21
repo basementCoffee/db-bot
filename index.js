@@ -378,7 +378,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 const version = '1.5.23';
-const buildNo = '01052301'; // major, minor, patch, build
+const buildNo = '01052302'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -650,6 +650,7 @@ async function runCommandCases (message) {
       gsUpdateAdd(client2, mgid, '.', 'A', 'B', 'prefixes');
     }
     prefixString = prefixMap[mgid];
+    bot.user.setActivity('[command is ' + prefixString + ']', {type: 'PLAYING'}).then();
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
   if (firstWordBegin.substr(0, 1) !== prefixString) {
@@ -864,6 +865,7 @@ async function runCommandCases (message) {
           await gsUpdateOverwrite(client2, xdb.congratsDatabase.size + 2, 1, 'prefixes');
           prefixMap[mgid] = args[2];
           message.channel.send('Prefix successfully changed to ' + args[2]);
+          bot.user.setActivity('[command is ' + args[2] + ']', {type: 'PLAYING'}).then();
         });
       });
       break;
@@ -1119,6 +1121,9 @@ async function runCommandCases (message) {
     case 'invite':
       message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot");
       break;
+    case 'inv':
+      message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot");
+      break;
     case 'silence':
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to silence');
@@ -1218,6 +1223,7 @@ bot.on('guildCreate', guild => {
 bot.once('ready', () => {
   // if (!devMode && !isInactive) bot.channels.cache.get("827195452507160627").send("=gzc");
   // bot starts up as inactive, if no response from the channel then activates itself
+  bot.user.setActivity('[try ".help" ]', {type: 'PLAYING'}).then();
   if (!devMode) {
     if (isInactive) {
       mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
