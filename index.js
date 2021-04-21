@@ -378,7 +378,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 const version = '1.5.24';
-const buildNo = '01052401'; // major, minor, patch, build
+const buildNo = '01052402'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -650,7 +650,7 @@ async function runCommandCases (message) {
       gsUpdateAdd(client2, mgid, '.', 'A', 'B', 'prefixes');
     }
     prefixString = prefixMap[mgid];
-    bot.user.setActivity(prefixString + 'help', {type: 'WATCHING'}).then();
+    bot.user.setActivity('[ ' + prefixString + 'help ]', {type: 'WATCHING'}).then();
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
   if (firstWordBegin.substr(0, 1) !== prefixString) {
@@ -886,7 +886,7 @@ async function runCommandCases (message) {
           await gsUpdateOverwrite(client2, xdb.congratsDatabase.size + 2, 1, 'prefixes');
           prefixMap[mgid] = args[2];
           message.channel.send('Prefix successfully changed to ' + args[2]);
-          bot.user.setActivity(prefixString + 'help', {type: 'WATCHING'}).then();
+          bot.user.setActivity('[ ' + args[2] + 'help ]', {type: 'WATCHING'}).then();
         });
       });
       break;
