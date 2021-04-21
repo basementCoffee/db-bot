@@ -377,12 +377,11 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.24';
-const buildNo = '01052402'; // major, minor, patch, build
+const version = '1.5.25';
+const buildNo = '01052500'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
-bot.login(token);
 // the max size of the queue
 const maxQueueSize = 500;
 let keyArray;
@@ -714,7 +713,11 @@ async function runCommandCases (message) {
       }
       break;
     case 'stop':
-      runStopPlayingCommand(mgid, message.member.voice.channel);
+      if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
+        dispatcherMap[message.member.voice.channel.id].pause();
+        dispatcherMapStatus[message.member.voice.channel.id] = 'pause';
+        message.channel.send('*stopped*');
+      }
       break;
     // !s prints out the database size
     case 's':
@@ -1136,6 +1139,14 @@ async function runCommandCases (message) {
       playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
       break;
     case 'rp':
+      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('Could not find video to replay.');
+      playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      break;
+    case 'restart':
+      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('Could not find video to replay.');
+      playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      break;
+    case 'rs':
       if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('Could not find video to replay.');
       playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
       break;
@@ -1879,6 +1890,7 @@ function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel
   }
   if (!voiceChannel) {
     voiceChannel = message.member.voice.channel;
+    if (!voiceChannel) return;
   }
   gsrun(client2, 'A', 'B', sheetname).then((xdb) => {
     keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
@@ -2456,3 +2468,6 @@ const embedMessageMap = new Map();
 const dispatcherMapStatus = new Map();
 // boolean status of generating embed for a guild
 const generatingEmbedMap = new Map();
+// login to discord
+bot.login(token);
+
