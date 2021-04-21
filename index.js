@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.21';
-const buildNo = '01052101'; // major, minor, patch, build
+const version = '1.5.22';
+const buildNo = '01052201'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -2026,9 +2026,9 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
               encoderArgs: ['-af', 'apulsator=hz=0.09']
             }),
             {
-              quality: '140',
               highWaterMark: 1 << 25,
-              volume: false
+              volume: false,
+              encoderArgs: ['-af', 'apulsator=hz=0.09']
             });
       }
       dispatcher.pause();
