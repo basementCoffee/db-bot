@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.22';
-const buildNo = '01052201'; // major, minor, patch, build
+const version = '1.5.23';
+const buildNo = '01052301'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -466,10 +466,10 @@ function skipSong (message, voiceChannel, playMessageToChannel) {
       // get rid of previous dispatch
       playSongToVC(message, whatspMap[voiceChannel], voiceChannel, true);
     } else {
-      runStopPlayingCommand(message, message.guild.id, voiceChannel);
+      runStopPlayingCommand(message.guild.id, voiceChannel);
     }
   } else {
-    runStopPlayingCommand(message, message.guild.id, voiceChannel);
+    runStopPlayingCommand(message.guild.id, voiceChannel);
   }
 }
 
@@ -692,13 +692,13 @@ async function runCommandCases (message) {
       break;
     //! e is the Stop feature
     case 'e':
-      runStopPlayingCommand(message, mgid, message.member.voice.channel);
+      runStopPlayingCommand(mgid, message.member.voice.channel);
       break;
     case 'end':
-      runStopPlayingCommand(message, mgid, message.member.voice.channel);
+      runStopPlayingCommand(mgid, message.member.voice.channel);
       break;
     case 'leave':
-      runStopPlayingCommand(message, mgid, message.member.voice.channel);
+      runStopPlayingCommand(mgid, message.member.voice.channel);
       break;
     case 'loop':
       if (servers[mgid].loop) {
@@ -710,7 +710,7 @@ async function runCommandCases (message) {
       }
       break;
     case 'stop':
-      runStopPlayingCommand(message, mgid, message.member.voice.channel);
+      runStopPlayingCommand(mgid, message.member.voice.channel);
       break;
     // !s prints out the database size
     case 's':
@@ -1350,7 +1350,7 @@ bot.on('message', async (message) => {
           clearInterval(mainActiveTimer);
           mainActiveTimer = setInterval(checkToSeeActive, 10000 + variation);
         } else if (message.member.id !== '730350452268597300') {
-          message.channel.send('inactive bot #' + process.pid + ' (' + version + ') ' + ' **is calibrating...** (may take up to 30 seconds)');
+          message.channel.send('active bot #' + process.pid + ' (' + version + ') ' + ' **is calibrating...** (may take up to 30 seconds)');
         }
         bot.channels.cache.get('827195452507160627').send('~db-bot-process' + buildNo + 'ver' + process.pid);
       }
@@ -1402,6 +1402,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
             if (x === args[z]) {
               message.channel.send("'" + args[z] + "' is already in your list");
               alreadyExists = true;
+              songsAddedInt--;
               break;
             }
           }
@@ -1976,7 +1977,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   }
   if (isInactive) {
     message.channel.send('*db bot has been updated*');
-    return runStopPlayingCommand(message, message.guild.id, voiceChannel);
+    return runStopPlayingCommand(message.guild.id, voiceChannel);
   }
   // the url to play
   const url = whatToPlay;
@@ -2112,7 +2113,6 @@ function searchForBrokenLinkWithinDB (message, whatToPlayS) {
  * @returns {*}
  */
 function runRewindCommand (message, mgid, voiceChannel) {
-
   if (servers[mgid].queue.length > (maxQueueSize + 99)) {
     return message.channel.send('*max queue size has been reached, cannot rewind further*');
   }
@@ -2128,7 +2128,6 @@ function runRewindCommand (message, mgid, voiceChannel) {
   message.channel.send('*rewound*');
   servers[mgid].queue.unshift(song);
   playSongToVC(message, song, voiceChannel, true);
-
 }
 
 /**
@@ -2253,7 +2252,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel) {
             runRewindCommand(message, mgid, voiceChannel);
           } else if (reaction.emoji.name === '⏹') {
             collector.stop();
-            runStopPlayingCommand(message, mgid, voiceChannel);
+            runStopPlayingCommand(mgid, voiceChannel);
           } else if (reaction.emoji.name === '🔑') {
             runKeysCommand(message, prefixMap[mgid], mgid, '', voiceChannel, '');
           } else if (reaction.emoji.name === '🔐') {
@@ -2273,9 +2272,9 @@ async function sendLinkAsEmbed (message, url, voiceChannel) {
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  */
-function runStopPlayingCommand (message, mgid, voiceChannel) {
+function runStopPlayingCommand (mgid, voiceChannel) {
   if (!voiceChannel) return;
-  if (servers[mgid].queue) {
+  if (servers[mgid]) {
     servers[mgid].queue = [];
     servers[mgid].queueHistory = [];
     servers[mgid].loop = false;
@@ -2287,7 +2286,7 @@ function runStopPlayingCommand (message, mgid, voiceChannel) {
     servers[mgid].collector = false;
   }
   if (voiceChannel) {
-    if (generatingEmbedMap[message.guild.id]) {
+    if (generatingEmbedMap[mgid]) {
       const waitForInit = setInterval(() => {
         voiceChannel.leave();
         clearInterval(waitForInit);
