@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.25';
-const buildNo = '01052500'; // major, minor, patch, build
+const version = '1.5.26';
+const buildNo = '01052602'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -649,7 +649,7 @@ async function runCommandCases (message) {
       gsUpdateAdd(client2, mgid, '.', 'A', 'B', 'prefixes');
     }
     prefixString = prefixMap[mgid];
-    bot.user.setActivity('[ ' + prefixString + 'help ]', {type: 'WATCHING'}).then();
+    bot.user.setActivity('[ .help ]', {type: 'WATCHING'}).then();
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
   if (firstWordBegin.substr(0, 1) !== prefixString) {
@@ -889,7 +889,6 @@ async function runCommandCases (message) {
           await gsUpdateOverwrite(client2, xdb.congratsDatabase.size + 2, 1, 'prefixes');
           prefixMap[mgid] = args[2];
           message.channel.send('Prefix successfully changed to ' + args[2]);
-          bot.user.setActivity('[ ' + args[2] + 'help ]', {type: 'WATCHING'}).then();
         });
       });
       break;
@@ -1123,31 +1122,33 @@ async function runCommandCases (message) {
       runRemoveItemCommand(message, args[1], 'p' + message.member.id, true);
       break;
     case 'rewind':
+      if (!servers[mgid]) return message.channel.send('must have played a link to rewind');
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to rewind');
       }
       runRewindCommand(message, mgid, message.member.voice.channel);
       break;
     case 'rw':
+      if (!servers[mgid]) return message.channel.send('must have played a link to rewind');
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to rewind');
       }
       runRewindCommand(message, mgid, message.member.voice.channel);
       break;
     case 'replay':
-      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('Could not find video to replay.');
+      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to replay');
       playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
       break;
     case 'rp':
-      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('Could not find video to replay.');
+      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to replay');
       playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
       break;
     case 'restart':
-      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('Could not find video to replay.');
+      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to restart');
       playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
       break;
     case 'rs':
-      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('Could not find video to replay.');
+      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to restart');
       playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
       break;
     case 'invite':
@@ -1888,10 +1889,6 @@ function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel
   ) {
     createSheet(message, sheetname);
   }
-  if (!voiceChannel) {
-    voiceChannel = message.member.voice.channel;
-    if (!voiceChannel) return;
-  }
   gsrun(client2, 'A', 'B', sheetname).then((xdb) => {
     keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
     s = '';
@@ -1916,7 +1913,7 @@ function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel
     } else {
       let dbName = '';
       let keysMessage = '';
-
+      let keyEmbedColor = '#ffa200';
       if (cmdType === 'm') {
         let name;
         if (user) {
@@ -1937,9 +1934,10 @@ function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel
       } else if (cmdType === '') {
         keysMessage += '**Server keys ** ';
         dbName = "server's keys";
+        keyEmbedColor = '#ad5537';
       }
       const embedKeysMessage = new MessageEmbed();
-      embedKeysMessage.setTitle(keysMessage).setDescription(s).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
+      embedKeysMessage.setTitle(keysMessage).setDescription(s).setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
       message.channel.send(embedKeysMessage).then(async sentMsg => {
         sentMsg.react('❔').then(() => sentMsg.react('🔀'));
         const filter = (reaction, user) => {
@@ -1964,6 +1962,10 @@ function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel
                 prefixString + cmdType + 'rm [key]');
             message.channel.send(embed);
           } else if (reaction.emoji.name === '🔀') {
+            if (!voiceChannel) {
+              voiceChannel = message.member.voice.channel;
+              if (!voiceChannel) return message.channel.send("must be in a voice channel to randomize");
+            }
             for (const mem of voiceChannel.members) {
               if (reactionCollector.id === mem[1].id) {
                 if (sheetname.includes('p')) {
@@ -2092,7 +2094,6 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       }, playBufferTime);
       dispatcher.once('finish', async () => {
         let totalDuration;
-        const streamTime = dispatcherMap[voiceChannel.id].streamTime;
         if (isSpotify) {
           totalDuration = await spdl.getInfo(url);
           totalDuration = totalDuration.duration;
@@ -2100,7 +2101,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
           totalDuration = await ytdl.getInfo(url);
           totalDuration = totalDuration.formats[0].approxDurationMs;
         }
-
+        const streamTime = dispatcherMap[voiceChannel.id].streamTime;
         let streamIntervalTime = 1000;
         if (totalDuration && streamTime && (streamTime + 1000) < totalDuration) {
           console.log(url);
@@ -2137,9 +2138,6 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
             if (server.queue.length > 0) {
               playSongToVC(message, server.queue[0], voiceChannel, true);
             } else {
-              servers[message.guild.id].queue = [];
-              servers[message.guild.id].queueHistory = [];
-              servers[message.guild.id].loop = false;
               dispatcherMap[voiceChannel.id] = false;
             }
           }
@@ -2190,17 +2188,20 @@ function runRewindCommand (message, mgid, voiceChannel) {
     return message.channel.send('*max queue size has been reached, cannot rewind further*');
   }
   const song = servers[mgid].queueHistory.pop();
-  if (!song) {
+  if (song) {
+    message.channel.send('*rewound*');
+    servers[mgid].queue.unshift(song);
+    playSongToVC(message, song, voiceChannel, true);
+  } else if (servers[mgid].queue[0]) {
     if (generatingEmbedMap[mgid]) {
       playSongToVC(message, servers[mgid].queue[0], voiceChannel, false);
     } else {
       playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
     }
     return message.channel.send('*replaying first song*');
+  } else {
+    return message.channel.send('cannot find previous song');
   }
-  message.channel.send('*rewound*');
-  servers[mgid].queue.unshift(song);
-  playSongToVC(message, song, voiceChannel, true);
 }
 
 /**
@@ -2422,14 +2423,6 @@ async function runWhatsPCommand (args, message, mgid, sheetname) {
       return message.channel.send('must be in a voice channel');
     }
     if (whatspMap[message.member.voice.channel.id] && whatspMap[message.member.voice.channel.id] !== '') {
-      // in case of force disconnect
-      if (
-        !message.guild.client.voice ||
-        !message.guild.voice ||
-        !message.guild.voice.channel
-      ) {
-        return await sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel);
-      }
       const msg = embedMessageMap[mgid];
       if (msg) {
         if (!generatingEmbedMap[mgid]) {
@@ -2438,11 +2431,13 @@ async function runWhatsPCommand (args, message, mgid, sheetname) {
             sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel)
           );
         } else {
-          message.channel.send('*previous embed is generating...*');
+          return message.channel.send('*previous embed is generating...*');
         }
+      } else {
+        return await sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel);
       }
     } else {
-      message.channel.send('Nothing is playing right now');
+      return message.channel.send('Nothing is playing right now');
     }
   }
   // message.channel.send(`WhatsP: Latency is ${Date.now() - message.createdTimestamp}ms.`);
