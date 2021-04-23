@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.27';
-const buildNo = '01052701'; // major, minor, patch, build
+const version = '1.5.28';
+const buildNo = '01052801'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -665,7 +665,7 @@ async function runCommandCases (message) {
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
   if (firstWordBegin.substr(0, 1) !== prefixString) {
-    if (message.member.guild.me.nickname && message.member.guild.me.nickname.length > 2) {
+    if (message.member.guild.me.nickname && message.member.guild.me.nickname.length > 2 && message.member.guild.me.nickname.substr(0, 1) === '[' && message.member.guild.me.nickname.substr(2, 1) === ']') {
       const falsePrefix = message.member.guild.me.nickname.substr(1, 1);
       if (firstWordBegin === falsePrefix + 'changeprefix ' || firstWordBegin === falsePrefix + 'h ' || firstWordBegin === falsePrefix + 'help ') {
         return message.channel.send('Current prefix is: ' + prefixString);
@@ -933,13 +933,13 @@ async function runCommandCases (message) {
                   // message.channel.send(`You've entered: ${messages.first().content}`);
                   if (messages.first().content.toLowerCase() === 'yes' || messages.first().content.toLowerCase() === 'y') {
                     await changeNamePrefix();
-                    message.channel.send('name has been updated, new prefix is: ' + prefixString);
+                    message.channel.send('name has been updated, prefix is: ' + prefixString);
                   } else {
-                    message.channel.send('name remains the same, new prefix is: ' + prefixString);
+                    message.channel.send('name remains the same, prefix is: ' + prefixString);
                   }
                 })
                 .catch(() => {
-                  message.channel.send('name remains the same, new prefix is: ' + prefixString);
+                  message.channel.send('name remains the same, prefix is: ' + prefixString);
                 });
             });
           } else if (message.member.guild.me.nickname.substr(0, 1) === '[' && message.member.guild.me.nickname.substr(2, 1) === ']') {
