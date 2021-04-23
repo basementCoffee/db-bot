@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.26';
-const buildNo = '01052602'; // major, minor, patch, build
+const version = '1.5.27';
+const buildNo = '01052701'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -650,13 +650,30 @@ async function runCommandCases (message) {
     }
     prefixString = prefixMap[mgid];
     bot.user.setActivity('[ .help ]', {type: 'WATCHING'}).then();
+    //   // appends the server prefix to the nickname
+    //   if (prefixString !== '.') {
+    //     if (!message.member.guild.me.nickname) {
+    //       await message.member.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
+    //     } else if (message.member.guild.me.nickname.indexOf('[') > -1 && message.member.guild.me.nickname.indexOf(']') > -1) {
+    //       await message.member.guild.me.setNickname('[' + prefixString + '] ' + message.member.guild.me.nickname.substring(message.member.guild.me.nickname.indexOf(']') + 2));
+    //     } else {
+    //       await message.member.guild.me.setNickname('[' + prefixString + '] ' + message.member.guild.me.nickname);
+    //     }
+    //   } else if (message.member.guild.me.nickname && message.member.guild.me.nickname.indexOf('[') > -1 && message.member.guild.me.nickname.indexOf(']') > -1) {
+    //     await message.member.guild.me.setNickname(message.member.guild.me.nickname.substring(message.member.guild.me.nickname.indexOf(']') + 2));
+    //   }
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
   if (firstWordBegin.substr(0, 1) !== prefixString) {
-    if (firstWordBegin === '.changeprefix ' || firstWordBegin === '.keys ' || firstWordBegin === '.h ' || firstWordBegin === '.help ') {
-      message.channel.send('Current prefix is: ' + prefixString);
+    if (message.member.guild.me.nickname && message.member.guild.me.nickname.length > 2) {
+      const falsePrefix = message.member.guild.me.nickname.substr(1, 1);
+      if (firstWordBegin === falsePrefix + 'changeprefix ' || firstWordBegin === falsePrefix + 'h ' || firstWordBegin === falsePrefix + 'help ') {
+        return message.channel.send('Current prefix is: ' + prefixString);
+      }
     }
-    return;
+    if (firstWordBegin === '.changeprefix ' || firstWordBegin === '.keys ' || firstWordBegin === '.h ' || firstWordBegin === '.help ') {
+      return message.channel.send('Current prefix is: ' + prefixString);
+    }
   }
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   console.log(args); // see recent bot commands within console for testing
@@ -876,7 +893,7 @@ async function runCommandCases (message) {
           'Prefix length cannot be greater than 1.'
         );
       }
-      if (args[1] === '+' || args[1] === '=') {
+      if (args[1] === '+' || args[1] === '=' || args[1] === '\'') {
         return message.channel.send('Cannot have ' + args[1] + ' as a prefix.');
       }
       args[2] = args[1];
@@ -889,6 +906,45 @@ async function runCommandCases (message) {
           await gsUpdateOverwrite(client2, xdb.congratsDatabase.size + 2, 1, 'prefixes');
           prefixMap[mgid] = args[2];
           message.channel.send('Prefix successfully changed to ' + args[2]);
+          prefixString = args[2];
+          let name = 'db bot';
+          let prefixName = '[' + prefixString + ']';
+          if (message.member.guild.me.nickname) {
+            name = message.member.guild.me.nickname.substring(message.member.guild.me.nickname.indexOf(']') + 1);
+          }
+
+          async function changeNamePrefix () {
+            if (!message.member.guild.me.nickname) {
+              await message.member.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
+            } else if (message.member.guild.me.nickname.indexOf('[') > -1 && message.member.guild.me.nickname.indexOf(']') > -1) {
+              await message.member.guild.me.setNickname('[' + prefixString + '] ' + message.member.guild.me.nickname.substring(message.member.guild.me.nickname.indexOf(']') + 2));
+            } else {
+              await message.member.guild.me.setNickname('[' + prefixString + '] ' + message.member.guild.me.nickname);
+            }
+          }
+
+          if (!message.member.guild.me.nickname || (message.member.guild.me.nickname.substr(0, 1) !== '[' && message.member.guild.me.nickname.substr(2, 1) !== ']')) {
+            message.channel.send('---------------------');
+            message.channel.send('Would you like me to update my name to reflect this? (yes or no)\nFrom **' + (message.member.guild.me.nickname || 'db bot') + '**  -->  **' + prefixName + name + '**').then(() => {
+              const filter = m => message.author.id === m.author.id;
+
+              message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
+                .then(async messages => {
+                  // message.channel.send(`You've entered: ${messages.first().content}`);
+                  if (messages.first().content.toLowerCase() === 'yes' || messages.first().content.toLowerCase() === 'y') {
+                    await changeNamePrefix();
+                    message.channel.send('name has been updated, new prefix is: ' + prefixString);
+                  } else {
+                    message.channel.send('name remains the same, new prefix is: ' + prefixString);
+                  }
+                })
+                .catch(() => {
+                  message.channel.send('name remains the same, new prefix is: ' + prefixString);
+                });
+            });
+          } else if (message.member.guild.me.nickname.substr(0, 1) === '[' && message.member.guild.me.nickname.substr(2, 1) === ']') {
+            await changeNamePrefix();
+          }
         });
       });
       break;
@@ -1185,11 +1241,16 @@ async function runCommandCases (message) {
       message.channel.send('*version: ' + version + '*\nDev Commands:' +
         '\ngzs - statistics' +
         '\ngzi - bot id' +
+        '\ngfr - force restarts the active bot' +
         '\n=gzd - toggle dev mode' +
         '\n=gzk - kill a process' +
         '\n=gzp - start a process' +
         '\n=gzc - calibrate to ensure no two bots are on at the same time'
       );
+      break;
+    case 'gfr':
+      message.channel.send("restarting the bot... (may just power off)");
+      process.exit();
       break;
     case 'gzs':
       const embed = new MessageEmbed()
