@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.28';
-const buildNo = '01052801'; // major, minor, patch, build
+const version = '1.5.29';
+const buildNo = '01052901'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -674,6 +674,7 @@ async function runCommandCases (message) {
     if (firstWordBegin === '.changeprefix ' || firstWordBegin === '.keys ' || firstWordBegin === '.h ' || firstWordBegin === '.help ') {
       return message.channel.send('Current prefix is: ' + prefixString);
     }
+    return;
   }
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   console.log(args); // see recent bot commands within console for testing
