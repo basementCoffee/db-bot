@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '2.0.0';
-const buildNo = '02000002'; // major, minor, patch, build
+const version = '2.0.1';
+const buildNo = '02000102'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -1645,7 +1645,7 @@ function runQueueCommand (message, mgid) {
       }
       queueMsgEmbed.setDescription(queueSB);
       if (startingIndex + 10 < serverQueue.length) {
-        queueMsgEmbed.setFooter('embed displays up to 10');
+        queueMsgEmbed.setFooter('embed displays 10 at a time');
       }
       msg.delete();
       message.channel.send(queueMsgEmbed).then(sentMsg => {
@@ -2331,7 +2331,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
         await sendLinkAsEmbed(message, url, voiceChannel).then(() => dispatcher.setVolume(0.5));
       }
       let playBufferTime = 300;
-      if (isSpotify) playBufferTime = 2000;
+      if (isSpotify) playBufferTime = 2600;
       skipTimesMap[message.guild.id] = 0;
       const tempInterval = setInterval(async () => {
         clearInterval(tempInterval);
