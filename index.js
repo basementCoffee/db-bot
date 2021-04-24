@@ -377,7 +377,7 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '2.0.2';
+const version = '2.0.3';
 const buildNo = '02000102'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
@@ -2330,7 +2330,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
         await sendLinkAsEmbed(message, url, voiceChannel).then(() => dispatcher.setVolume(0.5));
       }
       let playBufferTime = 300;
-      if (isSpotify) playBufferTime = 2600;
+      if (isSpotify) playBufferTime = 2850;
       skipTimesMap[message.guild.id] = 0;
       const tempInterval = setInterval(async () => {
         clearInterval(tempInterval);
