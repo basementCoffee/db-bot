@@ -25,8 +25,8 @@ client2.authorize(function (err, tokens) {
 
 /**
  * Runs an update over the sheet and updates local variables. Returns the respective keys
- * and values within two maps. The CDB is unaltered keys and values while the RDB containes toUpper values.
- * keys
+ * and links within two maps (CongratsDatabase and ReferenceDatabase). The CongratsDatabase represents
+ * unaltered keys and values while the ReferenceDatabase contains toUpper key names.
  * @param cl The google client
  * @param columnToRun The column letter/string to get the keys
  * @param secondColumn The column letter/string to get the values
@@ -372,13 +372,13 @@ const {MessageEmbed, Client} = require('discord.js');
 const bot = new Client();
 const ytdl = require('ytdl-core-discord');
 
-// SPOTIFY BOT IMPORTS --------------------------
+// SPOTIFY IMPORTS --------------------------
 const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '1.5.29';
-const buildNo = '01052901'; // major, minor, patch, build
+const version = '2.0.0';
+const buildNo = '02000002'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -566,10 +566,11 @@ function runPlayNowCommand (message, args, mgid, sheetName) {
  * @param message The message that triggered the bot
  * @param args The message broken into args
  * @param mgid The message guild id
+ * @param sheetName The name of the sheet to reference
  */
-function runPlayLinkCommand (message, args, mgid) {
+function runPlayLinkCommand (message, args, mgid, sheetName) {
   if (!message.member.voice.channel) {
-    return;
+    return message.channel.send("must be in a voice channel to play");
   }
   if (!args[1]) {
     if (dispatcherMap[message.member.voice.channel.id] && dispatcherMapStatus[message.member.voice.channel.id] === 'pause') {
@@ -579,7 +580,7 @@ function runPlayLinkCommand (message, args, mgid) {
     return message.channel.send("Where's the link? I can't read your mind... unfortunately.");
   }
   if (!args[1].includes('.')) {
-    return runDatabasePlayCommand(args, message, mgid, false, false);
+    return runDatabasePlayCommand(args, message, sheetName, false, false);
   }
   if (!servers[mgid]) {
     servers[mgid] = {
@@ -687,12 +688,24 @@ async function runCommandCases (message) {
   switch (statement) {
     // !p is just the basic rhythm bot
     case 'p':
-      runPlayLinkCommand(message, args, mgid);
+      runPlayLinkCommand(message, args, mgid, mgid);
       break;
     case 'play':
-      runPlayLinkCommand(message, args, mgid);
+      runPlayLinkCommand(message, args, mgid, mgid);
       break;
-    // !pn
+    case 'mp':
+      runPlayLinkCommand(message, args, mgid, 'p' + message.member.id);
+      break;
+    case 'mplay':
+      runPlayLinkCommand(message, args, mgid, 'p' + message.member.id);
+      break;
+    case 'gp':
+      runPlayLinkCommand(message, args, mgid, 'entries');
+      break;
+    case 'gplay':
+      runPlayLinkCommand(message, args, mgid, 'entries');
+      break;
+    // !pn is the play now command
     case 'gpn':
       runPlayNowCommand(message, args, mgid, 'entries');
       break;
@@ -722,6 +735,9 @@ async function runCommandCases (message) {
       runStopPlayingCommand(mgid, message.member.voice.channel);
       break;
     case 'loop':
+      if (!message.member.guild.voice || !message.member.guild.voice.channel) {
+        return message.channel.send('must be playing a song to loop');
+      }
       if (servers[mgid].loop) {
         servers[mgid].loop = false;
         message.channel.send('*looping disabled*');
@@ -736,22 +752,6 @@ async function runCommandCases (message) {
         dispatcherMapStatus[message.member.voice.channel.id] = 'pause';
         message.channel.send('*stopped*');
       }
-      break;
-    // !s prints out the database size
-    case 's':
-      if (!args[1]) {
-        return message.channel.send('Database size: ' + Array.from(congratsDatabase.keys()).length);
-      }
-      gsrun(client2, 'A', 'B', mgid).then(async (xdb) => {
-        ss = runSearchCommand(args[1], xdb).ss;
-        if (ss && ss.length > 0) {
-          message.channel.send('Keys found: ' + ss);
-        } else {
-          message.channel.send(
-            'Could not find any keys that start with the given letters.'
-          );
-        }
-      });
       break;
     // !gd is to run database songs
     case 'gd':
@@ -791,12 +791,18 @@ async function runCommandCases (message) {
     case 'key':
       runKeysCommand(message, prefixString, mgid, '', '', '');
       break;
+    case 'k':
+      runKeysCommand(message, prefixString, mgid, '', '', '');
+      break;
     // !mkeys is personal keys
     case 'mkeys':
       runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
     // !mkey is personal keys
     case 'mkey':
+      runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
+      break;
+    case 'mk':
       runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
     // !gkeys is global keys
@@ -807,46 +813,61 @@ async function runCommandCases (message) {
     case 'gkey':
       runKeysCommand(message, prefixString, 'entries', 'g', '', '');
       break;
-    // !k is the search
-    case 'k':
-      if (!args[1]) {
-        message.channel.send('No argument was given.');
-        return;
-      }
-      gsrun(client2, 'A', 'B', mgid).then(async (xdb) => {
-        ss = runSearchCommand(args[1], xdb).ss;
-        if (ss && ss.length > 0) {
-          message.channel.send('Keys found: ' + ss);
-        } else {
-          message.channel.send(
-            'Could not find any keys that start with the given letters.'
-          );
-        }
-      });
-      break;
     // !search is the search
     case 'search':
       if (!args[1]) {
-        message.channel.send('No argument was given.');
-        return;
+        return message.channel.send('No argument was given.');
       }
-      gsrun(client2, 'A', 'B', mgid).then(async (xdb) => {
-        ss = runSearchCommand(args[1], xdb).ss;
+      runUniversalSearchCommand(message, mgid, args[1]);
+      break;
+    case 'msearch':
+      if (!args[1]) {
+        return message.channel.send('No argument was given.');
+      }
+      gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
+        let ss = runSearchCommand(args[1], xdb).ss;
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
         } else {
           message.channel.send(
-            'Could not find any keys that start with the given letters.'
+            'Could not find any keys in your list that start with the given letters.'
           );
         }
       });
       break;
-    // !gk
-    case 'gk':
+    // !s prints out the db size or searches
+    case 's':
       if (!args[1]) {
-        return message.channel.send('No argument was given.');
+        return gsrun(client2, 'A', 'B', mgid).then((xdb) =>
+          message.channel.send('Server list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
+        );
       }
-      gsrun(client2, 'A', 'B', 'entries').then(async (xdb) => {
+      runUniversalSearchCommand(message, mgid, args[1]);
+      break;
+    case 'ms':
+      if (!args[1]) {
+        return gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) =>
+          message.channel.send('Personal list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
+        );
+      }
+      gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
+        let ss = runSearchCommand(args[1], xdb).ss;
+        if (ss && ss.length > 0) {
+          message.channel.send('Keys found: ' + ss);
+        } else {
+          message.channel.send(
+            'Could not find any keys in your list that start with the given letters.'
+          );
+        }
+      });
+      break;
+    case 'gs':
+      if (!args[1]) {
+        return gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) =>
+          message.channel.send('Global list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
+        );
+      }
+      gsrun(client2, 'A', 'B', 'entries').then((xdb) => {
         ss = runSearchCommand(args[1], xdb).ss;
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
@@ -883,7 +904,19 @@ async function runCommandCases (message) {
       await runWhatsPCommand(args, message, mgid, 'p' + message.member.id);
       break;
     case 'queue':
-      message.channel.send("*displaying the queue is not supported yet*");
+      runQueueCommand(message, mgid);
+      break;
+    case 'q':
+      runQueueCommand(message, mgid);
+      break;
+    case 'que':
+      runQueueCommand(message, mgid);
+      break;
+    case 'list':
+      runQueueCommand(message, mgid);
+      break;
+    case 'upnext':
+      runQueueCommand(message, mgid);
       break;
     case 'changeprefix':
       if (!args[1]) {
@@ -896,6 +929,10 @@ async function runCommandCases (message) {
       }
       if (args[1] === '+' || args[1] === '=' || args[1] === '\'') {
         return message.channel.send('Cannot have ' + args[1] + ' as a prefix.');
+      }
+      if (args[1].toUpperCase() !== args[1].toLowerCase() || args[1].charCodeAt(0) > 120) {
+        message.channel.send("cannot have a letter as a prefix.");
+        return;
       }
       args[2] = args[1];
       args[1] = mgid;
@@ -926,7 +963,7 @@ async function runCommandCases (message) {
 
           if (!message.member.guild.me.nickname || (message.member.guild.me.nickname.substr(0, 1) !== '[' && message.member.guild.me.nickname.substr(2, 1) !== ']')) {
             message.channel.send('---------------------');
-            message.channel.send('Would you like me to update my name to reflect this? (yes or no)\nFrom **' + (message.member.guild.me.nickname || 'db bot') + '**  -->  **' + prefixName + name + '**').then(() => {
+            message.channel.send('Would you like me to update my name to reflect this? (yes or no)\nFrom **' + (message.member.guild.me.nickname || 'db bot') + '**  -->  **' + prefixName + " " + name + '**').then(() => {
               const filter = m => message.author.id === m.author.id;
 
               message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
@@ -1183,14 +1220,14 @@ async function runCommandCases (message) {
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to rewind');
       }
-      runRewindCommand(message, mgid, message.member.voice.channel);
+      runRewindCommand(message, mgid, message.member.voice.channel, args[1]);
       break;
     case 'rw':
       if (!servers[mgid]) return message.channel.send('must have played a link to rewind');
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to rewind');
       }
-      runRewindCommand(message, mgid, message.member.voice.channel);
+      runRewindCommand(message, mgid, message.member.voice.channel, args[1]);
       break;
     case 'replay':
       if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to replay');
@@ -1238,20 +1275,32 @@ async function runCommandCases (message) {
         sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel).then();
       }
       break;
-    case 'gzh':
-      message.channel.send('*version: ' + version + '*\nDev Commands:' +
-        '\ngzs - statistics' +
-        '\ngzi - bot id' +
-        '\ngfr - force restarts the active bot' +
-        '\n=gzd - toggle dev mode' +
-        '\n=gzk - kill a process' +
-        '\n=gzp - start a process' +
-        '\n=gzc - calibrate to ensure no two bots are on at the same time'
-      );
+    case "l":
+      message.channel.send('command not found\n*possible commands: loop, list, leave*');
       break;
-    case 'gfr':
-      message.channel.send("restarting the bot... (may just power off)");
+    case 'gzh':
+      const devCEmbed = new MessageEmbed()
+        .setTitle('Dev Commands')
+        .setDescription(
+          prefixString + 'gzs - statistics' +
+          '\n' + prefixString + 'gzi - user and bot id' +
+          '\n' + prefixString + 'gzid - guild id' +
+          '\n' + prefixString + 'gzq - quit/restarts the active bot' +
+          '\n\n**calibrate multiple bots**' +
+          '\n=gzd - toggle dev mode' +
+          '\n=gzk - kill a process' +
+          '\n=gzp - start a process' +
+          '\n=gzc - ensure no two bots are on at the same time\n*(do not call gzc more than once within 5 minutes)*'
+        )
+        .setFooter('version: ' + version);
+      message.channel.send(devCEmbed);
+      break;
+    case 'gzq':
+      message.channel.send("quitting the bot... (may restart)");
       process.exit();
+      break;
+    case 'gzid':
+      message.channel.send(message.member.guild.id);
       break;
     case 'gzs':
       const embed = new MessageEmbed()
@@ -1266,8 +1315,7 @@ async function runCommandCases (message) {
       message.channel.send(embed);
       break;
     case 'gzi':
-      message.channel.send('bot id: ' + bot.user.id);
-      message.channel.send('your id: ' + message.member.id);
+      message.channel.send('bot id: ' + bot.user.id + '\nyour id: ' + message.member.id);
       break;
     case 'gv':
       message.channel.send('version: ' + version);
@@ -1320,7 +1368,7 @@ bot.once('ready', () => {
     console.log('-devmode enabled-');
   }
 });
-
+const setOfBotsOn = new Set();
 let numOfBotsOn = 0;
 // calibrate on startup
 bot.on('message', async (message) => {
@@ -1333,6 +1381,7 @@ bot.on('message', async (message) => {
       // if the other bot's version number is less than this bot's then turn the other bot off
       if (parseInt(oBuildNo) >= buildNo) {
         numOfBotsOn++;
+        setOfBotsOn.add(oBuildNo);
       }
     } else if (!isInactive) {
       console.log('calibrating...');
@@ -1358,6 +1407,7 @@ let resHandlerTimer;
 
 function checkToSeeActive () {
   numOfBotsOn = 0;
+  setOfBotsOn.clear();
   if (isInactive) {
     // see if any bots are active
     bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
@@ -1383,7 +1433,7 @@ function responseHandler () {
         bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
       }, 2000);
     });
-  } else if (numOfBotsOn > 1) {
+  } else if (numOfBotsOn > 1 && setOfBotsOn.size > 1) {
     bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
   }
 }
@@ -1546,6 +1596,94 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
 }
 
 /**
+ * Prints the queue to the console
+ * @param message The message that triggered the bot
+ * @param mgid The message guild id
+ * @returns {Promise<void>|*}
+ */
+function runQueueCommand (message, mgid) {
+  if (!servers[mgid] || servers[mgid].queue < 1 || !message.member.guild.voice.channel) {
+    return message.channel.send("There is no active queue right now");
+  }
+  const serverQueue = servers[mgid].queue.map((x) => x);
+  let qIterations = serverQueue.length;
+  if (qIterations > 11) qIterations = 11;
+  let title;
+  let authorName;
+
+  async function getTitle (url, cutoff) {
+    if (url.includes('spotify')) {
+      const infos = await spdl.getInfo(url);
+      title = infos.title;
+    } else {
+      const infos = await ytdl.getInfo(url);
+      title = infos.videoDetails.title;
+    }
+    if (cutoff && title.length > cutoff) {
+      title = title.substr(0, cutoff) + '...';
+    }
+    return title;
+  }
+
+  async function generateQueue (startingIndex) {
+    let queueSB = '';
+    const queueMsgEmbed = new MessageEmbed();
+    if (!authorName) {
+      authorName = await getTitle(serverQueue[0], 50);
+    }
+    message.channel.send('generating queue...').then(async msg => {
+      queueMsgEmbed.setTitle('Up Next')
+        .setAuthor('playing:  ' + authorName)
+        .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
+      for (let qi = startingIndex + 1; (qi < qIterations && qi < servers[mgid].queue.length); qi++) {
+        let title = (await getTitle(serverQueue[qi]));
+        const url = serverQueue[qi];
+        queueSB += qi + '. ' + `[${title}](${url})\n`;
+      }
+      if (queueSB.length === 0) {
+        queueSB = 'queue is empty';
+      }
+      queueMsgEmbed.setDescription(queueSB);
+      if (startingIndex + 10 < serverQueue.length) {
+        queueMsgEmbed.setFooter('embed displays up to 10');
+      }
+      msg.delete();
+      message.channel.send(queueMsgEmbed).then(sentMsg => {
+        if (startingIndex + 10 < serverQueue.length) {
+          sentMsg.react('➡️');
+        }
+        const filter = (reaction, user) => {
+          if (message.member.voice.channel) {
+            for (const mem of message.member.voice.channel.members) {
+              if (user.id === mem[1].id) {
+                return user.id !== bot.user.id && ['➡️'].includes(reaction.emoji.name);
+              }
+            }
+          }
+          return false;
+        };
+        let reactionCleared = false;
+        const collector = sentMsg.createReactionCollector(filter, {time: 300000});
+        const arrowReactionInterval = setInterval(() => {
+          clearInterval(arrowReactionInterval);
+          sentMsg.reactions.removeAll();
+        }, 300500);
+        collector.on('collect', (reaction, reactionCollector) => {
+          clearInterval(arrowReactionInterval);
+          sentMsg.reactions.removeAll();
+          let num = serverQueue.length - startingIndex - 11;
+          if (num > 10) num = 10;
+          qIterations += 10;
+          message.channel.send('showing next ' + num).then(generateQueue(startingIndex + 10));
+        });
+      });
+    });
+  }
+
+  return generateQueue(0).then();
+}
+
+/**
  * Executes play assuming that message args are intended for a database call.
  * The database referenced depends on what is passed in via mgid.
  * @param {*} args the message split by spaces into an array
@@ -1693,6 +1831,45 @@ let ss;
 let ssi;
 
 /**
+ * A search command that searches both the server and personal database for the string.
+ * @param message The message that triggered the bot
+ * @param mgid The guild id
+ * @param providedString The string to search for
+ */
+function runUniversalSearchCommand (message, mgid, providedString) {
+  gsrun(client2, 'A', 'B', mgid).then(async (xdb) => {
+    ss = runSearchCommand(providedString, xdb).ss;
+    if (ss && ss.length > 0) {
+      message.channel.send('Server keys found: ' + ss);
+    } else if (providedString.length < 2) {
+      message.channel.send('Could not find any server keys that start with the given letter.');
+    } else {
+      message.channel.send('Could not find any server keys that contain \'' + providedString + '\'');
+    }
+    message.channel.send('Would you like to search your list as well? (yes or no)').then(() => {
+      const filter = m => message.author.id === m.author.id;
+
+      message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
+        .then(async messages => {
+          if (messages.first().content.toLowerCase() === 'y' || messages.first().content.toLowerCase() === 'yes') {
+            gsrun(client2, 'A', 'B', 'p' + message.member.id).then(async (xdb) => {
+              ss = runSearchCommand(providedString, xdb).ss;
+              if (ss && ss.length > 0) {
+                message.channel.send('Personal keys found: ' + ss);
+              } else if (providedString.length < 2) {
+                message.channel.send('Could not find any keys in your list that start with the given letter.');
+              } else {
+                message.channel.send('Could not find any keys in your list that contain \'' + providedString + '\'');
+              }
+            });
+          }
+        });
+    });
+  });
+
+}
+
+/**
  * Searches the database for the keys matching args[1].
  * @param keyName the keyName
  * @param xdb the object containing multiple DBs
@@ -1770,51 +1947,58 @@ function runSkipCommand (message, skipTimes) {
  * @param {*} prefixString the prefix in string format
  */
 function sendHelp (message, prefixString) {
-  message.channel.send(
-    'Help list:\n' +
-    '-------------  Music Commands (with aliases) -------------\n' +
+  const helpListEmbed = new MessageEmbed();
+  const description =
+    '-------------  **Music Commands (with aliases)** -------------\n\`' +
     prefixString +
-    'play [link]  -->  Plays YouTube/Spotify links  (' + prefixString + 'p) \n' +
+    'play [link] \` Plays YouTube/Spotify links [p] \n\`' +
     prefixString +
-    'playnow [link]  -->  Plays the link now, overrides queue  (' + prefixString + 'pn)\n' +
+    'playnow [link] \` Plays the link now, overrides queue [pn]\n\`' +
     prefixString +
-    "?  -->  What's playing\n" +
+    '? \` What\'s playing\n\`' +
     prefixString +
-    'pause  -->  Pause  (' + prefixString + 'pa)\n' +
+    'pause \` Pause [pa]\n\`' +
     prefixString +
-    'resume  -->  Resume if paused  (' + prefixString + 'res , ' + prefixString + 'pl) \n' +
+    'resume \` Resume if paused [res] \n\`' +
     prefixString +
-    'skip [# of times] -->  Skip the current song  (' + prefixString + 'sk)\n' +
+    'skip [# times] \` Skip the current link [sk]\n\`' +
     prefixString +
-    'end  -->  Stops playing and ends session  (' + prefixString + 'e)\n' +
+    'rewind [# times] \` Rewind to play previous links  [rw]\n\`' +
     prefixString +
-    'loop  -->  Loops songs on finish\n' +
-    '\n-----------  Server Music Database  -----------\n' +
+    'end \` Stops playing and ends session  [e]\n\`' +
     prefixString +
-    "keys  -->  See all of the server's saved songs \n" +
+    'loop \` Loops songs on finish\n\`' +
     prefixString +
-    'add [song] [url]  -->  Adds a song to the server keys  (' + prefixString + 'a)\n' +
+    'queue \` Displays the queue [q]\n' +
+    '\n-----------  **Server Music Database**  -----------\n\`' +
     prefixString +
-    'd [key]  -->  Play a song from the server keys \n' +
+    "keys \` See all of the server's saved songs [k]\n\`" +
     prefixString +
-    'rand [# of times]  -->  Play a random song from server keys  (' + prefixString + 'r)\n' +
+    'add [song] [url] \` Adds a song to the server keys  [a]\n\`' +
     prefixString +
-    'k [name]  -->  Search keys \n' +
+    'd [key] \` Play a song from the server keys \n\`' +
     prefixString +
-    'remove [key] -->  Removes a song from the server keys  (' + prefixString + 'rm)\n' +
-    '\n-----------  Personal Music Database  -----------\n' +
-    "*Prepend 'm' to the above commands to access your personal music database (ex: '" + prefixString + "mkeys')*\n" +
-    '\n--------------  Other Commands  -----------------\n' +
+    'rand [# times] \` Play a random song from server keys  [r]\n\`' +
     prefixString +
-    'changeprefix [new prefix]  -->  Changes the prefix for all commands \n' +
+    'search [name] \` Search keys  [s]\n\`' +
     prefixString +
-    'guess  -->  Random roll for the number of people in the voice channel \n' +
+    'remove [key] \` Removes a song from the server keys  [rm]\n' +
+    '\n-----------  **Personal Music Database**  -----------\n' +
+    "*Prepend 'm' to the above commands to access your personal music database*\nex: \`" + prefixString + "mkeys \`\n" +
+    '\n--------------  **Other Commands**  -----------------\n\`' +
     prefixString +
-    'silence  -->  Temporarily silences the now playing notifications \n' +
+    'silence \` Temporarily silences the now playing notifications \n\`' +
     prefixString +
-    'unsilence  -->  Re-enables now playing notifications \n' +
+    'unsilence \` Re-enables now playing notifications \n\`' +
+    prefixString +
+    'guess \` Random roll for the number of people in the voice channel \n\`' +
+    prefixString +
+    'changeprefix [new prefix] \` Changes the prefix for all commands \n' +
     '\n**Or just say congrats to a friend. I will chime in too! :) **'
-  );
+  ;
+  helpListEmbed.setTitle('Help List');
+  helpListEmbed.setDescription(description);
+  message.channel.send(helpListEmbed);
 }
 
 /**
@@ -2119,8 +2303,8 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   voiceChannel.join().then(async connection => {
     try {
       let dispatcher;
+      await connection.voice.setSelfDeaf(true);
       if (!isSpotify) {
-        await connection.voice.setSelfDeaf(true);
         dispatcher = connection.play(await ytdl(url, {}), {
           type: 'opus',
           filter: 'audioonly',
@@ -2132,8 +2316,6 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
           .play(await spdl(url, {
               opusEncoded: true,
               filter: 'audioonly',
-              highWaterMark: 1 << 25,
-              volume: false,
               encoderArgs: ['-af', 'apulsator=hz=0.09']
             }),
             {
@@ -2149,8 +2331,9 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
         await sendLinkAsEmbed(message, url, voiceChannel).then(() => dispatcher.setVolume(0.5));
       }
       let playBufferTime = 300;
-      if (isSpotify) playBufferTime = 3000;
-      const tempInterval = setInterval(() => {
+      if (isSpotify) playBufferTime = 2000;
+      skipTimesMap[message.guild.id] = 0;
+      const tempInterval = setInterval(async () => {
         clearInterval(tempInterval);
         dispatcher.resume();
       }, playBufferTime);
@@ -2211,10 +2394,22 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       whatspMap[voiceChannel.id] = '';
       // search the db to find possible broken keys
       searchForBrokenLinkWithinDB(message, url);
-      connection.disconnect();
+      const numberOfPrevSkips = skipTimesMap[message.guild.id];
+      if (!numberOfPrevSkips) {
+        skipTimesMap[message.guild.id] = 1;
+      } else if (numberOfPrevSkips > 3) {
+        connection.disconnect();
+        return;
+      } else {
+        skipTimesMap[message.guild.id] += 1;
+      }
+      runSkipCommand(message, 1);
     }
   });
 }
+
+// number of consecutive error skips in a server, uses guild id
+const skipTimesMap = new Map();
 
 /**
  * Searches the guild db and personal message db for a broken link
@@ -2243,16 +2438,41 @@ function searchForBrokenLinkWithinDB (message, whatToPlayS) {
  * @param message The message that triggered the bot
  * @param mgid The message guild id
  * @param voiceChannel The active voice channel
+ * @param numberOfTimes The number of times to rewind
  * @returns {*}
  */
-function runRewindCommand (message, mgid, voiceChannel) {
-  if (servers[mgid].queue.length > (maxQueueSize + 99)) {
-    return message.channel.send('*max queue size has been reached, cannot rewind further*');
+function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
+  let song;
+  let rewindTimes = 1;
+  try {
+    if (numberOfTimes) {
+      rewindTimes = parseInt(numberOfTimes);
+    }
+  } catch (e) {
+    rewindTimes = 1;
+    message.channel.send('rewinding once');
   }
-  const song = servers[mgid].queueHistory.pop();
-  if (song) {
-    message.channel.send('*rewound*');
+  if (!rewindTimes || rewindTimes < 1 || rewindTimes > 10000) return message.channel.send('invalid rewind amount');
+  let rwIncrementor = 0;
+  while (servers[mgid].queueHistory.length > 0 && rwIncrementor < rewindTimes) {
+    if (servers[mgid].queue.length > (maxQueueSize + 99)) {
+      if (generatingEmbedMap[mgid]) {
+        playSongToVC(message, servers[mgid].queue[0], voiceChannel, false);
+      } else {
+        playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+      }
+      return message.channel.send('*max queue size has been reached, cannot rewind further*');
+    }
+    song = servers[mgid].queueHistory.pop();
     servers[mgid].queue.unshift(song);
+    rwIncrementor++;
+  }
+  if (song) {
+    if (rewindTimes === 1) {
+      message.channel.send('*rewound*');
+    } else {
+      message.channel.send('*rewound ' + rwIncrementor + ' times*');
+    }
     playSongToVC(message, song, voiceChannel, true);
   } else if (servers[mgid].queue[0]) {
     if (generatingEmbedMap[mgid]) {
