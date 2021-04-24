@@ -2316,12 +2316,11 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
           .play(await spdl(url, {
               opusEncoded: true,
               filter: 'audioonly',
-              encoderArgs: ['-af', 'apulsator=hz=0.09']
+              quality: '140'
             }),
             {
               highWaterMark: 1 << 25,
               volume: false,
-              encoderArgs: ['-af', 'apulsator=hz=0.09']
             });
       }
       dispatcher.pause();
