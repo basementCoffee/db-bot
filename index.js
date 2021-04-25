@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '2.0.3';
-const buildNo = '02000102'; // major, minor, patch, build
+const version = '2.0.4';
+const buildNo = '02000402'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -1401,7 +1401,7 @@ bot.on('message', async (message) => {
   }
 });
 
-const mainTimerTimeout = 300000;
+const mainTimerTimeout = 600000;
 let mainActiveTimer;
 let resHandlerTimer;
 
@@ -1423,9 +1423,9 @@ function checkToSeeActive () {
 function responseHandler () {
   clearInterval(resHandlerTimer);
   if (numOfBotsOn < 1) {
+    clearInterval(mainActiveTimer);
     isInactive = false;
     devMode = false;
-    clearInterval(mainActiveTimer);
     bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
       console.log('-active-');
       const waitForFollowup = setInterval(() => {
@@ -1454,6 +1454,7 @@ bot.on('message', async (message) => {
       if (!zargs[1]) {
         message.channel.send('sidelined: ' + process.pid + ' (' + version + ') ' + dm);
       } else if (zargs[1] === process.pid.toString() || zargs[1] === 'all') {
+        clearInterval(mainActiveTimer);
         isInactive = false;
         message.channel.send('db bot ' + process.pid + ' is now active');
         console.log('-active-');
@@ -1485,33 +1486,33 @@ bot.on('message', async (message) => {
           if (message.member.id !== '730350452268597300') {
             message.channel.send('inactive bot #' + process.pid + ' (' + version + ') ' + ' **is calibrating...** (may take up to 30 seconds)');
           }
-          const variation = Math.floor(Math.random() * 15000);
           clearInterval(mainActiveTimer);
-          mainActiveTimer = setInterval(checkToSeeActive, 10000 + variation);
+          const variation = Math.floor(Math.random() * 20000);
+          mainActiveTimer = setInterval(checkToSeeActive, 20000 + variation);
         } else if (message.member.id !== '730350452268597300') {
           message.channel.send('active bot #' + process.pid + ' (' + version + ') ' + ' **is calibrating...** (may take up to 30 seconds)');
         }
         bot.channels.cache.get('827195452507160627').send('~db-bot-process' + buildNo + 'ver' + process.pid);
-      } else if (zmsg === 'zd') {
-        const zargs = message.content.split(' ');
-        let activeStatus = 'active';
-        if (isInactive) {
-          activeStatus = 'inactive';
-        }
-        if (!zargs[1]) {
-          message.channel.send(activeStatus + ' bot id: ' + process.pid.toString() + ' (' + 'dev mode: ' + devMode + ')');
-        }
-        if (devMode && zargs[1] === process.pid.toString()) {
-          devMode = false;
-          message.channel.send('*devmode is off* ' + process.pid.toString());
-          prefixMap[message.member.guild.id] = undefined;
-        } else if (zargs[1] === process.pid.toString()) {
-          devMode = true;
-          message.channel.send('*devmode is on* ' + process.pid.toString());
-        }
       }
-      return;
+    } else if (zmsg === 'zd') {
+      const zargs = message.content.split(' ');
+      let activeStatus = 'active';
+      if (isInactive) {
+        activeStatus = 'inactive';
+      }
+      if (!zargs[1]) {
+        message.channel.send(activeStatus + ' bot id: ' + process.pid.toString() + ' (' + 'dev mode: ' + devMode + ')');
+      }
+      if (devMode && zargs[1] === process.pid.toString()) {
+        devMode = false;
+        message.channel.send('*devmode is off* ' + process.pid.toString());
+        prefixMap[message.member.guild.id] = undefined;
+      } else if (zargs[1] === process.pid.toString()) {
+        devMode = true;
+        message.channel.send('*devmode is on* ' + process.pid.toString());
+      }
     }
+    return;
   }
   if (message.author.bot || isInactive) {
     return;
@@ -2315,8 +2316,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
         dispatcher = connection
           .play(await spdl(url, {
               opusEncoded: true,
-              filter: 'audioonly',
-              quality: '140'
+              filter: 'audioonly'
             }),
             {
               highWaterMark: 1 << 25,
@@ -2346,14 +2346,14 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
           totalDuration = totalDuration.formats[0].approxDurationMs;
         }
         const streamTime = dispatcherMap[voiceChannel.id].streamTime;
-        let streamIntervalTime = 1000;
-        if (totalDuration && streamTime && (streamTime + 1000) < totalDuration) {
+        let streamIntervalTime = 1100;
+        if (totalDuration && streamTime && (streamTime + 1100) < totalDuration) {
+          streamIntervalTime = totalDuration - streamTime;
           console.log(url);
           console.log(totalDuration);
           console.log(streamTime);
           console.log('--- current stream time is less than total song duration ---');
-          streamIntervalTime = totalDuration - streamTime;
-          console.log('Adding ' + streamIntervalTime + ' to the counter...\n------------');
+          console.log('New time till end is ' + streamIntervalTime + '\n------------');
         }
         if (url !== whatspMap[voiceChannel.id]) {
           console.log('There was a mismatch -------------------');
@@ -2365,7 +2365,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
           clearInterval(songFinish);
           // ensure that the next song only plays on previous song's end
           const streamTime2 = dispatcherMap[voiceChannel.id].streamTime;
-          if (totalDuration && streamTime2 && (streamTime2 + 1000) < totalDuration) return;
+          if (totalDuration && streamTime2 && (streamTime2 + 5000) < totalDuration) return console.log('ending alternative stream');
           if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
             embedMessageMap[message.guild.id].reactions.removeAll().then();
             embedMessageMap[message.guild.id] = false;
