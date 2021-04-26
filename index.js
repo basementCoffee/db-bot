@@ -377,8 +377,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '2.0.4';
-const buildNo = '02000402'; // major, minor, patch, build
+const version = '2.0.5';
+const buildNo = '02000502'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -665,15 +665,19 @@ async function runCommandCases (message) {
     //   }
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
-  if (firstWordBegin.substr(0, 1) !== prefixString) {
-    if (message.member.guild.me.nickname && message.member.guild.me.nickname.length > 2 && message.member.guild.me.nickname.substr(0, 1) === '[' && message.member.guild.me.nickname.substr(2, 1) === ']') {
-      const falsePrefix = message.member.guild.me.nickname.substr(1, 1);
-      if (firstWordBegin === falsePrefix + 'changeprefix ' || firstWordBegin === falsePrefix + 'h ' || firstWordBegin === falsePrefix + 'help ') {
+  const fwbPrefix = firstWordBegin.substr(0, 1);
+  if (fwbPrefix !== prefixString) {
+    if (fwbPrefix.toUpperCase() === fwbPrefix.toLowerCase() && fwbPrefix.charCodeAt(0) < 120 && !devMode) {
+      if (message.member.guild.me.nickname && message.member.guild.me.nickname.substr(0, 1) === '['
+        && message.member.guild.me.nickname.substr(2, 1) === ']') {
+        const falsePrefix = message.member.guild.me.nickname.substr(1, 1);
+        if (fwbPrefix === falsePrefix && (firstWordBegin === falsePrefix + 'changeprefix ' || firstWordBegin === falsePrefix + 'h ' || firstWordBegin === falsePrefix + 'help ')) {
+          return message.channel.send('Current prefix is: ' + prefixString);
+        }
+      }
+      if (fwbPrefix === '.' && (firstWordBegin === '.changeprefix ' || firstWordBegin === '.keys ' || firstWordBegin === '.h ' || firstWordBegin === '.help ')) {
         return message.channel.send('Current prefix is: ' + prefixString);
       }
-    }
-    if (firstWordBegin === '.changeprefix ' || firstWordBegin === '.keys ' || firstWordBegin === '.h ' || firstWordBegin === '.help ') {
-      return message.channel.send('Current prefix is: ' + prefixString);
     }
     return;
   }
@@ -759,7 +763,7 @@ async function runCommandCases (message) {
       break;
     // !d
     case 'd':
-      runDatabasePlayCommand(args, message, mgid, false, true);
+      runDatabasePlayCommand(args, message, mgid, false, false);
       break;
     // !md is the personal database
     case 'md':
@@ -919,6 +923,9 @@ async function runCommandCases (message) {
       runQueueCommand(message, mgid);
       break;
     case 'changeprefix':
+      if (!message.member.hasPermission('KICK_MEMBERS')) {
+        return message.channel.send('Permissions Error: Only members who can kick other members can change the prefix.');
+      }
       if (!args[1]) {
         return message.channel.send('No argument was given. Enter the new prefix after the command.');
       }
@@ -1692,13 +1699,11 @@ function runQueueCommand (message, mgid) {
  * @param {*} sheetName the name of the google sheet to reference
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
- * @returns whether the play command has been handled accordingly, no followup
+ * @returns whether the play command has been handled accordingly
  */
 function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg) {
   if (!args[1]) {
-    message.channel.send(
-      "There's nothing to play! ... I'm just gonna pretend that you didn't mean that."
-    );
+    message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
     return true;
   }
   if (!message.member.voice.channel) {
@@ -1722,7 +1727,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     message.channel.send('*max queue size has been reached*');
     return true;
   }
-  gsrun(client2, 'A', 'B', sheetName).then((xdb) => {
+  gsrun(client2, 'A', 'B', sheetName).then(async (xdb) => {
     let queueWasEmpty = false;
     // if the queue is empty then play
     if (servers[message.guild.id].queue.length < 1) {
@@ -1733,8 +1738,24 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
       let unFoundString = '*could not find: ';
       let firstUnfoundRan = false;
       let dbAddedToQueue = 0;
+      let otherSheet;
       while (args[dbAddInt]) {
         if (!xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())) {
+          // check personal db if applicable
+          if (sheetName.substr(0, 1) !== 'p') {
+            if (!otherSheet) {
+              await gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
+                otherSheet = xdb.referenceDatabase;
+              });
+            }
+            if (otherSheet.get(args[dbAddInt].toUpperCase())) {
+              // push to queue
+              servers[message.guild.id].queue.push(otherSheet.get(args[dbAddInt].toUpperCase()));
+              dbAddedToQueue++;
+              dbAddInt++;
+              continue;
+            }
+          }
           if (firstUnfoundRan) {
             unFoundString = unFoundString.concat(', ');
           }
