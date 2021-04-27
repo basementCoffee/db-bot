@@ -379,8 +379,8 @@ const fs = require('fs');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '3.0.0';
-const buildNo = '03000002'; // major, minor, patch, build
+const version = '3.0.1';
+const buildNo = '03000003'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -2117,7 +2117,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
           reaction.users.remove(reactionCollector.id);
         }
         servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-        runYoutubeSearch(message, args, mgid, true, num + 2, search);
+        runYoutubeSearch(message, args, mgid, true);
       });
     }
   } else {
