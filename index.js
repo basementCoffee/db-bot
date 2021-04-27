@@ -380,8 +380,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 const version = '3.0.0';
-const buildNo = '03000001'; // major, minor, patch, build
-let devMode = true; // default false
+const buildNo = '03000002'; // major, minor, patch, build
+let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
