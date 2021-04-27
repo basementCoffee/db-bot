@@ -371,15 +371,17 @@ const {MessageEmbed, Client} = require('discord.js');
 // initialization
 const bot = new Client();
 const ytdl = require('ytdl-core-discord');
+const ytsr = require('ytsr');
 
 // SPOTIFY IMPORTS --------------------------
 const spdl = require('spdl-core');
+const fs = require('fs');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '2.0.5';
-const buildNo = '02000502'; // major, minor, patch, build
-let devMode = false; // default false
+const version = '3.0.0';
+const buildNo = '03000001'; // major, minor, patch, build
+let devMode = true; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -524,12 +526,12 @@ function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
  * @param mgid the message guild id
  * @param sheetName the name of the sheet to reference
  */
-function runPlayNowCommand (message, args, mgid, sheetName) {
+async function runPlayNowCommand (message, args, mgid, sheetName) {
   if (!message.member.voice.channel) {
     return;
   }
   if (!args[1]) {
-    return message.channel.send('What should I play now? Put a link or a db key.');
+    return message.channel.send('What should I play now? Put a link or some words.');
   }
   if (!servers[mgid]) {
     servers[mgid] = {
@@ -552,8 +554,12 @@ function runPlayNowCommand (message, args, mgid, sheetName) {
   if (servers[mgid].queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
-  if (!args[1].includes('.')) {
-    return runDatabasePlayCommand(args, message, sheetName, true, false);
+  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1])) {
+    if (sheetName) {
+      return runDatabasePlayCommand(args, message, sheetName, false, false);
+    } else {
+      return runYoutubeSearch(message, args, mgid, false);
+    }
   }
   // push to queue
   servers[mgid].queue.unshift(args[1]);
@@ -564,11 +570,11 @@ function runPlayNowCommand (message, args, mgid, sheetName) {
 /**
  * Runs the commands and checks to play a link
  * @param message The message that triggered the bot
- * @param args The message broken into args
+ * @param args An array of given play parameters, should be links or keywords
  * @param mgid The message guild id
  * @param sheetName The name of the sheet to reference
  */
-function runPlayLinkCommand (message, args, mgid, sheetName) {
+async function runPlayLinkCommand (message, args, mgid, sheetName) {
   if (!message.member.voice.channel) {
     return message.channel.send("must be in a voice channel to play");
   }
@@ -577,10 +583,14 @@ function runPlayLinkCommand (message, args, mgid, sheetName) {
       dispatcherMap[message.member.voice.channel.id].resume();
       return message.channel.send('*playing*');
     }
-    return message.channel.send("Where's the link? I can't read your mind... unfortunately.");
+    return message.channel.send('What should I play? Put a link or some words.');
   }
-  if (!args[1].includes('.')) {
-    return runDatabasePlayCommand(args, message, sheetName, false, false);
+  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1])) {
+    if (sheetName) {
+      return runDatabasePlayCommand(args, message, sheetName, false, false);
+    } else {
+      return runYoutubeSearch(message, args, mgid, false);
+    }
   }
   if (!servers[mgid]) {
     servers[mgid] = {
@@ -651,32 +661,21 @@ async function runCommandCases (message) {
     }
     prefixString = prefixMap[mgid];
     bot.user.setActivity('[ .help ]', {type: 'WATCHING'}).then();
-    //   // appends the server prefix to the nickname
-    //   if (prefixString !== '.') {
-    //     if (!message.member.guild.me.nickname) {
-    //       await message.member.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
-    //     } else if (message.member.guild.me.nickname.indexOf('[') > -1 && message.member.guild.me.nickname.indexOf(']') > -1) {
-    //       await message.member.guild.me.setNickname('[' + prefixString + '] ' + message.member.guild.me.nickname.substring(message.member.guild.me.nickname.indexOf(']') + 2));
-    //     } else {
-    //       await message.member.guild.me.setNickname('[' + prefixString + '] ' + message.member.guild.me.nickname);
-    //     }
-    //   } else if (message.member.guild.me.nickname && message.member.guild.me.nickname.indexOf('[') > -1 && message.member.guild.me.nickname.indexOf(']') > -1) {
-    //     await message.member.guild.me.setNickname(message.member.guild.me.nickname.substring(message.member.guild.me.nickname.indexOf(']') + 2));
-    //   }
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
-  const fwbPrefix = firstWordBegin.substr(0, 1);
-  if (fwbPrefix !== prefixString) {
-    if (fwbPrefix.toUpperCase() === fwbPrefix.toLowerCase() && fwbPrefix.charCodeAt(0) < 120 && !devMode) {
+  const fwPrefix = firstWordBegin.substr(0, 1);
+  if (fwPrefix !== prefixString) {
+    if (fwPrefix.toUpperCase() === fwPrefix.toLowerCase() && fwPrefix.charCodeAt(0) < 120 && !devMode) {
+      const fwCommand = firstWordBegin.substr(1, 13);
+      if (fwPrefix === '.' && (fwCommand === 'changeprefix ' || fwCommand === 'h ' || fwCommand === 'help ')) {
+        return message.channel.send('Current prefix is: ' + prefixString);
+      }
       if (message.member.guild.me.nickname && message.member.guild.me.nickname.substr(0, 1) === '['
         && message.member.guild.me.nickname.substr(2, 1) === ']') {
         const falsePrefix = message.member.guild.me.nickname.substr(1, 1);
-        if (fwbPrefix === falsePrefix && (firstWordBegin === falsePrefix + 'changeprefix ' || firstWordBegin === falsePrefix + 'h ' || firstWordBegin === falsePrefix + 'help ')) {
+        if (fwPrefix === falsePrefix && (fwCommand === 'changeprefix ' || fwCommand === 'h ' || fwCommand === 'help ')) {
           return message.channel.send('Current prefix is: ' + prefixString);
         }
-      }
-      if (fwbPrefix === '.' && (firstWordBegin === '.changeprefix ' || firstWordBegin === '.keys ' || firstWordBegin === '.h ' || firstWordBegin === '.help ')) {
-        return message.channel.send('Current prefix is: ' + prefixString);
       }
     }
     return;
@@ -692,10 +691,10 @@ async function runCommandCases (message) {
   switch (statement) {
     // !p is just the basic rhythm bot
     case 'p':
-      runPlayLinkCommand(message, args, mgid, mgid);
+      runPlayLinkCommand(message, args, mgid, undefined);
       break;
     case 'play':
-      runPlayLinkCommand(message, args, mgid, mgid);
+      runPlayLinkCommand(message, args, mgid, undefined);
       break;
     case 'mp':
       runPlayLinkCommand(message, args, mgid, 'p' + message.member.id);
@@ -714,10 +713,10 @@ async function runCommandCases (message) {
       runPlayNowCommand(message, args, mgid, 'entries');
       break;
     case 'pn':
-      runPlayNowCommand(message, args, mgid, mgid);
+      runPlayNowCommand(message, args, mgid, undefined);
       break;
     case 'playnow':
-      runPlayNowCommand(message, args, mgid, mgid);
+      runPlayNowCommand(message, args, mgid, undefined);
       break;
     case 'mpn':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
@@ -768,6 +767,12 @@ async function runCommandCases (message) {
     // !md is the personal database
     case 'md':
       runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true);
+      break;
+    case 'dn':
+      runPlayNowCommand(args, message, mgid, mgid);
+      break;
+    case 'mdn':
+      runPlayNowCommand(args, message, mgid, 'p' + message.member.id);
       break;
     // !r is a random that works with the normal queue
     case 'r':
@@ -829,7 +834,7 @@ async function runCommandCases (message) {
         return message.channel.send('No argument was given.');
       }
       gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
-        let ss = runSearchCommand(args[1], xdb).ss;
+        const ss = runSearchCommand(args[1], xdb).ss;
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
         } else {
@@ -855,7 +860,7 @@ async function runCommandCases (message) {
         );
       }
       gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
-        let ss = runSearchCommand(args[1], xdb).ss;
+        const ss = runSearchCommand(args[1], xdb).ss;
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
         } else {
@@ -1237,20 +1242,36 @@ async function runCommandCases (message) {
       runRewindCommand(message, mgid, message.member.voice.channel, args[1]);
       break;
     case 'replay':
-      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to replay');
-      playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to replay');
+      if (servers[mgid].queue[0]) {
+        playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      } else {
+        playSongToVC(message, servers[mgid].queueHistory.pop(), message.member.voice.channel, true);
+      }
       break;
     case 'rp':
-      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to replay');
-      playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to replay');
+      if (servers[mgid].queue[0]) {
+        playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      } else {
+        playSongToVC(message, servers[mgid].queueHistory.pop(), message.member.voice.channel, true);
+      }
       break;
     case 'restart':
-      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to restart');
-      playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to restart');
+      if (servers[mgid].queue[0]) {
+        playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      } else {
+        playSongToVC(message, servers[mgid].queueHistory.pop(), message.member.voice.channel, true);
+      }
       break;
     case 'rs':
-      if (!servers[mgid] || !servers[mgid].queue[0]) return message.channel.send('must be actively playing to restart');
-      playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to restart');
+      if (servers[mgid].queue[0]) {
+        playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+      } else {
+        playSongToVC(message, servers[mgid].queueHistory.pop(), message.member.voice.channel, true);
+      }
       break;
     case 'invite':
       message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot");
@@ -1282,8 +1303,17 @@ async function runCommandCases (message) {
         sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel).then();
       }
       break;
-    case "l":
-      message.channel.send('command not found\n*possible commands: loop, list, leave*');
+    case 'l':
+      if (!args[1]) {
+        return message.channel.send('no lookup index given (1-5)');
+      }
+      await runYoutubeSearch(message, args, mgid, false, args[1]);
+      break;
+    case 'ln':
+      if (!args[1]) {
+        return message.channel.send('no lookup index given (1-5)');
+      }
+      await runYoutubeSearch(message, args, mgid, true, args[1]);
       break;
     case 'gzh':
       const devCEmbed = new MessageEmbed()
@@ -1294,6 +1324,7 @@ async function runCommandCases (message) {
           '\n' + prefixString + 'gzid - guild id' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n\n**calibrate multiple bots**' +
+          '\n=gzl - return the bot\'s ping and latency' +
           '\n=gzd - toggle dev mode' +
           '\n=gzk - kill a process' +
           '\n=gzp - start a process' +
@@ -1350,7 +1381,6 @@ async function runCommandCases (message) {
       }
       break;
   }
-  // message.channel.send(`Latency is ${Date.now() - message.createdTimestamp}ms.\nAPI Latency is ${Math.round(bot.ws.ping)}ms`);
 }
 
 bot.on('guildCreate', guild => {
@@ -1508,18 +1538,19 @@ bot.on('message', async (message) => {
         activeStatus = 'inactive';
       }
       if (!zargs[1]) {
-        message.channel.send(activeStatus + ' bot id: ' + process.pid.toString() + ' (' + 'dev mode: ' + devMode + ')');
+        return message.channel.send(activeStatus + ' bot id: ' + process.pid.toString() + ' (' + 'dev mode: ' + devMode + ')');
       }
       if (devMode && zargs[1] === process.pid.toString()) {
         devMode = false;
-        message.channel.send('*devmode is off* ' + process.pid.toString());
         prefixMap[message.member.guild.id] = undefined;
+        return message.channel.send('*devmode is off* ' + process.pid.toString());
       } else if (zargs[1] === process.pid.toString()) {
         devMode = true;
-        message.channel.send('*devmode is on* ' + process.pid.toString());
+        return message.channel.send('*devmode is on* ' + process.pid.toString());
       }
+    } else if (zmsg === 'zl') {
+      return message.channel.send(`Latency is ${Date.now() - message.createdTimestamp}ms.\nAPI Latency is ${Math.round(bot.ws.ping)}ms`);
     }
-    return;
   }
   if (message.author.bot || isInactive) {
     return;
@@ -1611,7 +1642,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
  */
 function runQueueCommand (message, mgid) {
   if (!servers[mgid] || servers[mgid].queue < 1 || !message.member.guild.voice.channel) {
-    return message.channel.send("There is no active queue right now");
+    return message.channel.send('There is no active queue right now');
   }
   const serverQueue = servers[mgid].queue.map((x) => x);
   let qIterations = serverQueue.length;
@@ -1644,7 +1675,7 @@ function runQueueCommand (message, mgid) {
         .setAuthor('playing:  ' + authorName)
         .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
       for (let qi = startingIndex + 1; (qi < qIterations && qi < servers[mgid].queue.length); qi++) {
-        let title = (await getTitle(serverQueue[qi]));
+        const title = (await getTitle(serverQueue[qi]));
         const url = serverQueue[qi];
         queueSB += qi + '. ' + `[${title}](${url})\n`;
       }
@@ -1670,7 +1701,6 @@ function runQueueCommand (message, mgid) {
           }
           return false;
         };
-        let reactionCleared = false;
         const collector = sentMsg.createReactionCollector(filter, {time: 300000});
         const arrowReactionInterval = setInterval(() => {
           clearInterval(arrowReactionInterval);
@@ -1888,7 +1918,6 @@ function runUniversalSearchCommand (message, mgid, providedString) {
         });
     });
   });
-
 }
 
 /**
@@ -2021,6 +2050,79 @@ function sendHelp (message, prefixString) {
   helpListEmbed.setTitle('Help List');
   helpListEmbed.setDescription(description);
   message.channel.send(helpListEmbed);
+}
+
+/**
+ * Function for searching for message contents on youtube for playback.
+ * @param message The discord message
+ * @param args The args to verify content
+ * @param mgid The message guild id
+ * @param playNow Bool, whether to override the queue
+ * @param indexToLookup Optional: The word in a message to signify the search index
+ * @param search Optional: For recursive call with memoization
+ * @returns {Promise<*|boolean|undefined>}
+ */
+async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, search) {
+  if (indexToLookup && !args[2]) {
+    return message.channel.send('no lookup word given');
+  }
+  let substrVal = 3;
+  let num = parseInt(indexToLookup);
+  if (!num) {
+    num = 1;
+  } else {
+    substrVal += 2;
+  }
+  if (num < 0 || num > 5) {
+    return message.channel.send('Provided lookup index following must be 1-5 ');
+  }
+  num--;
+  if (!search) {
+    search = await ytsr(message.content.substr(substrVal), {pages: 1});
+    if (!search.items[0]) {
+      return message.channel.send('could not find video');
+    }
+  }
+  const args2 = [];
+  args2[1] = search.items[num].url;
+  if (args[1]) {
+    if (playNow) {
+      await runPlayNowCommand(message, args2, mgid, undefined);
+    } else {
+      await runPlayLinkCommand(message, args2, mgid, undefined);
+    }
+    if (num < 4 && (playNow || servers[mgid].queue.length < 2)) {
+      await message.react('➡️');
+      const filter = (reaction, user) => {
+        if (message.member.voice.channel) {
+          for (const mem of message.member.voice.channel.members) {
+            if (user.id === mem[1].id) {
+              return user.id !== bot.user.id && ['➡️'].includes(reaction.emoji.name);
+            }
+          }
+        }
+        return false;
+      };
+
+      const collector = message.createReactionCollector(filter, {time: 20000});
+      const arrowReactionInterval = setInterval(() => {
+        clearInterval(arrowReactionInterval);
+        message.reactions.removeAll();
+      }, 20000);
+      collector.once('collect', (reaction, reactionCollector) => {
+        clearInterval(arrowReactionInterval);
+        if (num > 2) {
+          message.reactions.removeAll();
+        } else {
+          reaction.users.remove(reactionCollector.id);
+        }
+        servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+        runYoutubeSearch(message, args, mgid, true, num + 2, search);
+      });
+    }
+  } else {
+    return message.channel.send('could not find video');
+  }
 }
 
 /**
@@ -2335,10 +2437,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
         });
       } else {
         dispatcher = connection
-          .play(await spdl(url, {
-              opusEncoded: true,
-              filter: 'audioonly'
-            }),
+          .play(await spdl(url),
             {
               highWaterMark: 1 << 25,
               volume: false,
@@ -2767,4 +2866,3 @@ const dispatcherMapStatus = new Map();
 const generatingEmbedMap = new Map();
 // login to discord
 bot.login(token);
-
