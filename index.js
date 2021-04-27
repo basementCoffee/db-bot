@@ -379,8 +379,8 @@ const fs = require('fs');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '3.0.2';
-const buildNo = '03000201'; // major, minor, patch, build
+const version = '3.0.3';
+const buildNo = '03000301'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -556,9 +556,9 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
   }
   if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1])) {
     if (sheetName) {
-      return runDatabasePlayCommand(args, message, sheetName, false, false);
+      return runDatabasePlayCommand(args, message, sheetName, true, false);
     } else {
-      return runYoutubeSearch(message, args, mgid, false);
+      return runYoutubeSearch(message, args, mgid, true);
     }
   }
   // push to queue
@@ -2117,7 +2117,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
           reaction.users.remove(reactionCollector.id);
         }
         servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-        runYoutubeSearch(message, args, mgid, true, num+=2, search);
+        runYoutubeSearch(message, args, mgid, true, num += 2, search);
       });
     }
   } else {
