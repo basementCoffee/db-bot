@@ -378,9 +378,9 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '3.1.1';
-const buildNo = '03010101'; // major, minor, patch, build
 let devMode = false; // default false
+const version = '3.1.2';
+const buildNo = '03010201'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -526,7 +526,8 @@ function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
  * @param sheetName the name of the sheet to reference
  */
 async function runPlayNowCommand (message, args, mgid, sheetName) {
-  if (!message.member.voice.channel) {
+  const voiceChannel = message.member.voice.channel;
+  if (!voiceChannel) {
     return;
   }
   if (!args[1]) {
@@ -561,9 +562,14 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
     }
   }
   // push to queue
+  const dsp = dispatcherMap[voiceChannel.id];
+  if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
+    dsp && dsp.streamTime && dsp.streamTime > 180000) {
+    servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+  }
   servers[mgid].queue.unshift(args[1]);
   message.channel.send('*playing now*');
-  playSongToVC(message, args[1], message.member.voice.channel, true);
+  playSongToVC(message, args[1], voiceChannel, true);
 }
 
 /**
@@ -1719,12 +1725,14 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
     return true;
   }
-  if (!message.member.voice.channel) {
+  const voiceChannel = message.member.voice.channel;
+  const mgid = message.guild.id;
+  if (!voiceChannel) {
     message.channel.send('must be in a voice channel to play keys');
     return true;
   }
-  if (!servers[message.guild.id]) {
-    servers[message.guild.id] = {
+  if (!servers[mgid]) {
+    servers[mgid] = {
       queue: [],
       queueHistory: [],
       loop: false,
@@ -1733,17 +1741,17 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
-    servers[message.guild.id].queue = [];
-    servers[message.guild.id].queueHistory = [];
+    servers[mgid].queue = [];
+    servers[mgid].queueHistory = [];
   }
-  if (servers[message.guild.id].queue.length >= maxQueueSize) {
+  if (servers[mgid].queue.length >= maxQueueSize) {
     message.channel.send('*max queue size has been reached*');
     return true;
   }
   gsrun(client2, 'A', 'B', sheetName).then(async (xdb) => {
     let queueWasEmpty = false;
     // if the queue is empty then play
-    if (servers[message.guild.id].queue.length < 1) {
+    if (servers[mgid].queue.length < 1) {
       queueWasEmpty = true;
     }
     if (args[2] && !playRightNow) {
@@ -1763,7 +1771,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             }
             if (otherSheet.get(args[dbAddInt].toUpperCase())) {
               // push to queue
-              servers[message.guild.id].queue.push(otherSheet.get(args[dbAddInt].toUpperCase()));
+              servers[mgid].queue.push(otherSheet.get(args[dbAddInt].toUpperCase()));
               dbAddedToQueue++;
               dbAddInt++;
               continue;
@@ -1776,7 +1784,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           firstUnfoundRan = true;
         } else {
           // push to queue
-          servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[dbAddInt].toUpperCase()));
+          servers[mgid].queue.push(xdb.referenceDatabase.get(args[dbAddInt].toUpperCase()));
           dbAddedToQueue++;
         }
         dbAddInt++;
@@ -1787,20 +1795,25 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         message.channel.send(unFoundString);
       }
     } else {
-      if (!xdb.referenceDatabase.get(args[1].toUpperCase())) {
+      const itemToPlay = xdb.referenceDatabase.get(args[1].toUpperCase());
+      if (!itemToPlay) {
         const ss = runSearchCommand(args[1], xdb).ss;
         if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
           message.channel.send(
             "could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
           );
-          // push to queue
-          if (playRightNow) {
-            servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
-            playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), message.member.voice.channel, true);
+          if (playRightNow) { // push to queue and play
+            const dsp = dispatcherMap[voiceChannel.id];
+            if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
+              dsp && dsp.streamTime && dsp.streamTime > 180000) {
+              servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+            }
+            servers[mgid].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
+            playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), voiceChannel, true);
             message.channel.send('*playing now*');
             return true;
           } else {
-            servers[message.guild.id].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
+            servers[mgid].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
           }
         } else if (playRightNow) {
           if (printErrorMsg) {
@@ -1828,24 +1841,19 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           return true;
         }
       } else { // did find in database
-        if (playRightNow) {
-          // push to queue
-          if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
-            servers[message.guild.id].queue.unshift(xdb.referenceDatabase.get(args[1].toUpperCase()));
-            playSongToVC(message, xdb.referenceDatabase.get(args[1].toUpperCase()), message.member.voice.channel, true);
-            message.channel.send('*playing now*');
-            return true;
-          } else {
-            if (printErrorMsg) {
-              message.channel.send("There's something wrong with what you put there.");
-            } else {
-              runDatabasePlayCommand(args, message, 'p' + message.member.id, playRightNow, true);
-            }
-            return false;
+        if (playRightNow) { // push to queue and play
+          const dsp = dispatcherMap[voiceChannel.id];
+          if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
+            dsp && dsp.streamTime && dsp.streamTime > 180000) {
+            servers[mgid].queueHistory.push(servers[mgid].queue.shift());
           }
+          servers[mgid].queue.unshift(itemToPlay);
+          playSongToVC(message, itemToPlay, voiceChannel, true);
+          message.channel.send('*playing now*');
+          return true;
         } else {
           // push to queue
-          servers[message.guild.id].queue.push(xdb.referenceDatabase.get(args[1].toUpperCase()));
+          servers[mgid].queue.push(itemToPlay);
         }
       }
       if (!queueWasEmpty && !playRightNow) {
@@ -1853,8 +1861,8 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
       }
     }
     // if queue was empty then play
-    if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-      playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel, true);
+    if (queueWasEmpty && servers[mgid].queue.length > 0) {
+      playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
     }
   });
   return true;
@@ -2432,36 +2440,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
         clearInterval(tempInterval);
         dispatcher.resume();
       }, playBufferTime);
-      dispatcher.once('finish', async () => {
-        let totalDuration;
-        if (isSpotify) {
-          totalDuration = await spdl.getInfo(url);
-          totalDuration = totalDuration.duration;
-        } else {
-          totalDuration = await ytdl.getInfo(url2 ? url2 : url);
-          totalDuration = totalDuration.formats[0].approxDurationMs;
-        }
-        const streamTime = dispatcherMap[voiceChannel.id].streamTime;
-        let streamIntervalTime = 1100;
-        if (totalDuration && streamTime && (streamTime + 1100) < totalDuration) {
-          streamIntervalTime = totalDuration - streamTime;
-          console.log(url2 ? url2 : url);
-          console.log(totalDuration);
-          console.log(streamTime);
-          console.log('--- current stream time is less than total song duration ---');
-          console.log('New time till end is ' + streamIntervalTime + '\n------------');
-        }
-        if (url !== whatspMap[voiceChannel.id]) {
-          console.log('There was a mismatch -------------------');
-          console.log('old url: ' + url);
-          console.log('current url: ' + whatspMap[voiceChannel.id]);
-          return;
-        }
-        const songFinish = setInterval(async () => {
+      dispatcher.once('finish', () => {
+        const songFinish = setInterval(() => {
           clearInterval(songFinish);
-          // ensure that the next song only plays on previous song's end
-          const streamTime2 = dispatcherMap[voiceChannel.id].streamTime;
-          if (totalDuration && streamTime2 && (streamTime2 + 5000) < totalDuration) return console.log('ending alternative stream');
           if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
             embedMessageMap[message.guild.id].reactions.removeAll().then();
             embedMessageMap[message.guild.id] = false;
@@ -2481,7 +2462,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
               dispatcherMap[voiceChannel.id] = false;
             }
           }
-        }, streamIntervalTime);
+        }, 600);
       });
     } catch (e) {
       // Error catching - fault with the link?
@@ -2656,6 +2637,9 @@ async function sendLinkAsEmbed (message, url, voiceChannel) {
                   if (collector.ended) return;
                   sentMsg.react('🔐').then(() => {
                     generatingEmbedMap[mgid] = false;
+                    if (url !== whatspMap[voiceChannel.id] && embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
+                      sentMsg.reactions.removeAll();
+                    }
                   });
                 });
               });
