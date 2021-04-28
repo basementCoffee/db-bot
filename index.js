@@ -378,8 +378,8 @@ const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '3.1.0';
-const buildNo = '03010001'; // major, minor, patch, build
+const version = '3.1.1';
+const buildNo = '03010101'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -1085,14 +1085,7 @@ async function runCommandCases (message) {
           'Could not add to the database. Put a song name followed by a link.'
         );
       }
-      if (!args[2].includes('.')) {
-        return message.channel.send('You can only add links to the database.');
-      }
-      if (args[2].includes('spotify.com')) {
-        if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      } else {
-        if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      }
+      if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
       gsrun(client2, 'A', 'B', 'entries').then(() => {
         runAddCommand(args, message, 'entries', true);
@@ -1106,14 +1099,7 @@ async function runCommandCases (message) {
           prefixString + 'a [key] [link])*'
         );
       }
-      if (!args[2].includes('.')) {
-        return message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
-      }
-      if (args[2].includes('spotify.com')) {
-        if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      } else {
-        if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      }
+      if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
       gsrun(client2, 'A', 'B', mgid).then(() => {
         if (
@@ -1130,17 +1116,10 @@ async function runCommandCases (message) {
       if (!args[1] || !args[2]) {
         return message.channel.send(
           'Could not add to the database. Put a desired name followed by a link. *(ex: ' +
-          prefixString + 'a [key] [link])*'
+          prefixString + 'add [key] [link])*'
         );
       }
-      if (!args[2].includes('.')) {
-        return message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
-      }
-      if (args[2].includes('spotify.com')) {
-        if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      } else {
-        if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      }
+      if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
       gsrun(client2, 'A', 'B', mgid).then(() => {
         if (
@@ -1161,14 +1140,7 @@ async function runCommandCases (message) {
           prefixString + 'ma [key] [link])*'
         );
       }
-      if (!args[2].includes('.')) {
-        return message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
-      }
-      if (args[2].includes('spotify.com')) {
-        if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      } else {
-        if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      }
+      if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
       gsrun(client2, 'A', 'B', 'p' + message.member.id).then(() => {
         if (
@@ -1188,14 +1160,7 @@ async function runCommandCases (message) {
           prefixString + 'ma [key] [link])*'
         );
       }
-      if (!args[2].includes('.')) {
-        return message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
-      }
-      if (args[2].includes('spotify.com')) {
-        if (!spdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      } else {
-        if (!ytdl.validateURL(args[2])) return message.channel.send('Invalid link');
-      }
+      if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
       gsrun(client2, 'A', 'B', 'p' + message.member.id).then(() => {
         if (
@@ -1450,6 +1415,25 @@ function checkToSeeActive () {
       resHandlerTimer = setInterval(responseHandler, 9000);
     });
   }
+}
+
+/**
+ * Returns whether a given URL is valid. Also sends an appropriate error
+ * message to the channel if the link were to be invalid.
+ * @param message The message that triggered the bot
+ * @param url The url to verify
+ * @returns {boolean} True if the bot was able to verify the link
+ */
+function verifyUrl (message, url) {
+  if (!url.includes('.')) {
+    message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
+    return false;
+  }
+  if ((url.includes('spotify.com') && !spdl.validateURL(url)) || !ytdl.validateURL(url)) {
+    message.channel.send('Invalid link');
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -2397,15 +2381,15 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     return runStopPlayingCommand(message.guild.id, voiceChannel);
   }
   // the url to play
-  const url = whatToPlay;
+  let url = whatToPlay;
   // the alternative spotify url
   let url2;
   let isSpotify = url.includes('spotify.com');
   if (isSpotify) {
     const infos = await spdl.getInfo(url);
-    const search = await ytsr(infos.title + infos.artists.join(' '), {pages: 1});
+    const search = await ytsr(infos.title + " " + infos.artists.join(' '), {pages: 1});
     isSpotify = !search.items[0];
-    url2 = search.items[0].url;
+    if (!isSpotify) url2 = search.items[0].url;
   }
   // remove previous embed buttons
   if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions && sendEmbed) {
@@ -2454,14 +2438,14 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
           totalDuration = await spdl.getInfo(url);
           totalDuration = totalDuration.duration;
         } else {
-          totalDuration = await ytdl.getInfo(url);
+          totalDuration = await ytdl.getInfo(url2 ? url2 : url);
           totalDuration = totalDuration.formats[0].approxDurationMs;
         }
         const streamTime = dispatcherMap[voiceChannel.id].streamTime;
         let streamIntervalTime = 1100;
         if (totalDuration && streamTime && (streamTime + 1100) < totalDuration) {
           streamIntervalTime = totalDuration - streamTime;
-          console.log(url);
+          console.log(url2 ? url2 : url);
           console.log(totalDuration);
           console.log(streamTime);
           console.log('--- current stream time is less than total song duration ---');
