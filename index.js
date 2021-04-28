@@ -379,8 +379,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.2';
-const buildNo = '03010201'; // major, minor, patch, build
+const version = '3.1.3';
+const buildNo = '03010302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -2050,37 +2050,46 @@ function sendHelp (message, prefixString) {
  * @param mgid The message guild id
  * @param playNow Bool, whether to override the queue
  * @param indexToLookup Optional: The word in a message to signify the search index
- * @param search Optional: For recursive call with memoization
+ * @param searchTerm Optional: The specific phrase to search
+ * @param searchResult Optional: For recursive call with memoization
  * @returns {Promise<*|boolean|undefined>}
  */
-async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, search) {
-  if (indexToLookup && !args[2] && !search) {
+async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, searchTerm, searchResult) {
+  if (indexToLookup && !args[2] && !searchResult) {
     return message.channel.send('no lookup word given');
   }
-  let substrVal = 3;
+  if (!searchTerm) {
+    const tempArray = args.map(x => x);
+    tempArray[0] = "";
+    searchTerm = tempArray.join(' ');
+  }
   let num = parseInt(indexToLookup);
   if (!num) {
     num = 1;
-  } else {
-    substrVal += 2;
   }
   if (num < 0 || num > 5) {
     return message.channel.send('Provided lookup index following must be 1-5 ');
   }
   num--;
-  if (!search) {
-    search = await ytsr(message.content.substr(substrVal), {pages: 1});
-    if (!search.items[0]) {
+  if (!searchResult) {
+    searchResult = await ytsr(searchTerm, {pages: 1});
+    if (!searchResult.items[0]) {
       return message.channel.send('could not find video');
     }
   }
   const args2 = [];
-  args2[1] = search.items[num].url;
+  args2[1] = searchResult.items[num].url;
   if (args[1]) {
     if (playNow) {
-      await runPlayNowCommand(message, args2, mgid, undefined);
+      servers[mgid].queue.unshift(args2[1]);
+      await playSongToVC(message, args2[1], message.member.voice.channel, true);
     } else {
-      await runPlayLinkCommand(message, args2, mgid, undefined);
+      servers[mgid].queue.push(args2[1]);
+      if (servers[mgid].queue.length === 1) {
+        await playSongToVC(message, args2[1], message.member.voice.channel, true);
+      } else {
+        message.channel.send('*added to queue*');
+      }
     }
     if (num < 4 && (playNow || servers[mgid].queue.length < 2)) {
       await message.react('➡️');
@@ -2108,7 +2117,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
           reaction.users.remove(reactionCollector.id);
         }
         servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-        runYoutubeSearch(message, args, mgid, true, num += 2, search);
+        runYoutubeSearch(message, args, mgid, true, num += 2, searchTerm, searchResult);
       });
     }
   } else {
