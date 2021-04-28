@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "npm-start": "^1.4.2",
     "npm-start-command": "^1.0.1",
     "spdl-core": "~1.6.0",
-    "ytdl-core": "^3.4.2",
+    "ytdl-core": "^4.5.0",
     "ytdl-core-discord": "^1.2.5",
     "ytpl": "^0.3.0",
     "ytsr": "^3.5.0"
