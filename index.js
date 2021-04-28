@@ -379,8 +379,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.4';
-const buildNo = '03010402'; // major, minor, patch, build
+const version = '3.1.5';
+const buildNo = '03010502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -2413,8 +2413,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   // the alternative spotify url
   let url2;
   let isSpotify = url.includes('spotify.com');
+  let infos;
   if (isSpotify) {
-    const infos = await spdl.getInfo(url);
+    infos = await spdl.getInfo(url);
     const search = await ytsr(infos.title + " " + infos.artists.join(' '), {pages: 1});
     isSpotify = !search.items[0];
     if (!isSpotify) url2 = search.items[0].url;
@@ -2451,7 +2452,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       dispatcherMap[voiceChannel.id] = dispatcher;
       // if the server is not silenced then send the embed when playing
       if (!silenceMap[message.guild.id] && sendEmbed) {
-        await sendLinkAsEmbed(message, url, voiceChannel).then(() => dispatcher.setVolume(0.5));
+        await sendLinkAsEmbed(message, url, voiceChannel, infos).then(() => dispatcher.setVolume(0.5));
       }
       let playBufferTime = 300;
       if (isSpotify) playBufferTime = 2850;
@@ -2588,9 +2589,10 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
  * @param message the message to send the channel to
  * @param url the url to generate the embed for
  * @param voiceChannel the voice channel that the song is being played in
+ * @param infos Optional: Spotify information if already generated
  * @returns {Promise<void>}
  */
-async function sendLinkAsEmbed (message, url, voiceChannel) {
+async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
   let embed;
   let imgLink;
   let timeMS = 0;
@@ -2602,7 +2604,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel) {
     isSpotify = true;
   }
   if (isSpotify) {
-    const infos = await spdl.getInfo(url);
+    if (!infos) infos = await spdl.getInfo(url);
     embed = new MessageEmbed()
       .setTitle(`${infos.title}`)
       .setURL(infos.url)
