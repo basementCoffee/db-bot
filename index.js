@@ -375,12 +375,11 @@ const ytsr = require('ytsr');
 
 // SPOTIFY IMPORTS --------------------------
 const spdl = require('spdl-core');
-const fs = require('fs');
 spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
-const version = '3.0.3';
-const buildNo = '03000301'; // major, minor, patch, build
+const version = '3.1.0';
+const buildNo = '03010001'; // major, minor, patch, build
 let devMode = false; // default false
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -769,10 +768,10 @@ async function runCommandCases (message) {
       runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true);
       break;
     case 'dn':
-      runPlayNowCommand(args, message, mgid, mgid);
+      runPlayNowCommand(message, args, mgid, mgid);
       break;
     case 'mdn':
-      runPlayNowCommand(args, message, mgid, 'p' + message.member.id);
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
       break;
     // !r is a random that works with the normal queue
     case 'r':
@@ -2389,7 +2388,7 @@ bot.on('voiceStateUpdate', update => {
  * @param voiceChannel the voice channel to play the song in
  * @param sendEmbed whether to send an embed to the text channel
  */
-function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
+async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   if (!voiceChannel || voiceChannel.members.size < 1 || !whatToPlay) {
     return;
   }
@@ -2399,21 +2398,14 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   }
   // the url to play
   const url = whatToPlay;
-  let isSpotify = false;
-  // set stream flag and validate link
-  if (url.includes('spotify.com')) {
-    isSpotify = true;
-    if (!spdl.validateURL(url)) {
-      message.channel.send('Invalid link');
-      searchForBrokenLinkWithinDB(message, url);
-      return skipSong(message, voiceChannel, true);
-    }
-  } else {
-    if (!ytdl.validateURL(url)) {
-      message.channel.send('Invalid link');
-      searchForBrokenLinkWithinDB(message, url);
-      return skipSong(message, voiceChannel, true);
-    }
+  // the alternative spotify url
+  let url2;
+  let isSpotify = url.includes('spotify.com');
+  if (isSpotify) {
+    const infos = await spdl.getInfo(url);
+    const search = await ytsr(infos.title + infos.artists.join(' '), {pages: 1});
+    isSpotify = !search.items[0];
+    url2 = search.items[0].url;
   }
   // remove previous embed buttons
   if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions && sendEmbed) {
@@ -2429,7 +2421,7 @@ function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       let dispatcher;
       await connection.voice.setSelfDeaf(true);
       if (!isSpotify) {
-        dispatcher = connection.play(await ytdl(url, {}), {
+        dispatcher = connection.play(await ytdl(url2 ? url2 : url, {}), {
           type: 'opus',
           filter: 'audioonly',
           quality: '140',
