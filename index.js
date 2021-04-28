@@ -379,8 +379,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.3';
-const buildNo = '03010302'; // major, minor, patch, build
+const version = '3.1.4';
+const buildNo = '03010402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -2079,49 +2079,60 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
   }
   const args2 = [];
   args2[1] = searchResult.items[num].url;
-  if (args[1]) {
-    if (playNow) {
-      servers[mgid].queue.unshift(args2[1]);
+  if (!args2[1]) return message.channel.send('could not find video');
+  if (!servers[message.guild.id]) {
+    servers[message.guild.id] = {
+      queue: [],
+      queueHistory: [],
+      loop: false,
+      collector: false
+    };
+  }
+  // in case of force disconnect
+  if (!message.guild.voice || !message.guild.voice.channel) {
+    servers[message.guild.id].queue = [];
+    servers[message.guild.id].queueHistory = [];
+    servers[message.guild.id].loop = false;
+  }
+  if (playNow) {
+    servers[mgid].queue.unshift(args2[1]);
+    await playSongToVC(message, args2[1], message.member.voice.channel, true);
+  } else {
+    servers[mgid].queue.push(args2[1]);
+    if (servers[mgid].queue.length === 1) {
       await playSongToVC(message, args2[1], message.member.voice.channel, true);
     } else {
-      servers[mgid].queue.push(args2[1]);
-      if (servers[mgid].queue.length === 1) {
-        await playSongToVC(message, args2[1], message.member.voice.channel, true);
-      } else {
-        message.channel.send('*added to queue*');
-      }
+      message.channel.send('*added to queue*');
     }
-    if (num < 4 && (playNow || servers[mgid].queue.length < 2)) {
-      await message.react('➡️');
-      const filter = (reaction, user) => {
-        if (message.member.voice.channel) {
-          for (const mem of message.member.voice.channel.members) {
-            if (user.id === mem[1].id) {
-              return user.id !== bot.user.id && ['➡️'].includes(reaction.emoji.name);
-            }
+  }
+  if (num < 4 && (playNow || servers[mgid].queue.length < 2)) {
+    await message.react('➡️');
+    const filter = (reaction, user) => {
+      if (message.member.voice.channel) {
+        for (const mem of message.member.voice.channel.members) {
+          if (user.id === mem[1].id) {
+            return user.id !== bot.user.id && ['➡️'].includes(reaction.emoji.name);
           }
         }
-        return false;
-      };
+      }
+      return false;
+    };
 
-      const collector = message.createReactionCollector(filter, {time: 20000});
-      const arrowReactionInterval = setInterval(() => {
-        clearInterval(arrowReactionInterval);
+    const collector = message.createReactionCollector(filter, {time: 20000});
+    const arrowReactionInterval = setInterval(() => {
+      clearInterval(arrowReactionInterval);
+      message.reactions.removeAll();
+    }, 20000);
+    collector.once('collect', (reaction, reactionCollector) => {
+      clearInterval(arrowReactionInterval);
+      if (num > 2) {
         message.reactions.removeAll();
-      }, 20000);
-      collector.once('collect', (reaction, reactionCollector) => {
-        clearInterval(arrowReactionInterval);
-        if (num > 2) {
-          message.reactions.removeAll();
-        } else {
-          reaction.users.remove(reactionCollector.id);
-        }
-        servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-        runYoutubeSearch(message, args, mgid, true, num += 2, searchTerm, searchResult);
-      });
-    }
-  } else {
-    return message.channel.send('could not find video');
+      } else {
+        reaction.users.remove(reactionCollector.id);
+      }
+      servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+      runYoutubeSearch(message, args, mgid, true, num += 2, searchTerm, searchResult);
+    });
   }
 }
 
