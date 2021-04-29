@@ -379,8 +379,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.7';
-const buildNo = '03010702'; // major, minor, patch, build
+const version = '3.1.8';
+const buildNo = '03010801'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -843,9 +843,7 @@ async function runCommandCases (message) {
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
         } else {
-          message.channel.send(
-            'Could not find any keys in your list that start with the given letters.'
-          );
+          message.channel.send('Could not find any keys in your list that start with the given letters.');
         }
       });
       break;
@@ -1435,7 +1433,7 @@ function verifyUrl (message, url) {
     message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
     return false;
   }
-  if ((url.includes('spotify.com') && !spdl.validateURL(url)) || !ytdl.validateURL(url)) {
+  if ((url.includes('spotify.com') && !spdl.validateURL(url)) && !ytdl.validateURL(url)) {
     message.channel.send('Invalid link');
     return false;
   }
