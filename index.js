@@ -379,8 +379,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.5';
-const buildNo = '03010502'; // major, minor, patch, build
+const version = '3.1.6';
+const buildNo = '03010602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -1538,7 +1538,8 @@ bot.on('message', async (message) => {
         return message.channel.send('*devmode is on* ' + process.pid.toString());
       }
     } else if (zmsg === 'zl') {
-      return message.channel.send(`Latency is ${Date.now() - message.createdTimestamp}ms.\nAPI Latency is ${Math.round(bot.ws.ping)}ms`);
+      return message.channel.send(process.pid.toString() + ` Latency is ${Date.now() - message.createdTimestamp}ms.\n
+      API Latency is ${Math.round(bot.ws.ping)}ms`);
     }
   }
   if (message.author.bot || isInactive) {
@@ -2130,7 +2131,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
       } else {
         reaction.users.remove(reactionCollector.id);
       }
-      servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+      if (servers[mgid].queue[0] === args2[1]) servers[mgid].queueHistory.push(servers[mgid].queue.shift());
       runYoutubeSearch(message, args, mgid, true, num += 2, searchTerm, searchResult);
     });
   }
@@ -2488,6 +2489,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     } catch (e) {
       // Error catching - fault with the link?
       message.channel.send('Could not play <' + url + '>');
+      if (servers[message.guild.id].queueHistory[0] && servers[message.guild.id].queue[0] === url) {
+        // remove the url from the queue and replace with first of queueHistory if there is one
+        servers[message.guild.id].queue[0] = servers[message.guild.id].queueHistory[0];
+        servers[message.guild.id].queueHistory.pop();
+      }
       whatspMap[voiceChannel.id] = '';
       // search the db to find possible broken keys
       searchForBrokenLinkWithinDB(message, url);
