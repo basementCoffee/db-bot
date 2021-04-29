@@ -379,8 +379,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.6';
-const buildNo = '03010602'; // major, minor, patch, build
+const version = '3.1.7';
+const buildNo = '03010702'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -564,7 +564,7 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
   // push to queue
   const dsp = dispatcherMap[voiceChannel.id];
   if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-    dsp && dsp.streamTime && dsp.streamTime > 180000) {
+  dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
     servers[mgid].queueHistory.push(servers[mgid].queue.shift());
   }
   servers[mgid].queue.unshift(args[1]);
@@ -1081,7 +1081,7 @@ async function runCommandCases (message) {
       }
       message.channel.send(
         "Here's link to add to the database:\n" +
-        'https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622'
+        "<https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622>"
       );
       break;
     // !ga adds to the server database
@@ -1244,10 +1244,10 @@ async function runCommandCases (message) {
       }
       break;
     case 'invite':
-      message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot");
+      message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>");
       break;
     case 'inv':
-      message.channel.send("Here's the invite link!\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot");
+      message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>");
       break;
     case 'silence':
       if (!message.member.voice.channel) {
@@ -1538,8 +1538,8 @@ bot.on('message', async (message) => {
         return message.channel.send('*devmode is on* ' + process.pid.toString());
       }
     } else if (zmsg === 'zl') {
-      return message.channel.send(process.pid.toString() + ` Latency is ${Date.now() - message.createdTimestamp}ms.\n
-      API Latency is ${Math.round(bot.ws.ping)}ms`);
+      return message.channel.send(process.pid.toString() +
+        `: Latency is ${Date.now() - message.createdTimestamp}ms.\nAPI Latency is ${Math.round(bot.ws.ping)}ms`);
     }
   }
   if (message.author.bot || isInactive) {
@@ -1806,7 +1806,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           if (playRightNow) { // push to queue and play
             const dsp = dispatcherMap[voiceChannel.id];
             if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-              dsp && dsp.streamTime && dsp.streamTime > 180000) {
+            dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
               servers[mgid].queueHistory.push(servers[mgid].queue.shift());
             }
             servers[mgid].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
@@ -1845,7 +1845,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         if (playRightNow) { // push to queue and play
           const dsp = dispatcherMap[voiceChannel.id];
           if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-            dsp && dsp.streamTime && dsp.streamTime > 180000) {
+          dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
             servers[mgid].queueHistory.push(servers[mgid].queue.shift());
           }
           servers[mgid].queue.unshift(itemToPlay);
@@ -2376,10 +2376,9 @@ bot.on('voiceStateUpdate', update => {
   if (isInactive) return;
   // if the bot is the one leaving
   if (update.member.id === bot.user.id && !update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions) {
+    servers[update.guild.id].collector.stop();
     embedMessageMap[update.guild.id].reactions.removeAll().then();
     embedMessageMap[update.guild.id] = false;
-    servers[update.guild.id].collector.stop();
-    servers[update.guild.id].collector = false;
   } else {
     const leaveVCTimeout = setInterval(() => {
       if (update.channel && !dispatcherMap[update.channel.id] && update.channel.members.size < 2) {
@@ -2423,10 +2422,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   }
   // remove previous embed buttons
   if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions && sendEmbed) {
-    embedMessageMap[message.guild.id].reactions.removeAll();
-    embedMessageMap[message.guild.id] = '';
     servers[message.guild.id].collector.stop();
-    servers[message.guild.id].collector = false;
+    embedMessageMap[message.guild.id].reactions.removeAll().then();
+    embedMessageMap[message.guild.id] = '';
   }
 
   whatspMap[voiceChannel.id] = url;
@@ -2458,18 +2456,24 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       let playBufferTime = 300;
       if (isSpotify) playBufferTime = 2850;
       skipTimesMap[message.guild.id] = 0;
-      const tempInterval = setInterval(async () => {
+      const tempInterval = setInterval(() => {
         clearInterval(tempInterval);
         dispatcher.resume();
       }, playBufferTime);
       dispatcher.once('finish', () => {
         const songFinish = setInterval(() => {
           clearInterval(songFinish);
+          if (url !== whatspMap[voiceChannel.id]) {
+            console.log('There was a mismatch -------------------');
+            console.log('old url: ' + url);
+            console.log('current url: ' + whatspMap[voiceChannel.id]);
+            bot.channels.cache.get('730837254796214384').send('there was a mismatch with playback');
+            return;
+          }
           if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
+            servers[message.guild.id].collector.stop();
             embedMessageMap[message.guild.id].reactions.removeAll().then();
             embedMessageMap[message.guild.id] = false;
-            servers[message.guild.id].collector.stop();
-            servers[message.guild.id].collector = false;
           }
           const server = servers[message.guild.id];
           if (voiceChannel.members.size < 2) {
@@ -2484,8 +2488,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
               dispatcherMap[voiceChannel.id] = false;
             }
           }
-        }, 600);
+        }, 700);
       });
+      dispatcher.once('error', console.error);
     } catch (e) {
       // Error catching - fault with the link?
       message.channel.send('Could not play <' + url + '>');
@@ -2642,10 +2647,9 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
   }
   embed.setThumbnail(imgLink);
   if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
-    await embedMessageMap[message.guild.id].reactions.removeAll();
-    embedMessageMap[message.guild.id] = '';
     servers[message.guild.id].collector.stop();
-    servers[message.guild.id].collector = false;
+    embedMessageMap[message.guild.id].reactions.removeAll().then();
+    embedMessageMap[message.guild.id] = '';
   }
 
   if (url === whatspMap[voiceChannel.id]) {
@@ -2656,7 +2660,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
         sentMsg.react('⏪').then(() => {
           if (collector.ended) return;
           sentMsg.react('⏯').then(() => {
-            if (collector.ended) return;
+            if (collector.ended || url !== whatspMap[voiceChannel.id])
+              return sentMsg.reactions.removeAll();
             sentMsg.react('⏩').then(() => {
               if (collector.ended) return;
               sentMsg.react('⏹').then(() => {
@@ -2665,7 +2670,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
                   if (collector.ended) return;
                   sentMsg.react('🔐').then(() => {
                     generatingEmbedMap[mgid] = false;
-                    if (url !== whatspMap[voiceChannel.id] && embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
+                    if (url !== whatspMap[voiceChannel.id]) {
                       sentMsg.reactions.removeAll();
                     }
                   });
@@ -2723,7 +2728,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
             runKeysCommand(message, prefixMap[mgid], 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector);
           }
         });
-        // message.channel.send(`Button creation latency is ${Date.now() - message.createdTimestamp}ms`);
       });
   }
   // message.channel.send(`Embed creation latency is ${Date.now() - message.createdTimestamp}ms`);
@@ -2731,7 +2735,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
 
 /**
  * Stops playing in the given voice channel and leaves.
- * @param message The given message that triggered the bot
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  */
@@ -2743,10 +2746,9 @@ function runStopPlayingCommand (mgid, voiceChannel) {
     servers[mgid].loop = false;
   }
   if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
-    embedMessageMap[mgid].reactions.removeAll();
-    embedMessageMap[mgid] = '';
     servers[mgid].collector.stop();
-    servers[mgid].collector = false;
+    embedMessageMap[mgid].reactions.removeAll().then();
+    embedMessageMap[mgid] = '';
   }
   if (voiceChannel) {
     if (generatingEmbedMap[mgid]) {
