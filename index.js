@@ -379,8 +379,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.8';
-const buildNo = '03010801'; // major, minor, patch, build
+const version = '3.1.9';
+const buildNo = '03010901'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -1433,7 +1433,7 @@ function verifyUrl (message, url) {
     message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
     return false;
   }
-  if ((url.includes('spotify.com') && !spdl.validateURL(url)) && !ytdl.validateURL(url)) {
+  if (url.includes('spotify.com') ? !spdl.validateURL(url) : !ytdl.validateURL(url)) {
     message.channel.send('Invalid link');
     return false;
   }
