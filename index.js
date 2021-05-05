@@ -379,8 +379,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.9';
-const buildNo = '03010901'; // major, minor, patch, build
+const version = '3.1.10';
+const buildNo = '03011001'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -818,6 +818,9 @@ async function runCommandCases (message) {
       break;
     case 'mk':
       runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
+      break;
+    case 'gk':
+      runKeysCommand(message, prefixString, 'entries', 'm', '', '');
       break;
     // !gkeys is global keys
     case 'gkeys':
@@ -2296,11 +2299,7 @@ function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel
       let keyEmbedColor = '#ffa200';
       if (cmdType === 'm') {
         let name;
-        if (user) {
-          name = user.username;
-        } else {
-          name = message.member.nickname;
-        }
+        user ? name = user.username : name = message.member.nickname;
         if (!name) {
           name = message.author.username;
         }
@@ -2378,13 +2377,19 @@ bot.on('voiceStateUpdate', update => {
     embedMessageMap[update.guild.id].reactions.removeAll().then();
     embedMessageMap[update.guild.id] = false;
   } else {
-    const leaveVCTimeout = setInterval(() => {
-      if (update.channel && !dispatcherMap[update.channel.id] && update.channel.members.size < 2) {
+    let leaveVCInt = 1100;
+    if (!update.channel) return;
+    if (dispatcherMap[update.channel.id]) {
+      leaveVCInt = 300000;
+    }
+    clearInterval(leaveVCTimeout[update.channel.id]);
+    leaveVCTimeout[update.channel.id] = setInterval(() => {
+      if (update.channel.members.size < 2) {
         // console.log(update.channel.members.values());
         update.channel.leave();
       }
-      clearInterval(leaveVCTimeout);
-    }, 1000);
+      clearInterval(leaveVCTimeout[update.channel.id]);
+    }, leaveVCInt);
   }
 });
 
@@ -2852,5 +2857,7 @@ const embedMessageMap = new Map();
 const dispatcherMapStatus = new Map();
 // boolean status of generating embed for a guild
 const generatingEmbedMap = new Map();
+// the timers for the bot to leave a VC, uses channel
+const leaveVCTimeout = new Map();
 // login to discord
 bot.login(token);
