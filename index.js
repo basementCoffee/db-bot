@@ -373,6 +373,7 @@ const bot = new Client();
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
+const {getTracks} = require("spotify-url-info");
 
 // SPOTIFY IMPORTS --------------------------
 const spdl = require('spdl-core');
@@ -380,8 +381,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.2.0';
-const buildNo = '03020002'; // major, minor, patch, build
+const version = '3.3.0';
+const buildNo = '03030002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -555,7 +556,7 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
   if (servers[mgid].queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
-  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1])) {
+  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !args[1].includes('spotify.com/playlist')) {
     if (sheetName) {
       return runDatabasePlayCommand(args, message, sheetName, true, false);
     } else {
@@ -571,19 +572,31 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
     }
   } catch (e) {}
   let pNums = 0;
-  if (ytpl.validateID(args[1])) {
+  let playlist;
+  let isPlaylist = false;
+  if (args[1].includes('spotify.com/playlist')) {
     try {
-      const playlistID = await ytpl.getPlaylistID(args[1]);
-      const playlist = await ytpl(playlistID, {pages: 1});
+      playlist = await getTracks(args[1]);
+      isPlaylist = true;
+    } catch (e) {
+      return message.channel.send('could not play');
+    }
+  }
+  if (ytpl.validateID(args[1]) || isPlaylist) {
+    try {
+      if (!isPlaylist) {
+        const playlistID = await ytpl.getPlaylistID(args[1]);
+        playlist = await ytpl(playlistID, {pages: 1});
+        playlist = playlist.items;
+      }
       let itemsLeft = maxQueueSize - servers[mgid].queue.length;
-      let list = playlist.items;
-      let lowestLengthIndex = Math.min(playlist.items.length, itemsLeft) - 1;
+      let lowestLengthIndex = Math.min(playlist.length, itemsLeft) - 1;
       let item;
       let url;
       while (lowestLengthIndex > -1) {
-        item = list[lowestLengthIndex];
+        item = playlist[lowestLengthIndex];
         lowestLengthIndex--;
-        url = item.shortUrl ? item.shortUrl : item.url;
+        url = isPlaylist ? item.external_urls.spotify : (item.shortUrl ? item.shortUrl : item.url);
         if (itemsLeft > 0) {
           if (url) {
             servers[mgid].queue.unshift(url);
@@ -604,7 +617,7 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
     servers[mgid].queue.unshift(args[1]);
   }
   message.channel.send('*playing now*');
-  playSongToVC(message, args[1], voiceChannel, true);
+  playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
 }
 
 /**
@@ -625,7 +638,7 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
     }
     return message.channel.send('What should I play? Put a link or some words.');
   }
-  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1])) {
+  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !args[1].includes('spotify.com/playlist')) {
     if (sheetName) {
       return runDatabasePlayCommand(args, message, sheetName, false, false);
     } else {
@@ -651,14 +664,28 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
     queueWasEmpty = true;
   }
   let pNums = 0;
-  if (ytpl.validateID(args[1])) {
+  let playlist;
+  let isPlaylist = false;
+  if (args[1].includes('spotify.com/playlist')) {
     try {
-      const playlistID = await ytpl.getPlaylistID(args[1]);
-      const playlist = await ytpl(playlistID, {pages: 1});
+      playlist = await getTracks(args[1]);
+      isPlaylist = true;
+    } catch (e) {
+      return message.channel.send('could not play');
+    }
+  }
+  if (ytpl.validateID(args[1]) || isPlaylist) {
+    try {
+      if (!isPlaylist) {
+        const playlistID = await ytpl.getPlaylistID(args[1]);
+        playlist = await ytpl(playlistID, {pages: 1});
+        playlist = playlist.items;
+      }
       let itemsLeft = maxQueueSize - servers[mgid].queue.length;
       let url;
-      for (let j of playlist.items) {
-        url = j.shortUrl ? j.shortUrl : j.url;
+      for (let j of playlist) {
+        url = isPlaylist ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
+        console.log(url);
         if (itemsLeft > 0) {
           if (url) {
             servers[mgid].queue.push(url);
@@ -690,7 +717,7 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
   }
   // if queue was empty then play
   if (queueWasEmpty) {
-    playSongToVC(message, args[1], message.member.voice.channel, true);
+    playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
   } else if (pNums < 2) {
     message.channel.send('*added to queue*');
   } else {
