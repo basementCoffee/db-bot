@@ -381,8 +381,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.3.2';
-const buildNo = '03030203'; // major, minor, patch, build
+const version = '3.3.3';
+const buildNo = '03030303'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -926,7 +926,7 @@ async function runCommandCases (message) {
       runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
     case 'gk':
-      runKeysCommand(message, prefixString, 'entries', 'm', '', '');
+      runKeysCommand(message, prefixString, 'entries', 'g', '', '');
       break;
     // !gkeys is global keys
     case 'gkeys':
@@ -1427,6 +1427,7 @@ async function runCommandCases (message) {
     case 'gzm' :
       if (args[1] === 'update') {
         bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. Sorry for any inconvenience!'));
+        message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
       }
       break;
     case 'gzi':
