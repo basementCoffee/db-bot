@@ -1,388 +1,28 @@
-const {google} = require('googleapis');
 require('dotenv').config();
+const {MessageEmbed, Client} = require('discord.js');
+const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./database');
 
-const client_email = process.env.CLIENT_EMAIL.replace(/\\n/gm, '\n');
-const private_key = process.env.PRIVATE_KEY.replace(/\\n/gm, '\n');
-const stoken = process.env.STOKEN.replace(/\\n/gm, '\n');
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 const spotifyCID = process.env.SPOTIFY_CLIENT_ID.replace(/\\n/gm, '\n');
 const spotifySCID = process.env.SPOTIFY_SECRET_CLIENT_ID.replace(/\\n/gm, '\n');
 
-const client2 = new google.auth.JWT(client_email, null, private_key, [
-  'https://www.googleapis.com/auth/spreadsheets'
-]);
-
-/**
- * Authorizes the google client
- */
-client2.authorize(function (err, tokens) {
-  if (err) {
-    console.log(err);
-  } else {
-    console.log('Connected to google apis.');
-  }
-});
-
-/**
- * Runs an update over the sheet and updates local variables. Returns the respective keys
- * and links within two maps (CongratsDatabase and ReferenceDatabase). The CongratsDatabase represents
- * unaltered keys and values while the ReferenceDatabase contains toUpper key names.
- * @param cl The google client
- * @param columnToRun The column letter/string to get the keys
- * @param secondColumn The column letter/string to get the values
- * @param nameOfSheet The name of the sheet to get the values from
- * @returns {Promise<{congratsDatabase: Map<any, any>, line: [], referenceDatabase: Map<any, any>}|*>}
- */
-async function gsrun (cl, columnToRun, secondColumn, nameOfSheet) {
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: cl
-  });
-
-  nameOfSheet = nameOfSheet.toString();
-  const spreadsheetSizeObjects = {
-    spreadsheetId: stoken,
-    range: nameOfSheet + '!D1'
-  };
-  // String.fromCharCode(my_string.charCodeAt(columnToRun) + 1)
-  let dataSizeFromSheets;
-  try {
-    dataSizeFromSheets = await gsapi.spreadsheets.values.get(
-      spreadsheetSizeObjects
-    );
-    dataSize.set(nameOfSheet, dataSizeFromSheets.data.values);
-  } catch (e) {
-    await createSheetNoMessage(nameOfSheet);
-    // gsUpdateAdd2(client2, 1,"D", nameOfSheet);
-    dataSize.set(nameOfSheet, 1);
-    return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
-  }
-
-  if (!dataSize.get(nameOfSheet)) {
-    dataSize.set(nameOfSheet, 1);
-    gsUpdateAdd2(cl, 1, 'D', nameOfSheet);
-    console.log('Data Size prev undef: ' + dataSize.get(nameOfSheet));
-    return gsrun(cl, columnToRun, secondColumn, nameOfSheet);
-  }
-
-  const songObjects = {
-    spreadsheetId: stoken,
-    range: nameOfSheet +
-      '!' +
-      columnToRun +
-      '2:' +
-      secondColumn +
-      'B' +
-      dataSize.get(nameOfSheet).toString()
-  };
-
-  const dataSO = await gsapi.spreadsheets.values.get(songObjects);
-  const arrayOfSpreadsheetValues = dataSO.data.values;
-
-  let line;
-  let keyT;
-  let valueT;
-  congratsDatabase.clear();
-  referenceDatabase.clear();
-  const keyArray = [];
-  for (let i = 0; i < dataSize.get(nameOfSheet); i++) {
-    // the array of rows (has two columns)
-    line = arrayOfSpreadsheetValues[i];
-    if (!line) {
-      continue;
-    }
-    keyT = line[0];
-    keyArray.push(keyT);
-    valueT = line[1];
-    congratsDatabase.set(keyT, valueT);
-    referenceDatabase.set(keyT.toUpperCase(), valueT);
-  }
-  return {
-    congratsDatabase: congratsDatabase,
-    referenceDatabase: referenceDatabase,
-    line: keyArray
-  };
-}
-
-/**
- * Creates a sheet within the database for new users
- * @param message A message within the guild that triggered the bot
- * @param nameOfSheet The name of the sheet to create
- */
-function createSheet (message, nameOfSheet) {
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: client2
-  });
-  gsapi.spreadsheets.batchUpdate({
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      resource: {
-        requests: [{
-          addSheet: {
-            properties: {
-              title: nameOfSheet
-            }
-          }
-        }]
-      }
-    },
-    function (err, response) {
-      if (err) {
-        // console.log('The API returned an error: ' + err);
-      } else {
-        gsrun(client2, 'A', 'B', message.guild.id).then(() => {
-        });
-      }
-      // console.log("success: ", response);
-    }
-  );
-}
-
-/**
- * Deletes the respective rows within the google sheets
- * @param message The message that triggered the command
- * @param sheetName The name of the sheet to edit
- * @param rowNumber The row to delete
- * @returns {Promise<void>}
- */
-async function deleteRows (message, sheetName, rowNumber) {
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: client2
-  });
-  let res;
-  try {
-    const request = {
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      ranges: [sheetName],
-      includeGridData: false,
-      auth: client2
-    };
-
-    res = await gsapi.spreadsheets.get(request);
-  } catch (error) {
-    console.log('Error get sheetId');
-  }
-
-  // gets the sheetId
-  const sheetId = res.data.sheets[0].properties.sheetId;
-
-  // ----------------------------------------------------------
-  gsapi.spreadsheets.batchUpdate({
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      resource: {
-        requests: [{
-          deleteDimension: {
-            range: {
-              sheetId: sheetId,
-              dimension: 'ROWS',
-              startIndex: rowNumber,
-              endIndex: rowNumber + 1
-            }
-          }
-        }]
-      }
-    },
-    function (err, response) {
-      if (err) {
-        // console.log('The API returned an error: ' + err);
-      } else {
-        gsrun(client2, 'A', 'B', message.guild.id).then(() => {
-        });
-      }
-      // console.log("success: ", response);
-    }
-  );
-}
-
-/**
- * Creates a google sheet with the given name and adds an initial
- * value to the database size column d.
- * @param nameOfSheet The name of the sheet to create
- * @returns {{}}
- */
-function createSheetNoMessage (nameOfSheet) {
-  console.log('within create sheets');
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: client2
-  });
-  gsapi.spreadsheets.batchUpdate({
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      resource: {
-        requests: [{
-          addSheet: {
-            properties: {
-              title: nameOfSheet
-            }
-          }
-        }]
-      }
-    },
-    function (err, response) {
-      if (err) {
-        // console.log('The API returned an error: ' + err);
-      } else {
-        gsUpdateAdd2(client2, 1, 'D', nameOfSheet);
-      }
-      // console.log("success: ", response);
-      return response;
-    }
-  );
-  return {};
-}
-
-/**
- * Adds the entry into the column as a key, value pair.
- * @param {*} cl The google client
- * @param {*} key The name of the key to add, goes into the last row of the firstColumnLetter
- * @param {*} link The name of the value to add, goes into the last row of the LastColumnLetter
- * @param {*} firstColumnLetter The key column letter, should be uppercase
- * @param {*} secondColumnLetter The link column letter, should be uppercase
- * @param nameOfSheet The name of the sheet to update
- */
-function gsUpdateAdd (
-  cl,
-  key,
-  link,
-  firstColumnLetter,
-  secondColumnLetter,
-  nameOfSheet
-) {
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: cl
-  });
-  gsapi.spreadsheets.values
-    .append({
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      range: nameOfSheet + '!' + firstColumnLetter + '2:' + secondColumnLetter + '2',
-      includeValuesInResponse: true,
-      insertDataOption: 'INSERT_ROWS',
-      responseDateTimeRenderOption: 'FORMATTED_STRING',
-      responseValueRenderOption: 'FORMATTED_VALUE',
-      valueInputOption: 'USER_ENTERED',
-      resource: {
-        values: [
-          [key, link]
-        ]
-      }
-    })
-    .then(
-      function (response) {
-        // Handle the results here (response.result has the parsed body).
-        // console.log("Response", response);
-      },
-      function (err) {
-        console.error('Execute error', err);
-      }
-    );
-
-  gsUpdateOverwrite(cl, -1, 1, nameOfSheet);
-}
-
-/**
- * Single cell add to the respective google sheets. Adds to the first row by default.
- * @param cl The google client
- * @param givenValue The value to input into the cell
- * @param firstColumnLetter The column name to update
- * @param nameOfSheet The name of the sheet to add to
- */
-function gsUpdateAdd2 (cl, givenValue, firstColumnLetter, nameOfSheet) {
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: cl
-  });
-  gsapi.spreadsheets.values
-    .append({
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      range: nameOfSheet + '!' + firstColumnLetter + '1',
-      includeValuesInResponse: true,
-      insertDataOption: 'INSERT_ROWS',
-      responseDateTimeRenderOption: 'FORMATTED_STRING',
-      responseValueRenderOption: 'FORMATTED_VALUE',
-      valueInputOption: 'USER_ENTERED',
-      resource: {
-        values: [
-          [givenValue]
-        ]
-      }
-    })
-    .then(
-      function (response) {
-        // Handle the results here (response.result has the parsed body).
-        // console.log("Response", response);
-      },
-      function (err) {
-        console.error('Execute error', err);
-      }
-    );
-}
-
-/**
- * Overwrites the cell D1.
- * @param cl the client auth
- * @param value the final DB value, overrides addOn unless negative
- * @param addOn the number to mutate the current DB size by
- * @param nameOfSheet the name of the sheet to change
- */
-function gsUpdateOverwrite (cl, value, addOn, nameOfSheet) {
-  if (value < 0) {
-    try {
-      value = parseInt(dataSize.get(nameOfSheet)) + addOn;
-    } catch (e) {
-      // console.log("Error caught gsUpdateOverview", value);
-      value = 1;
-      // console.log(e);
-    }
-  }
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: cl
-  });
-  gsapi.spreadsheets.values
-    .update({
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      range: nameOfSheet + '!D1',
-      includeValuesInResponse: true,
-      responseDateTimeRenderOption: 'FORMATTED_STRING',
-      valueInputOption: 'USER_ENTERED',
-      resource: {
-        values: [
-          [value]
-        ]
-      }
-    })
-    .then(
-      function (response) {
-        // Handle the results here (response.result has the parsed body).
-        // console.log("Response", response);
-      },
-      function (err) {
-        console.error('Execute error', err);
-      }
-    );
-  gsrun(cl, 'A', 'B', 'entries').then();
-}
-
-// ----------------------------------Above is Google API implementation --------------------
-
-const {MessageEmbed, Client} = require('discord.js');
 // initialization
 const bot = new Client();
+
+// youtube imports
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
-const {getTracks} = require("spotify-url-info");
 
-// SPOTIFY IMPORTS --------------------------
+// spotify imports
 const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
+const {getTracks} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.3.3';
-const buildNo = '03030303'; // major, minor, patch, build
+const version = '3.3.4';
+const buildNo = '03030403'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -484,14 +124,14 @@ function skipSong (message, voiceChannel, playMessageToChannel) {
  */
 function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
   if (keyName) {
-    gsrun(client2, 'A', 'B', sheetName).then(async (xdb) => {
+    gsrun('A', 'B', sheetName).then(async (xdb) => {
       let couldNotFindKey = true;
       for (let i = 0; i < xdb.line.length; i++) {
         const itemToCheck = xdb.line[i];
         if (itemToCheck.toLowerCase() === keyName.toLowerCase()) {
           i += 1;
           couldNotFindKey = false;
-          await gsUpdateOverwrite(client2, -1, -1, sheetName);
+          await gsUpdateOverwrite(-1, -1, sheetName, xdb.dsInt);
           await deleteRows(message, sheetName, i);
           if (sendMsgToChannel) {
             message.channel.send("*removed '" + itemToCheck + "'*");
@@ -499,7 +139,7 @@ function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
         }
       }
       if (couldNotFindKey && sendMsgToChannel) {
-        gsrun(client2, 'A', 'B', sheetName).then(async (xdb) => {
+        gsrun('A', 'B', sheetName).then(async (xdb) => {
           const foundStrings = runSearchCommand(keyName, xdb).ss;
           if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
             message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + foundStrings + '*');
@@ -757,18 +397,18 @@ async function runCommandCases (message) {
   let prefixString = prefixMap[mgid];
   if (!prefixString) {
     try {
-      await gsrun(client2, 'A', 'B', 'prefixes').then(async (xdb) => {
+      await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
         const newPrefix = xdb.congratsDatabase.get(mgid);
         if (!newPrefix) {
           prefixMap[mgid] = '.';
-          await gsUpdateAdd(client2, mgid, '.', 'A', 'B', 'prefixes');
+          await gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', xdb.dsInt);
         } else {
           prefixMap[mgid] = newPrefix;
         }
       });
     } catch (e) {
       prefixMap[mgid] = '.';
-      gsUpdateAdd(client2, mgid, '.', 'A', 'B', 'prefixes');
+      gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', 1);
     }
     prefixString = prefixMap[mgid];
     bot.user.setActivity('[ .help ]', {type: 'WATCHING'}).then();
@@ -943,11 +583,34 @@ async function runCommandCases (message) {
       }
       runUniversalSearchCommand(message, mgid, args[1]);
       break;
+    // !s prints out the db size or searches
+    case 's':
+      if (!args[1]) {
+        return gsrun('A', 'B', mgid).then((xdb) =>
+          message.channel.send('Server list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
+        );
+      }
+      runUniversalSearchCommand(message, mgid, args[1]);
+      break;
+    case 'size':
+      if (!args[1]) {
+        return gsrun('A', 'B', mgid).then((xdb) =>
+          message.channel.send('Server list size: ' + (xdb.dsInt - 1))
+        );
+      }
+      break;
+    case 'msize':
+      if (!args[1]) {
+        return gsrun('A', 'B', 'p' + message.member.id).then((xdb) =>
+          message.channel.send('Personal list size: ' + (xdb.dsInt - 1))
+        );
+      }
+      break;
     case 'msearch':
       if (!args[1]) {
         return message.channel.send('No argument was given.');
       }
-      gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
+      gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
         const ss = runSearchCommand(args[1], xdb).ss;
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
@@ -956,22 +619,13 @@ async function runCommandCases (message) {
         }
       });
       break;
-    // !s prints out the db size or searches
-    case 's':
-      if (!args[1]) {
-        return gsrun(client2, 'A', 'B', mgid).then((xdb) =>
-          message.channel.send('Server list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
-        );
-      }
-      runUniversalSearchCommand(message, mgid, args[1]);
-      break;
     case 'ms':
       if (!args[1]) {
-        return gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) =>
+        return gsrun('A', 'B', 'p' + message.member.id).then((xdb) =>
           message.channel.send('Personal list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
         );
       }
-      gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
+      gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
         const ss = runSearchCommand(args[1], xdb).ss;
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
@@ -984,11 +638,11 @@ async function runCommandCases (message) {
       break;
     case 'gs':
       if (!args[1]) {
-        return gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) =>
+        return gsrun('A', 'B', 'p' + message.member.id).then((xdb) =>
           message.channel.send('Global list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
         );
       }
-      gsrun(client2, 'A', 'B', 'entries').then((xdb) => {
+      gsrun('A', 'B', 'entries').then((xdb) => {
         ss = runSearchCommand(args[1], xdb).ss;
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
@@ -1061,11 +715,11 @@ async function runCommandCases (message) {
       args[2] = args[1];
       args[1] = mgid;
       message.channel.send('*changing prefix...*');
-      await gsrun(client2, 'A', 'B', 'prefixes').then(async () => {
+      await gsrun('A', 'B', 'prefixes').then(async () => {
         await runRemoveItemCommand(message, args[1], 'prefixes', false);
         await runAddCommand(args, message, 'prefixes', false);
-        await gsrun(client2, 'A', 'B', 'prefixes').then(async (xdb) => {
-          await gsUpdateOverwrite(client2, xdb.congratsDatabase.size + 2, 1, 'prefixes');
+        await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
+          await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
           prefixMap[mgid] = args[2];
           message.channel.send('Prefix successfully changed to ' + args[2]);
           prefixString = args[2];
@@ -1200,7 +854,7 @@ async function runCommandCases (message) {
       }
       if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
-      gsrun(client2, 'A', 'B', 'entries').then(() => {
+      gsrun('A', 'B', 'entries').then(() => {
         runAddCommand(args, message, 'entries', true);
       });
       break;
@@ -1214,15 +868,8 @@ async function runCommandCases (message) {
       }
       if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
-      gsrun(client2, 'A', 'B', mgid).then(() => {
-        if (
-          !dataSize.get(mgid.toString()) ||
-          dataSize.get(mgid.toString()) < 1
-        ) {
-          message.channel.send('Please try again.');
-        } else {
-          runAddCommand(args, message, mgid, true);
-        }
+      gsrun('A', 'B', mgid).then(() => {
+        runAddCommand(args, message, mgid, true);
       });
       break;
     case 'add':
@@ -1234,15 +881,8 @@ async function runCommandCases (message) {
       }
       if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
-      gsrun(client2, 'A', 'B', mgid).then(() => {
-        if (
-          !dataSize.get(mgid.toString()) ||
-          dataSize.get(mgid.toString()) < 1
-        ) {
-          message.channel.send('Please try again.');
-        } else {
-          runAddCommand(args, message, mgid, true);
-        }
+      gsrun('A', 'B', mgid).then(() => {
+        runAddCommand(args, message, mgid, true);
       });
       break;
     // !ma is personal add
@@ -1255,15 +895,8 @@ async function runCommandCases (message) {
       }
       if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
-      gsrun(client2, 'A', 'B', 'p' + message.member.id).then(() => {
-        if (
-          !dataSize.get('p' + message.member.id.toString()) ||
-          dataSize.get('p' + message.member.id.toString()) < 1
-        ) {
-          message.channel.send('Please try again.');
-        } else {
-          runAddCommand(args, message, 'p' + message.member.id, true);
-        }
+      gsrun('A', 'B', 'p' + message.member.id).then(() => {
+        runAddCommand(args, message, 'p' + message.member.id, true);
       });
       break;
     case 'madd':
@@ -1275,15 +908,8 @@ async function runCommandCases (message) {
       }
       if (!verifyUrl(message, args[2])) return;
       // in case the database has not been initialized
-      gsrun(client2, 'A', 'B', 'p' + message.member.id).then(() => {
-        if (
-          !dataSize.get('p' + message.member.id.toString()) ||
-          dataSize.get('p' + message.member.id.toString()) < 1
-        ) {
-          message.channel.send('Please try again.');
-        } else {
-          runAddCommand(args, message, 'p' + message.member.id, true);
-        }
+      gsrun('A', 'B', 'p' + message.member.id).then(() => {
+        runAddCommand(args, message, 'p' + message.member.id, true);
       });
       break;
     // !rm removes database entries
@@ -1679,7 +1305,7 @@ bot.on('message', async (message) => {
 function runAddCommand (args, message, sheetName, printMsgToChannel) {
   let songsAddedInt = 0;
   let z = 1;
-  gsrun(client2, 'A', 'B', sheetName).then(async (xdb) => {
+  gsrun('A', 'B', sheetName).then(async (xdb) => {
     while (args[z] && args[z + 1]) {
       let linkZ = args[z + 1];
       if (linkZ.substring(linkZ.length - 1) === ',') {
@@ -1701,7 +1327,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
           }
         }
         if (!alreadyExists) {
-          gsUpdateAdd(client2, args[z], args[z + 1], 'A', 'B', sheetName);
+          gsUpdateAdd(args[z], args[z + 1], 'A', 'B', sheetName, xdb.dsInt);
         }
       }
       z = z + 2;
@@ -1723,8 +1349,8 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
         }
         message.channel.send('*song added to ' + typeString + " database. (see '" + ps + databaseType + "keys')*");
       } else if (songsAddedInt > 1) {
-        gsrun(client2, 'A', 'B', sheetName).then(() => {
-          gsUpdateOverwrite(client2, -1, songsAddedInt, sheetName);
+        gsrun('A', 'B', sheetName).then((xdb) => {
+          gsUpdateOverwrite(-1, songsAddedInt, sheetName, xdb.dsInt);
           message.channel.send('*' + songsAddedInt + " songs added to the database. (see '" + ps + databaseType + "keys')*");
         });
       }
@@ -1810,13 +1436,13 @@ function runQueueCommand (message, mgid) {
           let num = serverQueue.length - startingIndex - 11;
           if (num > 10) num = 10;
           qIterations += 10;
-          message.channel.send('showing next ' + num).then(generateQueue(startingIndex + 10));
+          message.channel.send('displaying next ' + num).then(generateQueue(startingIndex + 10));
         });
       });
     });
   }
 
-  return generateQueue(0).then();
+  return generateQueue(0);
 }
 
 /**
@@ -1857,7 +1483,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     message.channel.send('*max queue size has been reached*');
     return true;
   }
-  gsrun(client2, 'A', 'B', sheetName).then(async (xdb) => {
+  gsrun('A', 'B', sheetName).then(async (xdb) => {
     let queueWasEmpty = false;
     // if the queue is empty then play
     if (servers[mgid].queue.length < 1) {
@@ -1874,7 +1500,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           // check personal db if applicable
           if (sheetName.substr(0, 1) !== 'p') {
             if (!otherSheet) {
-              await gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
+              await gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
                 otherSheet = xdb.referenceDatabase;
               });
             }
@@ -1989,7 +1615,7 @@ let ssi;
  * @param providedString The string to search for
  */
 function runUniversalSearchCommand (message, mgid, providedString) {
-  gsrun(client2, 'A', 'B', mgid).then(async (xdb) => {
+  gsrun('A', 'B', mgid).then(async (xdb) => {
     ss = runSearchCommand(providedString, xdb).ss;
     if (ss && ss.length > 0) {
       message.channel.send('Server keys found: ' + ss);
@@ -2004,7 +1630,7 @@ function runUniversalSearchCommand (message, mgid, providedString) {
       message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
         .then(async messages => {
           if (messages.first().content.toLowerCase() === 'y' || messages.first().content.toLowerCase() === 'yes') {
-            gsrun(client2, 'A', 'B', 'p' + message.member.id).then(async (xdb) => {
+            gsrun('A', 'B', 'p' + message.member.id).then(async (xdb) => {
               ss = runSearchCommand(providedString, xdb).ss;
               if (ss && ss.length > 0) {
                 message.channel.send('Personal keys found: ' + ss);
@@ -2176,7 +1802,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
   if (!num) {
     num = 1;
   }
-  if (num < 0 || num > 5) {
+  if (!searchResult && (num < 0 || num > 5)) {
     return message.channel.send('Provided lookup index following must be 1-5 ');
   }
   num--;
@@ -2187,7 +1813,12 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
     }
   }
   const args2 = [];
-  args2[1] = searchResult.items[num].url;
+  if (searchResult.items[num].type === 'video') {
+    args2[1] = searchResult.items[num].url;
+  } else {
+    if (servers[mgid].queue[0] === args2[1]) servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+    return runYoutubeSearch(message, args, mgid, playNow, num += 2, searchTerm, searchResult);
+  }
   if (!args2[1]) return message.channel.send('could not find video');
   if (!servers[message.guild.id]) {
     servers[message.guild.id] = {
@@ -2277,7 +1908,7 @@ function runRandomToQueue (num, message, sheetName) {
   if (servers[message.guild.id].queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
-  gsrun(client2, 'A', 'B', sheetName).then((xdb) => {
+  gsrun('A', 'B', sheetName).then((xdb) => {
     if (!num) {
       addRandomToQueue(message, 1, xdb.congratsDatabase);
     } else {
@@ -2372,14 +2003,14 @@ function addRandomToQueue (message, numOfTimes, cdb) {
  * @param voiceChannel optional, a specific voice channel to use besides the message's
  * @param user optional user name, overrides the message owner's name
  */
-function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel, user) {
-  if (
-    !dataSize.get(sheetname.toString()) ||
-    dataSize.get(sheetname.toString()) < 1
-  ) {
-    createSheet(message, sheetname);
-  }
-  gsrun(client2, 'A', 'B', sheetname).then((xdb) => {
+async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel, user) {
+  // if (
+  //   !dataSize.get(sheetname.toString()) ||
+  //   dataSize.get(sheetname.toString()) < 1
+  // ) {
+  //   await createSheet(message, sheetname);
+  // }
+  gsrun('A', 'B', sheetname).then((xdb) => {
     keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
     s = '';
     let firstLetter = true;
@@ -2398,8 +2029,8 @@ function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel
       } else {
         emptyDBMessage = 'Your ';
       }
-      message.channel.send(emptyDBMessage + 'music database is empty.\n*Add a song by putting a word followed by a link -> ' +
-        prefixString + cmdType + 'a [key] [link]*');
+      message.channel.send(emptyDBMessage + 'music database is empty.\n*Add a song by putting a word followed by a link. Ex:* \` ' +
+        prefixString + cmdType + 'a [key] [link] \`');
     } else {
       let dbName = '';
       let keysMessage = '';
@@ -2524,11 +2155,39 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   let url2;
   let isSpotify = url.includes('spotify.com');
   let infos;
+  let itemIndex = 0;
   if (isSpotify) {
     infos = await spdl.getInfo(url);
-    const search = await ytsr(infos.title + " " + infos.artists.join(' '), {pages: 1});
-    isSpotify = !search.items[0];
-    if (!isSpotify) url2 = search.items[0].url;
+    let search = await ytsr(infos.title + ' ' + infos.artists.join(' '), {pages: 1});
+    let youtubeDuration;
+    if (search.items[0]) {
+      const convertYTFormatToMS = (durationArray) => {
+        if (durationArray) {
+          youtubeDuration = 0;
+          durationArray.reverse();
+          if (durationArray[1]) youtubeDuration += durationArray[1] * 60000;
+          if (durationArray[2]) youtubeDuration += durationArray[1] * 3600000;
+          youtubeDuration += durationArray[0] * 1000;
+        }
+        return youtubeDuration;
+      };
+      youtubeDuration = convertYTFormatToMS(search.items[0].duration.split(':'));
+      let spotifyDuration = parseInt(infos.duration);
+      itemIndex++;
+      while (search.items[itemIndex].type !== 'video' && itemIndex < 6) {
+        itemIndex++;
+      }
+      // if the next video is a better match then play the next video
+      if (!(youtubeDuration && spotifyDuration && search.items[itemIndex].duration &&
+        Math.abs(spotifyDuration - youtubeDuration) >
+        Math.abs(spotifyDuration - convertYTFormatToMS(search.items[itemIndex].duration.split(':'))))) {
+        itemIndex = 0;
+      }
+    } else {
+      search = await ytsr(infos.title + ' ' + infos.artists.join(' ') + ' lyrics', {pages: 1});
+    }
+    isSpotify = !search.items[itemIndex];
+    if (!isSpotify) url2 = search.items[itemIndex].url;
   }
   // remove previous embed buttons
   if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions && sendEmbed) {
@@ -2635,14 +2294,14 @@ const skipTimesMap = new Map();
  * @param whatToPlayS The broken link provided as a string
  */
 function searchForBrokenLinkWithinDB (message, whatToPlayS) {
-  gsrun(client2, 'A', 'B', message.channel.guild.id).then((xdb) => {
+  gsrun('A', 'B', message.channel.guild.id).then((xdb) => {
     xdb.congratsDatabase.forEach((value, key, map) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within the server db: ' + key + '*');
       }
     });
   });
-  gsrun(client2, 'A', 'B', 'p' + message.member.id).then((xdb) => {
+  gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
     xdb.congratsDatabase.forEach((value, key, map) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within the personal db: ' + key + '*');
@@ -2890,7 +2549,7 @@ async function runWhatsPCommand (args, message, mgid, sheetname) {
     servers[message.guild.id].loop = false;
   }
   if (args[1]) {
-    gsrun(client2, 'A', 'B', sheetname).then((xdb) => {
+    gsrun('A', 'B', sheetname).then((xdb) => {
       let dbType = "the server's";
       if (args[0].substr(1, 1).toLowerCase() === 'm') {
         dbType = 'your';
@@ -2936,21 +2595,14 @@ async function runWhatsPCommand (args, message, mgid, sheetname) {
       return message.channel.send('Nothing is playing right now');
     }
   }
-  // message.channel.send(`WhatsP: Latency is ${Date.now() - message.createdTimestamp}ms.`);
 }
 
 // What's playing, uses voice channel id
 const whatspMap = new Map();
 // The server's prefix, uses guild id
 const prefixMap = new Map();
-// What is returned when searching the db, uses key-name
-const congratsDatabase = new Map();
-// Reference for the congrats database, uses uppercase key-name
-const referenceDatabase = new Map();
 // Whether silence mode is on (true, false), uses guild id
 const silenceMap = new Map();
-// The dataSize, uses sheet name
-const dataSize = new Map();
 // The song stream, uses voice channel id
 const dispatcherMap = new Map();
 // The messages containing embeds, uses guild id
