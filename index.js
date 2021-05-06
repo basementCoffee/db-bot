@@ -381,8 +381,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.3.0';
-const buildNo = '03030002'; // major, minor, patch, build
+const version = '3.3.1';
+const buildNo = '03030102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -685,7 +685,6 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
       let url;
       for (let j of playlist) {
         url = isPlaylist ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
-        console.log(url);
         if (itemsLeft > 0) {
           if (url) {
             servers[mgid].queue.push(url);
@@ -1410,6 +1409,11 @@ async function runCommandCases (message) {
           '\nactive voice channels: ' + bot.voice.connections.size
         );
       message.channel.send(embed);
+      break;
+    case 'gzm' :
+      if (args[1] === 'update') {
+        bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. Sorry for any inconvenience!'));
+      }
       break;
     case 'gzi':
       message.channel.send('bot id: ' + bot.user.id + '\nyour id: ' + message.member.id);
