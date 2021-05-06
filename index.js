@@ -381,8 +381,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.3.1';
-const buildNo = '03030102'; // major, minor, patch, build
+const version = '3.3.2';
+const buildNo = '03030203'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -721,6 +721,25 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
     message.channel.send('*added to queue*');
   } else {
     message.channel.send('*added ' + pNums + ' to queue*');
+  }
+}
+
+/**
+ * Restarts the song playing and what was within an older session.
+ * @param message The message that triggered the bot
+ * @param mgid The message guild id
+ * @param keyword Enum being either 'restart' or 'replay'
+ * @returns {*}
+ */
+async function runRestartCommand (message, mgid, keyword) {
+  if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to ' + keyword);
+  if (servers[mgid].queue[0]) {
+    await playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+  } else if (servers[mgid].queueHistory.length > 0) {
+    servers[mgid].queue.push(servers[mgid].queueHistory.pop());
+    await playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+  } else {
+    message.channel.send('there is nothing to ' + keyword);
   }
 }
 
@@ -1300,36 +1319,30 @@ async function runCommandCases (message) {
       runRewindCommand(message, mgid, message.member.voice.channel, args[1]);
       break;
     case 'replay':
-      if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to replay');
-      if (servers[mgid].queue[0]) {
-        playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
-      } else {
-        playSongToVC(message, servers[mgid].queueHistory.pop(), message.member.voice.channel, true);
-      }
+      runRestartCommand(message, mgid, 'replay');
       break;
     case 'rp':
-      if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to replay');
-      if (servers[mgid].queue[0]) {
-        playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
-      } else {
-        playSongToVC(message, servers[mgid].queueHistory.pop(), message.member.voice.channel, true);
-      }
+      runRestartCommand(message, mgid, 'replay');
       break;
     case 'restart':
-      if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to restart');
-      if (servers[mgid].queue[0]) {
-        playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
-      } else {
-        playSongToVC(message, servers[mgid].queueHistory.pop(), message.member.voice.channel, true);
-      }
+      runRestartCommand(message, mgid, 'restart');
       break;
     case 'rs':
-      if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to restart');
-      if (servers[mgid].queue[0]) {
-        playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
-      } else {
-        playSongToVC(message, servers[mgid].queueHistory.pop(), message.member.voice.channel, true);
+      runRestartCommand(message, mgid, 'restart');
+      break;
+    case 'clear' :
+      if (!message.member.voice.channel) return message.channel.send('must be in a voice channel to clear');
+      const currentSong = (servers[mgid] && servers[mgid].queue &&
+        dispatcherMap[message.member.voice.channel.id]) ? servers[mgid].queue[0] : undefined;
+      if (servers[mgid]) {
+        servers[mgid].queue = [];
+        servers[mgid].queueHistory = [];
+        servers[mgid].loop = false;
       }
+      if (currentSong) servers[mgid].queue[0] = currentSong;
+      message.channel.send('The queue has been scrubbed clean');
+      if (!embedMessageMap[mgid] && currentSong) await runWhatsPCommand(args, message, mgid, undefined);
+      else if (currentSong) message.channel.send('queue size: 1');
       break;
     case 'invite':
       message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>");
@@ -1381,6 +1394,7 @@ async function runCommandCases (message) {
           '\n' + prefixString + 'gzi - user and bot id' +
           '\n' + prefixString + 'gzid - guild id' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
+          '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n\n**calibrate multiple bots**' +
           '\n=gzl - return the bot\'s ping and latency' +
           '\n=gzd - toggle dev mode' +
@@ -2835,11 +2849,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
  */
 function runStopPlayingCommand (mgid, voiceChannel) {
   if (!voiceChannel) return;
-  if (servers[mgid]) {
-    servers[mgid].queue = [];
-    servers[mgid].queueHistory = [];
-    servers[mgid].loop = false;
-  }
   if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
     servers[mgid].collector.stop();
     embedMessageMap[mgid].reactions.removeAll().then();
