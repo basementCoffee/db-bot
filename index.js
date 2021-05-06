@@ -372,6 +372,7 @@ const {MessageEmbed, Client} = require('discord.js');
 const bot = new Client();
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
+const ytpl = require('ytpl');
 
 // SPOTIFY IMPORTS --------------------------
 const spdl = require('spdl-core');
@@ -379,8 +380,8 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.1.10';
-const buildNo = '03011001'; // major, minor, patch, build
+const version = '3.2.0';
+const buildNo = '03020002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -561,13 +562,47 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
       return runYoutubeSearch(message, args, mgid, true);
     }
   }
-  // push to queue
-  const dsp = dispatcherMap[voiceChannel.id];
-  if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-  dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
-    servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+  try {
+    // places the currently playing into the queue history if played long enough
+    const dsp = dispatcherMap[voiceChannel.id];
+    if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
+    dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
+      servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+    }
+  } catch (e) {}
+  let pNums = 0;
+  if (ytpl.validateID(args[1])) {
+    try {
+      const playlistID = await ytpl.getPlaylistID(args[1]);
+      const playlist = await ytpl(playlistID, {pages: 1});
+      let itemsLeft = maxQueueSize - servers[mgid].queue.length;
+      let list = playlist.items;
+      let lowestLengthIndex = Math.min(playlist.items.length, itemsLeft) - 1;
+      let item;
+      let url;
+      while (lowestLengthIndex > -1) {
+        item = list[lowestLengthIndex];
+        lowestLengthIndex--;
+        url = item.shortUrl ? item.shortUrl : item.url;
+        if (itemsLeft > 0) {
+          if (url) {
+            servers[mgid].queue.unshift(url);
+            pNums++;
+            itemsLeft--;
+          }
+        } else {
+          message.channel.send('*queue is full*');
+          break;
+        }
+      }
+    } catch (e) {
+      console.log("Failed: " + e);
+      message.channel.send('There was an error.');
+    }
+  } else {
+    // push to queue
+    servers[mgid].queue.unshift(args[1]);
   }
-  servers[mgid].queue.unshift(args[1]);
   message.channel.send('*playing now*');
   playSongToVC(message, args[1], voiceChannel, true);
 }
@@ -615,18 +650,44 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
   if (servers[mgid].queue.length < 1) {
     queueWasEmpty = true;
   }
-  let pNums = 1;
-  while (args[pNums]) {
-    let linkZ = args[pNums];
-    if (linkZ.substring(linkZ.length - 1) === ',') {
-      linkZ = linkZ.substring(0, linkZ.length - 1);
+  let pNums = 0;
+  if (ytpl.validateID(args[1])) {
+    try {
+      const playlistID = await ytpl.getPlaylistID(args[1]);
+      const playlist = await ytpl(playlistID, {pages: 1});
+      let itemsLeft = maxQueueSize - servers[mgid].queue.length;
+      let url;
+      for (let j of playlist.items) {
+        url = j.shortUrl ? j.shortUrl : j.url;
+        if (itemsLeft > 0) {
+          if (url) {
+            servers[mgid].queue.push(url);
+            pNums++;
+            itemsLeft--;
+          }
+        } else {
+          message.channel.send('*queue is full*');
+          break;
+        }
+      }
+    } catch (e) {
+      console.log("Failed: " + e);
+      message.channel.send('There was an error.');
     }
-    // push to queue
-    servers[mgid].queue.push(args[pNums]);
-    pNums += 1;
+  } else {
+    pNums = 1;
+    while (args[pNums]) {
+      let linkZ = args[pNums];
+      if (linkZ.substring(linkZ.length - 1) === ',') {
+        linkZ = linkZ.substring(0, linkZ.length - 1);
+      }
+      // push to queue
+      servers[mgid].queue.push(args[pNums]);
+      pNums += 1;
+    }
+    // make pNums the number of added songs
+    pNums--;
   }
-  // make pNums the number of added songs
-  pNums--;
   // if queue was empty then play
   if (queueWasEmpty) {
     playSongToVC(message, args[1], message.member.voice.channel, true);
@@ -1995,9 +2056,9 @@ function sendHelp (message, prefixString) {
   const description =
     '-------------  **Music Commands (with aliases)** -------------\n\`' +
     prefixString +
-    'play [link] \` Plays YouTube/Spotify links [p] \n\`' +
+    'play [link/word] \` Plays YouTube/Spotify [p] \n\`' +
     prefixString +
-    'playnow [link] \` Plays the link now, overrides queue [pn]\n\`' +
+    'playnow [link/word] \` Plays now, overrides queue [pn]\n\`' +
     prefixString +
     '? \` What\'s playing\n\`' +
     prefixString +
@@ -2018,15 +2079,15 @@ function sendHelp (message, prefixString) {
     prefixString +
     "keys \` See all of the server's saved songs [k]\n\`" +
     prefixString +
-    'add [song] [url] \` Adds a song to the server keys  [a]\n\`' +
-    prefixString +
     'd [key] \` Play a song from the server keys \n\`' +
+    prefixString +
+    'add [key] [url] \` Adds a song to the server keys  [a]\n\`' +
+    prefixString +
+    'remove [key] \` Removes a song from the server keys  [rm]\n\`' +
     prefixString +
     'rand [# times] \` Play a random song from server keys  [r]\n\`' +
     prefixString +
-    'search [name] \` Search keys  [s]\n\`' +
-    prefixString +
-    'remove [key] \` Removes a song from the server keys  [rm]\n' +
+    'search [name] \` Search keys  [s]\n' +
     '\n-----------  **Personal Music Database**  -----------\n' +
     "*Prepend 'm' to the above commands to access your personal music database*\nex: \`" + prefixString + "mkeys \`\n" +
     '\n--------------  **Other Commands**  -----------------\n\`' +
