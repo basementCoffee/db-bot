@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.4.3';
-const buildNo = '03040304'; // major, minor, patch, build
+const version = '3.4.4';
+const buildNo = '03040405'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -1052,7 +1052,7 @@ async function runCommandCases (message) {
       break;
     case 'gzm' :
       if (!args[1]) {
-        message.channel.send('currently running: ' + process.pid.toString() + ' in ' + bot.voice.connections.size + ' servers.');
+        message.channel.send('active process #' + process.pid.toString() + ' is in ' + bot.voice.connections.size + ' servers.');
         bot.voice.connections.map(x => console.log(x.channel.guild.name));
       }
       if (args[1] === 'find') {
@@ -1069,6 +1069,7 @@ async function runCommandCases (message) {
         let tempSet = new Set();
         bot.voice.connections.map(x => {
           tgx = '';
+          tempSet.clear();
           x.channel.guild.voice.channel.members.map(y => tempSet.add(y.user.username));
           tempSet.forEach(z => tgx += z + ', ');
           tgx = tgx.substring(0, tgx.length - 2);
@@ -1078,7 +1079,7 @@ async function runCommandCases (message) {
         else message.channel.send('none found');
       }
       if (args[1] === 'update' && process.pid === 4) {
-        bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. Sorry for any inconvenience!'));
+        bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
         message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
       }
       break;
@@ -1754,7 +1755,9 @@ function sendHelp (message, prefixString) {
   const description =
     '-------------  **Music Commands (with aliases)** -------------\n\`' +
     prefixString +
-    'play [link/word] \` Plays YouTube/Spotify [p] \n\`' +
+    'play [link] \` Plays YouTube/Spotify link [p] \n\`' +
+    prefixString +
+    'play [word] \` Search YouTube and play [p] \n\`' +
     prefixString +
     'playnow [link/word] \` Plays now, overrides queue [pn]\n\`' +
     prefixString +
