@@ -20,9 +20,9 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 const {getTracks} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
-let devMode = false; // default false
-const version = '3.3.4';
-const buildNo = '03030403'; // major, minor, patch, build
+let devMode = true; // default false
+const version = '3.4.1';
+const buildNo = '03040103'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -1051,7 +1051,11 @@ async function runCommandCases (message) {
       message.channel.send(embed);
       break;
     case 'gzm' :
-      if (args[1] === 'update') {
+      if (!args[1]) {
+        message.channel.send('currently running: ' + process.pid.toString() + ' in ' + bot.voice.connections.size + ' servers.');
+        bot.voice.connections.map(x => console.log(x.channel.guild.name));
+      }
+      if (args[1] === 'update' && process.pid === 4) {
         bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. Sorry for any inconvenience!'));
         message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
       }
