@@ -20,7 +20,7 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 const {getTracks} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
-let devMode = true; // default false
+let devMode = false; // default false
 const version = '3.4.1';
 const buildNo = '03040103'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
