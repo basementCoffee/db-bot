@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.4.2';
-const buildNo = '03040203'; // major, minor, patch, build
+const version = '3.4.3';
+const buildNo = '03040304'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -257,7 +257,7 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
     servers[mgid].queue.unshift(args[1]);
   }
   message.channel.send('*playing now*');
-  playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+  return playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
 }
 
 /**
@@ -1059,7 +1059,23 @@ async function runCommandCases (message) {
         let gx = '';
         bot.voice.connections.map(x => gx += x.channel.guild.name + ', ');
         gx = gx.substring(0, gx.length - 2);
-        message.channel.send(gx);
+        if (gx) message.channel.send(gx);
+        else message.channel.send('none found');
+      }
+      if (args[1] === 'listu') {
+        let gx = '';
+        let tgx;
+        let ix = 1;
+        let tempSet = new Set();
+        bot.voice.connections.map(x => {
+          tgx = '';
+          x.channel.guild.voice.channel.members.map(y => tempSet.add(y.user.username));
+          tempSet.forEach(z => tgx += z + ', ');
+          tgx = tgx.substring(0, tgx.length - 2);
+          gx += 'vc' + ix + ': ' + tgx + '\n';
+        });
+        if (gx) message.channel.send(gx);
+        else message.channel.send('none found');
       }
       if (args[1] === 'update' && process.pid === 4) {
         bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. Sorry for any inconvenience!'));
@@ -2141,8 +2157,7 @@ bot.on('voiceStateUpdate', update => {
   }
 });
 
-// bot.on('warning', console.warn);
-// process.on('warning', console.warn);
+bot.on('warning', console.warn);
 
 /**
  *  The play function. Plays a given link to the voice channel.
@@ -2187,11 +2202,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       youtubeDuration = convertYTFormatToMS(search.items[0].duration.split(':'));
       let spotifyDuration = parseInt(infos.duration_ms);
       itemIndex++;
-      while (search.items[itemIndex].type !== 'video' && itemIndex < 6) {
+      while (search.items[itemIndex] && search.items[itemIndex].type !== 'video' && itemIndex < 6) {
         itemIndex++;
       }
       // if the next video is a better match then play the next video
-      if (!(youtubeDuration && spotifyDuration && search.items[itemIndex].duration &&
+      if (!(youtubeDuration && spotifyDuration && search.items[itemIndex] && search.items[itemIndex].duration &&
         Math.abs(spotifyDuration - youtubeDuration) >
         (Math.abs(spotifyDuration - convertYTFormatToMS(search.items[itemIndex].duration.split(':'))) + 1000))) {
         itemIndex = 0;
@@ -2307,14 +2322,14 @@ const skipTimesMap = new Map();
  */
 function searchForBrokenLinkWithinDB (message, whatToPlayS) {
   gsrun('A', 'B', message.channel.guild.id).then((xdb) => {
-    xdb.congratsDatabase.forEach((value, key, map) => {
+    xdb.congratsDatabase.forEach((value, key) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within the server db: ' + key + '*');
       }
     });
   });
   gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
-    xdb.congratsDatabase.forEach((value, key, map) => {
+    xdb.congratsDatabase.forEach((value, key) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within the personal db: ' + key + '*');
       }
@@ -2511,7 +2526,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
         });
       });
   }
-  // message.channel.send(`Embed creation latency is ${Date.now() - message.createdTimestamp}ms`);
 }
 
 /**
