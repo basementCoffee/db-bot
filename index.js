@@ -17,12 +17,12 @@ const ytpl = require('ytpl');
 // spotify imports
 const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
-const {getTracks} = require("spotify-url-info");
+const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.4.1';
-const buildNo = '03040103'; // major, minor, patch, build
+const version = '3.4.2';
+const buildNo = '03040203'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -1055,6 +1055,12 @@ async function runCommandCases (message) {
         message.channel.send('currently running: ' + process.pid.toString() + ' in ' + bot.voice.connections.size + ' servers.');
         bot.voice.connections.map(x => console.log(x.channel.guild.name));
       }
+      if (args[1] === 'find') {
+        let gx = '';
+        bot.voice.connections.map(x => gx += x.channel.guild.name + ', ');
+        gx = gx.substring(0, gx.length - 2);
+        message.channel.send(gx);
+      }
       if (args[1] === 'update' && process.pid === 4) {
         bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. Sorry for any inconvenience!'));
         message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
@@ -1380,8 +1386,8 @@ function runQueueCommand (message, mgid) {
 
   async function getTitle (url, cutoff) {
     if (url.includes('spotify')) {
-      const infos = await spdl.getInfo(url);
-      title = infos.title;
+      const infos = await getData(url);
+      title = infos.name;
     } else {
       const infos = await ytdl.getInfo(url);
       title = infos.videoDetails.title;
@@ -2161,8 +2167,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   let infos;
   let itemIndex = 0;
   if (isSpotify) {
-    infos = await spdl.getInfo(url);
-    let search = await ytsr(infos.title + ' ' + infos.artists.join(' '), {pages: 1});
+    infos = await getData(url);
+    let artists = '';
+    infos.artists.forEach(x => artists += x.name + ' ');
+    artists = artists.trim();
+    let search = await ytsr(infos.name + ' ' + artists, {pages: 1});
     let youtubeDuration;
     if (search.items[0]) {
       const convertYTFormatToMS = (durationArray) => {
@@ -2176,7 +2185,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
         return youtubeDuration;
       };
       youtubeDuration = convertYTFormatToMS(search.items[0].duration.split(':'));
-      let spotifyDuration = parseInt(infos.duration);
+      let spotifyDuration = parseInt(infos.duration_ms);
       itemIndex++;
       while (search.items[itemIndex].type !== 'video' && itemIndex < 6) {
         itemIndex++;
@@ -2184,11 +2193,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       // if the next video is a better match then play the next video
       if (!(youtubeDuration && spotifyDuration && search.items[itemIndex].duration &&
         Math.abs(spotifyDuration - youtubeDuration) >
-        Math.abs(spotifyDuration - convertYTFormatToMS(search.items[itemIndex].duration.split(':'))))) {
+        (Math.abs(spotifyDuration - convertYTFormatToMS(search.items[itemIndex].duration.split(':'))) + 1000))) {
         itemIndex = 0;
       }
     } else {
-      search = await ytsr(infos.title + ' ' + infos.artists.join(' ') + ' lyrics', {pages: 1});
+      search = await ytsr(infos.name + ' ' + artists + ' lyrics', {pages: 1});
     }
     isSpotify = !search.items[itemIndex];
     if (!isSpotify) url2 = search.items[itemIndex].url;
@@ -2199,7 +2208,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     embedMessageMap[message.guild.id].reactions.removeAll().then();
     embedMessageMap[message.guild.id] = '';
   }
-
   whatspMap[voiceChannel.id] = url;
   voiceChannel.join().then(async connection => {
     try {
@@ -2378,7 +2386,6 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
  */
 async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
   let embed;
-  let imgLink;
   let timeMS = 0;
   let showButtons = true;
   const mgid = message.member.guild.id;
@@ -2388,15 +2395,17 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
     isSpotify = true;
   }
   if (isSpotify) {
-    if (!infos) infos = await spdl.getInfo(url);
+    if (!infos) infos = await getData(url);
+    let artists = '';
+    infos.artists.forEach(x => artists ? artists += ', ' + x.name : artists += x.name);
     embed = new MessageEmbed()
-      .setTitle(`${infos.title}`)
-      .setURL(infos.url)
+      .setTitle(`${infos.name}`)
+      .setURL(infos.external_urls.spotify)
       .setColor('#1DB954')
-      .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, infos.artists.join(', '), true)
-      .addField('Duration', formatDuration(infos.duration), true);
-    imgLink = infos.thumbnail;
-    timeMS = parseInt(infos.duration);
+      .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, artists, true)
+      .addField('Duration', formatDuration(infos.duration_ms), true)
+      .setThumbnail(infos.album.images.reverse()[0].url);
+    timeMS = parseInt(infos.duration_ms);
     // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
   } else {
     const infos = await ytdl.getInfo(url);
@@ -2409,8 +2418,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
       .setTitle(`${infos.videoDetails.title}`)
       .setURL(infos.videoDetails.video_url)
       .setColor('#c40d00')
-      .addField('Duration', duration, true);
-    imgLink = infos.videoDetails.thumbnails[0].url;
+      .addField('Duration', duration, true)
+      .setThumbnail(infos.videoDetails.thumbnails[0].url);
   }
   if (servers[mgid] && servers[mgid].queue && servers[mgid].queue.length > 0) {
     embed.addField('Queue', ' 1 / ' + servers[mgid].queue.length, true);
@@ -2418,7 +2427,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
     embed.addField('-', 'Last played', true);
     showButtons = false;
   }
-  embed.setThumbnail(imgLink);
   if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
     servers[message.guild.id].collector.stop();
     embedMessageMap[message.guild.id].reactions.removeAll().then();
