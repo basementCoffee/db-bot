@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.4.4';
-const buildNo = '03040405'; // major, minor, patch, build
+const version = '3.5.0';
+const buildNo = '03050001'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -466,10 +466,16 @@ async function runCommandCases (message) {
     case 'pn':
       runPlayNowCommand(message, args, mgid, undefined);
       break;
+    case 'pnow':
+      runPlayNowCommand(message, args, mgid, undefined);
+      break;
     case 'playnow':
       runPlayNowCommand(message, args, mgid, undefined);
       break;
     case 'mpn':
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      break;
+    case 'mpnow':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
       break;
     case 'mplaynow':
@@ -522,7 +528,13 @@ async function runCommandCases (message) {
     case 'dn':
       runPlayNowCommand(message, args, mgid, mgid);
       break;
+    case 'dnow':
+      runPlayNowCommand(message, args, mgid, mgid);
+      break;
     case 'mdn':
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      break;
+    case 'mdnow':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
       break;
     // !r is a random that works with the normal queue
@@ -661,6 +673,9 @@ async function runCommandCases (message) {
       await runWhatsPCommand(args, message, mgid, mgid);
       break;
     case 'now':
+      await runWhatsPCommand(args, message, mgid, mgid);
+      break;
+    case 'what':
       await runWhatsPCommand(args, message, mgid, mgid);
       break;
     case 'nowplaying':
@@ -1001,16 +1016,16 @@ async function runCommandCases (message) {
       }
       break;
     case 'l':
-      if (!args[1]) {
-        return message.channel.send('no lookup index given (1-5)');
+      if (!message.member.guild.voice || !message.member.guild.voice.channel) {
+        return;
       }
-      await runYoutubeSearch(message, args, mgid, false, args[1]);
-      break;
-    case 'ln':
-      if (!args[1]) {
-        return message.channel.send('no lookup index given (1-5)');
+      if (servers[mgid].loop) {
+        servers[mgid].loop = false;
+        message.channel.send('*looping disabled*');
+      } else {
+        servers[mgid].loop = true;
+        message.channel.send('*looping enabled*');
       }
-      await runYoutubeSearch(message, args, mgid, true, args[1]);
       break;
     case 'gzh':
       const devCEmbed = new MessageEmbed()
@@ -1038,6 +1053,9 @@ async function runCommandCases (message) {
     case 'gzid':
       message.channel.send(message.member.guild.id);
       break;
+    case 'version':
+      message.channel.send('version: ' + version);
+      break;
     case 'gzs':
       const embed = new MessageEmbed()
         .setTitle('db bot - statistics')
@@ -1054,6 +1072,7 @@ async function runCommandCases (message) {
       if (!args[1]) {
         message.channel.send('active process #' + process.pid.toString() + ' is in ' + bot.voice.connections.size + ' servers.');
         bot.voice.connections.map(x => console.log(x.channel.guild.name));
+        break;
       }
       if (args[1] === 'find') {
         let gx = '';
@@ -1061,6 +1080,7 @@ async function runCommandCases (message) {
         gx = gx.substring(0, gx.length - 2);
         if (gx) message.channel.send(gx);
         else message.channel.send('none found');
+        break;
       }
       if (args[1] === 'listu') {
         let gx = '';
@@ -1074,20 +1094,24 @@ async function runCommandCases (message) {
           tempSet.forEach(z => tgx += z + ', ');
           tgx = tgx.substring(0, tgx.length - 2);
           gx += 'vc' + ix + ': ' + tgx + '\n';
+          ix++;
         });
         if (gx) message.channel.send(gx);
         else message.channel.send('none found');
+        break;
       }
-      if (args[1] === 'update' && process.pid === 4) {
-        bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
-        message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
+      if (args[1] === 'update') {
+        if (process.pid === 4 || (args[2] && args[2] === 'force')) {
+          bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
+          message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
+        } else {
+          message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
+            'To still send out an update use \'gzm update force\')');
+        }
       }
       break;
     case 'gzi':
       message.channel.send('bot id: ' + bot.user.id + '\nyour id: ' + message.member.id);
-      break;
-    case 'gv':
-      message.channel.send('version: ' + version);
       break;
     // !rand
     case 'guess':
@@ -1116,7 +1140,7 @@ async function runCommandCases (message) {
 
 bot.on('guildCreate', guild => {
   if (isInactive) return;
-  guild.systemChannel.send("Thanks for adding me :) \nType '.h' to see my commands.");
+  guild.systemChannel.send("Thanks for adding me :) \nType '.help' to see my commands.");
 });
 
 bot.once('ready', () => {
@@ -1647,11 +1671,11 @@ function runUniversalSearchCommand (message, mgid, providedString) {
     if (ss && ss.length > 0) {
       message.channel.send('Server keys found: ' + ss);
     } else if (providedString.length < 2) {
-      message.channel.send('Could not find any server keys that start with the given letter.');
+      message.channel.send('Did not find any server keys that start with the given letter.');
     } else {
-      message.channel.send('Could not find any server keys that contain \'' + providedString + '\'');
+      message.channel.send('Did not find any server keys that contain \'' + providedString + '\'');
     }
-    message.channel.send('Would you like to search your list as well? (yes or no)').then(() => {
+    message.channel.send('*Would you like to search your list too? (yes or no)*').then(() => {
       const filter = m => message.author.id === m.author.id;
 
       message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
@@ -1662,9 +1686,9 @@ function runUniversalSearchCommand (message, mgid, providedString) {
               if (ss && ss.length > 0) {
                 message.channel.send('Personal keys found: ' + ss);
               } else if (providedString.length < 2) {
-                message.channel.send('Could not find any keys in your list that start with the given letter.');
+                message.channel.send('Did not find any keys in your list that start with the given letter.');
               } else {
-                message.channel.send('Could not find any keys in your list that contain \'' + providedString + '\'');
+                message.channel.send('Did not find any keys in your list that contain \'' + providedString + '\'');
               }
             });
           }
@@ -1753,42 +1777,44 @@ function runSkipCommand (message, skipTimes) {
 function sendHelp (message, prefixString) {
   const helpListEmbed = new MessageEmbed();
   const description =
-    '-------------  **Music Commands (with aliases)** -------------\n\`' +
+    '--------------  **Music Commands** --------------\n\`' +
     prefixString +
-    'play [link] \` Plays YouTube/Spotify link [p] \n\`' +
+    'play [link] \` Play YouTube/Spotify link *[p]* \n\`' +
     prefixString +
-    'play [word] \` Search YouTube and play [p] \n\`' +
+    'play [word] \` Search YouTube and play *[p]* \n\`' +
     prefixString +
-    'playnow [link/word] \` Plays now, overrides queue [pn]\n\`' +
+    'playnow [link/word] \` Plays now, overrides queue *[pn]*\n\`' +
     prefixString +
-    '? \` What\'s playing\n\`' +
+    'what \` What\'s playing *[now]*\n\`' +
     prefixString +
-    'pause \` Pause [pa]\n\`' +
+    'pause \` Pause *[pa]*\n\`' +
     prefixString +
-    'resume \` Resume if paused [res] \n\`' +
+    'resume \` Resume if paused *[res]* \n\`' +
     prefixString +
-    'skip [# times] \` Skip the current link [sk]\n\`' +
+    'skip [# times] \` Skip the current link *[sk]*\n\`' +
     prefixString +
-    'rewind [# times] \` Rewind to play previous links  [rw]\n\`' +
+    'rewind [# times] \` Rewind to play previous links *[rw]*\n\`' +
     prefixString +
-    'end \` Stops playing and ends session  [e]\n\`' +
+    'end \` Stops playing and ends session  *[e]*\n\`' +
     prefixString +
-    'loop \` Loops songs on finish\n\`' +
+    'loop \` Loops songs on finish *[l]*\n\`' +
     prefixString +
-    'queue \` Displays the queue [q]\n' +
+    'queue \` Displays the queue *[q]*\n' +
     '\n-----------  **Server Music Database**  -----------\n\`' +
     prefixString +
-    "keys \` See all of the server's saved songs [k]\n\`" +
+    "keys \` See all of the server's keys *[k]*\n\`" +
     prefixString +
     'd [key] \` Play a song from the server keys \n\`' +
     prefixString +
-    'add [key] [url] \` Adds a song to the server keys  [a]\n\`' +
+    'dn [key] \` Play immediately, overrides queue \n\`' +
     prefixString +
-    'remove [key] \` Removes a song from the server keys  [rm]\n\`' +
+    'add [key] [url] \` Add a song to the server keys  *[a]*\n\`' +
     prefixString +
-    'rand [# times] \` Play a random song from server keys  [r]\n\`' +
+    'remove [key] \` Remove a song from the server keys  *[rm]*\n\`' +
     prefixString +
-    'search [name] \` Search keys  [s]\n' +
+    'rand [# times] \` Play a random song from server keys  *[r]*\n\`' +
+    prefixString +
+    'search [key] \` Search keys  *[s]*\n' +
     '\n-----------  **Personal Music Database**  -----------\n' +
     "*Prepend 'm' to the above commands to access your personal music database*\nex: \`" + prefixString + "mkeys \`\n" +
     '\n--------------  **Other Commands**  -----------------\n\`' +
@@ -1802,8 +1828,9 @@ function sendHelp (message, prefixString) {
     'changeprefix [new prefix] \` Changes the prefix for all commands \n' +
     '\n**Or just say congrats to a friend. I will chime in too! :) **'
   ;
-  helpListEmbed.setTitle('Help List');
-  helpListEmbed.setDescription(description);
+  helpListEmbed
+    .setTitle('Help List *[with aliases]*')
+    .setDescription(description);
   message.channel.send(helpListEmbed);
 }
 
@@ -1813,42 +1840,32 @@ function sendHelp (message, prefixString) {
  * @param args The args to verify content
  * @param mgid The message guild id
  * @param playNow Bool, whether to override the queue
- * @param indexToLookup Optional: The word in a message to signify the search index
- * @param searchTerm Optional: The specific phrase to search
- * @param searchResult Optional: For recursive call with memoization
+ * @param indexToLookup Optional - The search index, requires searchResult to be valid
+ * @param searchTerm Optional - The specific phrase to search
+ * @param searchResult Optional - For recursive call with memoization
  * @returns {Promise<*|boolean|undefined>}
  */
 async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, searchTerm, searchResult) {
-  if (indexToLookup && !args[2] && !searchResult) {
-    return message.channel.send('no lookup word given');
-  }
   if (!searchTerm) {
     const tempArray = args.map(x => x);
     tempArray[0] = "";
-    searchTerm = tempArray.join(' ');
+    searchTerm = tempArray.join(' ').trim();
   }
-  let num = parseInt(indexToLookup);
-  if (!num) {
-    num = 1;
-  }
-  if (!searchResult && (num < 0 || num > 5)) {
-    return message.channel.send('Provided lookup index following must be 1-5 ');
-  }
-  num--;
   if (!searchResult) {
+    indexToLookup = 0;
     searchResult = await ytsr(searchTerm, {pages: 1});
     if (!searchResult.items[0]) {
+      if (!searchTerm.includes('video')) {
+        return runYoutubeSearch(message, args, mgid, playNow, indexToLookup, searchTerm + ' video', undefined);
+      }
       return message.channel.send('could not find video');
     }
+  } else {
+    indexToLookup = parseInt(indexToLookup);
+    if (!indexToLookup) indexToLookup = 1;
+    indexToLookup--;
   }
   const args2 = [];
-  if (searchResult.items[num].type === 'video') {
-    args2[1] = searchResult.items[num].url;
-  } else {
-    if (servers[mgid].queue[0] === args2[1]) servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-    return runYoutubeSearch(message, args, mgid, playNow, num += 2, searchTerm, searchResult);
-  }
-  if (!args2[1]) return message.channel.send('could not find video');
   if (!servers[message.guild.id]) {
     servers[message.guild.id] = {
       queue: [],
@@ -1863,6 +1880,13 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
     servers[message.guild.id].queueHistory = [];
     servers[message.guild.id].loop = false;
   }
+  if (searchResult.items[indexToLookup].type === 'video') {
+    args2[1] = searchResult.items[indexToLookup].url;
+  } else {
+    if (servers[mgid].queue[0] === args2[1]) servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+    return runYoutubeSearch(message, args, mgid, playNow, indexToLookup += 2, searchTerm, searchResult);
+  }
+  if (!args2[1]) return message.channel.send('could not find video');
   if (playNow) {
     servers[mgid].queue.unshift(args2[1]);
     await playSongToVC(message, args2[1], message.member.voice.channel, true);
@@ -1874,7 +1898,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
       message.channel.send('*added to queue*');
     }
   }
-  if (num < 4 && (playNow || servers[mgid].queue.length < 2)) {
+  if (indexToLookup < 4 && (playNow || servers[mgid].queue.length < 2)) {
     await message.react('➡️');
     const filter = (reaction, user) => {
       if (message.member.voice.channel) {
@@ -1894,13 +1918,13 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
     }, 20000);
     collector.once('collect', (reaction, reactionCollector) => {
       clearInterval(arrowReactionInterval);
-      if (num > 2) {
+      if (indexToLookup > 2) {
         message.reactions.removeAll();
       } else {
         reaction.users.remove(reactionCollector.id);
       }
       if (servers[mgid].queue[0] === args2[1]) servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-      runYoutubeSearch(message, args, mgid, true, num += 2, searchTerm, searchResult);
+      runYoutubeSearch(message, args, mgid, true, indexToLookup += 2, searchTerm, searchResult);
     });
   }
 }
