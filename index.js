@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.5.1';
-const buildNo = '03050101'; // major, minor, patch, build
+const version = '3.5.2';
+const buildNo = '03050202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -1134,9 +1134,12 @@ async function runCommandCases (message) {
             return message.channel.send('Need at least 1 person in a voice channel.');
           }
           const randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
+          const person = message.member.voice.channel.members.array()[randomInt2 - 1];
           message.channel.send(
-            'Assuming ' + numToCheck + ' people. Your number is ' + randomInt2 + '.'
-          );
+            '**Voice channel size: ' + numToCheck + '**\nRandom number: \`' + randomInt2 + '\`\n' +
+            'Random person: \`' + (person.nickname ? person.nickname : person.user.username) + '\`');
+        } else {
+          message.channel.send('need to be in a voice channel for this command');
         }
       }
       break;
@@ -1347,11 +1350,12 @@ bot.on('message', async (message) => {
     message.channel.send('Congratulations!').then();
     return playSongToVC(message, 'https://www.youtube.com/watch?v=oyFQVZ2h0V8', message.member.voice.channel, false);
   } else if (message.channel.type === 'dm') {
+    const mb = '📤';
     bot.channels.cache.get('840420205867302933')
       .send('------------------------------------------\n' +
         '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
         message.content + '\n------------------------------------------').then(msg => {
-      msg.react('📤');
+      msg.react(mb);
       const filter = (reaction, user) => {
         return user.id !== bot.user.id;
       };
@@ -1359,10 +1363,13 @@ bot.on('message', async (message) => {
       const collector = msg.createReactionCollector(filter, {time: 86400000});
 
       collector.on('collect', (reaction, user) => {
-        if (reaction.emoji.name === '📤') {
+        if (reaction.emoji.name === mb) {
           sendMessageToUser(msg, message.author.id, user.id);
           reaction.users.remove(user);
         }
+      });
+      collector.once('end', () => {
+        msg.reactions.cache.get(mb).remove();
       });
     });
   } else {
@@ -1381,7 +1388,7 @@ function sendMessageToUser (message, userID, reactionUserID) {
   message.channel.send('What would you like me to send to ' + user.username +
     '? (type \'cancel\' to not send anything)').then(msg => {
     const filter = m => {
-      return (message.author.id === m.author.id || reactionUserID === m.author.id);
+      return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== bot.user.id);
     };
     message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
       .then(messages => {
@@ -2137,8 +2144,8 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
       } else {
         emptyDBMessage = 'Your ';
       }
-      message.channel.send(emptyDBMessage + 'music database is empty.\n*Add a song by putting a word followed by a link. Ex:* \` ' +
-        prefixString + cmdType + 'a [key] [link] \`');
+      message.channel.send(emptyDBMessage + 'music database is empty.\n*Add a song by putting a word followed by a link.' +
+        '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
     } else {
       let dbName = '';
       let keysMessage = '';
@@ -2226,7 +2233,7 @@ bot.on('voiceStateUpdate', update => {
     let leaveVCInt = 1100;
     if (!update.channel) return;
     if (dispatcherMap[update.channel.id]) {
-      leaveVCInt = 300000;
+      leaveVCInt = 420000;
     }
     clearInterval(leaveVCTimeout[update.channel.id]);
     leaveVCTimeout[update.channel.id] = setInterval(() => {
@@ -2538,8 +2545,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
         sentMsg.react('⏪').then(() => {
           if (collector.ended) return;
           sentMsg.react('⏯').then(() => {
-            if (collector.ended || url !== whatspMap[voiceChannel.id])
-              return sentMsg.reactions.removeAll();
+            if (collector.ended) return;
+            else if (url !== whatspMap[voiceChannel.id]) return sentMsg.reactions.removeAll();
             sentMsg.react('⏩').then(() => {
               if (collector.ended) return;
               sentMsg.react('⏹').then(() => {
@@ -2562,7 +2569,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
           if (voiceChannel) {
             for (const mem of voiceChannel.members) {
               if (user.id === mem[1].id) {
-                return ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name) && user.id !== bot.user.id;
+                return user.id !== bot.user.id && ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name);
               }
             }
           }
