@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.5.0';
-const buildNo = '03050001'; // major, minor, patch, build
+const version = '3.5.1';
+const buildNo = '03050101'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -1033,7 +1033,7 @@ async function runCommandCases (message) {
         .setDescription(
           prefixString + 'gzs - statistics' +
           '\n' + prefixString + 'gzi - user and bot id' +
-          '\n' + prefixString + 'gzid - guild id' +
+          '\n' + prefixString + 'gzid - guild and channel id' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n\n**calibrate multiple bots**' +
@@ -1051,7 +1051,8 @@ async function runCommandCases (message) {
       process.exit();
       break;
     case 'gzid':
-      message.channel.send(message.member.guild.id);
+      message.channel.send('g: ' + message.member.guild.id);
+      message.channel.send('c: ' + message.channel.id);
       break;
     case 'version':
       message.channel.send('version: ' + version);
@@ -1067,6 +1068,10 @@ async function runCommandCases (message) {
           '\nactive voice channels: ' + bot.voice.connections.size
         );
       message.channel.send(embed);
+      break;
+    case 'gzr':
+      if (!args[1] || !parseInt(args[1])) return;
+      sendMessageToUser(message, args[1], undefined);
       break;
     case 'gzm' :
       if (!args[1]) {
@@ -1106,7 +1111,7 @@ async function runCommandCases (message) {
           message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
         } else {
           message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
-            'To still send out an update use \'gzm update force\')');
+            'To still send out an update use \'gzm update force\'');
         }
       }
       break;
@@ -1341,10 +1346,60 @@ bot.on('message', async (message) => {
     }
     message.channel.send('Congratulations!').then();
     return playSongToVC(message, 'https://www.youtube.com/watch?v=oyFQVZ2h0V8', message.member.voice.channel, false);
+  } else if (message.channel.type === 'dm') {
+    bot.channels.cache.get('840420205867302933')
+      .send('------------------------------------------\n' +
+        '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
+        message.content + '\n------------------------------------------').then(msg => {
+      msg.react('📤');
+      const filter = (reaction, user) => {
+        return user.id !== bot.user.id;
+      };
+
+      const collector = msg.createReactionCollector(filter, {time: 86400000});
+
+      collector.on('collect', (reaction, user) => {
+        if (reaction.emoji.name === '📤') {
+          sendMessageToUser(msg, message.author.id, user.id);
+          reaction.users.remove(user);
+        }
+      });
+    });
   } else {
     runCommandCases(message).then();
   }
 });
+
+/**
+ * Prompts the text channel for a response to forward to the given user.
+ * @param message The original message that activates the bot.
+ * @param userID The ID of the user to forward the message to.
+ * @param reactionUserID Optional - The ID of a user who can reply to the prompt besides the message author
+ */
+function sendMessageToUser (message, userID, reactionUserID) {
+  const user = bot.users.cache.get(userID);
+  message.channel.send('What would you like me to send to ' + user.username +
+    '? (type \'cancel\' to not send anything)').then(msg => {
+    const filter = m => {
+      return (message.author.id === m.author.id || reactionUserID === m.author.id);
+    };
+    message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+      .then(messages => {
+        if (messages.first().content && messages.first().content.trim() !== 'cancel') {
+          user.send(messages.first().content).then(() => {
+            message.channel.send('Message sent to ' + user.username + '.');
+            message.react('✅').then();
+          });
+        } else if (messages.first().content.trim() === 'cancel') {
+          message.channel.send('No message sent.');
+        }
+        msg.delete();
+      }).catch(() => {
+      message.channel.send('No message sent.');
+      msg.delete();
+    });
+  });
+}
 
 /**
  * The command to add a song to a given database.
