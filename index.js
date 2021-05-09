@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.5.2';
-const buildNo = '03050202'; // major, minor, patch, build
+const version = '3.5.3';
+const buildNo = '03050302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -434,7 +434,7 @@ async function runCommandCases (message) {
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   console.log(args); // see recent bot commands within console for testing
   const statement = args[0].substr(1).toLowerCase();
-  if (statement.substr(0, 1) === 'g') {
+  if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
     if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
       return;
     }
