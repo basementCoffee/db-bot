@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.5.3';
-const buildNo = '03050302'; // major, minor, patch, build
+const version = '3.5.4';
+const buildNo = '03050402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -73,14 +73,6 @@ process.setMaxListeners(0);
  * @param playMessageToChannel whether to play message on successful skip
  */
 function skipSong (message, voiceChannel, playMessageToChannel) {
-  if (!servers[message.guild.id]) {
-    servers[message.guild.id] = {
-      queue: [],
-      queueHistory: [],
-      loop: false,
-      collector: false
-    };
-  }
   // in case of force disconnect
   if (
     !message.guild.client.voice ||
@@ -175,14 +167,6 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
   if (!args[1]) {
     return message.channel.send('What should I play now? Put a link or some words.');
   }
-  if (!servers[mgid]) {
-    servers[mgid] = {
-      queue: [],
-      queueHistory: [],
-      loop: false,
-      collector: false
-    };
-  }
   // in case of force disconnect
   if (
     !message.guild.client.voice ||
@@ -272,7 +256,8 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
     return message.channel.send("must be in a voice channel to play");
   }
   if (!args[1]) {
-    if (dispatcherMap[message.member.voice.channel.id] && dispatcherMapStatus[message.member.voice.channel.id] === 'pause') {
+    if (servers[mgid].queue[0] && dispatcherMap[message.member.voice.channel.id] &&
+      dispatcherMapStatus[message.member.voice.channel.id] === 'pause') {
       dispatcherMap[message.member.voice.channel.id].resume();
       return message.channel.send('*playing*');
     }
@@ -284,14 +269,6 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
     } else {
       return runYoutubeSearch(message, args, mgid, false);
     }
-  }
-  if (!servers[mgid]) {
-    servers[mgid] = {
-      queue: [],
-      queueHistory: [],
-      loop: false,
-      collector: false
-    };
   }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
@@ -372,7 +349,7 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
  * @returns {*}
  */
 async function runRestartCommand (message, mgid, keyword) {
-  if (!servers[mgid] || (!servers[mgid].queue[0] && !servers[mgid].queueHistory)) return message.channel.send('must be actively playing to ' + keyword);
+  if (!servers[mgid].queue[0] && !servers[mgid].queueHistory) return message.channel.send('must be actively playing to ' + keyword);
   if (servers[mgid].queue[0]) {
     await playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
   } else if (servers[mgid].queueHistory.length > 0) {
@@ -438,6 +415,14 @@ async function runCommandCases (message) {
     if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
       return;
     }
+  }
+  if (!servers[mgid]) {
+    servers[mgid] = {
+      queue: [],
+      queueHistory: [],
+      loop: false,
+      collector: false
+    };
   }
   switch (statement) {
     // !p is just the basic rhythm bot
@@ -796,39 +781,50 @@ async function runCommandCases (message) {
       break;
     // !pa
     case 'pa':
-      if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
+      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
+        dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].pause();
         dispatcherMapStatus[message.member.voice.channel.id] = 'pause';
         message.channel.send('*paused*');
       }
       break;
     case 'pause':
-      if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
+      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
+        dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].pause();
         dispatcherMapStatus[message.member.voice.channel.id] = 'pause';
         message.channel.send('*paused*');
+      } else {
+        message.channel.send('nothing is playing right now');
       }
       break;
     // !pl
     case 'pl':
-      if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
+      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
+        dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
         dispatcherMapStatus[message.member.voice.channel.id] = 'resume';
         message.channel.send('*playing*');
+      } else {
+        message.channel.send('nothing is playing right now');
       }
       break;
     case 'res':
-      if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
+      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
+        dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
         dispatcherMapStatus[message.member.voice.channel.id] = 'resume';
         message.channel.send('*playing*');
       }
       break;
     case 'resume':
-      if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
+      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
+        dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
         dispatcherMapStatus[message.member.voice.channel.id] = 'resume';
         message.channel.send('*playing*');
+      } else {
+        message.channel.send('nothing is playing right now');
       }
       break;
     case 'time':
@@ -946,14 +942,12 @@ async function runCommandCases (message) {
       runRemoveItemCommand(message, args[1], 'p' + message.member.id, true);
       break;
     case 'rewind':
-      if (!servers[mgid]) return message.channel.send('must have played a link to rewind');
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to rewind');
       }
       runRewindCommand(message, mgid, message.member.voice.channel, args[1]);
       break;
     case 'rw':
-      if (!servers[mgid]) return message.channel.send('must have played a link to rewind');
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to rewind');
       }
@@ -973,13 +967,10 @@ async function runCommandCases (message) {
       break;
     case 'clear' :
       if (!message.member.voice.channel) return message.channel.send('must be in a voice channel to clear');
-      const currentSong = (servers[mgid] && servers[mgid].queue &&
-        dispatcherMap[message.member.voice.channel.id]) ? servers[mgid].queue[0] : undefined;
-      if (servers[mgid]) {
-        servers[mgid].queue = [];
-        servers[mgid].queueHistory = [];
-        servers[mgid].loop = false;
-      }
+      const currentSong = (dispatcherMap[message.member.voice.channel.id]) ? servers[mgid].queue[0] : undefined;
+      servers[mgid].queue = [];
+      servers[mgid].queueHistory = [];
+      servers[mgid].loop = false;
       if (currentSong) servers[mgid].queue[0] = currentSong;
       message.channel.send('The queue has been scrubbed clean');
       if (!embedMessageMap[mgid] && currentSong) await runWhatsPCommand(args, message, mgid, undefined);
@@ -1478,7 +1469,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
  * @returns {Promise<void>|*}
  */
 function runQueueCommand (message, mgid) {
-  if (!servers[mgid] || servers[mgid].queue < 1 || !message.member.guild.voice.channel) {
+  if (servers[mgid].queue < 1 || !message.member.guild.voice.channel) {
     return message.channel.send('There is no active queue right now');
   }
   const serverQueue = servers[mgid].queue.map((x) => x);
@@ -1578,14 +1569,6 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   if (!voiceChannel) {
     message.channel.send('must be in a voice channel to play keys');
     return true;
-  }
-  if (!servers[mgid]) {
-    servers[mgid] = {
-      queue: [],
-      queueHistory: [],
-      loop: false,
-      collector: false
-    };
   }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
@@ -1928,14 +1911,6 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
     indexToLookup--;
   }
   const args2 = [];
-  if (!servers[message.guild.id]) {
-    servers[message.guild.id] = {
-      queue: [],
-      queueHistory: [],
-      loop: false,
-      collector: false
-    };
-  }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
     servers[message.guild.id].queue = [];
@@ -2005,14 +1980,6 @@ function runRandomToQueue (num, message, sheetName) {
     num = parseInt(num);
   } catch (e) {
     num = 1;
-  }
-  if (!servers[message.guild.id]) {
-    servers[message.guild.id] = {
-      queue: [],
-      queueHistory: [],
-      loop: false,
-      collector: false
-    };
   }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
@@ -2456,8 +2423,11 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
       }
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
-    song = servers[mgid].queueHistory.pop();
-    servers[mgid].queue.unshift(song);
+    // remove undefined links from queueHistory
+    while (servers[mgid].queueHistory.length > 0 && !song) {
+      song = servers[mgid].queueHistory.pop();
+    }
+    if (song) servers[mgid].queue.unshift(song);
     rwIncrementor++;
   }
   if (song) {
@@ -2525,7 +2495,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
       .addField('Duration', duration, true)
       .setThumbnail(infos.videoDetails.thumbnails[0].url);
   }
-  if (servers[mgid] && servers[mgid].queue && servers[mgid].queue.length > 0) {
+  if (servers[mgid].queue.length > 0) {
     embed.addField('Queue', ' 1 / ' + servers[mgid].queue.length, true);
   } else {
     embed.addField('-', 'Last played', true);
@@ -2583,7 +2553,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
         });
 
         servers[mgid].collector = collector;
-
+        let followUpMessage;
         collector.on('collect', (reaction, reactionCollector) => {
           if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
             return;
@@ -2596,11 +2566,21 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
               dispatcherMapStatus[voiceChannel.id] === 'resume')) {
             dispatcherMap[voiceChannel.id].pause();
             dispatcherMapStatus[voiceChannel.id] = 'pause';
+            if (followUpMessage) {
+              followUpMessage.edit('*paused by \`' + reactionCollector.username + '\`*');
+            } else {
+              message.channel.send('*paused by \`' + reactionCollector.username + '\`*').then(msg => {followUpMessage = msg;});
+            }
             reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id] === 'pause') {
             dispatcherMap[voiceChannel.id].resume();
             dispatcherMapStatus[voiceChannel.id] = 'resume';
             reaction.users.remove(reactionCollector.id);
+            if (followUpMessage) {
+              followUpMessage.edit('*playing by \`' + reactionCollector.username + '\`*');
+            } else {
+              message.channel.send('*playing by \`' + reactionCollector.username + '\`*').then(msg => {followUpMessage = msg;});
+            }
           } else if (reaction.emoji.name === '⏪') {
             runRewindCommand(message, mgid, voiceChannel);
           } else if (reaction.emoji.name === '⏹') {
@@ -2649,14 +2629,6 @@ function runStopPlayingCommand (mgid, voiceChannel) {
  * @param {*} sheetname The name of the sheet reference
  */
 async function runWhatsPCommand (args, message, mgid, sheetname) {
-  if (!servers[message.guild.id]) {
-    servers[message.guild.id] = {
-      queue: [],
-      queueHistory: [],
-      loop: false,
-      collector: false
-    };
-  }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
     servers[message.guild.id].queue = [];
