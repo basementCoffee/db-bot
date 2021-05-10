@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.5.4';
-const buildNo = '03050402'; // major, minor, patch, build
+const version = '3.5.5';
+const buildNo = '03050502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -2111,7 +2111,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
       } else {
         emptyDBMessage = 'Your ';
       }
-      message.channel.send(emptyDBMessage + 'music database is empty.\n*Add a song by putting a word followed by a link.' +
+      message.channel.send('**' + emptyDBMessage + 'music list is empty.**\n*Add a song by putting a word followed by a link.' +
         '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
     } else {
       let dbName = '';
@@ -2136,7 +2136,8 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
         keyEmbedColor = '#ad5537';
       }
       const embedKeysMessage = new MessageEmbed();
-      embedKeysMessage.setTitle(keysMessage).setDescription(s).setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
+      embedKeysMessage.setTitle(keysMessage).setDescription(s).setColor(keyEmbedColor)
+        .setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
       message.channel.send(embedKeysMessage).then(async sentMsg => {
         sentMsg.react('❔').then(() => sentMsg.react('🔀'));
         const filter = (reaction, user) => {
@@ -2561,31 +2562,49 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
           if (reaction.emoji.name === '⏩') {
             collector.stop();
             skipSong(message, voiceChannel, true);
+            if (followUpMessage) {
+              followUpMessage.delete();
+              followUpMessage = undefined;
+            }
           } else if (reaction.emoji.name === '⏯' &&
             (!dispatcherMapStatus[voiceChannel.id] ||
               dispatcherMapStatus[voiceChannel.id] === 'resume')) {
             dispatcherMap[voiceChannel.id].pause();
             dispatcherMapStatus[voiceChannel.id] = 'pause';
-            if (followUpMessage) {
-              followUpMessage.edit('*paused by \`' + reactionCollector.username + '\`*');
-            } else {
-              message.channel.send('*paused by \`' + reactionCollector.username + '\`*').then(msg => {followUpMessage = msg;});
-            }
             reaction.users.remove(reactionCollector.id);
+            const userNickname = sentMsg.member.guild.members.cache.get(reactionCollector.id).nickname;
+            if (followUpMessage) {
+              followUpMessage.edit('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
+                '\`*');
+            } else {
+              message.channel.send('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
+                '\`*').then(msg => {followUpMessage = msg;});
+            }
           } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id] === 'pause') {
             dispatcherMap[voiceChannel.id].resume();
             dispatcherMapStatus[voiceChannel.id] = 'resume';
             reaction.users.remove(reactionCollector.id);
+            const userNickname = sentMsg.member.guild.members.cache.get(reactionCollector.id).nickname;
             if (followUpMessage) {
-              followUpMessage.edit('*playing by \`' + reactionCollector.username + '\`*');
+              followUpMessage.edit('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
+                '\`*');
             } else {
-              message.channel.send('*playing by \`' + reactionCollector.username + '\`*').then(msg => {followUpMessage = msg;});
+              message.channel.send('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
+                '\`*').then(msg => {followUpMessage = msg;});
             }
           } else if (reaction.emoji.name === '⏪') {
             runRewindCommand(message, mgid, voiceChannel);
+            if (followUpMessage) {
+              followUpMessage.delete();
+              followUpMessage = undefined;
+            }
           } else if (reaction.emoji.name === '⏹') {
             collector.stop();
             runStopPlayingCommand(mgid, voiceChannel);
+            if (followUpMessage) {
+              followUpMessage.delete();
+              followUpMessage = undefined;
+            }
           } else if (reaction.emoji.name === '🔑') {
             runKeysCommand(message, prefixMap[mgid], mgid, '', voiceChannel, '');
           } else if (reaction.emoji.name === '🔐') {
