@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.5.5';
-const buildNo = '03050502'; // major, minor, patch, build
+const version = '3.6.0';
+const buildNo = '03060002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -105,6 +105,10 @@ function skipSong (message, voiceChannel, playMessageToChannel) {
   } else {
     runStopPlayingCommand(message.guild.id, voiceChannel);
   }
+  if (servers[message.guild.id].followUpMessage) {
+    servers[message.guild.id].followUpMessage.delete();
+    servers[message.guild.id].followUpMessage = undefined;
+  }
 }
 
 /**
@@ -179,6 +183,10 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
   }
   if (servers[mgid].queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
+  }
+  if (servers[message.guild.id].followUpMessage) {
+    servers[message.guild.id].followUpMessage.delete();
+    servers[message.guild.id].followUpMessage = undefined;
   }
   if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !args[1].includes('spotify.com/playlist')) {
     if (sheetName) {
@@ -416,12 +424,14 @@ async function runCommandCases (message) {
       return;
     }
   }
+  // the server guild playback data
   if (!servers[mgid]) {
     servers[mgid] = {
       queue: [],
       queueHistory: [],
       loop: false,
-      collector: false
+      collector: false,
+      followUpMessage: undefined
     };
   }
   switch (statement) {
@@ -1574,6 +1584,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   if (!message.guild.voice || !message.guild.voice.channel) {
     servers[mgid].queue = [];
     servers[mgid].queueHistory = [];
+    servers[mgid].loop = false;
   }
   if (servers[mgid].queue.length >= maxQueueSize) {
     message.channel.send('*max queue size has been reached*');
@@ -1635,10 +1646,12 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           );
           if (playRightNow) { // push to queue and play
             const dsp = dispatcherMap[voiceChannel.id];
-            if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-            dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
-              servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-            }
+            try {
+              if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
+              dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
+                servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+              }
+            } catch (e) {}
             servers[mgid].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
             playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), voiceChannel, true);
             message.channel.send('*playing now*');
@@ -1674,10 +1687,12 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
       } else { // did find in database
         if (playRightNow) { // push to queue and play
           const dsp = dispatcherMap[voiceChannel.id];
-          if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-          dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
-            servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-          }
+          try {
+            if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
+            dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
+              servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+            }
+          } catch (e) {}
           servers[mgid].queue.unshift(itemToPlay);
           playSongToVC(message, itemToPlay, voiceChannel, true);
           message.channel.send('*playing now*');
@@ -2231,6 +2246,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     message.channel.send('*db bot has been updated*');
     return runStopPlayingCommand(message.guild.id, voiceChannel);
   }
+  const mgid = message.member.guild.id;
   // the url to play
   let url = whatToPlay;
   // the alternative spotify url
@@ -2275,10 +2291,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     if (!isSpotify) url2 = search.items[itemIndex].url;
   }
   // remove previous embed buttons
-  if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions && sendEmbed) {
-    servers[message.guild.id].collector.stop();
-    embedMessageMap[message.guild.id].reactions.removeAll().then();
-    embedMessageMap[message.guild.id] = '';
+  if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions && (!servers[mgid].loop || whatspMap[voiceChannel.id] !== url)) {
+    console.log('ran');
+    servers[mgid].collector.stop();
+    embedMessageMap[mgid].reactions.removeAll().then();
+    embedMessageMap[mgid] = '';
   }
   whatspMap[voiceChannel.id] = url;
   voiceChannel.join().then(async connection => {
@@ -2323,7 +2340,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
             bot.channels.cache.get('730837254796214384').send('there was a mismatch with playback');
             return;
           }
-          if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
+          if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions && !servers[mgid].loop) {
             servers[message.guild.id].collector.stop();
             embedMessageMap[message.guild.id].reactions.removeAll().then();
             embedMessageMap[message.guild.id] = false;
@@ -2342,6 +2359,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
             }
           }
         }, 700);
+        if (servers[mgid].followUpMessage) {
+          servers[mgid].followUpMessage.delete();
+          servers[mgid].followUpMessage = undefined;
+        }
       });
       dispatcher.once('error', console.error);
     } catch (e) {
@@ -2444,9 +2465,13 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
     } else {
       playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
     }
-    return message.channel.send('*replaying first song*');
+    message.channel.send('*replaying first song*');
   } else {
-    return message.channel.send('cannot find previous song');
+    message.channel.send('cannot find previous song');
+  }
+  if (servers[message.guild.id].followUpMessage) {
+    servers[message.guild.id].followUpMessage.delete();
+    servers[message.guild.id].followUpMessage = undefined;
   }
 }
 
@@ -2456,14 +2481,18 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
  * @param message the message to send the channel to
  * @param url the url to generate the embed for
  * @param voiceChannel the voice channel that the song is being played in
- * @param infos Optional: Spotify information if already generated
+ * @param infos Optional - Spotify information if already generated
+ * @param forceEmbed Optional - force the embed to be regenerated
  * @returns {Promise<void>}
  */
-async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
+async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
+  const mgid = message.member.guild.id;
+  if (servers[mgid].loop && whatspMap[voiceChannel.id] === url && !forceEmbed) {
+    return;
+  }
   let embed;
   let timeMS = 0;
   let showButtons = true;
-  const mgid = message.member.guild.id;
   generatingEmbedMap[mgid] = true;
   let isSpotify = false;
   if (url.toString().includes('spotify.com')) {
@@ -2554,7 +2583,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
         });
 
         servers[mgid].collector = collector;
-        let followUpMessage;
         collector.on('collect', (reaction, reactionCollector) => {
           if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
             return;
@@ -2562,9 +2590,9 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
           if (reaction.emoji.name === '⏩') {
             collector.stop();
             skipSong(message, voiceChannel, true);
-            if (followUpMessage) {
-              followUpMessage.delete();
-              followUpMessage = undefined;
+            if (servers[mgid].followUpMessage) {
+              servers[message.guild.id].followUpMessage.delete();
+              servers[message.guild.id].followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '⏯' &&
             (!dispatcherMapStatus[voiceChannel.id] ||
@@ -2573,37 +2601,37 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos) {
             dispatcherMapStatus[voiceChannel.id] = 'pause';
             reaction.users.remove(reactionCollector.id);
             const userNickname = sentMsg.member.guild.members.cache.get(reactionCollector.id).nickname;
-            if (followUpMessage) {
-              followUpMessage.edit('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
+            if (servers[mgid].followUpMessage) {
+              servers[mgid].followUpMessage.edit('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
                 '\`*');
             } else {
               message.channel.send('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
-                '\`*').then(msg => {followUpMessage = msg;});
+                '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
             }
           } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id] === 'pause') {
             dispatcherMap[voiceChannel.id].resume();
             dispatcherMapStatus[voiceChannel.id] = 'resume';
             reaction.users.remove(reactionCollector.id);
             const userNickname = sentMsg.member.guild.members.cache.get(reactionCollector.id).nickname;
-            if (followUpMessage) {
-              followUpMessage.edit('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
+            if (servers[mgid].followUpMessage) {
+              servers[mgid].followUpMessage.edit('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
                 '\`*');
             } else {
               message.channel.send('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
-                '\`*').then(msg => {followUpMessage = msg;});
+                '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
             }
           } else if (reaction.emoji.name === '⏪') {
             runRewindCommand(message, mgid, voiceChannel);
-            if (followUpMessage) {
-              followUpMessage.delete();
-              followUpMessage = undefined;
+            if (servers[mgid].followUpMessage) {
+              servers[mgid].followUpMessage.delete();
+              servers[mgid].followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '⏹') {
             collector.stop();
             runStopPlayingCommand(mgid, voiceChannel);
-            if (followUpMessage) {
-              followUpMessage.delete();
-              followUpMessage = undefined;
+            if (servers[mgid].followUpMessage) {
+              servers[mgid].followUpMessage.delete();
+              servers[mgid].followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '🔑') {
             runKeysCommand(message, prefixMap[mgid], mgid, '', voiceChannel, '');
@@ -2689,13 +2717,13 @@ async function runWhatsPCommand (args, message, mgid, sheetname) {
         if (!generatingEmbedMap[mgid]) {
           embedMessageMap[mgid] = '';
           return await msg.reactions.removeAll().then(() =>
-            sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel)
+            sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true)
           );
         } else {
           return message.channel.send('*previous embed is generating...*');
         }
       } else {
-        return await sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel);
+        return await sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true);
       }
     } else {
       return message.channel.send('Nothing is playing right now');
