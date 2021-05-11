@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.6.0';
-const buildNo = '03060002'; // major, minor, patch, build
+const version = '3.6.1';
+const buildNo = '03060102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -96,9 +96,8 @@ function skipSong (message, voiceChannel, playMessageToChannel) {
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next song
     if (servers[message.guild.id].queue.length > 0) {
-      whatspMap[voiceChannel.id] = servers[message.guild.id].queue[0];
       // get rid of previous dispatch
-      playSongToVC(message, whatspMap[voiceChannel.id], voiceChannel, true);
+      playSongToVC(message, servers[message.guild.id].queue[0], voiceChannel, true);
     } else {
       runStopPlayingCommand(message.guild.id, voiceChannel);
     }
@@ -431,7 +430,8 @@ async function runCommandCases (message) {
       queueHistory: [],
       loop: false,
       collector: false,
-      followUpMessage: undefined
+      followUpMessage: undefined,
+      currentEmbedLink: undefined
     };
   }
   switch (statement) {
@@ -2292,7 +2292,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   }
   // remove previous embed buttons
   if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions && (!servers[mgid].loop || whatspMap[voiceChannel.id] !== url)) {
-    console.log('ran');
     servers[mgid].collector.stop();
     embedMessageMap[mgid].reactions.removeAll().then();
     embedMessageMap[mgid] = '';
@@ -2487,9 +2486,10 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
  */
 async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
   const mgid = message.member.guild.id;
-  if (servers[mgid].loop && whatspMap[voiceChannel.id] === url && !forceEmbed) {
+  if (servers[mgid].loop && servers[mgid].currentEmbedLink === url && !forceEmbed && message.reactions) {
     return;
   }
+  servers[mgid].currentEmbedLink = url;
   let embed;
   let timeMS = 0;
   let showButtons = true;
