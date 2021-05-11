@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '3.6.1';
-const buildNo = '03060102'; // major, minor, patch, build
+const version = '4.0.0';
+const buildNo = '04000002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -187,6 +187,7 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
     servers[message.guild.id].followUpMessage.delete();
     servers[message.guild.id].followUpMessage = undefined;
   }
+  servers[mgid].numSinceLastEmbed += 3;
   if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !args[1].includes('spotify.com/playlist')) {
     if (sheetName) {
       return runDatabasePlayCommand(args, message, sheetName, true, false);
@@ -375,8 +376,13 @@ async function runRestartCommand (message, mgid, keyword) {
 async function runCommandCases (message) {
   const mgid = message.guild.id;
   if (devMode) {
-    if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') return; // DEBUG MODE
+    if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
+      return; // DEBUG MODE
+    }
     prefixMap[mgid] = '=';
+  }
+  if (servers[mgid] && servers[mgid].currentEmbedChannelId === message.channel.id && servers[mgid].numSinceLastEmbed < 10) {
+    servers[mgid].numSinceLastEmbed++;
   }
   let prefixString = prefixMap[mgid];
   if (!prefixString) {
@@ -431,9 +437,14 @@ async function runCommandCases (message) {
       loop: false,
       collector: false,
       followUpMessage: undefined,
-      currentEmbedLink: undefined
+      currentEmbedLink: undefined,
+      currentEmbed: undefined,
+      numSinceLastEmbed: 10,
+      currentEmbedChannelId: undefined,
     };
   }
+  if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed++;
+  servers[mgid].numSinceLastEmbed += 3;
   switch (statement) {
     // !p is just the basic rhythm bot
     case 'p':
@@ -689,15 +700,19 @@ async function runCommandCases (message) {
       await runWhatsPCommand(args, message, mgid, 'p' + message.member.id);
       break;
     case 'queue':
+      servers[mgid].numSinceLastEmbed += 10;
       runQueueCommand(message, mgid);
       break;
     case 'q':
+      servers[mgid].numSinceLastEmbed += 10;
       runQueueCommand(message, mgid);
       break;
     case 'que':
+      servers[mgid].numSinceLastEmbed += 10;
       runQueueCommand(message, mgid);
       break;
     case 'list':
+      servers[mgid].numSinceLastEmbed += 10;
       runQueueCommand(message, mgid);
       break;
     case 'upnext':
@@ -776,9 +791,11 @@ async function runCommandCases (message) {
       break;
     // list commands for public commands
     case 'h':
+      servers[mgid].numSinceLastEmbed += 10;
       sendHelp(message, prefixString);
       break;
     case 'help':
+      servers[mgid].numSinceLastEmbed += 10;
       sendHelp(message, prefixString);
       break;
     // !skip
@@ -828,6 +845,7 @@ async function runCommandCases (message) {
       }
       break;
     case 'resume':
+      servers[mgid].numSinceLastEmbed += 3;
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
@@ -1010,7 +1028,6 @@ async function runCommandCases (message) {
         return message.channel.send('*song notifications already unsilenced*');
       }
       silenceMap[mgid] = false;
-      generatingEmbedMap[mgid] = false;
       message.channel.send('*song notifications enabled*');
       if (dispatcherMap[message.member.voice.channel.id]) {
         sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel).then();
@@ -1091,7 +1108,6 @@ async function runCommandCases (message) {
       if (args[1] === 'listu') {
         let gx = '';
         let tgx;
-        let ix = 1;
         let tempSet = new Set();
         bot.voice.connections.map(x => {
           tgx = '';
@@ -1099,8 +1115,7 @@ async function runCommandCases (message) {
           x.channel.guild.voice.channel.members.map(y => tempSet.add(y.user.username));
           tempSet.forEach(z => tgx += z + ', ');
           tgx = tgx.substring(0, tgx.length - 2);
-          gx += 'vc' + ix + ': ' + tgx + '\n';
-          ix++;
+          gx += x.channel.guild.name + ': ' + tgx + '\n';
         });
         if (gx) message.channel.send(gx);
         else message.channel.send('none found');
@@ -1156,6 +1171,7 @@ bot.once('ready', () => {
   // if (!devMode && !isInactive) bot.channels.cache.get("827195452507160627").send("=gzc");
   // bot starts up as inactive, if no response from the channel then activates itself
   if (!devMode) {
+    bot.channels.cache.get('827195452507160627').send('starting up: ' + process.pid);
     if (isInactive) {
       mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
       console.log('-starting up sidelined-');
@@ -1502,17 +1518,19 @@ function runQueueCommand (message, mgid) {
     return title;
   }
 
-  async function generateQueue (startingIndex) {
+  async function generateQueue (startingIndex, notFirstRun) {
     let queueSB = '';
     const queueMsgEmbed = new MessageEmbed();
     if (!authorName) {
       authorName = await getTitle(serverQueue[0], 50);
     }
-    message.channel.send('generating queue...').then(async msg => {
+    const n = serverQueue.length - startingIndex - 1;
+    let msgTxt = (notFirstRun ? 'generating ' + (n < 11 ? 'remaining ' + n : 'next 10') : 'generating queue') + '...';
+    message.channel.send(msgTxt).then(async msg => {
       queueMsgEmbed.setTitle('Up Next')
         .setAuthor('playing:  ' + authorName)
         .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
-      for (let qi = startingIndex + 1; (qi < qIterations && qi < servers[mgid].queue.length); qi++) {
+      for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length); qi++) {
         const title = (await getTitle(serverQueue[qi]));
         const url = serverQueue[qi];
         queueSB += qi + '. ' + `[${title}](${url})\n`;
@@ -1547,10 +1565,8 @@ function runQueueCommand (message, mgid) {
         collector.on('collect', (reaction, reactionCollector) => {
           clearInterval(arrowReactionInterval);
           sentMsg.reactions.removeAll();
-          let num = serverQueue.length - startingIndex - 11;
-          if (num > 10) num = 10;
           qIterations += 10;
-          message.channel.send('displaying next ' + num).then(generateQueue(startingIndex + 10));
+          generateQueue(startingIndex + 10, true);
         });
       });
     });
@@ -1590,6 +1606,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     message.channel.send('*max queue size has been reached*');
     return true;
   }
+  servers[mgid].numSinceLastEmbed += 5;
   gsrun('A', 'B', sheetName).then(async (xdb) => {
     let queueWasEmpty = false;
     // if the queue is empty then play
@@ -2209,6 +2226,8 @@ bot.on('voiceStateUpdate', update => {
   if (isInactive) return;
   // if the bot is the one leaving
   if (update.member.id === bot.user.id && !update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions) {
+    servers[update.guild.id].numSinceLastEmbed = 0;
+    servers[update.guild.id].currentEmbed = undefined;
     servers[update.guild.id].collector.stop();
     embedMessageMap[update.guild.id].reactions.removeAll().then();
     embedMessageMap[update.guild.id] = false;
@@ -2229,7 +2248,7 @@ bot.on('voiceStateUpdate', update => {
   }
 });
 
-bot.on('warning', console.warn);
+bot.on('error', console.warn);
 
 /**
  *  The play function. Plays a given link to the voice channel.
@@ -2291,9 +2310,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     if (!isSpotify) url2 = search.items[itemIndex].url;
   }
   // remove previous embed buttons
-  if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions && (!servers[mgid].loop || whatspMap[voiceChannel.id] !== url)) {
-    servers[mgid].collector.stop();
-    embedMessageMap[mgid].reactions.removeAll().then();
+  if (servers[mgid].currentEmbed && (!servers[mgid].loop || whatspMap[voiceChannel.id] !== url) && servers[mgid].numSinceLastEmbed > 4) {
+    servers[mgid].numSinceLastEmbed = 0;
+    await servers[mgid].currentEmbed.delete();
+    servers[mgid].currentEmbed = undefined;
     embedMessageMap[mgid] = '';
   }
   whatspMap[voiceChannel.id] = url;
@@ -2319,12 +2339,12 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       dispatcher.pause();
       dispatcherMap[voiceChannel.id] = dispatcher;
       // if the server is not silenced then send the embed when playing
-      if (!silenceMap[message.guild.id] && sendEmbed) {
+      if (!silenceMap[mgid] && sendEmbed) {
         await sendLinkAsEmbed(message, url, voiceChannel, infos).then(() => dispatcher.setVolume(0.5));
       }
       let playBufferTime = 300;
       if (isSpotify) playBufferTime = 2850;
-      skipTimesMap[message.guild.id] = 0;
+      skipTimesMap[mgid] = 0;
       const tempInterval = setInterval(() => {
         clearInterval(tempInterval);
         dispatcher.resume();
@@ -2339,12 +2359,12 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
             bot.channels.cache.get('730837254796214384').send('there was a mismatch with playback');
             return;
           }
-          if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions && !servers[mgid].loop) {
-            servers[message.guild.id].collector.stop();
-            embedMessageMap[message.guild.id].reactions.removeAll().then();
-            embedMessageMap[message.guild.id] = false;
+          const server = servers[mgid];
+          if (servers[mgid].currentEmbed && servers[mgid].currentEmbed.reactions && !server.loop && server.queue.length < 2) {
+            servers[mgid].currentEmbed.reactions.removeAll();
+            servers[mgid].currentEmbed = undefined;
+            embedMessageMap[mgid] = undefined;
           }
-          const server = servers[message.guild.id];
           if (voiceChannel.members.size < 2) {
             connection.disconnect();
           } else if (server.loop) {
@@ -2367,22 +2387,22 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     } catch (e) {
       // Error catching - fault with the link?
       message.channel.send('Could not play <' + url + '>');
-      if (servers[message.guild.id].queueHistory[0] && servers[message.guild.id].queue[0] === url) {
+      if (servers[mgid].queueHistory[0] && servers[mgid].queue[0] === url) {
         // remove the url from the queue and replace with first of queueHistory if there is one
-        servers[message.guild.id].queue[0] = servers[message.guild.id].queueHistory[0];
-        servers[message.guild.id].queueHistory.pop();
+        servers[mgid].queue[0] = servers[mgid].queueHistory[0];
+        servers[mgid].queueHistory.pop();
       }
       whatspMap[voiceChannel.id] = '';
       // search the db to find possible broken keys
       searchForBrokenLinkWithinDB(message, url);
-      const numberOfPrevSkips = skipTimesMap[message.guild.id];
+      const numberOfPrevSkips = skipTimesMap[mgid];
       if (!numberOfPrevSkips) {
-        skipTimesMap[message.guild.id] = 1;
+        skipTimesMap[mgid] = 1;
       } else if (numberOfPrevSkips > 3) {
         connection.disconnect();
         return;
       } else {
-        skipTimesMap[message.guild.id] += 1;
+        skipTimesMap[mgid] += 1;
       }
       runSkipCommand(message, 1);
     }
@@ -2420,9 +2440,10 @@ function searchForBrokenLinkWithinDB (message, whatToPlayS) {
  * @param mgid The message guild id
  * @param voiceChannel The active voice channel
  * @param numberOfTimes The number of times to rewind
+ * @param ignoreSingleRewind whether to print out the rewind text
  * @returns {*}
  */
-function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
+function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSingleRewind) {
   let song;
   let rewindTimes = 1;
   try {
@@ -2437,11 +2458,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
   let rwIncrementor = 0;
   while (servers[mgid].queueHistory.length > 0 && rwIncrementor < rewindTimes) {
     if (servers[mgid].queue.length > (maxQueueSize + 99)) {
-      if (generatingEmbedMap[mgid]) {
-        playSongToVC(message, servers[mgid].queue[0], voiceChannel, false);
-      } else {
-        playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
-      }
+      playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
     // remove undefined links from queueHistory
@@ -2452,18 +2469,14 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes) {
     rwIncrementor++;
   }
   if (song) {
-    if (rewindTimes === 1) {
+    if (ignoreSingleRewind) {} else if (rewindTimes === 1) {
       message.channel.send('*rewound*');
     } else {
       message.channel.send('*rewound ' + rwIncrementor + ' times*');
     }
     playSongToVC(message, song, voiceChannel, true);
   } else if (servers[mgid].queue[0]) {
-    if (generatingEmbedMap[mgid]) {
-      playSongToVC(message, servers[mgid].queue[0], voiceChannel, false);
-    } else {
-      playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
-    }
+    playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
     message.channel.send('*replaying first song*');
   } else {
     message.channel.send('cannot find previous song');
@@ -2489,11 +2502,11 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
   if (servers[mgid].loop && servers[mgid].currentEmbedLink === url && !forceEmbed && message.reactions) {
     return;
   }
+  servers[mgid].currentEmbedChannelId = message.channel.id;
   servers[mgid].currentEmbedLink = url;
   let embed;
   let timeMS = 0;
   let showButtons = true;
-  generatingEmbedMap[mgid] = true;
   let isSpotify = false;
   if (url.toString().includes('spotify.com')) {
     isSpotify = true;
@@ -2531,40 +2544,42 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
     embed.addField('-', 'Last played', true);
     showButtons = false;
   }
-  if (embedMessageMap[message.guild.id] && embedMessageMap[message.guild.id].reactions) {
-    servers[message.guild.id].collector.stop();
-    embedMessageMap[message.guild.id].reactions.removeAll().then();
-    embedMessageMap[message.guild.id] = '';
-  }
-
-  if (url === whatspMap[voiceChannel.id]) {
+  const generateNewEmbed = async () => {
+    if (servers[mgid].currentEmbed && !forceEmbed) {
+      servers[mgid].numSinceLastEmbed = 0;
+      await servers[mgid].currentEmbed.delete();
+      servers[mgid].currentEmbed = undefined;
+      embedMessageMap[message.guild.id] = '';
+    } else if (servers[mgid].currentEmbed && servers[mgid].currentEmbed.reactions) {
+      servers[mgid].numSinceLastEmbed = 0;
+      await servers[mgid].collector.stop();
+      await servers[mgid].currentEmbed.reactions.removeAll();
+      servers[mgid].currentEmbed = undefined;
+      embedMessageMap[message.guild.id] = '';
+    }
     message.channel.send(embed)
-      .then(await function (sentMsg) {
+      .then((sentMsg) => {
         if (!showButtons || !dispatcherMap[voiceChannel.id]) return;
+        servers[mgid].currentEmbed = sentMsg;
+        servers[mgid].numSinceLastEmbed = 0;
         embedMessageMap[mgid] = sentMsg;
+        if (!sentMsg) return;
         sentMsg.react('⏪').then(() => {
           if (collector.ended) return;
           sentMsg.react('⏯').then(() => {
             if (collector.ended) return;
-            else if (url !== whatspMap[voiceChannel.id]) return sentMsg.reactions.removeAll();
             sentMsg.react('⏩').then(() => {
               if (collector.ended) return;
               sentMsg.react('⏹').then(() => {
                 if (collector.ended) return;
                 sentMsg.react('🔑').then(() => {
                   if (collector.ended) return;
-                  sentMsg.react('🔐').then(() => {
-                    generatingEmbedMap[mgid] = false;
-                    if (url !== whatspMap[voiceChannel.id]) {
-                      sentMsg.reactions.removeAll();
-                    }
-                  });
+                  sentMsg.react('🔐').then();
                 });
               });
             });
           });
         });
-
         const filter = (reaction, user) => {
           if (voiceChannel) {
             for (const mem of voiceChannel.members) {
@@ -2588,12 +2603,13 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             return;
           }
           if (reaction.emoji.name === '⏩') {
-            collector.stop();
-            skipSong(message, voiceChannel, true);
+            // collector.stop();
+            skipSong(message, voiceChannel, false, true);
             if (servers[mgid].followUpMessage) {
-              servers[message.guild.id].followUpMessage.delete();
-              servers[message.guild.id].followUpMessage = undefined;
+              servers[mgid].followUpMessage.delete();
+              servers[mgid].followUpMessage = undefined;
             }
+            reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏯' &&
             (!dispatcherMapStatus[voiceChannel.id] ||
               dispatcherMapStatus[voiceChannel.id] === 'resume')) {
@@ -2621,11 +2637,12 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
                 '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
             }
           } else if (reaction.emoji.name === '⏪') {
-            runRewindCommand(message, mgid, voiceChannel);
+            runRewindCommand(message, mgid, voiceChannel, undefined, true);
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
             }
+            reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏹') {
             collector.stop();
             runStopPlayingCommand(mgid, voiceChannel);
@@ -2635,12 +2652,25 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             }
           } else if (reaction.emoji.name === '🔑') {
             runKeysCommand(message, prefixMap[mgid], mgid, '', voiceChannel, '');
+            servers[mgid].numSinceLastEmbed += 5;
           } else if (reaction.emoji.name === '🔐') {
+            servers[mgid].numSinceLastEmbed += 5;
             // console.log(reaction.users.valueOf().array().pop());
             runKeysCommand(message, prefixMap[mgid], 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector);
           }
         });
       });
+  };
+  if (url === whatspMap[voiceChannel.id]) {
+    if (servers[mgid].numSinceLastEmbed < 5 && !forceEmbed && servers[mgid].currentEmbed) {
+      try {
+        servers[mgid].currentEmbed.edit(embed);
+      } catch (e) {
+        await generateNewEmbed();
+      }
+    } else {
+      await generateNewEmbed();
+    }
   }
 }
 
@@ -2657,14 +2687,10 @@ function runStopPlayingCommand (mgid, voiceChannel) {
     embedMessageMap[mgid] = '';
   }
   if (voiceChannel) {
-    if (generatingEmbedMap[mgid]) {
-      const waitForInit = setInterval(() => {
-        voiceChannel.leave();
-        clearInterval(waitForInit);
-      }, 1000);
-    } else {
+    const waitForInit = setInterval(() => {
+      clearInterval(waitForInit);
       voiceChannel.leave();
-    }
+    }, 600);
   }
 }
 
@@ -2712,19 +2738,7 @@ async function runWhatsPCommand (args, message, mgid, sheetname) {
       return message.channel.send('must be in a voice channel');
     }
     if (whatspMap[message.member.voice.channel.id] && whatspMap[message.member.voice.channel.id] !== '') {
-      const msg = embedMessageMap[mgid];
-      if (msg) {
-        if (!generatingEmbedMap[mgid]) {
-          embedMessageMap[mgid] = '';
-          return await msg.reactions.removeAll().then(() =>
-            sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true)
-          );
-        } else {
-          return message.channel.send('*previous embed is generating...*');
-        }
-      } else {
-        return await sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true);
-      }
+      return await sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true);
     } else {
       return message.channel.send('Nothing is playing right now');
     }
@@ -2743,8 +2757,6 @@ const dispatcherMap = new Map();
 const embedMessageMap = new Map();
 // The status of a dispatcher, either "pause" or "resume"
 const dispatcherMapStatus = new Map();
-// boolean status of generating embed for a guild
-const generatingEmbedMap = new Map();
 // the timers for the bot to leave a VC, uses channel
 const leaveVCTimeout = new Map();
 // login to discord
