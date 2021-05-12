@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.0.0';
-const buildNo = '04000002'; // major, minor, patch, build
+const version = '4.1.0';
+const buildNo = '04010002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -441,10 +441,10 @@ async function runCommandCases (message) {
       currentEmbed: undefined,
       numSinceLastEmbed: 10,
       currentEmbedChannelId: undefined,
+      verbose: false
     };
   }
-  if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed++;
-  servers[mgid].numSinceLastEmbed += 3;
+  if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed += 2;
   switch (statement) {
     // !p is just the basic rhythm bot
     case 'p':
@@ -570,7 +570,8 @@ async function runCommandCases (message) {
       runKeysCommand(message, prefixString, mgid, '', '', '');
       break;
     case 'k':
-      runKeysCommand(message, prefixString, mgid, '', '', '');
+      if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false);
+      else runKeysCommand(message, prefixString, mgid, '', '', '');
       break;
     // !mkeys is personal keys
     case 'mkeys':
@@ -581,10 +582,12 @@ async function runCommandCases (message) {
       runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
     case 'mk':
-      runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
+      if (args[1]) runDatabasePlayCommand(args, message, 'p' + message.member.id, false, false);
+      else runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
     case 'gk':
-      runKeysCommand(message, prefixString, 'entries', 'g', '', '');
+      if (args[1]) runDatabasePlayCommand(args, message, entries, false, false);
+      else runKeysCommand(message, prefixString, 'entries', 'g', '', '');
       break;
     // !gkeys is global keys
     case 'gkeys':
@@ -870,6 +873,15 @@ async function runCommandCases (message) {
         message.channel.send('timestamp: ' + formatDuration(dispatcherMap[message.member.voice.channel.id].streamTime));
       }
       break;
+    case 'verbose':
+      if (!servers[mgid].verbose) {
+        servers[mgid].verbose = true;
+        message.channel.send('***verbose mode enabled***, *embeds will be kept during this listening session*');
+      } else {
+        servers[mgid].verbose = false;
+        message.channel.send('***verbose mode disabled***');
+      }
+      break;
     // !v prints out the version number
     case 'v':
       message.channel.send('version: ' + version + '\n' + 'build: ' + buildNo);
@@ -1015,10 +1027,10 @@ async function runCommandCases (message) {
         return message.channel.send('You must be in a voice channel to silence');
       }
       if (silenceMap[mgid]) {
-        return message.channel.send('*song notifications already silenced*');
+        return message.channel.send('*song notifications already silenced, use \'unsilence\' to unsilence.*');
       }
       silenceMap[mgid] = true;
-      message.channel.send('*song notifications temporarily silenced*');
+      message.channel.send('*song notifications silenced for this session*');
       break;
     case 'unsilence':
       if (!message.member.voice.channel) {
@@ -1881,7 +1893,7 @@ function sendHelp (message, prefixString) {
     prefixString +
     "keys \` See all of the server's keys *[k]*\n\`" +
     prefixString +
-    'd [key] \` Play a song from the server keys \n\`' +
+    'd [key] \` Play a song from the server keys [k] \n\`' +
     prefixString +
     'dn [key] \` Play immediately, overrides queue \n\`' +
     prefixString +
@@ -1896,9 +1908,11 @@ function sendHelp (message, prefixString) {
     "*Prepend 'm' to the above commands to access your personal music database*\nex: \`" + prefixString + "mkeys \`\n" +
     '\n--------------  **Other Commands**  -----------------\n\`' +
     prefixString +
-    'silence \` Temporarily silences the now playing notifications \n\`' +
+    'silence \` Silence now playing embeds \n\`' +
     prefixString +
-    'unsilence \` Re-enables now playing notifications \n\`' +
+    'unsilence \` Re-enables now playing embeds \n\`' +
+    prefixString +
+    'verbose \` Keep song embeds during a session\n\`' +
     prefixString +
     'guess \` Random roll for the number of people in the voice channel \n\`' +
     prefixString +
@@ -2225,12 +2239,17 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
 bot.on('voiceStateUpdate', update => {
   if (isInactive) return;
   // if the bot is the one leaving
-  if (update.member.id === bot.user.id && !update.connection && embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions) {
-    servers[update.guild.id].numSinceLastEmbed = 0;
-    servers[update.guild.id].currentEmbed = undefined;
-    servers[update.guild.id].collector.stop();
-    embedMessageMap[update.guild.id].reactions.removeAll().then();
-    embedMessageMap[update.guild.id] = false;
+  const mgid = update.guild.id;
+  if (update.member.id === bot.user.id && !update.connection && servers[mgid]) {
+    servers[mgid].numSinceLastEmbed = 0;
+    servers[mgid].currentEmbed = undefined;
+    servers[mgid].silence = false;
+    servers[mgid].verbose = false;
+    if (embedMessageMap[update.guild.id] && embedMessageMap[mgid].reactions) {
+      servers[mgid].collector.stop();
+      embedMessageMap[mgid].reactions.removeAll().then();
+      embedMessageMap[mgid] = false;
+    }
   } else {
     let leaveVCInt = 1100;
     if (!update.channel) return;
@@ -2348,6 +2367,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       const tempInterval = setInterval(() => {
         clearInterval(tempInterval);
         dispatcher.resume();
+        dispatcherMapStatus[voiceChannel.id] = 'resume';
       }, playBufferTime);
       dispatcher.once('finish', () => {
         const songFinish = setInterval(() => {
@@ -2385,6 +2405,15 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       });
       dispatcher.once('error', console.error);
     } catch (e) {
+      const numberOfPrevSkips = skipTimesMap[mgid];
+      if (!numberOfPrevSkips) {
+        skipTimesMap[mgid] = 1;
+      } else if (numberOfPrevSkips > 3 || !message.guild.voice || message.guild.voice.connection) {
+        connection.disconnect();
+        return;
+      } else {
+        skipTimesMap[mgid] += 1;
+      }
       // Error catching - fault with the link?
       message.channel.send('Could not play <' + url + '>');
       if (servers[mgid].queueHistory[0] && servers[mgid].queue[0] === url) {
@@ -2395,15 +2424,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       whatspMap[voiceChannel.id] = '';
       // search the db to find possible broken keys
       searchForBrokenLinkWithinDB(message, url);
-      const numberOfPrevSkips = skipTimesMap[mgid];
-      if (!numberOfPrevSkips) {
-        skipTimesMap[mgid] = 1;
-      } else if (numberOfPrevSkips > 3) {
-        connection.disconnect();
-        return;
-      } else {
-        skipTimesMap[mgid] += 1;
-      }
       runSkipCommand(message, 1);
     }
   });
@@ -2499,6 +2519,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  */
 async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
   const mgid = message.member.guild.id;
+  if (servers[mgid].verbose) forceEmbed = true;
   if (servers[mgid].loop && servers[mgid].currentEmbedLink === url && !forceEmbed && message.reactions) {
     return;
   }
