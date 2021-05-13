@@ -21,7 +21,7 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.1.0';
+const version = '4.1.1';
 const buildNo = '04010002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -523,13 +523,21 @@ async function runCommandCases (message) {
     case 'gd':
       runDatabasePlayCommand(args, message, 'entries', false, true);
       break;
+    case 'gdn':
+      runDatabasePlayCommand(args, message, 'entries', true, true);
+      break;
+    case 'gdnow':
+      runDatabasePlayCommand(args, message, 'entries', true, true);
+      break;
+    case 'gkn':
+      runDatabasePlayCommand(args, message, 'entries', true, true);
+      break;
+    case 'gknow':
+      runDatabasePlayCommand(args, message, 'entries', true, true);
+      break;
     // !d
     case 'd':
       runDatabasePlayCommand(args, message, mgid, false, false);
-      break;
-    // !md is the personal database
-    case 'md':
-      runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true);
       break;
     case 'dn':
       runPlayNowCommand(message, args, mgid, mgid);
@@ -537,10 +545,26 @@ async function runCommandCases (message) {
     case 'dnow':
       runPlayNowCommand(message, args, mgid, mgid);
       break;
+    case 'kn':
+      runPlayNowCommand(message, args, mgid, mgid);
+      break;
+    case 'know':
+      runPlayNowCommand(message, args, mgid, mgid);
+      break;
+    // !md is the personal database
+    case 'md':
+      runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true);
+      break;
     case 'mdn':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
       break;
     case 'mdnow':
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      break;
+    case 'mkn':
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      break;
+    case 'mknow':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
       break;
     // !r is a random that works with the normal queue
@@ -586,7 +610,7 @@ async function runCommandCases (message) {
       else runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
     case 'gk':
-      if (args[1]) runDatabasePlayCommand(args, message, entries, false, false);
+      if (args[1]) runDatabasePlayCommand(args, message, 'entries', false, false);
       else runKeysCommand(message, prefixString, 'entries', 'g', '', '');
       break;
     // !gkeys is global keys
@@ -729,16 +753,13 @@ async function runCommandCases (message) {
         return message.channel.send('No argument was given. Enter the new prefix after the command.');
       }
       if (args[1].length > 1) {
-        return message.channel.send(
-          'Prefix length cannot be greater than 1.'
-        );
+        return message.channel.send('Prefix length cannot be greater than 1.');
       }
       if (args[1] === '+' || args[1] === '=' || args[1] === '\'') {
         return message.channel.send('Cannot have ' + args[1] + ' as a prefix.');
       }
       if (args[1].toUpperCase() !== args[1].toLowerCase() || args[1].charCodeAt(0) > 120) {
-        message.channel.send("cannot have a letter as a prefix.");
-        return;
+        return message.channel.send("cannot have a letter as a prefix.");
       }
       args[2] = args[1];
       args[1] = mgid;
