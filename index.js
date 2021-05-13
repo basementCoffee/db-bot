@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.1.3';
-const buildNo = '04010302'; // major, minor, patch, build
+const version = '4.1.4';
+const buildNo = '04010402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -262,7 +262,7 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
   }
   if (!args[1]) {
     if (servers[mgid].queue[0] && dispatcherMap[message.member.voice.channel.id] &&
-      dispatcherMapStatus[message.member.voice.channel.id] === 'pause') {
+      dispatcherMapStatus[message.member.voice.channel.id]) {
       dispatcherMap[message.member.voice.channel.id].resume();
       return message.channel.send('*playing*');
     }
@@ -512,7 +512,7 @@ async function runCommandCases (message) {
     case 'stop':
       if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMapStatus[message.member.voice.channel.id] = 'pause';
+        dispatcherMapStatus[message.member.voice.channel.id] = true;
         message.channel.send('*stopped*');
       }
       break;
@@ -832,7 +832,7 @@ async function runCommandCases (message) {
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMapStatus[message.member.voice.channel.id] = 'pause';
+        dispatcherMapStatus[message.member.voice.channel.id] = true;
         message.channel.send('*paused*');
       }
       break;
@@ -840,7 +840,7 @@ async function runCommandCases (message) {
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMapStatus[message.member.voice.channel.id] = 'pause';
+        dispatcherMapStatus[message.member.voice.channel.id] = true;
         message.channel.send('*paused*');
       } else {
         message.channel.send('nothing is playing right now');
@@ -851,7 +851,7 @@ async function runCommandCases (message) {
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMapStatus[message.member.voice.channel.id] = 'resume';
+        dispatcherMapStatus[message.member.voice.channel.id] = false;
         message.channel.send('*playing*');
       } else {
         message.channel.send('nothing is playing right now');
@@ -861,7 +861,7 @@ async function runCommandCases (message) {
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMapStatus[message.member.voice.channel.id] = 'resume';
+        dispatcherMapStatus[message.member.voice.channel.id] = false;
         message.channel.send('*playing*');
       }
       break;
@@ -870,7 +870,7 @@ async function runCommandCases (message) {
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMapStatus[message.member.voice.channel.id] = 'resume';
+        dispatcherMapStatus[message.member.voice.channel.id] = false;
         message.channel.send('*playing*');
       } else {
         message.channel.send('nothing is playing right now');
@@ -1599,6 +1599,7 @@ function runQueueCommand (message, mgid) {
           clearInterval(arrowReactionInterval);
           sentMsg.reactions.removeAll();
           qIterations += 10;
+          servers[mgid].numSinceLastEmbed += 3;
           generateQueue(startingIndex + 10, true);
         });
       });
@@ -2294,7 +2295,7 @@ bot.on('voiceStateUpdate', update => {
   }
 });
 
-bot.on('error', console.warn);
+bot.on('error', console.error);
 
 /**
  *  The play function. Plays a given link to the voice channel.
@@ -2355,6 +2356,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     isSpotify = !search.items[itemIndex];
     if (!isSpotify) url2 = search.items[itemIndex].url;
   }
+  if (!url2) url2 = url;
   // remove previous embed buttons
   if (servers[mgid].currentEmbed && (!servers[mgid].loop || whatspMap[voiceChannel.id] !== url) && servers[mgid].numSinceLastEmbed > 4) {
     servers[mgid].numSinceLastEmbed = 0;
@@ -2368,7 +2370,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       let dispatcher;
       await connection.voice.setSelfDeaf(true);
       if (!isSpotify) {
-        dispatcher = connection.play(await ytdl(url2 ? url2 : url, {}), {
+        dispatcher = connection.play(await ytdl(url2, {}), {
           type: 'opus',
           filter: 'audioonly',
           quality: '140',
@@ -2388,13 +2390,13 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       if (!silenceMap[mgid] && sendEmbed) {
         await sendLinkAsEmbed(message, url, voiceChannel, infos).then(() => dispatcher.setVolume(0.5));
       }
-      let playBufferTime = 300;
+      let playBufferTime = 310;
       if (isSpotify) playBufferTime = 2850;
       skipTimesMap[mgid] = 0;
       const tempInterval = setInterval(() => {
         clearInterval(tempInterval);
+        dispatcherMapStatus[voiceChannel.id] = false;
         dispatcher.resume();
-        dispatcherMapStatus[voiceChannel.id] = 'resume';
       }, playBufferTime);
       dispatcher.once('finish', () => {
         const songFinish = setInterval(() => {
@@ -2648,6 +2650,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
         servers[mgid].collector = collector;
         collector.on('collect', (reaction, reactionCollector) => {
           if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
+            console.log('b1: did not find vc');
             return;
           }
           if (reaction.emoji.name === '⏩') {
@@ -2657,12 +2660,10 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
             }
-          } else if (reaction.emoji.name === '⏯' &&
-            (!dispatcherMapStatus[voiceChannel.id] ||
-              dispatcherMapStatus[voiceChannel.id] === 'resume')) {
+          } else if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
             reaction.users.remove(reactionCollector.id);
             dispatcherMap[voiceChannel.id].pause();
-            dispatcherMapStatus[voiceChannel.id] = 'pause';
+            dispatcherMapStatus[voiceChannel.id] = true;
             const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.edit('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
@@ -2671,10 +2672,10 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
               message.channel.send('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
                 '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
             }
-          } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id] === 'pause') {
+          } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
             reaction.users.remove(reactionCollector.id);
             dispatcherMap[voiceChannel.id].resume();
-            dispatcherMapStatus[voiceChannel.id] = 'resume';
+            dispatcherMapStatus[voiceChannel.id] = false;
             const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.edit('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
@@ -2803,7 +2804,7 @@ const silenceMap = new Map();
 const dispatcherMap = new Map();
 // The messages containing embeds, uses guild id
 const embedMessageMap = new Map();
-// The status of a dispatcher, either "pause" or "resume"
+// The status of a dispatcher, either true for paused or false for playing
 const dispatcherMapStatus = new Map();
 // the timers for the bot to leave a VC, uses channel
 const leaveVCTimeout = new Map();
