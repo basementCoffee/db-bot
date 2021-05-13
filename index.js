@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.1.4';
-const buildNo = '04010402'; // major, minor, patch, build
+const version = '4.1.5';
+const buildNo = '04010502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -2650,7 +2650,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
         servers[mgid].collector = collector;
         collector.on('collect', (reaction, reactionCollector) => {
           if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
-            console.log('b1: did not find vc');
             return;
           }
           if (reaction.emoji.name === '⏩') {
@@ -2684,6 +2683,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
               message.channel.send('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
                 '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
             }
+            console.log(dispatcherMap[voiceChannel.id]);
+            dispatcherMap[voiceChannel.id].resume();
           } else if (reaction.emoji.name === '⏪') {
             reaction.users.remove(reactionCollector.id);
             runRewindCommand(message, mgid, voiceChannel, undefined, true);
