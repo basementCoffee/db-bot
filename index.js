@@ -21,7 +21,7 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.1.1';
+const version = '4.1.2';
 const buildNo = '04010002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
@@ -74,11 +74,7 @@ process.setMaxListeners(0);
  */
 function skipSong (message, voiceChannel, playMessageToChannel) {
   // in case of force disconnect
-  if (
-    !message.guild.client.voice ||
-    !message.guild.voice ||
-    !message.guild.voice.channel
-  ) {
+  if (!message.guild.voice || !message.guild.voice.channel) {
     servers[message.guild.id].queue = [];
     servers[message.guild.id].queueHistory = [];
     servers[message.guild.id].loop = false;
@@ -90,6 +86,7 @@ function skipSong (message, voiceChannel, playMessageToChannel) {
       return;
     }
   }
+  if (dispatcherMap[voiceChannel.id]) dispatcherMap[voiceChannel.id].pause();
   // if server queue is not empty
   if (servers[message.guild.id].queue.length > 0) {
     servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
@@ -99,10 +96,10 @@ function skipSong (message, voiceChannel, playMessageToChannel) {
       // get rid of previous dispatch
       playSongToVC(message, servers[message.guild.id].queue[0], voiceChannel, true);
     } else {
-      runStopPlayingCommand(message.guild.id, voiceChannel);
+      runStopPlayingCommand(message.guild.id, voiceChannel, true);
     }
   } else {
-    runStopPlayingCommand(message.guild.id, voiceChannel);
+    runStopPlayingCommand(message.guild.id, voiceChannel, true);
   }
   if (servers[message.guild.id].followUpMessage) {
     servers[message.guild.id].followUpMessage.delete();
@@ -411,9 +408,9 @@ async function runCommandCases (message) {
       if (fwPrefix === '.' && (fwCommand === 'changeprefix ' || fwCommand === 'h ' || fwCommand === 'help ')) {
         return message.channel.send('Current prefix is: ' + prefixString);
       }
-      if (message.member.guild.me.nickname && message.member.guild.me.nickname.substr(0, 1) === '['
-        && message.member.guild.me.nickname.substr(2, 1) === ']') {
-        const falsePrefix = message.member.guild.me.nickname.substr(1, 1);
+      if (message.guild.me.nickname && message.guild.me.nickname.substr(0, 1) === '['
+        && message.guild.me.nickname.substr(2, 1) === ']') {
+        const falsePrefix = message.guild.me.nickname.substr(1, 1);
         if (fwPrefix === falsePrefix && (fwCommand === 'changeprefix ' || fwCommand === 'h ' || fwCommand === 'help ')) {
           return message.channel.send('Current prefix is: ' + prefixString);
         }
@@ -439,7 +436,7 @@ async function runCommandCases (message) {
       followUpMessage: undefined,
       currentEmbedLink: undefined,
       currentEmbed: undefined,
-      numSinceLastEmbed: 10,
+      numSinceLastEmbed: 0,
       currentEmbedChannelId: undefined,
       verbose: false
     };
@@ -501,7 +498,7 @@ async function runCommandCases (message) {
       runStopPlayingCommand(mgid, message.member.voice.channel);
       break;
     case 'loop':
-      if (!message.member.guild.voice || !message.member.guild.voice.channel) {
+      if (!message.guild.voice || !message.guild.voice.channel) {
         return message.channel.send('must be playing a song to loop');
       }
       if (servers[mgid].loop) {
@@ -774,23 +771,23 @@ async function runCommandCases (message) {
           prefixString = args[2];
           let name = 'db bot';
           let prefixName = '[' + prefixString + ']';
-          if (message.member.guild.me.nickname) {
-            name = message.member.guild.me.nickname.substring(message.member.guild.me.nickname.indexOf(']') + 1);
+          if (message.guild.me.nickname) {
+            name = message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 1);
           }
 
           async function changeNamePrefix () {
-            if (!message.member.guild.me.nickname) {
-              await message.member.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
-            } else if (message.member.guild.me.nickname.indexOf('[') > -1 && message.member.guild.me.nickname.indexOf(']') > -1) {
-              await message.member.guild.me.setNickname('[' + prefixString + '] ' + message.member.guild.me.nickname.substring(message.member.guild.me.nickname.indexOf(']') + 2));
+            if (!message.guild.me.nickname) {
+              await message.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
+            } else if (message.guild.me.nickname.indexOf('[') > -1 && message.guild.me.nickname.indexOf(']') > -1) {
+              await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 2));
             } else {
-              await message.member.guild.me.setNickname('[' + prefixString + '] ' + message.member.guild.me.nickname);
+              await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname);
             }
           }
 
-          if (!message.member.guild.me.nickname || (message.member.guild.me.nickname.substr(0, 1) !== '[' && message.member.guild.me.nickname.substr(2, 1) !== ']')) {
+          if (!message.guild.me.nickname || (message.guild.me.nickname.substr(0, 1) !== '[' && message.guild.me.nickname.substr(2, 1) !== ']')) {
             message.channel.send('---------------------');
-            message.channel.send('Would you like me to update my name to reflect this? (yes or no)\nFrom **' + (message.member.guild.me.nickname || 'db bot') + '**  -->  **' + prefixName + " " + name + '**').then(() => {
+            message.channel.send('Would you like me to update my name to reflect this? (yes or no)\nFrom **' + (message.guild.me.nickname || 'db bot') + '**  -->  **' + prefixName + " " + name + '**').then(() => {
               const filter = m => message.author.id === m.author.id;
 
               message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
@@ -807,7 +804,7 @@ async function runCommandCases (message) {
                   message.channel.send('name remains the same, prefix is: ' + prefixString);
                 });
             });
-          } else if (message.member.guild.me.nickname.substr(0, 1) === '[' && message.member.guild.me.nickname.substr(2, 1) === ']') {
+          } else if (message.guild.me.nickname.substr(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
             await changeNamePrefix();
           }
         });
@@ -1067,7 +1064,7 @@ async function runCommandCases (message) {
       }
       break;
     case 'l':
-      if (!message.member.guild.voice || !message.member.guild.voice.channel) {
+      if (!message.guild.voice || !message.guild.voice.channel) {
         return;
       }
       if (servers[mgid].loop) {
@@ -1102,7 +1099,7 @@ async function runCommandCases (message) {
       process.exit();
       break;
     case 'gzid':
-      message.channel.send('g: ' + message.member.guild.id);
+      message.channel.send('g: ' + message.guild.id);
       message.channel.send('c: ' + message.channel.id);
       break;
     case 'version':
@@ -1321,11 +1318,11 @@ bot.on('message', async (message) => {
         dm = '(dev mode)';
       }
       if (!zargs[1]) {
-        message.channel.send('sidelined: ' + process.pid + ' (' + version + ') ' + dm);
+        await message.channel.send('sidelined: ' + process.pid + ' (' + version + ') ' + dm);
       } else if (zargs[1] === process.pid.toString() || zargs[1] === 'all') {
         clearInterval(mainActiveTimer);
         isInactive = false;
-        message.channel.send('db bot ' + process.pid + ' is now active');
+        await message.channel.send('db bot ' + process.pid + ' is now active');
         console.log('-active-');
       }
       return;
@@ -1339,10 +1336,10 @@ bot.on('message', async (message) => {
         if (devMode) {
           dm = '(dev mode)';
         }
-        message.channel.send('active: ' + process.pid + ' (' + version + ') ' + dm);
+        await message.channel.send('active: ' + process.pid + ' (' + version + ') ' + dm);
         return;
       } else if (zargs[1] === process.pid.toString() || zargs[1] === 'all') {
-        message.channel.send('db bot ' + process.pid + ' has been sidelined');
+        await message.channel.send('db bot ' + process.pid + ' has been sidelined');
         isInactive = true;
         clearInterval(mainActiveTimer);
         mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
@@ -1353,13 +1350,15 @@ bot.on('message', async (message) => {
       if (!devMode) {
         if (isInactive) {
           if (message.member.id !== '730350452268597300') {
-            message.channel.send('inactive bot #' + process.pid + ' (' + version + ') ' + ' **is calibrating...** (may take up to 30 seconds)');
+            await message.channel.send('inactive bot #' + process.pid + ' (' + version + ') ' +
+              ' **is calibrating...** (may take up to 30 seconds)');
           }
           clearInterval(mainActiveTimer);
           const variation = Math.floor(Math.random() * 20000);
           mainActiveTimer = setInterval(checkToSeeActive, 20000 + variation);
         } else if (message.member.id !== '730350452268597300') {
-          message.channel.send('active bot #' + process.pid + ' (' + version + ') ' + ' **is calibrating...** (may take up to 30 seconds)');
+          await message.channel.send('active bot #' + process.pid + ' (' + version + ') ' +
+            ' **is calibrating...** (may take up to 30 seconds)');
         }
         bot.channels.cache.get('827195452507160627').send('~db-bot-process' + buildNo + 'ver' + process.pid);
       }
@@ -1370,11 +1369,12 @@ bot.on('message', async (message) => {
         activeStatus = 'inactive';
       }
       if (!zargs[1]) {
-        return message.channel.send(activeStatus + ' bot id: ' + process.pid.toString() + ' (' + 'dev mode: ' + devMode + ')');
+        return message.channel.send(activeStatus + ' bot id: ' + process.pid.toString() +
+          ' (' + 'dev mode: ' + devMode + ')');
       }
       if (devMode && zargs[1] === process.pid.toString()) {
         devMode = false;
-        prefixMap[message.member.guild.id] = undefined;
+        prefixMap[message.guild.id] = undefined;
         return message.channel.send('*devmode is off* ' + process.pid.toString());
       } else if (zargs[1] === process.pid.toString()) {
         devMode = true;
@@ -1528,7 +1528,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
  * @returns {Promise<void>|*}
  */
 function runQueueCommand (message, mgid) {
-  if (servers[mgid].queue < 1 || !message.member.guild.voice.channel) {
+  if (servers[mgid].queue < 1 || !message.guild.voice.channel) {
     return message.channel.send('There is no active queue right now');
   }
   const serverQueue = servers[mgid].queue.map((x) => x);
@@ -1849,6 +1849,12 @@ function runSearchCommand (keyName, xdb) {
  * @param skipTimes the number of times to skip
  */
 function runSkipCommand (message, skipTimes) {
+  if (!message.guild.voice || !message.guild.voice.channel) {
+    return;
+  }
+  if (!message.member.voice.channel) {
+    return message.channel.send('*must be in a voice channel to use this command*');
+  }
   if (skipTimes) {
     try {
       skipTimes = parseInt(skipTimes);
@@ -2197,10 +2203,10 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
           keysMessage += '** Personal keys ** ';
           dbName = 'personal keys';
         }
-      } else if (cmdType === '') {
+      } else if (!cmdType) {
         keysMessage += '**Server keys ** ';
         dbName = "server's keys";
-        keyEmbedColor = '#ad5537';
+        keyEmbedColor = '#b35536';
       }
       const embedKeysMessage = new MessageEmbed();
       embedKeysMessage.setTitle(keysMessage).setDescription(s).setColor(keyEmbedColor)
@@ -2305,7 +2311,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     message.channel.send('*db bot has been updated*');
     return runStopPlayingCommand(message.guild.id, voiceChannel);
   }
-  const mgid = message.member.guild.id;
+  const mgid = message.guild.id;
   // the url to play
   let url = whatToPlay;
   // the alternative spotify url
@@ -2539,7 +2545,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  * @returns {Promise<void>}
  */
 async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
-  const mgid = message.member.guild.id;
+  const mgid = message.guild.id;
   if (servers[mgid].verbose) forceEmbed = true;
   if (servers[mgid].loop && servers[mgid].currentEmbedLink === url && !forceEmbed && message.reactions) {
     return;
@@ -2658,7 +2664,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             dispatcherMap[voiceChannel.id].pause();
             dispatcherMapStatus[voiceChannel.id] = 'pause';
             reaction.users.remove(reactionCollector.id);
-            const userNickname = sentMsg.member.guild.members.cache.get(reactionCollector.id).nickname;
+            const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.edit('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
                 '\`*');
@@ -2670,7 +2676,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             dispatcherMap[voiceChannel.id].resume();
             dispatcherMapStatus[voiceChannel.id] = 'resume';
             reaction.users.remove(reactionCollector.id);
-            const userNickname = sentMsg.member.guild.members.cache.get(reactionCollector.id).nickname;
+            const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.edit('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
                 '\`*');
@@ -2720,15 +2726,20 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
  * Stops playing in the given voice channel and leaves.
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
+ * @param stayInVC Whether to stay in the voice channel
  */
-function runStopPlayingCommand (mgid, voiceChannel) {
+function runStopPlayingCommand (mgid, voiceChannel, stayInVC) {
   if (!voiceChannel) return;
   if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
     servers[mgid].collector.stop();
     embedMessageMap[mgid].reactions.removeAll().then();
     embedMessageMap[mgid] = '';
   }
-  if (voiceChannel) {
+  try {
+    dispatcherMap[voiceChannel.id].pause();
+  } catch (e) {}
+  servers[mgid].numSinceLastEmbed = 10;
+  if (voiceChannel && !stayInVC) {
     const waitForInit = setInterval(() => {
       clearInterval(waitForInit);
       voiceChannel.leave();
@@ -2758,28 +2769,20 @@ async function runWhatsPCommand (args, message, mgid, sheetname) {
       }
       if (xdb.referenceDatabase.get(args[1].toUpperCase())) {
         message.channel.send(xdb.referenceDatabase.get(args[1].toUpperCase()));
-      } else if (
-        whatspMap[message.member.voice.channel.id] &&
-        !whatspMap[message.member.voice.channel.id].includes('Last Played:')
-      ) {
-        message.channel.send(
-          "Could not find '" +
-          args[1] +
-          "' in " + dbType + ' database.\nCurrently playing: ' +
+      } else if (whatspMap[message.member.voice.channel.id]) {
+        message.channel.send("Could not find '" + args[1] + "' in " + dbType + ' database.\nCurrently playing: ' +
           whatspMap[message.member.voice.channel.id]
         );
-      } else if (whatspMap[message.member.voice.channel.id]) {
-        message.channel.send("Could not find '" + args[1] + "' in " + dbType + ' database.\n' +
-          whatspMap[message.member.voice.channel.id]);
       } else {
-        message.channel.send("Could not find '" + args[1] + "' in " + dbType + ' database.');
+        message.channel.send("Could not find '" + args[1] + "' in " + dbType + ' database.' +
+          (whatspMap[message.member.voice.channel.id] ? ('\n' + whatspMap[message.member.voice.channel.id]) : ''));
       }
     });
   } else {
     if (!message.member.voice.channel) {
       return message.channel.send('must be in a voice channel');
     }
-    if (whatspMap[message.member.voice.channel.id] && whatspMap[message.member.voice.channel.id] !== '') {
+    if (whatspMap[message.member.voice.channel.id]) {
       return await sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true);
     } else {
       return message.channel.send('Nothing is playing right now');
