@@ -21,8 +21,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.1.2';
-const buildNo = '04010202'; // major, minor, patch, build
+const version = '4.1.3';
+const buildNo = '04010302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -2358,7 +2358,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   // remove previous embed buttons
   if (servers[mgid].currentEmbed && (!servers[mgid].loop || whatspMap[voiceChannel.id] !== url) && servers[mgid].numSinceLastEmbed > 4) {
     servers[mgid].numSinceLastEmbed = 0;
-    await servers[mgid].currentEmbed.delete();
+    servers[mgid].currentEmbed.delete();
     servers[mgid].currentEmbed = undefined;
     embedMessageMap[mgid] = '';
   }
@@ -2595,7 +2595,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
   const generateNewEmbed = async () => {
     if (servers[mgid].currentEmbed && !forceEmbed) {
       servers[mgid].numSinceLastEmbed = 0;
-      await servers[mgid].currentEmbed.delete();
+      servers[mgid].currentEmbed.delete();
       servers[mgid].currentEmbed = undefined;
       embedMessageMap[message.guild.id] = '';
     } else if (servers[mgid].currentEmbed && servers[mgid].currentEmbed.reactions) {
@@ -2651,19 +2651,18 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             return;
           }
           if (reaction.emoji.name === '⏩') {
-            // collector.stop();
+            reaction.users.remove(reactionCollector.id);
             skipSong(message, voiceChannel, false, true);
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
             }
-            reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏯' &&
             (!dispatcherMapStatus[voiceChannel.id] ||
               dispatcherMapStatus[voiceChannel.id] === 'resume')) {
+            reaction.users.remove(reactionCollector.id);
             dispatcherMap[voiceChannel.id].pause();
             dispatcherMapStatus[voiceChannel.id] = 'pause';
-            reaction.users.remove(reactionCollector.id);
             const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.edit('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
@@ -2673,9 +2672,9 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
                 '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
             }
           } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id] === 'pause') {
+            reaction.users.remove(reactionCollector.id);
             dispatcherMap[voiceChannel.id].resume();
             dispatcherMapStatus[voiceChannel.id] = 'resume';
-            reaction.users.remove(reactionCollector.id);
             const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.edit('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
@@ -2685,12 +2684,12 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
                 '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
             }
           } else if (reaction.emoji.name === '⏪') {
+            reaction.users.remove(reactionCollector.id);
             runRewindCommand(message, mgid, voiceChannel, undefined, true);
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
             }
-            reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏹') {
             collector.stop();
             runStopPlayingCommand(mgid, voiceChannel);
@@ -2739,6 +2738,10 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC) {
     dispatcherMap[voiceChannel.id].pause();
   } catch (e) {}
   servers[mgid].numSinceLastEmbed = 10;
+  if (servers[mgid].followUpMessage) {
+    servers[mgid].followUpMessage.delete();
+    servers[mgid].followUpMessage = undefined;
+  }
   if (voiceChannel && !stayInVC) {
     const waitForInit = setInterval(() => {
       clearInterval(waitForInit);
