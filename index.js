@@ -22,7 +22,7 @@ const {getTracks, getData} = require("spotify-url-info");
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
 const version = '4.1.2';
-const buildNo = '04010002'; // major, minor, patch, build
+const buildNo = '04010202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
