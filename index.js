@@ -25,8 +25,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.2.0';
-const buildNo = '04020002'; // major, minor, patch, build
+const version = '4.2.1';
+const buildNo = '04020102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -568,9 +568,22 @@ async function runCommandCases (message) {
             const searches = await GeniusClient.songs.search(searchTerm);
             const firstSong = searches[0];
             const lyrics = await firstSong.lyrics();
-            message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>');
-            console.log(lyrics.length);
-            message.channel.send(lyrics.length > 1900 ? lyrics.substr(0, 1900) + '...' : lyrics);
+            message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(sentMsg => {
+              const lyricsText = lyrics.length > 1900 ? lyrics.substr(0, 1900) + '...' : lyrics;
+              const mb = '📄';
+              sentMsg.react(mb);
+
+              const filter = (reaction, user) => {
+                return user.id !== bot.user.id && [mb].includes(reaction.emoji.name);
+              };
+
+              const collector = sentMsg.createReactionCollector(filter, {time: 600000});
+
+              collector.once('collect', (reaction, user) => {
+                message.channel.send(lyricsText);
+              });
+
+            });
             return true;
           } catch (e) {
             return false;
