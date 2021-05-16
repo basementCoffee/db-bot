@@ -9,20 +9,24 @@ const spotifySCID = process.env.SPOTIFY_SECRET_CLIENT_ID.replace(/\\n/gm, '\n');
 // initialization
 const bot = new Client();
 
-// youtube imports
+// YouTube imports
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 
-// spotify imports
+// Genius imports
+const Genius = require("genius-lyrics");
+const GeniusClient = new Genius.Client();
+
+// Spotify imports
 const spdl = require('spdl-core');
 spdl.setCredentials(spotifyCID, spotifySCID);
 const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.1.6';
-const buildNo = '04010602'; // major, minor, patch, build
+const version = '4.2.0';
+const buildNo = '04020002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -515,6 +519,71 @@ async function runCommandCases (message) {
         dispatcherMapStatus[message.member.voice.channel.id] = true;
         message.channel.send('*stopped*');
       }
+      break;
+    case 'lyrics':
+      message.channel.send('retrieving lyrics...').then(async sentMsg => {
+        servers[mgid].numSinceLastEmbed += 10;
+        let searchTerm;
+        let searchTermRemix;
+        let songName;
+        if (args[1]) {
+          args[0] = '';
+          searchTerm = args.join(' ').trim();
+        } else if (message.guild.voice && message.guild.voice.channel && servers[mgid].queue[0]) {
+          if (servers[mgid].queue[0].includes('spotify')) {
+            const infos = await getData(servers[mgid].queue[0]);
+            searchTerm = infos.name + ' ' + infos.artists[0].name;
+          } else {
+            const infos = await ytdl.getInfo(servers[mgid].queue[0]);
+            if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
+              searchTerm = infos.videoDetails.media.song + ' ' + infos.videoDetails.media.artist;
+              songName = infos.videoDetails.media.song;
+            } else {
+              if (infos.videoDetails.title.search('[(]') !== -1)
+                searchTerm = infos.videoDetails.title.substr(0, infos.videoDetails.title.search('[(]'));
+              else searchTerm = infos.videoDetails.title;
+            }
+            if (infos.videoDetails.title.toLowerCase().includes('remix')) {
+              let remixArgs = infos.videoDetails.title.toLowerCase().split(' ');
+              let wordIndex = 0;
+              for (let i of remixArgs) {
+                if (i.includes('remix') && wordIndex !== 0) {
+                  wordIndex--;
+                  break;
+                }
+                wordIndex++;
+              }
+              if (wordIndex) {
+                searchTermRemix = (songName ? songName : searchTerm) + ' ' +
+                  remixArgs[wordIndex].replace('(', '') +
+                  ' remix';
+              }
+            }
+          }
+        } else {
+          return message.channel.send('must be playing a song');
+        }
+        const sendSongLyrics = async (searchTerm) => {
+          try {
+            const searches = await GeniusClient.songs.search(searchTerm);
+            const firstSong = searches[0];
+            const lyrics = await firstSong.lyrics();
+            message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>');
+            console.log(lyrics.length);
+            message.channel.send(lyrics.length > 1900 ? lyrics.substr(0, 1900) + '...' : lyrics);
+            return true;
+          } catch (e) {
+            return false;
+          }
+        };
+        if (searchTermRemix ? (!await sendSongLyrics(searchTermRemix)
+          && !await sendSongLyrics(searchTermRemix.replace(' remix', ''))
+          && !await sendSongLyrics(searchTerm)) :
+          !await sendSongLyrics(searchTerm)) {
+          message.channel.send('no results found');
+        }
+        sentMsg.delete();
+      });
       break;
     // !gd is to run database songs
     case 'gd':
@@ -1577,31 +1646,32 @@ function runQueueCommand (message, mgid) {
       }
       msg.delete();
       message.channel.send(queueMsgEmbed).then(sentMsg => {
+        servers[mgid].numSinceLastEmbed += 10;
         if (startingIndex + 10 < serverQueue.length) {
           sentMsg.react('➡️');
-        }
-        const filter = (reaction, user) => {
-          if (message.member.voice.channel) {
-            for (const mem of message.member.voice.channel.members) {
-              if (user.id === mem[1].id) {
-                return user.id !== bot.user.id && ['➡️'].includes(reaction.emoji.name);
+
+          const filter = (reaction, user) => {
+            if (message.member.voice.channel) {
+              for (const mem of message.member.voice.channel.members) {
+                if (user.id === mem[1].id) {
+                  return user.id !== bot.user.id && ['➡️'].includes(reaction.emoji.name);
+                }
               }
             }
-          }
-          return false;
-        };
-        const collector = sentMsg.createReactionCollector(filter, {time: 300000});
-        const arrowReactionInterval = setInterval(() => {
-          clearInterval(arrowReactionInterval);
-          sentMsg.reactions.removeAll();
-        }, 300500);
-        collector.on('collect', (reaction, reactionCollector) => {
-          clearInterval(arrowReactionInterval);
-          sentMsg.reactions.removeAll();
-          qIterations += 10;
-          servers[mgid].numSinceLastEmbed += 3;
-          generateQueue(startingIndex + 10, true);
-        });
+            return false;
+          };
+          const collector = sentMsg.createReactionCollector(filter, {time: 300000});
+          const arrowReactionInterval = setInterval(() => {
+            clearInterval(arrowReactionInterval);
+            sentMsg.reactions.removeAll();
+          }, 300500);
+          collector.on('collect', (reaction, reactionCollector) => {
+            clearInterval(arrowReactionInterval);
+            sentMsg.reactions.removeAll();
+            qIterations += 10;
+            generateQueue(startingIndex + 10, true);
+          });
+        }
       });
     });
   }
@@ -1938,9 +2008,11 @@ function sendHelp (message, prefixString) {
     prefixString +
     'silence \` Silence now playing embeds \n\`' +
     prefixString +
-    'unsilence \` Re-enables now playing embeds \n\`' +
+    'unsilence \` Re-enable now playing embeds \n\`' +
     prefixString +
-    'verbose \` Keep song embeds during a session\n\`' +
+    'verbose \` Keep all song embeds during a session\n\`' +
+    prefixString +
+    'lyrics \` Get lyrics of what\'s currently playing\n\`' +
     prefixString +
     'guess \` Random roll for the number of people in the voice channel \n\`' +
     prefixString +
