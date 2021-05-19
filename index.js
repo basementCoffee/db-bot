@@ -25,8 +25,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.2.1';
-const buildNo = '04020102'; // major, minor, patch, build
+const version = '4.2.2';
+const buildNo = '04020202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -561,7 +561,9 @@ async function runCommandCases (message) {
             }
           }
         } else {
-          return message.channel.send('must be playing a song');
+          message.channel.send('must be playing a song');
+          sentMsg.delete();
+          return;
         }
         const sendSongLyrics = async (searchTerm) => {
           try {
@@ -1282,10 +1284,10 @@ bot.on('guildCreate', guild => {
 bot.once('ready', () => {
   // if (!devMode && !isInactive) bot.channels.cache.get("827195452507160627").send("=gzc");
   // bot starts up as inactive, if no response from the channel then activates itself
+  mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
   if (!devMode) {
     bot.channels.cache.get('827195452507160627').send('starting up: ' + process.pid);
     if (isInactive) {
-      mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
       console.log('-starting up sidelined-');
       console.log('checking status of other bots...');
       checkToSeeActive();
@@ -1317,13 +1319,9 @@ bot.on('message', async (message) => {
       const oBuildNo = message.content.substr(15, 8);
       if (parseInt(oBuildNo) > parseInt(buildNo)) {
         isInactive = true;
-        clearInterval(mainActiveTimer);
-        mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
         return console.log('-sidelined(1)-');
       } else if (parseInt(oBuildNo) === parseInt(buildNo) && parseInt(message.content.substr(message.content.lastIndexOf('ver') + 3, 10)) > process.pid) {
         isInactive = true;
-        clearInterval(mainActiveTimer);
-        mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
         return console.log('-sidelined(2)-');
       }
     }
@@ -1337,12 +1335,10 @@ let resHandlerTimer;
 function checkToSeeActive () {
   numOfBotsOn = 0;
   setOfBotsOn.clear();
-  if (isInactive) {
-    // see if any bots are active
-    bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
-      resHandlerTimer = setInterval(responseHandler, 9000);
-    });
-  }
+  // see if any bots are active
+  bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
+    resHandlerTimer = setInterval(responseHandler, 9000);
+  });
 }
 
 /**
@@ -1371,7 +1367,6 @@ function verifyUrl (message, url) {
 function responseHandler () {
   clearInterval(resHandlerTimer);
   if (numOfBotsOn < 1) {
-    clearInterval(mainActiveTimer);
     isInactive = false;
     devMode = false;
     bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
@@ -1402,7 +1397,6 @@ bot.on('message', async (message) => {
       if (!zargs[1]) {
         await message.channel.send('sidelined: ' + process.pid + ' (' + version + ') ' + dm);
       } else if (zargs[1] === process.pid.toString() || zargs[1] === 'all') {
-        clearInterval(mainActiveTimer);
         isInactive = false;
         await message.channel.send('db bot ' + process.pid + ' is now active');
         console.log('-active-');
@@ -1423,8 +1417,6 @@ bot.on('message', async (message) => {
       } else if (zargs[1] === process.pid.toString() || zargs[1] === 'all') {
         await message.channel.send('db bot ' + process.pid + ' has been sidelined');
         isInactive = true;
-        clearInterval(mainActiveTimer);
-        mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
         console.log('-sidelined-');
       }
       return;
@@ -1435,9 +1427,6 @@ bot.on('message', async (message) => {
             await message.channel.send('inactive bot #' + process.pid + ' (' + version + ') ' +
               ' **is calibrating...** (may take up to 30 seconds)');
           }
-          clearInterval(mainActiveTimer);
-          const variation = Math.floor(Math.random() * 20000);
-          mainActiveTimer = setInterval(checkToSeeActive, 20000 + variation);
         } else if (message.member.id !== '730350452268597300') {
           await message.channel.send('active bot #' + process.pid + ' (' + version + ') ' +
             ' **is calibrating...** (may take up to 30 seconds)');
@@ -2362,6 +2351,10 @@ bot.on('voiceStateUpdate', update => {
       servers[mgid].collector.stop();
       embedMessageMap[mgid].reactions.removeAll().then();
       embedMessageMap[mgid] = false;
+    }
+    if (servers[mgid].followUpMessage) {
+      servers[mgid].followUpMessage.delete();
+      servers[mgid].followUpMessage = undefined;
     }
   } else {
     let leaveVCInt = 1100;
