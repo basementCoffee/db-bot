@@ -25,8 +25,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.2.2';
-const buildNo = '04020202'; // major, minor, patch, build
+const version = '4.2.3';
+const buildNo = '04020303'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 const servers = {};
 // the max size of the queue
@@ -522,7 +522,7 @@ async function runCommandCases (message) {
       break;
     case 'lyrics':
       message.channel.send('retrieving lyrics...').then(async sentMsg => {
-        servers[mgid].numSinceLastEmbed += 10;
+        servers[mgid].numSinceLastEmbed += 2;
         let searchTerm;
         let searchTermRemix;
         let songName;
@@ -532,15 +532,42 @@ async function runCommandCases (message) {
         } else if (message.guild.voice && message.guild.voice.channel && servers[mgid].queue[0]) {
           if (servers[mgid].queue[0].includes('spotify')) {
             const infos = await getData(servers[mgid].queue[0]);
-            searchTerm = infos.name + ' ' + infos.artists[0].name;
+            songName = infos.name;
+            if (songName.search('[(]') !== -1)
+              songName = songName.substr(0, songName.search('[(]'));
+            else if (songName.search('[\[]') !== -1)
+              songName = songName.substr(0, songName.search('[\[]'));
+            searchTerm = songName + ' ' + infos.artists[0].name;
+            if (infos.name.toLowerCase().includes('remix')) {
+              let remixArgs = infos.name.toLowerCase().split(' ');
+              let wordIndex = 0;
+              for (let i of remixArgs) {
+                if (i.includes('remix') && wordIndex !== 0) {
+                  wordIndex--;
+                  break;
+                }
+                wordIndex++;
+              }
+              if (wordIndex) {
+                searchTermRemix = (songName ? songName : searchTerm) + ' ' +
+                  remixArgs[wordIndex].replace('(', '') +
+                  ' remix';
+              }
+            }
           } else {
             const infos = await ytdl.getInfo(servers[mgid].queue[0]);
             if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
-              searchTerm = infos.videoDetails.media.song + ' ' + infos.videoDetails.media.artist;
               songName = infos.videoDetails.media.song;
+              if (songName.search('[(]') !== -1)
+                songName = songName.substr(0, songName.search('[(]'));
+              else if (songName.search('[\[]') !== -1)
+                songName = songName.substr(0, songName.search('[\[]'));
+              searchTerm = songName + ' ' + infos.videoDetails.media.artist;
             } else {
               if (infos.videoDetails.title.search('[(]') !== -1)
                 searchTerm = infos.videoDetails.title.substr(0, infos.videoDetails.title.search('[(]'));
+              else if (infos.videoDetails.title.search('[\[]') !== -1)
+                searchTerm = infos.videoDetails.title.substr(0, infos.videoDetails.title.search('[\[]'));
               else searchTerm = infos.videoDetails.title;
             }
             if (infos.videoDetails.title.toLowerCase().includes('remix')) {
@@ -582,7 +609,7 @@ async function runCommandCases (message) {
               const collector = sentMsg.createReactionCollector(filter, {time: 600000});
 
               collector.once('collect', (reaction, user) => {
-                message.channel.send(lyricsText);
+                message.channel.send(lyricsText).then(servers[mgid].numSinceLastEmbed += 10);
               });
 
             });
@@ -596,6 +623,7 @@ async function runCommandCases (message) {
           && !await sendSongLyrics(searchTerm)) :
           !await sendSongLyrics(searchTerm)) {
           message.channel.send('no results found');
+          servers[mgid].numSinceLastEmbed -= 9;
         }
         sentMsg.delete();
       });
