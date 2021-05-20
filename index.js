@@ -24,11 +24,11 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
-let devMode = false; // default false
-const version = '4.2.3';
-const buildNo = '04020303'; // major, minor, patch, build
+let devMode = true; // default false
+const version = '4.2.4';
+const buildNo = '04020300'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
-const servers = {};
+let servers = {};
 // the max size of the queue
 const maxQueueSize = 500;
 let keyArray;
@@ -521,54 +521,76 @@ async function runCommandCases (message) {
       }
       break;
     case 'lyrics':
+      if ((!message.guild.voice || !message.guild.voice.channel || !servers[mgid].queue[0]) && !args[1]) {
+        return message.channel.send('must be playing a song');
+      }
       message.channel.send('retrieving lyrics...').then(async sentMsg => {
         servers[mgid].numSinceLastEmbed += 2;
         let searchTerm;
         let searchTermRemix;
         let songName;
+        let artistName;
         if (args[1]) {
           args[0] = '';
           searchTerm = args.join(' ').trim();
-        } else if (message.guild.voice && message.guild.voice.channel && servers[mgid].queue[0]) {
+        } else {
           if (servers[mgid].queue[0].includes('spotify')) {
             const infos = await getData(servers[mgid].queue[0]);
-            songName = infos.name;
-            if (songName.search('[(]') !== -1)
-              songName = songName.substr(0, songName.search('[(]'));
-            else if (songName.search('[\[]') !== -1)
-              songName = songName.substr(0, songName.search('[\[]'));
-            searchTerm = songName + ' ' + infos.artists[0].name;
+            songName = infos.name.toLowerCase();
+            let songNameSubIndex = songName.search('[-]');
+            if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+            songNameSubIndex = songName.search('[(]');
+            if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+            else {
+              songNameSubIndex = songName.search('[\[]');
+              if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+            }
+            artistName = infos.artists[0].name;
+            searchTerm = songName + ' ' + artistName;
             if (infos.name.toLowerCase().includes('remix')) {
               let remixArgs = infos.name.toLowerCase().split(' ');
+              let remixArgs2 = [];
               let wordIndex = 0;
               for (let i of remixArgs) {
                 if (i.includes('remix') && wordIndex !== 0) {
                   wordIndex--;
                   break;
                 }
+                remixArgs2[wordIndex] = remixArgs[wordIndex];
                 wordIndex++;
               }
               if (wordIndex) {
-                searchTermRemix = (songName ? songName : searchTerm) + ' ' +
-                  remixArgs[wordIndex].replace('(', '') +
+                remixArgs2[wordIndex] = '';
+                searchTermRemix = remixArgs2.join(' ').trim() + ' ' +
+                  remixArgs[wordIndex].replace('(', '').trim() +
                   ' remix';
               }
             }
           } else {
             const infos = await ytdl.getInfo(servers[mgid].queue[0]);
             if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
+              // use video metadata
               songName = infos.videoDetails.media.song;
-              if (songName.search('[(]') !== -1)
-                songName = songName.substr(0, songName.search('[(]'));
-              else if (songName.search('[\[]') !== -1)
-                songName = songName.substr(0, songName.search('[\[]'));
-              searchTerm = songName + ' ' + infos.videoDetails.media.artist;
+              let songNameSubIndex = songName.search('[(]');
+              if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+              else {
+                songNameSubIndex = songName.search('[\[]');
+                if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+              }
+              artistName = infos.videoDetails.media.artist;
+              const artistNameSubIndex = artistName.search(' feat');
+              if (artistNameSubIndex !== -1) artistName = artistName.substr(0, artistNameSubIndex);
+              searchTerm = songName + ' ' + artistName;
             } else {
-              if (infos.videoDetails.title.search('[(]') !== -1)
-                searchTerm = infos.videoDetails.title.substr(0, infos.videoDetails.title.search('[(]'));
-              else if (infos.videoDetails.title.search('[\[]') !== -1)
-                searchTerm = infos.videoDetails.title.substr(0, infos.videoDetails.title.search('[\[]'));
-              else searchTerm = infos.videoDetails.title;
+              // use title
+              let songNameSubIndex = infos.videoDetails.title.search('[(]');
+              if (songNameSubIndex !== -1) {
+                searchTerm = infos.videoDetails.title.substr(0, songNameSubIndex);
+              } else {
+                songNameSubIndex = infos.videoDetails.title.search('[\[]');
+                if (songNameSubIndex !== -1) searchTerm = infos.videoDetails.title.substr(0, songNameSubIndex);
+                else searchTerm = infos.videoDetails.title;
+              }
             }
             if (infos.videoDetails.title.toLowerCase().includes('remix')) {
               let remixArgs = infos.videoDetails.title.toLowerCase().split(' ');
@@ -587,12 +609,9 @@ async function runCommandCases (message) {
               }
             }
           }
-        } else {
-          message.channel.send('must be playing a song');
-          sentMsg.delete();
-          return;
         }
         const sendSongLyrics = async (searchTerm) => {
+          console.log(searchTerm);
           try {
             const searches = await GeniusClient.songs.search(searchTerm);
             const firstSong = searches[0];
@@ -1331,6 +1350,7 @@ const setOfBotsOn = new Set();
 let numOfBotsOn = 0;
 // calibrate on startup
 bot.on('message', async (message) => {
+  if (devMode) return;
   // turn off active bots -- activates on '~db-bot-process'
   if (message.content.substr(0, 15) === '~db-bot-process' &&
     message.member.id.toString() === '730350452268597300' && !devMode) {
@@ -1399,12 +1419,15 @@ function responseHandler () {
     devMode = false;
     bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
       console.log('-active-');
+      servers = {};
       const waitForFollowup = setInterval(() => {
         clearInterval(waitForFollowup);
         bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
-      }, 2000);
+      }, 2500);
     });
   } else if (numOfBotsOn > 1 && setOfBotsOn.size > 1) {
+    numOfBotsOn = 0;
+    setOfBotsOn.clear();
     bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
   }
 }
@@ -1450,13 +1473,9 @@ bot.on('message', async (message) => {
       return;
     } else if (zmsg === 'zc') {
       if (!devMode) {
-        if (isInactive) {
-          if (message.member.id !== '730350452268597300') {
-            await message.channel.send('inactive bot #' + process.pid + ' (' + version + ') ' +
-              ' **is calibrating...** (may take up to 30 seconds)');
-          }
-        } else if (message.member.id !== '730350452268597300') {
-          await message.channel.send('active bot #' + process.pid + ' (' + version + ') ' +
+        if (message.member.id !== '730350452268597300') {
+          await message.channel.send((isInactive ? 'inactive' : 'active') +
+            ' bot #' + process.pid + ' (' + version + ') ' +
             ' **is calibrating...** (may take up to 30 seconds)');
         }
         bot.channels.cache.get('827195452507160627').send('~db-bot-process' + buildNo + 'ver' + process.pid);
