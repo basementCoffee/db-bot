@@ -24,9 +24,9 @@ spdl.setCredentials(spotifyCID, spotifySCID);
 const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
-let devMode = true; // default false
+let devMode = false; // default false
 const version = '4.2.4';
-const buildNo = '04020300'; // major, minor, patch, build
+const buildNo = '04020402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
