@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "4.2.4",
+  "version": "4.3.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -21,9 +21,9 @@
     "npm-install": "^1.7.4",
     "npm-start": "^1.4.2",
     "npm-start-command": "^1.0.1",
-    "spdl-core": "~1.6.0",
-    "spotify-url-info": "^2.2.0",
-    "ytdl-core": "^4.7.0",
+    "spdl-core": "~1.7.0",
+    "spotify-url-info": "^2.2.3",
+    "ytdl-core": "^4.8.0",
     "ytdl-core-discord": "^1.3.0",
     "ytpl": "^2.2.1",
     "ytsr": "^3.5.0"
