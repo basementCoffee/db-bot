@@ -3,8 +3,6 @@ const {MessageEmbed, Client} = require('discord.js');
 const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./database');
 
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
-const spotifyCID = process.env.SPOTIFY_CLIENT_ID.replace(/\\n/gm, '\n');
-const spotifySCID = process.env.SPOTIFY_SECRET_CLIENT_ID.replace(/\\n/gm, '\n');
 
 // initialization
 const bot = new Client();
@@ -24,8 +22,8 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.3.1';
-const buildNo = '04030102'; // major, minor, patch, build
+const version = '4.3.2';
+const buildNo = '04030202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -74,8 +72,9 @@ process.setMaxListeners(0);
  * @param message the message that triggered the bot
  * @param voiceChannel the voice channel that the bot is in
  * @param playMessageToChannel whether to play message on successful skip
+ * @param noHistory Optional - true excludes song from the queue history
  */
-function skipSong (message, voiceChannel, playMessageToChannel) {
+function skipSong (message, voiceChannel, playMessageToChannel, noHistory) {
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
     servers[message.guild.id].queue = [];
@@ -92,7 +91,8 @@ function skipSong (message, voiceChannel, playMessageToChannel) {
   if (dispatcherMap[voiceChannel.id]) dispatcherMap[voiceChannel.id].pause();
   // if server queue is not empty
   if (servers[message.guild.id].queue.length > 0) {
-    servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
+    if (noHistory) servers[message.guild.id].queue.shift();
+    else servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next song
     if (servers[message.guild.id].queue.length > 0) {
@@ -165,7 +165,7 @@ function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
 async function runPlayNowCommand (message, args, mgid, sheetName) {
   const voiceChannel = message.member.voice.channel;
   if (!voiceChannel) {
-    return;
+    return message.channel.send('must be in a voice channel to play');
   }
   if (!args[1]) {
     return message.channel.send('What should I play now? Put a link or some words.');
@@ -1650,12 +1650,16 @@ function runQueueCommand (message, mgid, noErrorMsg) {
   let authorName;
 
   async function getTitle (url, cutoff) {
-    if (url.includes('spotify')) {
-      const infos = await getData(url);
-      title = infos.name;
-    } else {
-      const infos = await ytdl.getInfo(url);
-      title = infos.videoDetails.title;
+    try {
+      if (url.includes('spotify')) {
+        const infos = await getData(url);
+        title = infos.name;
+      } else {
+        const infos = await ytdl.getInfo(url);
+        title = infos.videoDetails.title;
+      }
+    } catch (e) {
+      title = 'broken_url';
     }
     if (cutoff && title.length > cutoff) {
       title = title.substr(0, cutoff) + '...';
@@ -2445,7 +2449,13 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   let infos;
   if (urlOrg.includes('spotify.com')) {
     let itemIndex = 0;
-    infos = await getData(urlOrg);
+    try {
+      infos = await getData(urlOrg);
+    } catch (e) {
+      message.channel.send('could not play <' + urlOrg + '>');
+      whatspMap[voiceChannel.id] = '';
+      return skipSong(message, voiceChannel, true, true);
+    }
     let artists = '';
     infos.artists.forEach(x => artists += x.name + ' ');
     artists = artists.trim();
@@ -2558,15 +2568,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       }
       // Error catching - fault with the link?
       message.channel.send('Could not play <' + urlOrg + '>');
-      if (servers[mgid].queueHistory[0] && servers[mgid].queue[0] === urlOrg) {
-        // remove the url from the queue and replace with first of queueHistory if there is one
-        servers[mgid].queue[0] = servers[mgid].queueHistory[0];
-        servers[mgid].queueHistory.pop();
-      }
-      whatspMap[voiceChannel.id] = '';
       // search the db to find possible broken keys
       searchForBrokenLinkWithinDB(message, urlOrg);
-      runSkipCommand(message, 1);
+      whatspMap[voiceChannel.id] = '';
+      skipSong(message, voiceChannel, true, true);
     }
   });
 }
@@ -2763,7 +2768,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
           }
           if (reaction.emoji.name === '⏩') {
             reaction.users.remove(reactionCollector.id);
-            skipSong(message, voiceChannel, false, true);
+            skipSong(message, voiceChannel, false);
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
