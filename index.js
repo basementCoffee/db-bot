@@ -20,13 +20,12 @@ const GeniusClient = new Genius.Client();
 
 // Spotify imports
 const spdl = require('spdl-core');
-spdl.setCredentials(spotifyCID, spotifySCID);
 const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.3.0';
-const buildNo = '04030002'; // major, minor, patch, build
+const version = '4.3.1';
+const buildNo = '04030102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2663,7 +2662,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
 async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
   const mgid = message.guild.id;
   if (servers[mgid].verbose) forceEmbed = true;
-  if (servers[mgid].loop && servers[mgid].currentEmbedLink === url && !forceEmbed && message.reactions) {
+  if (!url || servers[mgid].loop && servers[mgid].currentEmbedLink === url && !forceEmbed && message.reactions) {
     return;
   }
   servers[mgid].currentEmbedChannelId = message.channel.id;
