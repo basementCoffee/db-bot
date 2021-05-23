@@ -20,10 +20,15 @@ const GeniusClient = new Genius.Client();
 const spdl = require('spdl-core');
 const {getTracks, getData} = require("spotify-url-info");
 
+// imports for YouTube captions
+const https = require('https');
+const xml2js = require('xml2js');
+const parser = new xml2js.Parser();
+
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.3.2';
-const buildNo = '04030202'; // major, minor, patch, build
+const version = '4.4.0';
+const buildNo = '04040002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -529,12 +534,13 @@ async function runCommandCases (message) {
         let searchTermRemix;
         let songName;
         let artistName;
+        const lUrl = servers[mgid].queue[0];
         if (args[1]) {
           args[0] = '';
           searchTerm = args.join(' ').trim();
         } else {
-          if (servers[mgid].queue[0].includes('spotify')) {
-            const infos = await getData(servers[mgid].queue[0]);
+          if (lUrl.toLowerCase().includes('spotify')) {
+            const infos = await getData(lUrl);
             songName = infos.name.toLowerCase();
             let songNameSubIndex = songName.search('[-]');
             if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
@@ -566,7 +572,7 @@ async function runCommandCases (message) {
               }
             }
           } else {
-            const infos = await ytdl.getInfo(servers[mgid].queue[0]);
+            const infos = await ytdl.getInfo(lUrl);
             if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
               // use video metadata
               songName = infos.videoDetails.media.song;
@@ -577,9 +583,15 @@ async function runCommandCases (message) {
                 if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
               }
               artistName = infos.videoDetails.media.artist;
-              const artistNameSubIndex = artistName.search(' feat');
-              if (artistNameSubIndex !== -1) artistName = artistName.substr(0, artistNameSubIndex);
-              searchTerm = songName + ' ' + artistName;
+              if (artistName) {
+                let artistNameSubIndex = artistName.search('ft.');
+                if (artistNameSubIndex !== -1) artistName = artistName.substr(0, artistNameSubIndex);
+                else {
+                  artistNameSubIndex = artistName.search(' feat');
+                  if (artistNameSubIndex !== -1) artistName = artistName.substr(0, artistNameSubIndex);
+                }
+                searchTerm = songName + ' ' + artistName;
+              }
             } else {
               // use title
               let songNameSubIndex = infos.videoDetails.title.search('[(]');
@@ -610,7 +622,6 @@ async function runCommandCases (message) {
           }
         }
         const sendSongLyrics = async (searchTerm) => {
-          console.log(searchTerm);
           try {
             const searches = await GeniusClient.songs.search(searchTerm);
             const firstSong = searches[0];
@@ -640,8 +651,12 @@ async function runCommandCases (message) {
           && !await sendSongLyrics(searchTermRemix.replace(' remix', ''))
           && !await sendSongLyrics(searchTerm)) :
           !await sendSongLyrics(searchTerm)) {
-          message.channel.send('no results found');
-          servers[mgid].numSinceLastEmbed -= 9;
+          if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
+            getYoutubeSubtitles(message, lUrl);
+          } else {
+            message.channel.send('no results found');
+            servers[mgid].numSinceLastEmbed -= 9;
+          }
         }
         sentMsg.delete();
       });
@@ -1724,6 +1739,59 @@ function runQueueCommand (message, mgid, noErrorMsg) {
   }
 
   return generateQueue(0);
+}
+
+/**
+ * Gets the captions/subtitles from youtube using ytdl-core and then sends the captions to the
+ * respective text channel.
+ * @param message The message that triggered the bot.
+ * @param url The video url to get the subtitles.
+ */
+function getYoutubeSubtitles (message, url) {
+
+  ytdl.getInfo(url).then(info => {
+    try {
+      const player_resp = info.player_response;
+      const tracks = player_resp.captions.playerCaptionsTracklistRenderer.captionTracks;
+      let data = '';
+      https.get(tracks[0].baseUrl.toString(), function (res) {
+        if (res.statusCode >= 200 && res.statusCode < 400) {
+          res.on('data', function (data_) { data += data_.toString(); });
+          res.on('end', function () {
+            parser.parseString(data, function (err, result) {
+              if (err) return console.log('ERROR: ' + err);
+              else {
+                let finalString = '';
+                for (let i of result.transcript.text) {
+                  finalString += i._;
+                }
+                finalString = finalString.replace(/&#39;/g, '\'');
+                finalString = finalString.length > 1900 ? finalString.substr(0, 1900) + '...' : finalString;
+                message.channel.send('Could not find lyrics. Video captions are available.').then(sentMsg => {
+                  const mb = '📄';
+                  sentMsg.react(mb);
+
+                  const filter = (reaction, user) => {
+                    return user.id !== bot.user.id && [mb].includes(reaction.emoji.name);
+                  };
+
+                  const collector = sentMsg.createReactionCollector(filter, {time: 600000});
+
+                  collector.once('collect', () => {
+                    message.channel.send('***Captions from YouTube***');
+                    message.channel.send(finalString).then(servers[message.guild.id].numSinceLastEmbed += 10);
+                  });
+                });
+              }
+            });
+          });
+        }
+      });
+    } catch (e) {
+      message.channel.send('no results found');
+      servers[message.guild.id].numSinceLastEmbed -= 9;
+    }
+  });
 }
 
 /**
