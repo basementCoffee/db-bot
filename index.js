@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.5.1';
-const buildNo = '04050102'; // major, minor, patch, build
+const version = '4.5.2';
+const buildNo = '04050202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2293,12 +2293,12 @@ async function addRandomToQueue (message, numOfTimes, cdb) {
         const randomNumber = Math.floor(Math.random() * tempArray.length);
         let url;
         if (tempArray[randomNumber].includes('.')) url = tempArray[randomNumber];
-        else url = cdb.get(tempArray[randomNumber]).toLowerCase();
+        else url = cdb.get(tempArray[randomNumber]);
         let playlist;
         // if it is a playlist
         if (verifyPlaylist(url)) {
           try {
-            let isSpotify = url.includes('spotify');
+            let isSpotify = url.toLowerCase().includes('spotify');
             // add all the songs from the playlist to the tempArray
             if (isSpotify) {
               playlist = await getTracks(url);
