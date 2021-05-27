@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.5.0';
-const buildNo = '04050002'; // major, minor, patch, build
+const version = '4.5.1';
+const buildNo = '04050102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -226,12 +226,10 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
  */
 async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify, addToFront) {
   let playlist;
-  let isPlaylist = false;
   try {
     if (isSpotify) {
       //playlink
       playlist = await getTracks(playlistUrl);
-      isPlaylist = true;
     } else {
       playlist = await ytpl(await ytpl.getPlaylistID(playlistUrl), {pages: 1});
       playlist = playlist.items;
@@ -244,7 +242,7 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
       while (lowestLengthIndex > -1) {
         item = playlist[lowestLengthIndex];
         lowestLengthIndex--;
-        url = isPlaylist ? item.external_urls.spotify : (item.shortUrl ? item.shortUrl : item.url);
+        url = isSpotify ? item.external_urls.spotify : (item.shortUrl ? item.shortUrl : item.url);
         if (itemsLeft > 0) {
           if (url) {
             servers[mgid].queue.unshift(url);
@@ -259,7 +257,7 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
     } else {
       let itemsLeft = maxQueueSize - servers[mgid].queue.length;
       for (let j of playlist) {
-        url = isPlaylist ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
+        url = isSpotify ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
         if (itemsLeft > 0) {
           if (url) {
             servers[mgid].queue.push(url);
@@ -298,7 +296,7 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
     }
     return message.channel.send('What should I play? Put a link or some words.');
   }
-  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !args[1].includes('spotify.com/playlist')) {
+  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !verifyPlaylist(args[1])) {
     if (sheetName) {
       return runDatabasePlayCommand(args, message, sheetName, false, false);
     } else {
@@ -1366,7 +1364,8 @@ function verifyUrl (message, url) {
  * @returns {*|boolean}
  */
 function verifyPlaylist (url) {
-  return url.includes('spotify.com/playlist') || ytpl.validateID(url);
+  url = url.toLowerCase();
+  return url.includes('spotify.com/playlist') || (ytpl.validateID(url) && !url.includes('&index='));
 }
 
 /**
@@ -2249,7 +2248,7 @@ function runRandomToQueue (num, message, sheetName) {
       addRandomToQueue(message, 1, xdb.congratsDatabase);
     } else {
       try {
-        if (num && num >= maxQueueSize) {
+        if (num && num > maxQueueSize) {
           message.channel.send('*max limit for random is ' + maxQueueSize + '*');
           num = maxQueueSize;
         }
@@ -2267,7 +2266,9 @@ function runRandomToQueue (num, message, sheetName) {
  * @param numOfTimes The number of items to add to the queue
  * @param {Map} cdb The database to reference
  */
-function addRandomToQueue (message, numOfTimes, cdb) {
+async function addRandomToQueue (message, numOfTimes, cdb) {
+  let sentMsg;
+  if (numOfTimes > 100) sentMsg = await message.channel.send('generating random from your keys...');
   const rKeyArray = Array.from(cdb.keys());
   if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
     return message.channel.send('Your music list is empty.');
@@ -2285,47 +2286,60 @@ function addRandomToQueue (message, numOfTimes, cdb) {
   if (servers[message.guild.id].queue.length < 1) {
     queueWasEmpty = true;
   }
-  // the final random array to be added to the queue
-  const rKeyArrayFinal = [];
   try {
-    const newArray = [];
-    let executeWhileInRand = true;
-    for (let i = 0; i < numOfTimes; i++) {
-      if (!newArray || newArray.length < 1 || executeWhileInRand) {
-        const tempArray = [...rKeyArray];
-        let j = 0;
-        while (
-          (tempArray.length > 0 && j <= numOfTimes) ||
-          executeWhileInRand
-          ) {
-          const randomNumber = Math.floor(Math.random() * tempArray.length);
-          newArray.push(tempArray[randomNumber]);
-          tempArray.splice(randomNumber, 1);
-          j++;
-          executeWhileInRand = false;
+    for (let i = 0; i < numOfTimes;) {
+      const tempArray = [...rKeyArray];
+      while ((tempArray.length > 0 && i < numOfTimes)) {
+        const randomNumber = Math.floor(Math.random() * tempArray.length);
+        let url;
+        if (tempArray[randomNumber].includes('.')) url = tempArray[randomNumber];
+        else url = cdb.get(tempArray[randomNumber]).toLowerCase();
+        let playlist;
+        // if it is a playlist
+        if (verifyPlaylist(url)) {
+          try {
+            let isSpotify = url.includes('spotify');
+            // add all the songs from the playlist to the tempArray
+            if (isSpotify) {
+              playlist = await getTracks(url);
+            } else {
+              playlist = await ytpl(await ytpl.getPlaylistID(url), {pages: 1});
+              playlist = playlist.items;
+            }
+            for (let j of playlist) {
+              url = isSpotify ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
+              if (url) {
+                tempArray.push(url);
+              }
+            }
+            url = undefined;
+          } catch (e) {}
         }
-        // newArray has the new values
-      }
-      const aTest1 = newArray.pop();
-      if (aTest1) {
-        rKeyArrayFinal.push(aTest1);
-      } else {
-        executeWhileInRand = true;
-        i--;
+        if (url) {
+          servers[message.guild.id].queue.push(url);
+          i++;
+        }
+        tempArray.splice(randomNumber, 1);
       }
     }
     // rKeyArrayFinal should have list of randoms here
   } catch (e) {
-    console.log('error in random: ' + e);
+    console.log('error in random: ');
+    console.log(e);
     rn = Math.floor(Math.random() * rKeyArray.length);
-    rKeyArrayFinal.push(rKeyArray[rn]);
+    if (verifyPlaylist(rKeyArray[rn])) {
+      if (sentMsg) sentMsg.delete();
+      return message.channel.send('There was an error.');
+    }
+    servers[message.guild.id].queue.push(cdb.get(rKeyArray[rn]));
   }
-  rKeyArrayFinal.forEach(e => {
-    servers[message.guild.id].queue.push(cdb.get(e));
-  });
+  // rKeyArrayFinal.forEach(e => {servers[message.guild.id].queue.push(cdb.get(e));});
   if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-    playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel, true);
+    playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel, true).then(() => {
+      if (sentMsg) sentMsg.delete();
+    });
   } else {
+    if (sentMsg) sentMsg.delete();
     message.channel.send('*added ' + numOfTimes + ' to queue*');
   }
 }
@@ -2518,8 +2532,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       return skipSong(message, voiceChannel, true, true);
     }
     let artists = '';
-    infos.artists.forEach(x => artists += x.name + ' ');
-    artists = artists.trim();
+    if (infos.artists) {
+      infos.artists.forEach(x => artists += x.name + ' ');
+      artists = artists.trim();
+    } else artists = 'N/A';
     let search = await ytsr(infos.name + ' ' + artists, {pages: 1});
     let youtubeDuration;
     if (search.items[0]) {
@@ -2588,7 +2604,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
             console.log('There was a mismatch -------------------');
             console.log('old url: ' + urlOrg);
             console.log('current url: ' + whatspMap[voiceChannel.id]);
-            bot.channels.cache.get('730837254796214384').send('there was a mismatch with playback');
+            try {
+              bot.channels.cache.get('821993147466907659').send('there was a mismatch with playback');
+            } catch (e) {
+              console.log(e);
+            }
             return;
           }
           const server = servers[mgid];
