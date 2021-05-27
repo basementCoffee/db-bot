@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.5.2';
-const buildNo = '04050202'; // major, minor, patch, build
+const version = '4.6.0';
+const buildNo = '04060002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1364,8 +1364,12 @@ function verifyUrl (message, url) {
  * @returns {*|boolean}
  */
 function verifyPlaylist (url) {
-  url = url.toLowerCase();
-  return url.includes('spotify.com/playlist') || (ytpl.validateID(url) && !url.includes('&index='));
+  try {
+    url = url.toLowerCase();
+    return url.includes('spotify.com/playlist') || (ytpl.validateID(url) && !url.includes('&index='));
+  } catch (e) {
+    return false;
+  }
 }
 
 /**
@@ -2229,10 +2233,16 @@ function runRandomToQueue (num, message, sheetName) {
   if (!message.member.voice.channel) {
     return message.channel.send('must be in a voice channel to play random');
   }
+  if (!num) num = 1;
+  let isPlaylist;
+  const numCpy = num;
   try {
     num = parseInt(num);
   } catch (e) {
-    num = 1;
+    isPlaylist = true;
+  }
+  if (!num) {
+    isPlaylist = true;
   }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
@@ -2244,8 +2254,8 @@ function runRandomToQueue (num, message, sheetName) {
     return message.channel.send('*max queue size has been reached*');
   }
   gsrun('A', 'B', sheetName).then((xdb) => {
-    if (!num) {
-      addRandomToQueue(message, 1, xdb.congratsDatabase);
+    if (isPlaylist) {
+      addRandomToQueue(message, numCpy, xdb.congratsDatabase, true);
     } else {
       try {
         if (num && num > maxQueueSize) {
@@ -2263,12 +2273,20 @@ function runRandomToQueue (num, message, sheetName) {
 /**
  * Adds a number of items from the database to the queue randomly.
  * @param message The message that triggered the bot
- * @param numOfTimes The number of items to add to the queue
+ * @param numOfTimes The number of items to add to the queue, or a playlist url if isPlaylist
  * @param {Map} cdb The database to reference
+ * @param isPlaylist Optional - True if to randomize just a playlist
  */
-async function addRandomToQueue (message, numOfTimes, cdb) {
+async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
+  let playlistKey;
   let sentMsg;
+  if (isPlaylist) {
+    playlistKey = numOfTimes;
+    if (verifyPlaylist(cdb.get(playlistKey))) numOfTimes = 2;
+    else return message.channel.send('incorrect format: argument must be a number or playlist');
+  }
   if (numOfTimes > 100) sentMsg = await message.channel.send('generating random from your keys...');
+  else if (isPlaylist && numOfTimes === 2) sentMsg = await message.channel.send('randomizing your playlist...');
   const rKeyArray = Array.from(cdb.keys());
   if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
     return message.channel.send('Your music list is empty.');
@@ -2288,7 +2306,9 @@ async function addRandomToQueue (message, numOfTimes, cdb) {
   }
   try {
     for (let i = 0; i < numOfTimes;) {
-      const tempArray = [...rKeyArray];
+      let tempArray = [];
+      if (isPlaylist) tempArray.push(cdb.get(playlistKey));
+      else tempArray = [...rKeyArray];
       while ((tempArray.length > 0 && i < numOfTimes)) {
         const randomNumber = Math.floor(Math.random() * tempArray.length);
         let url;
@@ -2306,12 +2326,15 @@ async function addRandomToQueue (message, numOfTimes, cdb) {
               playlist = await ytpl(await ytpl.getPlaylistID(url), {pages: 1});
               playlist = playlist.items;
             }
+            let itemCounter = 0;
             for (let j of playlist) {
               url = isSpotify ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
               if (url) {
                 tempArray.push(url);
+                itemCounter++;
               }
             }
+            if (isPlaylist) numOfTimes = itemCounter;
             url = undefined;
           } catch (e) {}
         }
@@ -2747,6 +2770,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  */
 async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
   const mgid = message.guild.id;
+  if (!mgid) return;
   if (servers[mgid].verbose) forceEmbed = true;
   if (!url || servers[mgid].loop && servers[mgid].currentEmbedLink === url && !forceEmbed && message.reactions) {
     return;
