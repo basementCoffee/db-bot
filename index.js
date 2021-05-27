@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.6.0';
-const buildNo = '04060002'; // major, minor, patch, build
+const version = '4.7.0';
+const buildNo = '04070002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2374,28 +2374,18 @@ async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
  * @param {*} sheetname The name of the sheet to retrieve
  * @param cmdType the prefix to call the keys being displayed
  * @param voiceChannel optional, a specific voice channel to use besides the message's
- * @param user optional user name, overrides the message owner's name
+ * @param user Optional - user name, overrides the message owner's name
  */
 async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel, user) {
-  // if (
-  //   !dataSize.get(sheetname.toString()) ||
-  //   dataSize.get(sheetname.toString()) < 1
-  // ) {
-  //   await createSheet(message, sheetname);
-  // }
   gsrun('A', 'B', sheetname).then((xdb) => {
-    keyArray = Array.from(xdb.congratsDatabase.keys()).sort();
-    s = '';
-    let firstLetter = true;
-    for (const key in keyArray) {
-      if (firstLetter) {
-        s = keyArray[key];
-        firstLetter = false;
-      } else {
-        s = s + ', ' + keyArray[key];
-      }
-    }
-    if (!s || s.length < 1) {
+    let keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys());
+    let keyArraySorted = [];
+    keyArraySorted = keyArrayUnsorted.map(x => x);
+    keyArraySorted.sort();
+    let sortByRecents = false;
+    let dbName = '';
+    let keyArray = keyArraySorted;
+    if (keyArray.length < 1) {
       let emptyDBMessage;
       if (!cmdType) {
         emptyDBMessage = "The server's ";
@@ -2405,34 +2395,49 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
       message.channel.send('**' + emptyDBMessage + 'music list is empty.**\n*Add a song by putting a word followed by a link.' +
         '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
     } else {
-      let dbName = '';
-      let keysMessage = '';
-      let keyEmbedColor = '#ffa200';
-      if (cmdType === 'm') {
-        let name;
-        user ? name = user.username : name = message.member.nickname;
-        if (!name) {
-          name = message.author.username;
+      /**
+       * Generates the keys list embed
+       * @param sortByRecent True if to return an array sorted by date added
+       * @returns {module:"discord.js".MessageEmbed}
+       */
+      const generateKeysEmbed = (sortByRecent) => {
+        if (sortByRecent) keyArray = keyArrayUnsorted;
+        else keyArray = keyArraySorted;
+        s = '';
+        for (const key in keyArray) {
+          s = s + ', ' + keyArray[key];
         }
-        if (name) {
-          keysMessage += '**' + name + "'s keys ** ";
-          dbName = name.toLowerCase() + "'s keys";
-        } else {
-          keysMessage += '** Personal keys ** ';
-          dbName = 'personal keys';
+        s = s.substr(1);
+        let keysMessage = '';
+        let keyEmbedColor = '#ffa200';
+        if (cmdType === 'm') {
+          let name;
+          user ? name = user.username : name = message.member.nickname;
+          if (!name) {
+            name = message.author.username;
+          }
+          if (name) {
+            keysMessage += '**' + name + "'s keys ** ";
+            dbName = name.toLowerCase() + "'s keys";
+          } else {
+            keysMessage += '** Personal keys ** ';
+            dbName = 'personal keys';
+          }
+        } else if (!cmdType) {
+          keysMessage += '**Server keys ** ';
+          dbName = "server's keys";
+          keyEmbedColor = '#b35536';
         }
-      } else if (!cmdType) {
-        keysMessage += '**Server keys ** ';
-        dbName = "server's keys";
-        keyEmbedColor = '#b35536';
-      }
-      const embedKeysMessage = new MessageEmbed();
-      embedKeysMessage.setTitle(keysMessage).setDescription(s).setColor(keyEmbedColor)
-        .setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
-      message.channel.send(embedKeysMessage).then(async sentMsg => {
-        sentMsg.react('❔').then(() => sentMsg.react('🔀'));
+        const embedKeysMessage = new MessageEmbed();
+
+        embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(date added)' : '(alphabetical)')).setDescription(s).setColor(keyEmbedColor)
+          .setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
+        return embedKeysMessage;
+      };
+      message.channel.send(generateKeysEmbed(sortByRecents)).then(async sentMsg => {
+        sentMsg.react('❔').then(() => sentMsg.react('🔀').then(sentMsg.react('🗂️')));
         const filter = (reaction, user) => {
-          return ['🔀', '❔'].includes(reaction.emoji.name) && user.id !== bot.user.id;
+          return user.id !== bot.user.id && ['🔀', '❔', '🗂️'].includes(reaction.emoji.name);
         };
         const keysButtonCollector = sentMsg.createReactionCollector(filter, {
           time: 1200000
@@ -2474,6 +2479,10 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
               }
             }
             return message.channel.send('must be in a voice channel to shuffle play');
+          } else if (reaction.emoji.name === '🗂️') {
+            sortByRecents = !sortByRecents;
+            sentMsg.edit(generateKeysEmbed(sortByRecents));
+            reaction.users.remove(reactionCollector.id);
           }
         });
       });
