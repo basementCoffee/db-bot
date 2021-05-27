@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.4.0';
-const buildNo = '04040002'; // major, minor, patch, build
+const version = '4.5.0';
+const buildNo = '04050002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -62,11 +62,8 @@ function formatDuration (duration) {
  * @returns {*} true if congrats is detected
  */
 function contentsContainCongrats (message) {
-  return (
-    message.content.includes('grats') ||
-    message.content.includes('gratz') ||
-    message.content.includes('ongratulations')
-  );
+  return (message.content.includes('grats') || message.content.includes('gratz') ||
+    message.content.includes('ongratulations'));
 }
 
 process.setMaxListeners(0);
@@ -176,11 +173,7 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
     return message.channel.send('What should I play now? Put a link or some words.');
   }
   // in case of force disconnect
-  if (
-    !message.guild.client.voice ||
-    !message.guild.voice ||
-    !message.guild.voice.channel
-  ) {
+  if (!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
     servers[mgid].queue = [];
     servers[mgid].queueHistory = [];
     servers[mgid].loop = false;
@@ -209,27 +202,45 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
     }
   } catch (e) {}
   let pNums = 0;
+  if (args[1].includes('spotify.com/playlist')) {
+    await addPlaylistToQueue(message, mgid, pNums, args[1], true, true);
+  } else if (ytpl.validateID(args[1])) {
+    await addPlaylistToQueue(message, mgid, pNums, args[1], false, true);
+  } else {
+    // push to queue
+    servers[mgid].queue.unshift(args[1]);
+  }
+  message.channel.send('*playing now*');
+  playSongToVC(message, servers[mgid].queue[0], voiceChannel, true).then();
+}
+
+/**
+ *
+ * @param message The message metadata
+ * @param mgid The message guild id
+ * @param pNums The number of items added to queue
+ * @param playlistUrl The url of the playlist
+ * @param isSpotify If the playlist is a spotify playlist
+ * @param addToFront Optional - true if to add to the front of the queue
+ * @returns {Promise<void>} The number of items added to the queue
+ */
+async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify, addToFront) {
   let playlist;
   let isPlaylist = false;
-  if (args[1].includes('spotify.com/playlist')) {
-    try {
-      playlist = await getTracks(args[1]);
+  try {
+    if (isSpotify) {
+      //playlink
+      playlist = await getTracks(playlistUrl);
       isPlaylist = true;
-    } catch (e) {
-      return message.channel.send('could not play');
+    } else {
+      playlist = await ytpl(await ytpl.getPlaylistID(playlistUrl), {pages: 1});
+      playlist = playlist.items;
     }
-  }
-  if (ytpl.validateID(args[1]) || isPlaylist) {
-    try {
-      if (!isPlaylist) {
-        const playlistID = await ytpl.getPlaylistID(args[1]);
-        playlist = await ytpl(playlistID, {pages: 1});
-        playlist = playlist.items;
-      }
+    let url;
+    if (addToFront) {
       let itemsLeft = maxQueueSize - servers[mgid].queue.length;
       let lowestLengthIndex = Math.min(playlist.length, itemsLeft) - 1;
       let item;
-      let url;
       while (lowestLengthIndex > -1) {
         item = playlist[lowestLengthIndex];
         lowestLengthIndex--;
@@ -245,16 +256,27 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
           break;
         }
       }
-    } catch (e) {
-      console.log("Failed: " + e);
-      message.channel.send('There was an error.');
+    } else {
+      let itemsLeft = maxQueueSize - servers[mgid].queue.length;
+      for (let j of playlist) {
+        url = isPlaylist ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
+        if (itemsLeft > 0) {
+          if (url) {
+            servers[mgid].queue.push(url);
+            pNums++;
+            itemsLeft--;
+          }
+        } else {
+          message.channel.send('*queue is full*');
+          break;
+        }
+      }
     }
-  } else {
-    // push to queue
-    servers[mgid].queue.unshift(args[1]);
+  } catch (e) {
+    console.log(e);
+    message.channel.send('there was an error');
   }
-  message.channel.send('*playing now*');
-  return playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+  return pNums;
 }
 
 /**
@@ -294,42 +316,10 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
     queueWasEmpty = true;
   }
   let pNums = 0;
-  let playlist;
-  let isPlaylist = false;
   if (args[1].includes('spotify.com/playlist')) {
-    try {
-      playlist = await getTracks(args[1]);
-      isPlaylist = true;
-    } catch (e) {
-      return message.channel.send('could not play');
-    }
-  }
-  if (ytpl.validateID(args[1]) || isPlaylist) {
-    try {
-      if (!isPlaylist) {
-        const playlistID = await ytpl.getPlaylistID(args[1]);
-        playlist = await ytpl(playlistID, {pages: 1});
-        playlist = playlist.items;
-      }
-      let itemsLeft = maxQueueSize - servers[mgid].queue.length;
-      let url;
-      for (let j of playlist) {
-        url = isPlaylist ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
-        if (itemsLeft > 0) {
-          if (url) {
-            servers[mgid].queue.push(url);
-            pNums++;
-            itemsLeft--;
-          }
-        } else {
-          message.channel.send('*queue is full*');
-          break;
-        }
-      }
-    } catch (e) {
-      console.log("Failed: " + e);
-      message.channel.send('There was an error.');
-    }
+    pNums = await addPlaylistToQueue(message, mgid, pNums, args[1], true);
+  } else if (ytpl.validateID(args[1])) {
+    pNums = await addPlaylistToQueue(message, mgid, pNums, args[1], false);
   } else {
     pNums = 1;
     while (args[pNums]) {
@@ -682,32 +672,32 @@ async function runCommandCases (message) {
       runDatabasePlayCommand(args, message, mgid, false, false);
       break;
     case 'dn':
-      runPlayNowCommand(message, args, mgid, mgid);
+      runPlayNowCommand(message, args, mgid, mgid, true);
       break;
     case 'dnow':
-      runPlayNowCommand(message, args, mgid, mgid);
+      runPlayNowCommand(message, args, mgid, mgid, true);
       break;
     case 'kn':
-      runPlayNowCommand(message, args, mgid, mgid);
+      runPlayNowCommand(message, args, mgid, mgid, true);
       break;
     case 'know':
-      runPlayNowCommand(message, args, mgid, mgid);
+      runPlayNowCommand(message, args, mgid, mgid, true);
       break;
     // !md is the personal database
     case 'md':
       runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true);
       break;
     case 'mdn':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
       break;
     case 'mdnow':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
       break;
     case 'mkn':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
       break;
     case 'mknow':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
       break;
     // !r is a random that works with the normal queue
     case 'r':
@@ -1057,70 +1047,24 @@ async function runCommandCases (message) {
       break;
     // !ga adds to the server database
     case 'ga':
-      if (!args[1] || !args[2]) {
-        return message.channel.send(
-          'Could not add to the database. Put a song name followed by a link.'
-        );
-      }
-      if (!verifyUrl(message, args[2])) return;
-      // in case the database has not been initialized
-      gsrun('A', 'B', 'entries').then(() => {
-        runAddCommand(args, message, 'entries', true);
-      });
+      runAddCommandWrapper(message, args, 'entries', true, prefixString);
+      break;
+    case 'gadd':
+      runAddCommandWrapper(message, args, 'entries', true, prefixString);
       break;
     // !a is normal add
     case 'a':
-      if (!args[1] || !args[2]) {
-        return message.channel.send(
-          'Incorrect format. Put a desired key-name followed by a link. *(ex: ' +
-          prefixString + 'a [key] [link])*'
-        );
-      }
-      if (!verifyUrl(message, args[2])) return;
-      // in case the database has not been initialized
-      gsrun('A', 'B', mgid).then(() => {
-        runAddCommand(args, message, mgid, true);
-      });
+      runAddCommandWrapper(message, args, mgid, true, prefixString);
       break;
     case 'add':
-      if (!args[1] || !args[2]) {
-        return message.channel.send(
-          'Could not add to the database. Put a desired name followed by a link. *(ex: ' +
-          prefixString + 'add [key] [link])*'
-        );
-      }
-      if (!verifyUrl(message, args[2])) return;
-      // in case the database has not been initialized
-      gsrun('A', 'B', mgid).then(() => {
-        runAddCommand(args, message, mgid, true);
-      });
+      runAddCommandWrapper(message, args, mgid, true, prefixString);
       break;
     // !ma is personal add
     case 'ma':
-      if (!args[1] || !args[2]) {
-        return message.channel.send(
-          'Could not add to the database. Put a desired name followed by a link. *(ex: ' +
-          prefixString + 'ma [key] [link])*'
-        );
-      }
-      if (!verifyUrl(message, args[2])) return;
-      // in case the database has not been initialized
-      gsrun('A', 'B', 'p' + message.member.id).then(() => {
-        runAddCommand(args, message, 'p' + message.member.id, true);
-      });
+      runAddCommandWrapper(message, args, 'p' + message.member.id, true, prefixString);
       break;
     case 'madd':
-      if (!args[1] || !args[2]) {
-        return message.channel.send(
-          'Could not add to the database. Put a desired name followed by a link. *(ex: ' +
-          prefixString + 'ma [key] [link])*'
-        );
-      }
-      if (!verifyUrl(message, args[2])) return;
-      // in case the database has not been initialized
-      gsrun('A', 'B', 'p' + message.member.id).then(() => {
-        runAddCommand(args, message, 'p' + message.member.id, true);
-      });
+      runAddCommandWrapper(message, args, 'p' + message.member.id, true, prefixString);
       break;
     // !rm removes database entries
     case 'rm':
@@ -1408,11 +1352,21 @@ function verifyUrl (message, url) {
     message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
     return false;
   }
-  if (url.includes('spotify.com') ? !spdl.validateURL(url) : !ytdl.validateURL(url)) {
+  if (url.includes('spotify.com') ? (!spdl.validateURL(url) && !url.includes('.com/playlist'))
+    : (!ytdl.validateURL(url) && !ytpl.validateID(url))) {
     message.channel.send('Invalid link');
     return false;
   }
   return true;
+}
+
+/**
+ * Returns true if the given url is a valid Spotify or YouTube playlist link.
+ * @param url The url to verify
+ * @returns {*|boolean}
+ */
+function verifyPlaylist (url) {
+  return url.includes('spotify.com/playlist') || ytpl.validateID(url);
 }
 
 /**
@@ -1583,6 +1537,27 @@ function sendMessageToUser (message, userID, reactionUserID) {
 }
 
 /**
+ * Wrapper for the function 'runAddCommand', for the purpose of user-facing error checking.
+ * @param message The message that triggered the bot
+ * @param args The args that of the message contents
+ * @param sheetName The name of the sheet to add to
+ * @param printMsgToChannel Whether to print a response to the channel
+ * @param prefixString The prefix string
+ * @returns {*}
+ */
+function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString) {
+  if (!args[1] || !args[2]) {
+    return message.channel.send('Could not add to the database. Put a desired name followed by a link. *(ex:\` ' +
+      prefixString + 'add [key] [link]\`)*');
+  }
+  if (!verifyUrl(message, args[2])) return;
+  // in case the database has not been initialized
+  gsrun('A', 'B', sheetName).then(() => {
+    runAddCommand(args, message, sheetName, printMsgToChannel);
+  });
+}
+
+/**
  * The command to add a song to a given database.
  * @param {*} args The command arguments
  * @param {*} message The message that triggered the command
@@ -1614,7 +1589,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
           }
         }
         if (!alreadyExists) {
-          gsUpdateAdd(args[z], args[z + 1], 'A', 'B', sheetName, xdb.dsInt);
+          await gsUpdateAdd(args[z], args[z + 1], 'A', 'B', sheetName, xdb.dsInt);
         }
       }
       z = z + 2;
@@ -1832,14 +1807,24 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     if (servers[mgid].queue.length < 1) {
       queueWasEmpty = true;
     }
-    if (args[2] && !playRightNow) {
+    let tempUrl;
+    let dbAddedToQueue = 0;
+    if (args[2]) {
       let dbAddInt = 1;
       let unFoundString = '*could not find: ';
       let firstUnfoundRan = false;
-      let dbAddedToQueue = 0;
       let otherSheet;
       while (args[dbAddInt]) {
-        if (!xdb.referenceDatabase.get(args[dbAddInt].toUpperCase())) {
+        tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
+        if (tempUrl) {
+          // push to queue
+          if (verifyPlaylist(tempUrl)) {
+            dbAddedToQueue += await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), false);
+          } else {
+            servers[mgid].queue.push(tempUrl);
+            dbAddedToQueue++;
+          }
+        } else {
           // check personal db if applicable
           if (sheetName.substr(0, 1) !== 'p') {
             if (!otherSheet) {
@@ -1847,10 +1832,19 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
                 otherSheet = xdb.referenceDatabase;
               });
             }
-            if (otherSheet.get(args[dbAddInt].toUpperCase())) {
+            tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
+            if (tempUrl) {
               // push to queue
-              servers[mgid].queue.push(otherSheet.get(args[dbAddInt].toUpperCase()));
-              dbAddedToQueue++;
+              if (verifyPlaylist(tempUrl)) {
+                dbAddedToQueue += await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+              } else if (playRightNow) {
+                servers[mgid].queue.unshift(tempUrl);
+                dbAddedToQueue++;
+                playRightNow = false;
+              } else {
+                servers[mgid].queue.push(tempUrl);
+                dbAddedToQueue++;
+              }
               dbAddInt++;
               continue;
             }
@@ -1860,10 +1854,6 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           }
           unFoundString = unFoundString.concat(args[dbAddInt]);
           firstUnfoundRan = true;
-        } else {
-          // push to queue
-          servers[mgid].queue.push(xdb.referenceDatabase.get(args[dbAddInt].toUpperCase()));
-          dbAddedToQueue++;
         }
         dbAddInt++;
       }
@@ -1873,48 +1863,45 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         message.channel.send(unFoundString);
       }
     } else {
-      const itemToPlay = xdb.referenceDatabase.get(args[1].toUpperCase());
-      if (!itemToPlay) {
+      tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
+      if (!tempUrl) {
         const ss = runSearchCommand(args[1], xdb).ss;
         if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
-          message.channel.send(
-            "could not find '" + args[1] + "'. **Assuming '" + ss + "'**"
-          );
+          message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
+          tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
           if (playRightNow) { // push to queue and play
-            const dsp = dispatcherMap[voiceChannel.id];
+            let dsp = dispatcherMap[voiceChannel.id];
             try {
-              if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-              dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
+              if (servers[mgid].queue[0] && dsp && dsp.streamTime &&
+              servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000) {
                 servers[mgid].queueHistory.push(servers[mgid].queue.shift());
               }
-            } catch (e) {}
-            servers[mgid].queue.unshift(xdb.referenceDatabase.get(ss.toUpperCase()));
-            playSongToVC(message, xdb.referenceDatabase.get(ss.toUpperCase()), voiceChannel, true);
+            } catch (e) {console.log(e);}
+            if (verifyPlaylist(tempUrl)) {
+              await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+            } else {
+              servers[mgid].queue.unshift(tempUrl);
+            }
+            playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
             message.channel.send('*playing now*');
             return true;
           } else {
-            servers[mgid].queue.push(xdb.referenceDatabase.get(ss.toUpperCase()));
+            if (verifyPlaylist(tempUrl)) {
+              dbAddedToQueue = await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+            } else {
+              servers[mgid].queue.push(tempUrl);
+            }
           }
-        } else if (playRightNow) {
-          if (printErrorMsg) {
-            message.channel.send("There's something wrong with what you put there.");
-            return true;
-          } else {
-            runDatabasePlayCommand(args, message, 'p' + message.member.id, playRightNow, true);
-          }
-          return false;
         } else if (!printErrorMsg) {
           if (sheetName.includes('p')) {
-            message.channel.send("There's something wrong with what you put there.");
+            message.channel.send("Could not find '" + args[1] + "' in database.");
             return true;
           } else {
             runDatabasePlayCommand(args, message, 'p' + message.member.id, playRightNow, false);
             return true;
           }
         } else if (ss && ss.length > 0) {
-          message.channel.send(
-            "Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + '*'
-          );
+          message.channel.send("Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + '*');
           return true;
         } else {
           message.channel.send("Could not find '" + args[1] + "' in database.");
@@ -1922,25 +1909,31 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         }
       } else { // did find in database
         if (playRightNow) { // push to queue and play
-          const dsp = dispatcherMap[voiceChannel.id];
+          let dsp = dispatcherMap[voiceChannel.id];
           try {
-            if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-            dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
+            if (servers[mgid].queue[0] && dsp && dsp.streamTime &&
+            servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000) {
               servers[mgid].queueHistory.push(servers[mgid].queue.shift());
             }
-          } catch (e) {}
-          servers[mgid].queue.unshift(itemToPlay);
-          playSongToVC(message, itemToPlay, voiceChannel, true);
+          } catch (e) {console.log(e);}
+          if (verifyPlaylist(tempUrl)) {
+            await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+          } else {
+            servers[mgid].queue.unshift(tempUrl);
+          }
+          playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
           message.channel.send('*playing now*');
           return true;
         } else {
           // push to queue
-          servers[mgid].queue.push(itemToPlay);
+          if (verifyPlaylist(tempUrl)) {
+            await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+          } else {
+            servers[mgid].queue.push(tempUrl);
+          }
         }
       }
-      if (!queueWasEmpty && !playRightNow) {
-        message.channel.send('*added to queue*');
-      }
+      if (!queueWasEmpty) message.channel.send('*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*');
     }
     // if queue was empty then play
     if (queueWasEmpty && servers[mgid].queue.length > 0) {
@@ -2457,7 +2450,7 @@ bot.on('voiceStateUpdate', update => {
   const mgid = update.guild.id;
   if (update.member.id === bot.user.id && !update.connection && servers[mgid]) {
     servers[mgid].numSinceLastEmbed = 0;
-    sendLinkAsEmbed(update, servers[mgid].currentEmbedLink, update.channel, undefined, false).then(() => {
+    sendLinkAsEmbed(servers[mgid].currentEmbed, servers[mgid].currentEmbedLink, update.channel, undefined, false).then(() => {
       servers[mgid].currentEmbed = undefined;
       servers[mgid].silence = false;
       servers[mgid].verbose = false;
@@ -2891,7 +2884,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
       });
   };
   if (url === whatspMap[voiceChannel.id]) {
-    if (servers[mgid].numSinceLastEmbed < 5 && !forceEmbed && servers[mgid].currentEmbed) {
+    if (servers[mgid].numSinceLastEmbed < 5 && !forceEmbed && servers[mgid].currentEmbed && embedMessageMap[mgid]) {
       try {
         servers[mgid].currentEmbed.edit(embed);
       } catch (e) {
