@@ -8,7 +8,7 @@ const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 const bot = new Client();
 
 // YouTube imports
-const ytdl = require('ytdl-core-discord');
+let ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 
@@ -27,12 +27,13 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.7.4';
-const buildNo = '04070402'; // major, minor, patch, build
+const version = '4.7.5';
+const buildNo = '04070502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
 const maxQueueSize = 500;
+process.setMaxListeners(0);
 
 /**
  * Given a duration in ms, it returns a formatted string separating
@@ -2586,6 +2587,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     try {
       infos = await getData(urlOrg);
     } catch (e) {
+      console.log(e);
       message.channel.send('could not play <' + urlOrg + '>');
       whatspMap[voiceChannel.id] = '';
       return skipSong(message, voiceChannel, true, true);
@@ -2694,13 +2696,14 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
           servers[mgid].followUpMessage = undefined;
         }
       });
-      dispatcher.once('error', console.error);
+      dispatcher.once('error', (e) => console.log(e));
     } catch (e) {
       console.log(e);
       const numberOfPrevSkips = skipTimesMap[mgid];
       if (!numberOfPrevSkips) {
         skipTimesMap[mgid] = 1;
-      } else if (numberOfPrevSkips > 3 || !message.guild.voice || message.guild.voice.connection) {
+      } else if (numberOfPrevSkips > 3) {
+        ytdl = await require('ytdl-core-discord');
         connection.disconnect();
         return;
       } else {
@@ -3059,6 +3062,5 @@ const embedMessageMap = new Map();
 const dispatcherMapStatus = new Map();
 // the timers for the bot to leave a VC, uses channel
 const leaveVCTimeout = new Map();
-process.setMaxListeners(0);
 // login to discord
 bot.login(token);
