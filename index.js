@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.7.1';
-const buildNo = '04070102'; // major, minor, patch, build
+const version = '4.7.2';
+const buildNo = '04070202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -291,6 +291,8 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
   if (!args[1]) {
     if (servers[mgid].queue[0] && dispatcherMap[message.member.voice.channel.id] &&
       dispatcherMapStatus[message.member.voice.channel.id]) {
+      dispatcherMap[message.member.voice.channel.id].resume();
+      dispatcherMap[message.member.voice.channel.id].pause();
       dispatcherMap[message.member.voice.channel.id].resume();
       return message.channel.send('*playing*');
     }
@@ -961,6 +963,8 @@ async function runCommandCases (message) {
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].pause();
+        dispatcherMap[message.member.voice.channel.id].resume();
+        dispatcherMap[message.member.voice.channel.id].pause();
         dispatcherMapStatus[message.member.voice.channel.id] = true;
         message.channel.send('*paused*');
       }
@@ -968,6 +972,8 @@ async function runCommandCases (message) {
     case 'pause':
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
+        dispatcherMap[message.member.voice.channel.id].pause();
+        dispatcherMap[message.member.voice.channel.id].resume();
         dispatcherMap[message.member.voice.channel.id].pause();
         dispatcherMapStatus[message.member.voice.channel.id] = true;
         message.channel.send('*paused*');
@@ -980,6 +986,8 @@ async function runCommandCases (message) {
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
+        dispatcherMap[message.member.voice.channel.id].pause();
+        dispatcherMap[message.member.voice.channel.id].resume();
         dispatcherMapStatus[message.member.voice.channel.id] = false;
         message.channel.send('*playing*');
       } else {
@@ -990,6 +998,8 @@ async function runCommandCases (message) {
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
         dispatcherMap[message.member.voice.channel.id].resume();
+        dispatcherMap[message.member.voice.channel.id].pause();
+        dispatcherMap[message.member.voice.channel.id].resume();
         dispatcherMapStatus[message.member.voice.channel.id] = false;
         message.channel.send('*playing*');
       }
@@ -998,6 +1008,8 @@ async function runCommandCases (message) {
       servers[mgid].numSinceLastEmbed += 3;
       if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
         dispatcherMap[message.member.voice.channel.id]) {
+        dispatcherMap[message.member.voice.channel.id].resume();
+        dispatcherMap[message.member.voice.channel.id].pause();
         dispatcherMap[message.member.voice.channel.id].resume();
         dispatcherMapStatus[message.member.voice.channel.id] = false;
         message.channel.send('*playing*');
@@ -1422,12 +1434,13 @@ bot.on('message', async (message) => {
       }
       const zargs = message.content.split(' ');
       if (!zargs[1]) {
-        let dm = '';
+        let dm;
         if (devMode) {
-          dm = '(dev mode)';
+          dm = ' (dev mode)';
+        } else {
+          dm = bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : '';
         }
-        message.channel.send((isInactive ? 'sidelined: ' : '**active:** ') + process.pid + ' (' + version + ') ' + dm +
-          (bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : ''));
+        message.channel.send((isInactive ? 'sidelined: ' : '**active:** ') + process.pid + ' (' + version + ')' + dm);
       } else if (zargs[1] === 'all') {
         isInactive = true;
         message.channel.send('db bot ' + process.pid + ' has been sidelined');
@@ -2537,7 +2550,14 @@ bot.on('voiceStateUpdate', update => {
   }
 });
 
-bot.on('error', console.error);
+bot.on('error', (e) => {
+  console.log('BOT ERROR:');
+  console.log(e);
+});
+process.on('error', (e) => {
+  console.log('PROCESS ERROR:');
+  console.log(e);
+});
 
 /**
  *  The play function. Plays a given link to the voice channel.
@@ -2900,6 +2920,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             }
           } else if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
             dispatcherMap[voiceChannel.id].pause();
+            dispatcherMap[voiceChannel.id].resume();
+            dispatcherMap[voiceChannel.id].pause();
             dispatcherMapStatus[voiceChannel.id] = true;
             const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
             if (servers[mgid].followUpMessage) {
@@ -2911,6 +2933,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             }
             reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
+            dispatcherMap[voiceChannel.id].resume();
+            dispatcherMap[voiceChannel.id].pause();
             dispatcherMap[voiceChannel.id].resume();
             dispatcherMapStatus[voiceChannel.id] = false;
             const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
