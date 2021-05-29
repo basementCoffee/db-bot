@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.7.3';
-const buildNo = '04070302'; // major, minor, patch, build
+const version = '4.7.4';
+const buildNo = '04070402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2398,7 +2398,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
  */
 async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel, user) {
   gsrun('A', 'B', sheetname).then((xdb) => {
-    let keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys());
+    let keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
     let keyArraySorted = [];
     keyArraySorted = keyArrayUnsorted.map(x => x);
     keyArraySorted.sort();
@@ -2450,8 +2450,8 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
         }
         const embedKeysMessage = new MessageEmbed();
 
-        embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(date added)' : '(alphabetical)')).setDescription(s).setColor(keyEmbedColor)
-          .setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
+        embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
+          .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
         return embedKeysMessage;
       };
       message.channel.send(generateKeysEmbed(sortByRecents)).then(async sentMsg => {
