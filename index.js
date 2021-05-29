@@ -27,14 +27,12 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.7.2';
-const buildNo = '04070202'; // major, minor, patch, build
+const version = '4.7.3';
+const buildNo = '04070302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
 const maxQueueSize = 500;
-let keyArray;
-let s;
 
 /**
  * Given a duration in ms, it returns a formatted string separating
@@ -65,8 +63,6 @@ function contentsContainCongrats (message) {
   return (message.content.includes('grats') || message.content.includes('gratz') ||
     message.content.includes('ongratulations'));
 }
-
-process.setMaxListeners(0);
 
 /**
  * Skips the song that is currently being played.
@@ -1189,8 +1185,7 @@ async function runCommandCases (message) {
       message.channel.send(devCEmbed);
       break;
     case 'gzq':
-      message.channel.send("quitting the bot... (may restart)");
-      process.exit();
+      message.channel.send("restarting the bot... (may only shutdown)").then(process.exit());
       break;
     case 'gzid':
       message.channel.send('g: ' + message.guild.id);
@@ -1342,6 +1337,7 @@ let mainActiveTimer;
 let resHandlerTimer;
 
 function checkToSeeActive () {
+  if (devMode) return;
   setOfBotsOn.clear();
   // see if any bots are active
   bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
@@ -1482,6 +1478,7 @@ bot.on('message', async (message) => {
         return message.channel.send('*devmode is off* ' + process.pid.toString());
       } else if (zargs[1] === process.pid.toString()) {
         devMode = true;
+        prefixMap[message.guild.id] = '=';
         return message.channel.send('*devmode is on* ' + process.pid.toString());
       }
     } else if (zmsg === 'zl') {
@@ -2426,7 +2423,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
       const generateKeysEmbed = (sortByRecent) => {
         if (sortByRecent) keyArray = keyArrayUnsorted;
         else keyArray = keyArraySorted;
-        s = '';
+        let s = '';
         for (const key in keyArray) {
           s = s + ', ' + keyArray[key];
         }
@@ -3062,5 +3059,6 @@ const embedMessageMap = new Map();
 const dispatcherMapStatus = new Map();
 // the timers for the bot to leave a VC, uses channel
 const leaveVCTimeout = new Map();
+process.setMaxListeners(0);
 // login to discord
 bot.login(token);
