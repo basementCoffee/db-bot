@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.7.6';
-const buildNo = '04070602'; // major, minor, patch, build
+const version = '4.7.7';
+const buildNo = '04070702'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2477,9 +2477,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
         const filter = (reaction, user) => {
           return user.id !== bot.user.id && ['❔', '🔄', '🔀'].includes(reaction.emoji.name);
         };
-        const keysButtonCollector = sentMsg.createReactionCollector(filter, {
-          time: 1200000
-        });
+        const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
         keysButtonCollector.on('collect', (reaction, reactionCollector) => {
           if (reaction.emoji.name === '❔') {
             let nameToSend;
@@ -2528,6 +2526,9 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
             sentMsg.edit(generateKeysEmbed(sortByRecents));
             reaction.users.remove(reactionCollector.id);
           }
+        });
+        keysButtonCollector.once('end', () => {
+          sentMsg.reactions.removeAll();
         });
       });
     }
