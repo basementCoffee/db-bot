@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '4.7.7';
-const buildNo = '04070702'; // major, minor, patch, build
+const version = '5.0.0';
+const buildNo = '05000002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -74,20 +74,7 @@ function contentsContainCongrats (message) {
  * @param noHistory Optional - true excludes song from the queue history
  */
 function skipSong (message, voiceChannel, playMessageToChannel, noHistory) {
-  // in case of force disconnect
-  if (!message.guild.voice || !message.guild.voice.channel) {
-    servers[message.guild.id].queue = [];
-    servers[message.guild.id].queueHistory = [];
-    servers[message.guild.id].loop = false;
-    return;
-  }
-  if (!voiceChannel) {
-    voiceChannel = message.member.voice.channel;
-    if (!voiceChannel) {
-      return;
-    }
-  }
-  if (dispatcherMap[voiceChannel.id]) dispatcherMap[voiceChannel.id].pause();
+
   // if server queue is not empty
   if (servers[message.guild.id].queue.length > 0) {
     if (noHistory) servers[message.guild.id].queue.shift();
@@ -98,10 +85,10 @@ function skipSong (message, voiceChannel, playMessageToChannel, noHistory) {
       // get rid of previous dispatch
       playSongToVC(message, servers[message.guild.id].queue[0], voiceChannel, true);
     } else {
-      runStopPlayingCommand(message.guild.id, voiceChannel, true);
+      runStopPlayingCommand(message.guild.id, voiceChannel, true, message);
     }
   } else {
-    runStopPlayingCommand(message.guild.id, voiceChannel, true);
+    runStopPlayingCommand(message.guild.id, voiceChannel, true, message);
   }
   if (servers[message.guild.id].followUpMessage) {
     servers[message.guild.id].followUpMessage.delete();
@@ -433,7 +420,9 @@ async function runCommandCases (message) {
       currentEmbed: undefined,
       numSinceLastEmbed: 0,
       currentEmbedChannelId: undefined,
-      verbose: false
+      verbose: false,
+      voteSkipAdmin: [],
+      voteSkipMembersId: []
     };
   }
   if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed += 2;
@@ -481,16 +470,16 @@ async function runCommandCases (message) {
       break;
     //! e is the Stop feature
     case 'e':
-      runStopPlayingCommand(mgid, message.member.voice.channel);
+      runStopPlayingCommand(mgid, message.member.voice.channel, false, message);
       break;
     case 'end':
-      runStopPlayingCommand(mgid, message.member.voice.channel);
+      runStopPlayingCommand(mgid, message.member.voice.channel, false, message);
       break;
     case 'leave':
-      runStopPlayingCommand(mgid, message.member.voice.channel);
+      runStopPlayingCommand(mgid, message.member.voice.channel, false, message);
       break;
     case 'quit':
-      runStopPlayingCommand(mgid, message.member.voice.channel);
+      runStopPlayingCommand(mgid, message.member.voice.channel, false, message);
       break;
     case 'loop':
       if (!message.guild.voice || !message.guild.voice.channel) {
@@ -818,11 +807,37 @@ async function runCommandCases (message) {
       break;
     // !skip
     case 'skip':
-      runSkipCommand(message, args[1]);
+      runSkipCommand(message, message.member.voice.channel, args[1], 1);
       break;
     // !sk
     case 'sk':
-      runSkipCommand(message, args[1]);
+      runSkipCommand(message, message.member.voice.channel, args[1], 1);
+      break;
+    case 'voteskip':
+      runDJCommand(message);
+      break;
+    case 'dj':
+      runDJCommand(message);
+      break;
+    case 'forceskip' :
+      if (!servers[mgid].voteSkipAdmin || message.member === servers[mgid].voteSkipAdmin) {
+        runSkipCommand(message, message.member.voice.channel, args[1], true);
+      }
+      break;
+    case 'fs' :
+      if (!servers[mgid].voteSkipAdmin || message.member === servers[mgid].voteSkipAdmin) {
+        runSkipCommand(message, message.member.voice.channel, args[1], true);
+      }
+      break;
+    case 'resign':
+      if (!servers[mgid].voteSkipAdmin) {
+        message.channel.send('There is no DJ right now');
+      } else if (servers[mgid].voteSkipAdmin[0] === message.member) {
+        servers[mgid].voteSkipAdmin.pop();
+        message.channel.send('You are no longer the DJ. Vote skip has been disabled.');
+      } else {
+        message.channel.send('Only the DJ can resign');
+      }
       break;
     // !pa
     case 'pa':
@@ -1295,8 +1310,11 @@ bot.on('message', async (message) => {
       }
       return;
     } else if (zmsg === 'zk') {
-      if (message.member.id === '730350452268597300' && !devMode && !isInactive) {
-        return message.channel.send('~db-bot-process-on' + buildNo + 'ver' + process.pid);
+      if (message.member.id === '730350452268597300') {
+        if (!isInactive && !devMode) {
+          message.channel.send('~db-bot-process-on' + buildNo + 'ver' + process.pid);
+        }
+        return;
       }
       const zargs = message.content.split(' ');
       if (!zargs[1]) {
@@ -1427,6 +1445,31 @@ function sendMessageToUser (message, userID, reactionUserID) {
       msg.delete();
     });
   });
+}
+
+function runDJCommand (message) {
+  if (!message.guild.voice || !message.guild.voice.channel || !message.member.voice || !message.member.voice.channel)
+    return message.channel.send('must be in a voice channel with the db bot for this command');
+  const vcMembersId = message.guild.voice.channel.members.map(x => x.id);
+  if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
+  if (servers[message.guild.id].voteSkipAdmin.length < 1) {
+    servers[message.guild.id].voteSkipAdmin.push(message.member);
+    const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
+    message.channel.send('***vote skip has been enabled for this session (DJ: ' + dj + ')***');
+    message.channel.send('*' + dj + ', use \'**forceskip**\' or \'**fs**\' to force skip a track ' +
+      'and \'**resign**\' to forfeit DJ permissions.*');
+  } else if (!vcMembersId.includes(servers[message.guild.id].voteSkipAdmin[0].id)) {
+    let oldMem = servers[message.guild.id].voteSkipAdmin.pop();
+    oldMem = (oldMem.nickname ? oldMem.nickname : oldMem.user.username);
+    let newMem = message.member;
+    servers[message.guild.id].voteSkipAdmin.push(message.member);
+    newMem = (newMem.nickname ? newMem.nickname : newMem.user.username);
+    message.channel.send('*db bot DJ ' + oldMem + ' is missing. ' + newMem + ' is now the new DJ.*');
+  } else {
+    const currentAdmin = servers[message.guild.id].voteSkipAdmin[0];
+    message.channel.send((currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
+      'the DJ. Any skip command can be used to vote skip a track.');
+  }
 }
 
 /**
@@ -2066,15 +2109,42 @@ function runSearchCommand (keyName, xdb) {
  * Function to skip songs once or multiple times.
  * Recommended if voice channel is not present.
  * @param message the message that triggered the bot
- * @param skipTimes the number of times to skip
+ * @param voiceChannel The active voice channel
+ * @param skipTimes Optional - the number of times to skip
+ * @param sendSkipMsg Whether to send a 'skipped' message when a single song is skipped
+ * @param forceSkip Optional - If there is a DJ, grants force skip abilities
  */
-function runSkipCommand (message, skipTimes) {
-  if (!message.guild.voice || !message.guild.voice.channel) {
-    return;
+function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSkip) {
+  // in case of force disconnect
+  if (!message.guild.voice || !message.guild.voice.channel) return;
+  if (!voiceChannel) {
+    voiceChannel = message.member.voice.channel;
+    if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
   }
-  if (!message.member.voice.channel) {
-    return message.channel.send('*must be in a voice channel to use this command*');
+  if (servers[message.guild.id].voteSkipAdmin && !forceSkip) {
+    const vcBotMembersId = message.guild.voice.channel.members.map(x => x.id);
+    const vcMemMembersId = message.guild.voice.channel.members.map(x => x.id);
+    if (vcBotMembersId.includes(message.member.id) &&
+      vcMemMembersId.includes(message.member.id)) {
+      const votesNeeded = Math.floor((vcBotMembersId.length - 1) / 2) + 1;
+      if (servers[message.guild.id].voteSkipMembersId.includes(message.member.id))
+        return message.channel.send('you have already voted to skip this track.\nvotes needed to skip: ' + votesNeeded);
+      servers[message.guild.id].voteSkipMembersId.push(message.member.id);
+      const votesNow = servers[message.guild.id].voteSkipMembersId.length;
+      if (votesNow >= votesNeeded) {
+        skipTimes = 1;
+        sendSkipMsg = false;
+        message.channel.send('***Skipping with ' + votesNow + ' vote' + (votesNow > 1 ? 's' : '') + '***');
+      } else {
+        return message.channel.send('*' + (message.member.nickname ? message.member.nickname : message.member.user.username) +
+          ' voted to skip (' + votesNow + '/' + votesNeeded + ')*');
+      }
+    } else {
+      return;
+    }
   }
+
+  if (dispatcherMap[voiceChannel.id]) dispatcherMap[voiceChannel.id].pause();
   if (skipTimes) {
     try {
       skipTimes = parseInt(skipTimes);
@@ -2088,20 +2158,18 @@ function runSkipCommand (message, skipTimes) {
         if (skipTimes === 1 && servers[message.guild.id].queue.length > 0) {
           skipCounter++;
         }
-        skipSong(message, message.member.voice.channel, false);
+        skipSong(message, voiceChannel, sendSkipMsg ? skipCounter === 1 : false);
         if (skipCounter > 1) {
           message.channel.send('*skipped ' + skipCounter + ' times*');
-        } else {
-          message.channel.send('*skipped 1 time*');
         }
       } else {
         message.channel.send('*invalid skip amount (must be between 1 - 1000)*');
       }
     } catch (e) {
-      skipSong(message, message.member.voice.channel, true);
+      skipSong(message, voiceChannel, true);
     }
   } else {
-    skipSong(message, message.member.voice.channel, true);
+    skipSong(message, voiceChannel, true);
   }
 }
 
@@ -2162,6 +2230,8 @@ function sendHelp (message, prefixString) {
     'verbose \` Keep all song embeds during a session\n\`' +
     prefixString +
     'lyrics \` Get lyrics of what\'s currently playing\n\`' +
+    prefixString +
+    'dj \` Enable DJ mode, requires members to vote skip tracks\n\`' +
     prefixString +
     'guess \` Random roll for the number of people in the voice channel \n\`' +
     prefixString +
@@ -2545,6 +2615,8 @@ bot.on('voiceStateUpdate', update => {
       servers[mgid].currentEmbed = undefined;
       servers[mgid].silence = false;
       servers[mgid].verbose = false;
+      servers[mgid].loop = false;
+      servers[mgid].voteSkipAdmin = [];
       if (embedMessageMap[update.guild.id] && embedMessageMap[mgid].reactions) {
         servers[mgid].collector.stop();
         embedMessageMap[mgid].reactions.removeAll().then();
@@ -2601,6 +2673,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     return runStopPlayingCommand(message.guild.id, voiceChannel);
   }
   const mgid = message.guild.id;
+  servers[mgid].voteSkipMembersId = [];
   // the display url
   let urlOrg = whatToPlay;
   // the alternative url to play
@@ -2652,7 +2725,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     if (search.items[itemIndex]) urlAlt = search.items[itemIndex].url;
     else {
       message.channel.send('could not find <' + urlOrg + '>');
-      runSkipCommand(message, 1);
+      runSkipCommand(message, voiceChannel, 1, true);
     }
   }
   // remove previous embed buttons
@@ -2926,9 +2999,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
 
         timeMS += 3600000;
 
-        const collector = sentMsg.createReactionCollector(filter, {
-          time: timeMS
-        });
+        const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
 
         servers[mgid].collector = collector;
         collector.on('collect', (reaction, reactionCollector) => {
@@ -2937,7 +3008,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
           }
           if (reaction.emoji.name === '⏩') {
             reaction.users.remove(reactionCollector.id);
-            skipSong(message, voiceChannel, false);
+            runSkipCommand(message, voiceChannel, 1, false);
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
@@ -2979,7 +3050,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             }
           } else if (reaction.emoji.name === '⏹') {
             collector.stop();
-            runStopPlayingCommand(mgid, voiceChannel);
+            runStopPlayingCommand(mgid, voiceChannel, false, message);
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
@@ -3013,9 +3084,14 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
+ * @param message Optional - The message metadata, used in the case of verifying a dj
  */
-function runStopPlayingCommand (mgid, voiceChannel, stayInVC) {
+function runStopPlayingCommand (mgid, voiceChannel, stayInVC, message) {
   if (!voiceChannel) return;
+  if (servers[mgid].voteSkipAdmin.length > 0) {
+    if (!voiceChannel.members.map(x => x.user.id).includes(message.member.id))
+      return message.channel.send('only a dj can end the session');
+  }
   if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
     servers[mgid].collector.stop();
     embedMessageMap[mgid].reactions.removeAll().then();

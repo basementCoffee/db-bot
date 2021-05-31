@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "4.7.7",
+  "version": "5.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -11,13 +11,13 @@
   "dependencies": {
     "@discordjs/opus": "^0.5.0",
     "discord.js": "^12.5.3",
-    "dotenv": "^9.0.0",
+    "dotenv": "^10.0.0",
     "ffmpeg-static": "^4.3.0",
     "fs-extra": "^10.0.0",
     "genius-lyrics": "^4.2.9",
-    "googleapis": "^73.0.0",
-    "node-gyp": "^8.0.0",
-    "npm": "^7.13.0",
+    "googleapis": "^74.2.0",
+    "node-gyp": "^8.1.0",
+    "npm": "^7.14.0",
     "npm-install": "^1.7.4",
     "npm-start": "^1.4.2",
     "npm-start-command": "^1.0.1",
