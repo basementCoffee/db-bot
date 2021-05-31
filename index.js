@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.0';
-const buildNo = '05000002'; // major, minor, patch, build
+const version = '5.0.1';
+const buildNo = '05000102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -355,7 +355,7 @@ async function runRestartCommand (message, mgid, keyword) {
 async function runCommandCases (message) {
   const mgid = message.guild.id;
   if (devMode) {
-    if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
+    if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985' && message.member.id.toString() !== '799524729173442620') {
       return; // DEBUG MODE
     }
     prefixMap[mgid] = '=';
@@ -421,8 +421,10 @@ async function runCommandCases (message) {
       numSinceLastEmbed: 0,
       currentEmbedChannelId: undefined,
       verbose: false,
-      voteSkipAdmin: [],
-      voteSkipMembersId: []
+      voteAdmin: [],
+      voteSkipMembersId: [],
+      voteRewindMembersId: [],
+      votePlayPauseMembersId: []
     };
   }
   if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed += 2;
@@ -807,11 +809,11 @@ async function runCommandCases (message) {
       break;
     // !skip
     case 'skip':
-      runSkipCommand(message, message.member.voice.channel, args[1], 1);
+      runSkipCommand(message, message.member.voice.channel, args[1], 1, false, message.member);
       break;
     // !sk
     case 'sk':
-      runSkipCommand(message, message.member.voice.channel, args[1], 1);
+      runSkipCommand(message, message.member.voice.channel, args[1], 1, false, message.member);
       break;
     case 'voteskip':
       runDJCommand(message);
@@ -820,20 +822,30 @@ async function runCommandCases (message) {
       runDJCommand(message);
       break;
     case 'forceskip' :
-      if (!servers[mgid].voteSkipAdmin || message.member === servers[mgid].voteSkipAdmin) {
-        runSkipCommand(message, message.member.voice.channel, args[1], true);
+      if (!servers[mgid].voteAdmin || servers[mgid].voteAdmin.includes(message.member)) {
+        runSkipCommand(message, message.member.voice.channel, args[1], true, true, message.member);
       }
       break;
     case 'fs' :
-      if (!servers[mgid].voteSkipAdmin || message.member === servers[mgid].voteSkipAdmin) {
-        runSkipCommand(message, message.member.voice.channel, args[1], true);
+      if (!servers[mgid].voteAdmin || servers[mgid].voteAdmin.includes(message.member)) {
+        runSkipCommand(message, message.member.voice.channel, args[1], true, true, message.member);
+      }
+      break;
+    case 'forcerewind':
+      if (!servers[mgid].voteAdmin || servers[mgid].voteAdmin.includes(message.member)) {
+        runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
+      }
+      break;
+    case 'frw':
+      if (!servers[mgid].voteAdmin || servers[mgid].voteAdmin.includes(message.member)) {
+        runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
       }
       break;
     case 'resign':
-      if (!servers[mgid].voteSkipAdmin) {
+      if (!servers[mgid].voteAdmin) {
         message.channel.send('There is no DJ right now');
-      } else if (servers[mgid].voteSkipAdmin[0] === message.member) {
-        servers[mgid].voteSkipAdmin.pop();
+      } else if (servers[mgid].voteAdmin[0] === message.member) {
+        servers[mgid].voteAdmin.pop();
         message.channel.send('You are no longer the DJ. Vote skip has been disabled.');
       } else {
         message.channel.send('Only the DJ can resign');
@@ -976,16 +988,10 @@ async function runCommandCases (message) {
       runRemoveItemCommand(message, args[1], 'p' + message.member.id, true);
       break;
     case 'rewind':
-      if (!message.member.voice.channel) {
-        return message.channel.send('You must be in a voice channel to rewind');
-      }
-      runRewindCommand(message, mgid, message.member.voice.channel, args[1]);
+      runRewindCommand(message, mgid, message.member.voice.channel, args[1], false, false, message.member);
       break;
     case 'rw':
-      if (!message.member.voice.channel) {
-        return message.channel.send('You must be in a voice channel to rewind');
-      }
-      runRewindCommand(message, mgid, message.member.voice.channel, args[1]);
+      runRewindCommand(message, mgid, message.member.voice.channel, args[1], false, false, message.member);
       break;
     case 'replay':
       runRestartCommand(message, mgid, 'replay');
@@ -1452,21 +1458,26 @@ function runDJCommand (message) {
     return message.channel.send('must be in a voice channel with the db bot for this command');
   const vcMembersId = message.guild.voice.channel.members.map(x => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
-  if (servers[message.guild.id].voteSkipAdmin.length < 1) {
-    servers[message.guild.id].voteSkipAdmin.push(message.member);
+  if (servers[message.guild.id].voteAdmin.length < 1) {
+    servers[message.guild.id].voteAdmin.push(message.member);
     const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
-    message.channel.send('***vote skip has been enabled for this session (DJ: ' + dj + ')***');
-    message.channel.send('*' + dj + ', use \'**forceskip**\' or \'**fs**\' to force skip a track ' +
+    message.channel.send('***vote skip has been enabled for this session (DJ: ' + dj + ')***\n' +
+      '*' + dj + ', use \'**forceskip**\' or \'**fs**\' to force skip a track ' +
       'and \'**resign**\' to forfeit DJ permissions.*');
-  } else if (!vcMembersId.includes(servers[message.guild.id].voteSkipAdmin[0].id)) {
-    let oldMem = servers[message.guild.id].voteSkipAdmin.pop();
-    oldMem = (oldMem.nickname ? oldMem.nickname : oldMem.user.username);
-    let newMem = message.member;
-    servers[message.guild.id].voteSkipAdmin.push(message.member);
-    newMem = (newMem.nickname ? newMem.nickname : newMem.user.username);
-    message.channel.send('*db bot DJ ' + oldMem + ' is missing. ' + newMem + ' is now the new DJ.*');
   } else {
-    const currentAdmin = servers[message.guild.id].voteSkipAdmin[0];
+    let ix = 0;
+    for (let x of servers[message.guild.id].voteAdmin) {
+      ix++;
+      if (!vcMembersId.includes(x.id)) {
+        let oldMem = servers[message.guild.id].voteAdmin[ix];
+        oldMem = (oldMem.nickname ? oldMem.nickname : oldMem.user.username);
+        let newMem = message.member;
+        servers[message.guild.id].voteAdmin[ix] = message.member;
+        newMem = (newMem.nickname ? newMem.nickname : newMem.user.username);
+        return message.channel.send('*db bot DJ ' + oldMem + ' is missing. ' + newMem + ' is now the new DJ.*');
+      }
+    }
+    const currentAdmin = servers[message.guild.id].voteAdmin[0];
     message.channel.send((currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
       'the DJ. Any skip command can be used to vote skip a track.');
   }
@@ -2113,37 +2124,25 @@ function runSearchCommand (keyName, xdb) {
  * @param skipTimes Optional - the number of times to skip
  * @param sendSkipMsg Whether to send a 'skipped' message when a single song is skipped
  * @param forceSkip Optional - If there is a DJ, grants force skip abilities
+ * @param mem The user that is completing the action, used for DJ mode
  */
-function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSkip) {
+function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSkip, mem) {
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) return;
   if (!voiceChannel) {
     voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
   }
-  if (servers[message.guild.id].voteSkipAdmin && !forceSkip) {
-    const vcBotMembersId = message.guild.voice.channel.members.map(x => x.id);
-    const vcMemMembersId = message.guild.voice.channel.members.map(x => x.id);
-    if (vcBotMembersId.includes(message.member.id) &&
-      vcMemMembersId.includes(message.member.id)) {
-      const votesNeeded = Math.floor((vcBotMembersId.length - 1) / 2) + 1;
-      if (servers[message.guild.id].voteSkipMembersId.includes(message.member.id))
-        return message.channel.send('you have already voted to skip this track.\nvotes needed to skip: ' + votesNeeded);
-      servers[message.guild.id].voteSkipMembersId.push(message.member.id);
-      const votesNow = servers[message.guild.id].voteSkipMembersId.length;
-      if (votesNow >= votesNeeded) {
-        skipTimes = 1;
-        sendSkipMsg = false;
-        message.channel.send('***Skipping with ' + votesNow + ' vote' + (votesNow > 1 ? 's' : '') + '***');
-      } else {
-        return message.channel.send('*' + (message.member.nickname ? message.member.nickname : message.member.user.username) +
-          ' voted to skip (' + votesNow + '/' + votesNeeded + ')*');
-      }
-    } else {
-      return;
-    }
+  if (servers[message.guild.id].voteAdmin.length > 0) {
+    console.log(mem);
+    const vs = voteSystem(message, mem, message.guild.id, forceSkip, 'skip', servers[message.guild.id].voteSkipMembersId);
+    servers[message.guild.id].voteSkipMembersId = vs.votes;
+    if (vs.bool) {
+      skipTimes = 1;
+      sendSkipMsg = false;
+      message.channel.send('***Skipping with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***');
+    } else return;
   }
-
   if (dispatcherMap[voiceChannel.id]) dispatcherMap[voiceChannel.id].pause();
   if (skipTimes) {
     try {
@@ -2170,6 +2169,43 @@ function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSki
     }
   } else {
     skipSong(message, voiceChannel, true);
+  }
+}
+
+/**
+ * A system to manage votes for various bot actions. Used for DJ mode.
+ * @param message
+ * @param voter
+ * @param mgid
+ * @param force
+ * @param commandName
+ * @param votes
+ * @returns {{bool: boolean}|{bool: boolean, votesNow: number, votes, votesNeeded: number}}
+ */
+function voteSystem (message, voter, mgid, force, commandName, votes) {
+  if (servers[message.guild.id].voteAdmin && !force) {
+    const vcMemMembersId = message.guild.voice.channel.members.map(x => x.id);
+    if (vcMemMembersId && vcMemMembersId.includes(voter.id) && vcMemMembersId.includes(bot.user.id)) {
+      const votesNeeded = Math.floor((vcMemMembersId.length - 1) / 2) + 1;
+      if (votes.includes(voter.id)) {
+        message.channel.send('*you (' + voter.user.nickname ? voter.nickname : voter.user.username + ') have already voted to ' + commandName + ' this track*\n**votes needed to ' +
+          commandName + ': ' + votesNeeded + '**');
+        return {bool: false};
+      }
+      votes.push(voter.id);
+      const votesNow = votes.length;
+      if (votesNow >= votesNeeded) {
+        message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) +
+          ' voted to ' + commandName + ' (' + votesNow + '/' + votesNeeded + ')*');
+        return {bool: true, votesNow, votesNeeded, votes: votes};
+      } else {
+        message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) +
+          ' voted to ' + commandName + ' (' + votesNow + '/' + votesNeeded + ')*');
+        return {bool: false, votes: votes};
+      }
+    } else {
+      return {bool: false, votes: votes};
+    }
   }
 }
 
@@ -2616,7 +2652,7 @@ bot.on('voiceStateUpdate', update => {
       servers[mgid].silence = false;
       servers[mgid].verbose = false;
       servers[mgid].loop = false;
-      servers[mgid].voteSkipAdmin = [];
+      servers[mgid].voteAdmin = [];
       if (embedMessageMap[update.guild.id] && embedMessageMap[mgid].reactions) {
         servers[mgid].collector.stop();
         embedMessageMap[mgid].reactions.removeAll().then();
@@ -2674,6 +2710,8 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   }
   const mgid = message.guild.id;
   servers[mgid].voteSkipMembersId = [];
+  servers[mgid].voteRewindMembersId = [];
+  servers[mgid].votePlayPauseMembersId = [];
   // the display url
   let urlOrg = whatToPlay;
   // the alternative url to play
@@ -2725,7 +2763,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     if (search.items[itemIndex]) urlAlt = search.items[itemIndex].url;
     else {
       message.channel.send('could not find <' + urlOrg + '>');
-      runSkipCommand(message, voiceChannel, 1, true);
+      runSkipCommand(message, voiceChannel, 1, true, true, message.member);
     }
   }
   // remove previous embed buttons
@@ -2848,9 +2886,14 @@ function searchForBrokenLinkWithinDB (message, whatToPlayS) {
  * @param voiceChannel The active voice channel
  * @param numberOfTimes The number of times to rewind
  * @param ignoreSingleRewind whether to print out the rewind text
+ * @param force Optional - During DJ mode, can override votes
+ * @param mem The metadata of the member using the command, used for DJ mode
  * @returns {*}
  */
-function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSingleRewind) {
+function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSingleRewind, force, mem) {
+  if (!voiceChannel) {
+    return message.channel.send('You must be in a voice channel to rewind');
+  }
   let song;
   let rewindTimes = 1;
   try {
@@ -2860,6 +2903,15 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
   } catch (e) {
     rewindTimes = 1;
     message.channel.send('rewinding once');
+  }
+  if (servers[message.guild.id].voteAdmin.length > 0 && !force) {
+    const vs = voteSystem(message, mem, message.guild.id, force, 'rewind', servers[message.guild.id].voteRewindMembersId);
+    servers[message.guild.id].voteRewindMembersId = vs.votes;
+    if (vs.bool) {
+      rewindTimes = 1;
+      ignoreSingleRewind = true;
+      message.channel.send('***Rewinding with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***');
+    } else return;
   }
   if (!rewindTimes || rewindTimes < 1 || rewindTimes > 10000) return message.channel.send('invalid rewind amount');
   let rwIncrementor = 0;
@@ -3008,7 +3060,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
           }
           if (reaction.emoji.name === '⏩') {
             reaction.users.remove(reactionCollector.id);
-            runSkipCommand(message, voiceChannel, 1, false);
+            runSkipCommand(message, voiceChannel, 1, false, false, message.member.voice.channel.members.get(reactionCollector.id));
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
@@ -3043,14 +3095,14 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏪') {
             reaction.users.remove(reactionCollector.id);
-            runRewindCommand(message, mgid, voiceChannel, undefined, true);
+            runRewindCommand(message, mgid, voiceChannel, undefined, true, false, message.member.voice.channel.members.get(reactionCollector.id));
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '⏹') {
             collector.stop();
-            runStopPlayingCommand(mgid, voiceChannel, false, message);
+            runStopPlayingCommand(mgid, voiceChannel, false, message, reactionCollector.id);
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
@@ -3085,12 +3137,14 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
  * @param message Optional - The message metadata, used in the case of verifying a dj
+ * @param member Optional - The member requesting to stop playing, used in the case of verifying a dj
  */
-function runStopPlayingCommand (mgid, voiceChannel, stayInVC, message) {
+function runStopPlayingCommand (mgid, voiceChannel, stayInVC, message, member) {
   if (!voiceChannel) return;
-  if (servers[mgid].voteSkipAdmin.length > 0) {
-    if (!voiceChannel.members.map(x => x.user.id).includes(message.member.id))
-      return message.channel.send('only a dj can end the session');
+  if (servers[mgid].voteAdmin.length > 0) {
+    const djAdminsIds = servers[mgid].voteAdmin.map(x => x.id);
+    if (!djAdminsIds.includes(member ? member : message.member.id))
+      return message.channel.send('*only the DJ can end the session*');
   }
   if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
     servers[mgid].collector.stop();
