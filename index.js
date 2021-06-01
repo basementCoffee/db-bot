@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.5';
-const buildNo = '05000502'; // major, minor, patch, build
+const version = '5.0.6';
+const buildNo = '05000602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1444,8 +1444,9 @@ function hasDJPermissions (message, member, printErrMsg) {
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
  * @param optionalUser The user that is performing the action, required if different from the message member
+ * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
  */
-function runPauseCommand (message, noErrorMsg, force, optionalUser) {
+function runPauseCommand (message, noErrorMsg, force, optionalUser, noPrintMsg) {
   if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
     dispatcherMap[message.member.voice.channel.id]) {
     let cmdResponse = '*paused*';
@@ -1465,6 +1466,7 @@ function runPauseCommand (message, noErrorMsg, force, optionalUser) {
     dispatcherMap[message.member.voice.channel.id].resume();
     dispatcherMap[message.member.voice.channel.id].pause();
     dispatcherMapStatus[message.member.voice.channel.id] = true;
+    if (noPrintMsg && cmdResponse === '*paused*') return true;
     message.channel.send(cmdResponse);
     return true;
   } else if (!noErrorMsg) {
@@ -1479,8 +1481,9 @@ function runPauseCommand (message, noErrorMsg, force, optionalUser) {
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
  * @param optionalUser The user that is performing the action, required if different from the message member
+ * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
  */
-function runPlayCommand (message, noErrorMsg, force, optionalUser) {
+function runPlayCommand (message, noErrorMsg, force, optionalUser, noPrintMsg) {
   if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
     dispatcherMap[message.member.voice.channel.id]) {
     let cmdResponse = '*playing*';
@@ -1500,6 +1503,7 @@ function runPlayCommand (message, noErrorMsg, force, optionalUser) {
     dispatcherMap[message.member.voice.channel.id].pause();
     dispatcherMap[message.member.voice.channel.id].resume();
     dispatcherMapStatus[message.member.voice.channel.id] = false;
+    if (noPrintMsg && cmdResponse === '*playing*') return true;
     message.channel.send(cmdResponse);
     return true;
   } else if (!noErrorMsg) {
@@ -3165,7 +3169,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             }
           } else if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
             let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-            runPauseCommand(message, true, false, tempUser);
+            runPauseCommand(message, true, false, tempUser, true);
             tempUser = tempUser.nickname;
             if (servers[mgid].voteAdmin.length < 1) {
               if (servers[mgid].followUpMessage) {
@@ -3179,7 +3183,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
             reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
             let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-            runPlayCommand(message, true, false, tempUser);
+            runPlayCommand(message, true, false, tempUser, true);
             if (servers[mgid].voteAdmin.length < 1) {
               tempUser = tempUser.nickname;
               if (servers[mgid].followUpMessage) {
