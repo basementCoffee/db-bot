@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.3';
-const buildNo = '05000302'; // major, minor, patch, build
+const version = '5.0.4';
+const buildNo = '05000402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1316,7 +1316,7 @@ bot.on('message', async (message) => {
         } else {
           dm = bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : '';
         }
-        message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active:' : '**active:**')) + process.pid +
+        message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
           ' (' + version + ')' + dm);
       } else if (zargs[1] === 'all') {
         isInactive = true;
@@ -2263,7 +2263,7 @@ function voteSystem (message, mgid, commandName, voter, votes) {
   if (servers[message.guild.id].voteAdmin) {
     const vcMemMembersId = message.guild.voice.channel.members.map(x => x.id);
     if (vcMemMembersId && vcMemMembersId.includes(voter.id) && vcMemMembersId.includes(bot.user.id)) {
-      servers[message.guild.id].numSinceLastEmbed += 1;
+      servers[message.guild.id].numSinceLastEmbed += 2;
       const votesNeeded = Math.floor((vcMemMembersId.length - 1) / 2) + 1;
       if (votes.includes(voter.id)) {
         message.channel.send('*you (' + voter.user.nickname ? voter.nickname : voter.user.username + ') have already voted to ' + commandName + ' this track*\n**votes needed to ' +
