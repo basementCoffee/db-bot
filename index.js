@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.1';
-const buildNo = '05000102'; // major, minor, patch, build
+const version = '5.0.2';
+const buildNo = '05000202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -273,13 +273,7 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
     return message.channel.send("must be in a voice channel to play");
   }
   if (!args[1]) {
-    if (servers[mgid].queue[0] && dispatcherMap[message.member.voice.channel.id] &&
-      dispatcherMapStatus[message.member.voice.channel.id]) {
-      dispatcherMap[message.member.voice.channel.id].resume();
-      dispatcherMap[message.member.voice.channel.id].pause();
-      dispatcherMap[message.member.voice.channel.id].resume();
-      return message.channel.send('*playing*');
-    }
+    if (runPlayCommand(message, true)) return;
     return message.channel.send('What should I play? Put a link or some words.');
   }
   if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !verifyPlaylist(args[1])) {
@@ -493,13 +487,6 @@ async function runCommandCases (message) {
       } else {
         servers[mgid].loop = true;
         message.channel.send('*looping enabled*');
-      }
-      break;
-    case 'stop':
-      if (message.member.voice && dispatcherMap[message.member.voice.channel.id]) {
-        dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMapStatus[message.member.voice.channel.id] = true;
-        message.channel.send('*stopped*');
       }
       break;
     case 'lyrics':
@@ -827,18 +814,48 @@ async function runCommandCases (message) {
       }
       break;
     case 'fs' :
-      if (!servers[mgid].voteAdmin || servers[mgid].voteAdmin.includes(message.member)) {
+      if (hasDJPermissions(message, message.member, true)) {
         runSkipCommand(message, message.member.voice.channel, args[1], true, true, message.member);
       }
       break;
     case 'forcerewind':
-      if (!servers[mgid].voteAdmin || servers[mgid].voteAdmin.includes(message.member)) {
+      if (hasDJPermissions(message, message.member, true)) {
+        runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
+      }
+      break;
+    case 'fr':
+      if (hasDJPermissions(message, message.member, true)) {
         runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
       }
       break;
     case 'frw':
-      if (!servers[mgid].voteAdmin || servers[mgid].voteAdmin.includes(message.member)) {
+      if (hasDJPermissions(message, message.member, true)) {
         runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
+      }
+      break;
+    case 'fp':
+      if (hasDJPermissions(message, message.member, true)) {
+        message.channel.send('use \'fpl\' to force play and \'fpa\' to force pause.');
+      }
+      break;
+    case 'forceplay' :
+      if (hasDJPermissions(message, message.member, true)) {
+        runPlayCommand(message, false, true);
+      }
+      break;
+    case 'fpl' :
+      if (hasDJPermissions(message, message.member, true)) {
+        runPlayCommand(message, false, true);
+      }
+      break;
+    case 'forcepause' :
+      if (hasDJPermissions(message, message.member, true)) {
+        runPauseCommand(message, false, true);
+      }
+      break;
+    case 'fpa' :
+      if (hasDJPermissions(message, message.member, true)) {
+        runPauseCommand(message, false, true);
       }
       break;
     case 'resign':
@@ -846,69 +863,38 @@ async function runCommandCases (message) {
         message.channel.send('There is no DJ right now');
       } else if (servers[mgid].voteAdmin[0] === message.member) {
         servers[mgid].voteAdmin.pop();
-        message.channel.send('You are no longer the DJ. Vote skip has been disabled.');
+        let resignMsg = (message.member.nickname ? message.member.nickname : message.member.user.username) +
+          ' is no longer the DJ.';
+        if (servers[mgid].voteAdmin.length < 1) {
+          servers[mgid].voteSkipMembersId = [];
+          servers[mgid].voteRewindMembersId = [];
+          servers[mgid].votePlayPauseMembersId = [];
+          resignMsg += ' Vote skip has been disabled.';
+        }
+        message.channel.send(resignMsg);
       } else {
         message.channel.send('Only the DJ can resign');
       }
       break;
     // !pa
     case 'pa':
-      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
-        dispatcherMap[message.member.voice.channel.id]) {
-        dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMapStatus[message.member.voice.channel.id] = true;
-        message.channel.send('*paused*');
-      }
+      runPauseCommand(message);
+      break;
+    case 'stop':
+      runPauseCommand(message);
       break;
     case 'pause':
-      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
-        dispatcherMap[message.member.voice.channel.id]) {
-        dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMapStatus[message.member.voice.channel.id] = true;
-        message.channel.send('*paused*');
-      } else {
-        message.channel.send('nothing is playing right now');
-      }
+      runPauseCommand(message);
       break;
     // !pl
     case 'pl':
-      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
-        dispatcherMap[message.member.voice.channel.id]) {
-        dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMapStatus[message.member.voice.channel.id] = false;
-        message.channel.send('*playing*');
-      } else {
-        message.channel.send('nothing is playing right now');
-      }
+      runPlayCommand(message);
       break;
     case 'res':
-      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
-        dispatcherMap[message.member.voice.channel.id]) {
-        dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMapStatus[message.member.voice.channel.id] = false;
-        message.channel.send('*playing*');
-      }
+      runPlayCommand(message);
       break;
     case 'resume':
-      servers[mgid].numSinceLastEmbed += 3;
-      if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
-        dispatcherMap[message.member.voice.channel.id]) {
-        dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMap[message.member.voice.channel.id].pause();
-        dispatcherMap[message.member.voice.channel.id].resume();
-        dispatcherMapStatus[message.member.voice.channel.id] = false;
-        message.channel.send('*playing*');
-      } else {
-        message.channel.send('nothing is playing right now');
-      }
+      runPlayCommand(message);
       break;
     case 'time':
       if (dispatcherMap[message.member.voice.channel.id]) {
@@ -1330,7 +1316,8 @@ bot.on('message', async (message) => {
         } else {
           dm = bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : '';
         }
-        message.channel.send((isInactive ? 'sidelined: ' : '**active:** ') + process.pid + ' (' + version + ')' + dm);
+        message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active:' : '**active:**')) + process.pid +
+          ' (' + version + ')' + dm);
       } else if (zargs[1] === 'all') {
         isInactive = true;
         message.channel.send('db bot ' + process.pid + ' has been sidelined');
@@ -1423,6 +1410,92 @@ bot.on('message', async (message) => {
 });
 
 /**
+ * Verifies if a member is a vote admin (DJ moderator) or has the same permissions as a vote admin.
+ * @param message The message metadata
+ * @param member The member metadata of the user to verify
+ * @param printErrMsg True if to print an error if the user is not a vote admin
+ * @returns {boolean} Returns true if the member has DJ permissions.
+ */
+function hasDJPermissions (message, member, printErrMsg) {
+  if (!servers[message.guild.id].voteAdmin || servers[message.guild.id].voteAdmin.includes(member)) {
+    return true;
+  } else if (printErrMsg) {
+    message.channel.send('*you do not have the necessary permissions to perform this action*');
+  }
+  return false;
+}
+
+/**
+ * Pauses the now playing, if playing.
+ * @param message The message content metadata
+ * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
+ * @param force Optional - Skips the voting system if DJ mode is on
+ * @param optionalUser The user that is performing the action, required if different from the message member
+ */
+function runPauseCommand (message, noErrorMsg, force, optionalUser) {
+  if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
+    dispatcherMap[message.member.voice.channel.id]) {
+    if (servers[message.guild.id].voteAdmin.length > 0) {
+      if (force) servers[message.guild.id].votePlayPauseMembersId = [];
+      else {
+        if (!optionalUser) optionalUser = message.member;
+        const vs = voteSystem(message, message.guild.id, 'pause', optionalUser, servers[message.guild.id].votePlayPauseMembersId);
+        servers[message.guild.id].voteSkipMembersId = vs.votes;
+        if (vs.bool) {
+          message.channel.send('***Pausing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***');
+          servers[message.guild.id].votePlayPauseMembersId = [];
+        } else return true;
+      }
+    }
+    dispatcherMap[message.member.voice.channel.id].pause();
+    dispatcherMap[message.member.voice.channel.id].resume();
+    dispatcherMap[message.member.voice.channel.id].pause();
+    dispatcherMapStatus[message.member.voice.channel.id] = true;
+    message.channel.send('*paused*');
+    return true;
+  } else if (!noErrorMsg) {
+    message.channel.send('nothing is playing right now');
+    return false;
+  }
+}
+
+/**
+ * Plays the now playing if paused.
+ * @param message The message content metadata
+ * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
+ * @param force Optional - Skips the voting system if DJ mode is on
+ * @param optionalUser The user that is performing the action, required if different from the message member
+ */
+function runPlayCommand (message, noErrorMsg, force, optionalUser) {
+  if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
+    dispatcherMap[message.member.voice.channel.id]) {
+    if (servers[message.guild.id].voteAdmin.length > 0) {
+      if (force) servers[message.guild.id].votePlayPauseMembersId = [];
+      else {
+        if (!optionalUser) optionalUser = message.member;
+        console.log('b1');
+        const vs = voteSystem(message, message.guild.id, 'play', optionalUser, servers[message.guild.id].votePlayPauseMembersId);
+        console.log('b2');
+        servers[message.guild.id].voteSkipMembersId = vs.votes;
+        if (vs.bool) {
+          message.channel.send('***Playing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***');
+          servers[message.guild.id].votePlayPauseMembersId = [];
+        } else return true;
+      }
+    }
+    dispatcherMap[message.member.voice.channel.id].resume();
+    dispatcherMap[message.member.voice.channel.id].pause();
+    dispatcherMap[message.member.voice.channel.id].resume();
+    dispatcherMapStatus[message.member.voice.channel.id] = false;
+    message.channel.send('*playing*');
+    return true;
+  } else if (!noErrorMsg) {
+    message.channel.send('nothing is playing right now');
+    return false;
+  }
+}
+
+/**
  * Prompts the text channel for a response to forward to the given user.
  * @param message The original message that activates the bot.
  * @param userID The ID of the user to forward the message to.
@@ -1461,9 +1534,13 @@ function runDJCommand (message) {
   if (servers[message.guild.id].voteAdmin.length < 1) {
     servers[message.guild.id].voteAdmin.push(message.member);
     const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
-    message.channel.send('***vote skip has been enabled for this session (DJ: ' + dj + ')***\n' +
-      '*' + dj + ', use \'**forceskip**\' or \'**fs**\' to force skip a track ' +
-      'and \'**resign**\' to forfeit DJ permissions.*');
+    message.channel.send('***vote skip has been enabled for this session (DJ: ' + dj + ')***');
+    const msgEmbed = new MessageEmbed();
+    msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
+      '\`forcerewind\`- force rewind a track [fr]\n' +
+      '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
+      '\`resign\` - forfeit DJ permissions');
+    message.channel.send(msgEmbed);
   } else {
     let ix = 0;
     for (let x of servers[message.guild.id].voteAdmin) {
@@ -2133,9 +2210,8 @@ function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSki
     voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
   }
-  if (servers[message.guild.id].voteAdmin.length > 0) {
-    console.log(mem);
-    const vs = voteSystem(message, mem, message.guild.id, forceSkip, 'skip', servers[message.guild.id].voteSkipMembersId);
+  if (servers[message.guild.id].voteAdmin.length > 0 && !forceSkip) {
+    const vs = voteSystem(message, message.guild.id, 'skip', mem, servers[message.guild.id].voteSkipMembersId);
     servers[message.guild.id].voteSkipMembersId = vs.votes;
     if (vs.bool) {
       skipTimes = 1;
@@ -2175,22 +2251,21 @@ function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSki
 /**
  * A system to manage votes for various bot actions. Used for DJ mode.
  * @param message
- * @param voter
- * @param mgid
- * @param force
+ * @param mgid The messsage guild id
  * @param commandName
+ * @param voter The member that is doing the voting
  * @param votes
  * @returns {{bool: boolean}|{bool: boolean, votesNow: number, votes, votesNeeded: number}}
  */
-function voteSystem (message, voter, mgid, force, commandName, votes) {
-  if (servers[message.guild.id].voteAdmin && !force) {
+function voteSystem (message, mgid, commandName, voter, votes) {
+  if (servers[message.guild.id].voteAdmin) {
     const vcMemMembersId = message.guild.voice.channel.members.map(x => x.id);
     if (vcMemMembersId && vcMemMembersId.includes(voter.id) && vcMemMembersId.includes(bot.user.id)) {
       const votesNeeded = Math.floor((vcMemMembersId.length - 1) / 2) + 1;
       if (votes.includes(voter.id)) {
         message.channel.send('*you (' + voter.user.nickname ? voter.nickname : voter.user.username + ') have already voted to ' + commandName + ' this track*\n**votes needed to ' +
           commandName + ': ' + votesNeeded + '**');
-        return {bool: false};
+        return {bool: false, votes: votes};
       }
       votes.push(voter.id);
       const votesNow = votes.length;
@@ -2709,9 +2784,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     return runStopPlayingCommand(message.guild.id, voiceChannel);
   }
   const mgid = message.guild.id;
-  servers[mgid].voteSkipMembersId = [];
-  servers[mgid].voteRewindMembersId = [];
-  servers[mgid].votePlayPauseMembersId = [];
+  if (servers[mgid].voteAdmin.length > 0) {
+    servers[mgid].voteSkipMembersId = [];
+    servers[mgid].voteRewindMembersId = [];
+    servers[mgid].votePlayPauseMembersId = [];
+  }
   // the display url
   let urlOrg = whatToPlay;
   // the alternative url to play
@@ -2905,7 +2982,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
     message.channel.send('rewinding once');
   }
   if (servers[message.guild.id].voteAdmin.length > 0 && !force) {
-    const vs = voteSystem(message, mem, message.guild.id, force, 'rewind', servers[message.guild.id].voteRewindMembersId);
+    const vs = voteSystem(message, message.guild.id, 'rewind', mem, servers[message.guild.id].voteRewindMembersId);
     servers[message.guild.id].voteRewindMembersId = vs.votes;
     if (vs.bool) {
       rewindTimes = 1;
