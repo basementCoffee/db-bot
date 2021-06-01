@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.4';
-const buildNo = '05000402'; // major, minor, patch, build
+const version = '5.0.5';
+const buildNo = '05000502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1093,6 +1093,9 @@ async function runCommandCases (message) {
         bot.voice.connections.map(x => console.log(x.channel.guild.name));
         break;
       }
+      if (args[1] === 'list') {
+        message.channel.send('u, r, clear');
+      }
       if (args[1] === 'find') {
         let gx = '';
         bot.voice.connections.map(x => gx += x.channel.guild.name + ', ');
@@ -1100,6 +1103,15 @@ async function runCommandCases (message) {
         if (gx) message.channel.send(gx);
         else message.channel.send('none found');
         break;
+      }
+      if (args[1] === 'update') {
+        if (process.pid === 4 || (args[2] && args[2] === 'force')) {
+          bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
+          message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
+        } else {
+          message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
+            'To still send out an update use \'gzm update force\'');
+        }
       }
       if (args[1] === 'listu') {
         let gx = '';
@@ -1117,14 +1129,15 @@ async function runCommandCases (message) {
         else message.channel.send('none found');
         break;
       }
-      if (args[1] === 'update') {
-        if (process.pid === 4 || (args[2] && args[2] === 'force')) {
-          bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
-          message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
-        } else {
-          message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
-            'To still send out an update use \'gzm update force\'');
-        }
+      if (args[1] === 'listm') {
+        let mems = '';
+        gzmMem.forEach(x => mems += (x + ', '));
+        if (!mems) mems = 'n/a  ';
+        message.channel.send(mems.substr(0, mems.length - 2));
+      }
+      if (args[1] === 'clear') {
+        gzmMem.clear();
+        message.channel.send('*cleared*');
       }
       break;
     case 'gzi':
@@ -1441,7 +1454,7 @@ function runPauseCommand (message, noErrorMsg, force, optionalUser) {
       else {
         if (!optionalUser) optionalUser = message.member;
         const vs = voteSystem(message, message.guild.id, 'pause', optionalUser, servers[message.guild.id].votePlayPauseMembersId);
-        servers[message.guild.id].voteSkipMembersId = vs.votes;
+        servers[message.guild.id].votePlayPauseMembersId = vs.votes;
         if (vs.bool) {
           cmdResponse = '***Pausing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***';
           servers[message.guild.id].votePlayPauseMembersId = [];
@@ -1475,10 +1488,8 @@ function runPlayCommand (message, noErrorMsg, force, optionalUser) {
       if (force) servers[message.guild.id].votePlayPauseMembersId = [];
       else {
         if (!optionalUser) optionalUser = message.member;
-        console.log('b1');
         const vs = voteSystem(message, message.guild.id, 'play', optionalUser, servers[message.guild.id].votePlayPauseMembersId);
-        console.log('b2');
-        servers[message.guild.id].voteSkipMembersId = vs.votes;
+        servers[message.guild.id].votePlayPauseMembersId = vs.votes;
         if (vs.bool) {
           cmdResponse = '***Playing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***';
           servers[message.guild.id].votePlayPauseMembersId = [];
@@ -2266,19 +2277,20 @@ function voteSystem (message, mgid, commandName, voter, votes) {
       servers[message.guild.id].numSinceLastEmbed += 2;
       const votesNeeded = Math.floor((vcMemMembersId.length - 1) / 2) + 1;
       if (votes.includes(voter.id)) {
-        message.channel.send('*you (' + voter.user.nickname ? voter.nickname : voter.user.username + ') have already voted to ' + commandName + ' this track*\n**votes needed to ' +
+        message.channel.send('*you (' + voter.nickname ? voter.nickname : voter.user.username +
+          ') have already voted to ' + commandName + ' this track*\n**votes needed to ' +
           commandName + ': ' + votesNeeded + '**');
         return {bool: false, votes: votes};
       }
       votes.push(voter.id);
       const votesNow = votes.length;
       if (votesNow >= votesNeeded) {
-        message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) +
-          ' voted to ' + commandName + ' (' + votesNow + '/' + votesNeeded + ')*');
+        message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) + ' voted to ' +
+          commandName + ' (' + votesNow + '/' + votesNeeded + ')*');
         return {bool: true, votesNow, votesNeeded, votes: votes};
       } else {
-        message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) +
-          ' voted to ' + commandName + ' (' + votesNow + '/' + votesNeeded + ')*');
+        message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) + ' voted to ' +
+          commandName + ' (' + votesNow + '/' + votesNeeded + ')*');
         return {bool: false, votes: votes};
       }
     } else {
@@ -2775,8 +2787,14 @@ process.on('error', (e) => {
  * @param sendEmbed whether to send an embed to the text channel
  */
 async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
+  const mgid = message.guild.id;
+  gzmMem.add(message.member.user.username);
   if (!whatToPlay) {
-    return;
+    whatToPlay = servers[mgid].queue[0];
+    if (!whatToPlay && servers[mgid].queue[1]) {
+      servers[mgid].queue.shift();
+      whatToPlay = servers[mgid].queue[0];
+    } else return;
   }
   if (!voiceChannel) {
     voiceChannel = message.member.voice.channel;
@@ -2786,7 +2804,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     message.channel.send('*db bot has been updated*');
     return runStopPlayingCommand(message.guild.id, voiceChannel);
   }
-  const mgid = message.guild.id;
   if (servers[mgid].voteAdmin.length > 0) {
     servers[mgid].voteSkipMembersId = [];
     servers[mgid].voteRewindMembersId = [];
@@ -2846,18 +2863,19 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       runSkipCommand(message, voiceChannel, 1, true, true, message.member);
     }
   }
-  // remove previous embed buttons
-  if (servers[mgid].numSinceLastEmbed > 4 && servers[mgid].currentEmbed && (!servers[mgid].loop || whatspMap[voiceChannel.id] !== urlOrg)) {
-    servers[mgid].numSinceLastEmbed = 0;
-    servers[mgid].currentEmbed.delete();
-    servers[mgid].currentEmbed = undefined;
-    embedMessageMap[mgid] = '';
-  }
-  whatspMap[voiceChannel.id] = urlOrg;
   voiceChannel.join().then(async connection => {
+    whatspMap[voiceChannel.id] = urlOrg;
+    // remove previous embed buttons
+    if (servers[mgid].numSinceLastEmbed > 4 && servers[mgid].currentEmbed &&
+      (!servers[mgid].loop || whatspMap[voiceChannel.id] !== urlOrg)) {
+      servers[mgid].numSinceLastEmbed = 0;
+      servers[mgid].currentEmbed.delete();
+      servers[mgid].currentEmbed = undefined;
+      embedMessageMap[mgid] = false;
+    }
     try {
+      connection.voice.setSelfDeaf(true).then();
       let dispatcher;
-      await connection.voice.setSelfDeaf(true);
       dispatcher = connection.play(await ytdl(urlAlt, {}), {
         type: 'opus',
         filter: 'audioonly',
@@ -3146,31 +3164,31 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
               servers[mgid].followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
-            dispatcherMap[voiceChannel.id].pause();
-            dispatcherMap[voiceChannel.id].resume();
-            dispatcherMap[voiceChannel.id].pause();
-            dispatcherMapStatus[voiceChannel.id] = true;
-            const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
-            if (servers[mgid].followUpMessage) {
-              servers[mgid].followUpMessage.edit('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
-                '\`*');
-            } else {
-              message.channel.send('*paused by \`' + (userNickname ? userNickname : reactionCollector.username) +
-                '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
+            let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
+            runPauseCommand(message, true, false, tempUser);
+            tempUser = tempUser.nickname;
+            if (servers[mgid].voteAdmin.length < 1) {
+              if (servers[mgid].followUpMessage) {
+                servers[mgid].followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                  '\`*');
+              } else {
+                message.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                  '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
+              }
             }
             reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
-            dispatcherMap[voiceChannel.id].resume();
-            dispatcherMap[voiceChannel.id].pause();
-            dispatcherMap[voiceChannel.id].resume();
-            dispatcherMapStatus[voiceChannel.id] = false;
-            const userNickname = sentMsg.guild.members.cache.get(reactionCollector.id).nickname;
-            if (servers[mgid].followUpMessage) {
-              servers[mgid].followUpMessage.edit('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
-                '\`*');
-            } else {
-              message.channel.send('*played by \`' + (userNickname ? userNickname : reactionCollector.username) +
-                '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
+            let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
+            runPlayCommand(message, true, false, tempUser);
+            if (servers[mgid].voteAdmin.length < 1) {
+              tempUser = tempUser.nickname;
+              if (servers[mgid].followUpMessage) {
+                servers[mgid].followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                  '\`*');
+              } else {
+                message.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                  '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
+              }
             }
             reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏪') {
@@ -3282,6 +3300,7 @@ async function runWhatsPCommand (message, mgid, keyName, sheetname, sheetLetter)
   }
 }
 
+const gzmMem = new Set();
 // What's playing, uses voice channel id
 const whatspMap = new Map();
 // The server's prefix, uses guild id
