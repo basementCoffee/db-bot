@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.2';
-const buildNo = '05000202'; // major, minor, patch, build
+const version = '5.0.3';
+const buildNo = '05000302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1435,6 +1435,7 @@ function hasDJPermissions (message, member, printErrMsg) {
 function runPauseCommand (message, noErrorMsg, force, optionalUser) {
   if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
     dispatcherMap[message.member.voice.channel.id]) {
+    let cmdResponse = '*paused*';
     if (servers[message.guild.id].voteAdmin.length > 0) {
       if (force) servers[message.guild.id].votePlayPauseMembersId = [];
       else {
@@ -1442,7 +1443,7 @@ function runPauseCommand (message, noErrorMsg, force, optionalUser) {
         const vs = voteSystem(message, message.guild.id, 'pause', optionalUser, servers[message.guild.id].votePlayPauseMembersId);
         servers[message.guild.id].voteSkipMembersId = vs.votes;
         if (vs.bool) {
-          message.channel.send('***Pausing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***');
+          cmdResponse = '***Pausing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***';
           servers[message.guild.id].votePlayPauseMembersId = [];
         } else return true;
       }
@@ -1451,7 +1452,7 @@ function runPauseCommand (message, noErrorMsg, force, optionalUser) {
     dispatcherMap[message.member.voice.channel.id].resume();
     dispatcherMap[message.member.voice.channel.id].pause();
     dispatcherMapStatus[message.member.voice.channel.id] = true;
-    message.channel.send('*paused*');
+    message.channel.send(cmdResponse);
     return true;
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
@@ -1469,6 +1470,7 @@ function runPauseCommand (message, noErrorMsg, force, optionalUser) {
 function runPlayCommand (message, noErrorMsg, force, optionalUser) {
   if (message.member.voice && message.guild.voice && message.guild.voice.channel &&
     dispatcherMap[message.member.voice.channel.id]) {
+    let cmdResponse = '*playing*';
     if (servers[message.guild.id].voteAdmin.length > 0) {
       if (force) servers[message.guild.id].votePlayPauseMembersId = [];
       else {
@@ -1478,7 +1480,7 @@ function runPlayCommand (message, noErrorMsg, force, optionalUser) {
         console.log('b2');
         servers[message.guild.id].voteSkipMembersId = vs.votes;
         if (vs.bool) {
-          message.channel.send('***Playing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***');
+          cmdResponse = '***Playing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***';
           servers[message.guild.id].votePlayPauseMembersId = [];
         } else return true;
       }
@@ -1487,7 +1489,7 @@ function runPlayCommand (message, noErrorMsg, force, optionalUser) {
     dispatcherMap[message.member.voice.channel.id].pause();
     dispatcherMap[message.member.voice.channel.id].resume();
     dispatcherMapStatus[message.member.voice.channel.id] = false;
-    message.channel.send('*playing*');
+    message.channel.send(cmdResponse);
     return true;
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
@@ -1534,7 +1536,7 @@ function runDJCommand (message) {
   if (servers[message.guild.id].voteAdmin.length < 1) {
     servers[message.guild.id].voteAdmin.push(message.member);
     const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
-    message.channel.send('***vote skip has been enabled for this session (DJ: ' + dj + ')***');
+    message.channel.send('***[BETA] vote skip has been enabled for this session (DJ: ' + dj + ')***');
     const msgEmbed = new MessageEmbed();
     msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
       '\`forcerewind\`- force rewind a track [fr]\n' +
@@ -2261,6 +2263,7 @@ function voteSystem (message, mgid, commandName, voter, votes) {
   if (servers[message.guild.id].voteAdmin) {
     const vcMemMembersId = message.guild.voice.channel.members.map(x => x.id);
     if (vcMemMembersId && vcMemMembersId.includes(voter.id) && vcMemMembersId.includes(bot.user.id)) {
+      servers[message.guild.id].numSinceLastEmbed += 1;
       const votesNeeded = Math.floor((vcMemMembersId.length - 1) / 2) + 1;
       if (votes.includes(voter.id)) {
         message.channel.send('*you (' + voter.user.nickname ? voter.nickname : voter.user.username + ') have already voted to ' + commandName + ' this track*\n**votes needed to ' +
