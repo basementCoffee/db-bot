@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.6';
-const buildNo = '05000602'; // major, minor, patch, build
+const version = '5.0.7';
+const buildNo = '05000702'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -60,7 +60,7 @@ function formatDuration (duration) {
  * @param message The message that the discord client is parsing
  * @returns {*} true if congrats is detected
  */
-function contentsContainCongrats (message) {
+function contentContainCongrats (message) {
   return (message.content.includes('grats') || message.content.includes('gratz') ||
     message.content.includes('ongratulations'));
 }
@@ -391,6 +391,32 @@ async function runCommandCases (message) {
           return message.channel.send('Current prefix is: ' + prefixString);
         }
       }
+    }
+    if (contentContainCongrats(message)) {
+      if (!servers[message.guild.id]) {
+        servers[mgid] = {
+          queue: [],
+          queueHistory: [],
+          loop: false,
+          collector: false,
+          followUpMessage: undefined,
+          currentEmbedLink: undefined,
+          currentEmbed: undefined,
+          numSinceLastEmbed: 0,
+          currentEmbedChannelId: undefined,
+          verbose: false,
+          voteAdmin: [],
+          voteSkipMembersId: [],
+          voteRewindMembersId: [],
+          votePlayPauseMembersId: []
+        };
+      } else if (!message.guild.voice || !message.guild.voice.channel) {
+        servers[mgid].queue = [];
+        servers[mgid].queueHistory = [];
+        servers[mgid].loop = false;
+      }
+      message.channel.send('Congratulations!').then();
+      return playSongToVC(message, 'https://www.youtube.com/watch?v=oyFQVZ2h0V8', message.member.voice.channel, false);
     }
     return;
   }
@@ -802,7 +828,7 @@ async function runCommandCases (message) {
     case 'sk':
       runSkipCommand(message, message.member.voice.channel, args[1], 1, false, message.member);
       break;
-    case 'voteskip':
+    case 'vote':
       runDJCommand(message);
       break;
     case 'dj':
@@ -869,7 +895,7 @@ async function runCommandCases (message) {
           servers[mgid].voteSkipMembersId = [];
           servers[mgid].voteRewindMembersId = [];
           servers[mgid].votePlayPauseMembersId = [];
-          resignMsg += ' Vote skip has been disabled.';
+          resignMsg += ' DJ mode has been disabled.';
         }
         message.channel.send(resignMsg);
       } else {
@@ -1132,7 +1158,7 @@ async function runCommandCases (message) {
       if (args[1] === 'listm') {
         let mems = '';
         gzmMem.forEach(x => mems += (x + ', '));
-        if (!mems) mems = 'n/a  ';
+        if (!mems) mems = 'none found  ';
         message.channel.send(mems.substr(0, mems.length - 2));
       }
       if (args[1] === 'clear') {
@@ -1377,24 +1403,13 @@ bot.on('message', async (message) => {
       }
     } else if (zmsg === 'zl') {
       return message.channel.send(process.pid.toString() +
-        `: Latency is ${Date.now() - message.createdTimestamp}ms.\nAPI Latency is ${Math.round(bot.ws.ping)}ms`);
+        `: Latency is ${Date.now() - message.createdTimestamp}ms.\nNetwork latency is ${Math.round(bot.ws.ping)}ms`);
     }
   }
   if (message.author.bot || isInactive) {
     return;
   }
-  if (contentsContainCongrats(message)) {
-    if (!servers[message.guild.id]) {
-      servers[message.guild.id] = {
-        queue: [],
-        queueHistory: [],
-        loop: false,
-        collector: false
-      };
-    }
-    message.channel.send('Congratulations!').then();
-    return playSongToVC(message, 'https://www.youtube.com/watch?v=oyFQVZ2h0V8', message.member.voice.channel, false);
-  } else if (message.channel.type === 'dm') {
+  if (message.channel.type === 'dm') {
     const mb = '📤';
     bot.channels.cache.get('840420205867302933')
       .send('------------------------------------------\n' +
@@ -1551,12 +1566,14 @@ function runDJCommand (message) {
   if (servers[message.guild.id].voteAdmin.length < 1) {
     servers[message.guild.id].voteAdmin.push(message.member);
     const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
-    message.channel.send('***[BETA] vote skip has been enabled for this session (DJ: ' + dj + ')***');
+    message.channel.send('***[BETA] DJ mode has been enabled for this session (DJ: ' + dj + ')***');
     const msgEmbed = new MessageEmbed();
     msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
       '\`forcerewind\`- force rewind a track [fr]\n' +
       '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
-      '\`resign\` - forfeit DJ permissions');
+      '\`resign\` - forfeit DJ permissions')
+      .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
+        'The DJ can override these by using the force commands above.');
     message.channel.send(msgEmbed);
   } else {
     let ix = 0;
@@ -1573,7 +1590,7 @@ function runDJCommand (message) {
     }
     const currentAdmin = servers[message.guild.id].voteAdmin[0];
     message.channel.send((currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
-      'the DJ. Any skip command can be used to vote skip a track.');
+      'the DJ. Any skip/rewind/play/pause command can be used to vote for that action.');
   }
 }
 
