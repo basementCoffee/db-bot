@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.7';
-const buildNo = '05000702'; // major, minor, patch, build
+const version = '5.0.8';
+const buildNo = '05000802'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -374,7 +374,6 @@ async function runCommandCases (message) {
       gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', 1);
     }
     prefixString = prefixMap[mgid];
-    bot.user.setActivity('[ .help ]', {type: 'WATCHING'}).then();
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
   const fwPrefix = firstWordBegin.substr(0, 1);
@@ -727,6 +726,24 @@ async function runCommandCases (message) {
       break;
     case 'm?':
       await runWhatsPCommand(message, mgid, args[1], 'p' + message.member.id, 'm');
+      break;
+    case 'glink':
+      await runWhatsPCommand(message, mgid, args[1], 'entries', 'g');
+      break;
+    case 'mlink':
+      await runWhatsPCommand(message, mgid, args[1], 'p' + message.member.id, 'm');
+      break;
+    case 'link':
+      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      break;
+    case 'gurl':
+      await runWhatsPCommand(message, mgid, args[1], 'entries', 'g');
+      break;
+    case 'murl':
+      await runWhatsPCommand(message, mgid, args[1], 'p' + message.member.id, 'm');
+      break;
+    case 'url':
+      await runWhatsPCommand(message, mgid, args[1], mgid, '');
       break;
     case 'queue':
       runQueueCommand(message, mgid);
@@ -1206,6 +1223,7 @@ bot.once('ready', () => {
   // if (!devMode && !isInactive) bot.channels.cache.get("827195452507160627").send("=gzc");
   // bot starts up as inactive, if no response from the channel then activates itself
   if (!devMode) {
+    bot.user.setActivity('[ .help ]', {type: 'WATCHING'}).then();
     mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
     bot.channels.cache.get('827195452507160627').send('starting up: ' + process.pid);
     if (isInactive) {
@@ -1213,7 +1231,6 @@ bot.once('ready', () => {
       console.log('checking status of other bots...');
       checkToSeeActive();
     } else {
-      bot.user.setActivity('[try ".help" ]', {type: 'PLAYING'}).then();
       bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
     }
   } else {
@@ -1433,7 +1450,7 @@ bot.on('message', async (message) => {
       });
     });
   } else {
-    runCommandCases(message).then();
+    return runCommandCases(message);
   }
 });
 
@@ -3304,8 +3321,7 @@ async function runWhatsPCommand (message, mgid, keyName, sheetname, sheetLetter)
       if (xdb.referenceDatabase.get(keyName.toUpperCase())) {
         return message.channel.send(xdb.referenceDatabase.get(keyName.toUpperCase()));
       } else {
-        message.channel.send("Could not find '" + keyName + "' in " + dbType + ' database.' +
-          (whatspMap[message.member.voice.channel.id] ? ('\n' + whatspMap[message.member.voice.channel.id]) : ''));
+        message.channel.send("Could not find '" + keyName + "' in " + dbType + ' database.');
         return sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true);
       }
     });
