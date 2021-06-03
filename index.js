@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.0.8';
-const buildNo = '05000802'; // major, minor, patch, build
+const version = '5.0.9';
+const buildNo = '05000902'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -701,49 +701,79 @@ async function runCommandCases (message) {
       break;
     // !? is the command for what's playing?
     case '?':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'np':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'now':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'what':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'nowplaying':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'playing':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'current':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'g?':
-      await runWhatsPCommand(message, mgid, args[1], 'entries', 'g');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
       break;
     case 'm?':
-      await runWhatsPCommand(message, mgid, args[1], 'p' + message.member.id, 'm');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
     case 'glink':
-      await runWhatsPCommand(message, mgid, args[1], 'entries', 'g');
+      if (!args[1]) {
+        if (servers[mgid].queue[0] && message.member.voice.channel) {
+          return message.channel.send(servers[mgid].queue[0]);
+        }
+      }
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
       break;
     case 'mlink':
-      await runWhatsPCommand(message, mgid, args[1], 'p' + message.member.id, 'm');
+      if (!args[1]) {
+        if (servers[mgid].queue[0] && message.member.voice.channel) {
+          return message.channel.send(servers[mgid].queue[0]);
+        }
+      }
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
     case 'link':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      if (!args[1]) {
+        if (servers[mgid].queue[0] && message.member.voice.channel) {
+          return message.channel.send(servers[mgid].queue[0]);
+        }
+      }
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'gurl':
-      await runWhatsPCommand(message, mgid, args[1], 'entries', 'g');
+      if (!args[1]) {
+        if (servers[mgid].queue[0] && message.member.voice.channel) {
+          return message.channel.send(servers[mgid].queue[0]);
+        }
+      }
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
       break;
     case 'murl':
-      await runWhatsPCommand(message, mgid, args[1], 'p' + message.member.id, 'm');
+      if (!args[1]) {
+        if (servers[mgid].queue[0] && message.member.voice.channel) {
+          return message.channel.send(servers[mgid].queue[0]);
+        }
+      }
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
     case 'url':
-      await runWhatsPCommand(message, mgid, args[1], mgid, '');
+      if (!args[1]) {
+        if (servers[mgid].queue[0] && message.member.voice.channel) {
+          return message.channel.send(servers[mgid].queue[0]);
+        }
+      }
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'queue':
       runQueueCommand(message, mgid);
@@ -1036,14 +1066,22 @@ async function runCommandCases (message) {
       break;
     case 'clear' :
       if (!message.member.voice.channel) return message.channel.send('must be in a voice channel to clear');
-      const currentSong = (dispatcherMap[message.member.voice.channel.id]) ? servers[mgid].queue[0] : undefined;
+      if (servers[mgid].voteAdmin.length > 0 && !servers[mgid].voteAdmin.includes(message.member))
+        return message.channel.send('only the DJ can clear the queue');
+      const currentSong =
+        (dispatcherMap[message.member.voice.channel.id] && message.guild.voice && message.guild.voice.channel)
+          ? servers[mgid].queue[0] : undefined;
       servers[mgid].queue = [];
       servers[mgid].queueHistory = [];
-      servers[mgid].loop = false;
-      if (currentSong) servers[mgid].queue[0] = currentSong;
       message.channel.send('The queue has been scrubbed clean');
-      if (!embedMessageMap[mgid] && currentSong) await runWhatsPCommand(message, mgid, undefined);
-      else if (currentSong) message.channel.send('queue size: 1');
+      if (currentSong) {
+        servers[mgid].queue[0] = currentSong;
+        message.channel.send('queue size: 1');
+        await runWhatsPCommand(message, message.member.voice.channel, undefined);
+      } else {
+        servers[mgid].currentEmbedLink = false;
+        whatspMap[message.member.voice.channel.id] = false;
+      }
       break;
     case 'invite':
       message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>");
@@ -1133,21 +1171,8 @@ async function runCommandCases (message) {
     case 'gzm' :
       if (!args[1]) {
         message.channel.send('active process #' + process.pid.toString() + ' is in ' + bot.voice.connections.size + ' servers.');
-        bot.voice.connections.map(x => console.log(x.channel.guild.name));
         break;
-      }
-      if (args[1] === 'list') {
-        message.channel.send('u, r, clear');
-      }
-      if (args[1] === 'find') {
-        let gx = '';
-        bot.voice.connections.map(x => gx += x.channel.guild.name + ', ');
-        gx = gx.substring(0, gx.length - 2);
-        if (gx) message.channel.send(gx);
-        else message.channel.send('none found');
-        break;
-      }
-      if (args[1] === 'update') {
+      } else if (args[1] === 'update') {
         if (process.pid === 4 || (args[2] && args[2] === 'force')) {
           bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
           message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
@@ -1155,12 +1180,11 @@ async function runCommandCases (message) {
           message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
             'To still send out an update use \'gzm update force\'');
         }
-      }
-      if (args[1] === 'listu') {
+      } else if (args[1] === 'listu') {
         let gx = '';
         let tgx;
         let tempSet = new Set();
-        bot.voice.connections.map(x => {
+        bot.voice.connections.forEach(x => {
           tgx = '';
           tempSet.clear();
           x.channel.guild.voice.channel.members.map(y => tempSet.add(y.user.username));
@@ -1171,16 +1195,23 @@ async function runCommandCases (message) {
         if (gx) message.channel.send(gx);
         else message.channel.send('none found');
         break;
-      }
-      if (args[1] === 'listm') {
+      } else if (args[1] === 'mem') {
         let mems = '';
         gzmMem.forEach(x => mems += (x + ', '));
-        if (!mems) mems = 'none found  ';
+        if (!mems || message.member.id !== '443150640823271436') mems = 'none found  ';
         message.channel.send(mems.substr(0, mems.length - 2));
-      }
-      if (args[1] === 'clear') {
-        gzmMem.clear();
+      } else if (args[1] === 'clear') {
+        if (message.member.id === '443150640823271436') gzmMem.clear();
         message.channel.send('*cleared*');
+      } else if (args[1] === 'list') {
+        message.channel.send('listu, mem, clear');
+      } else if (args[1] === 'find') {
+        let gx = '';
+        bot.voice.connections.forEach(x => gx += x.channel.guild.name + ', ');
+        gx = gx.substring(0, gx.length - 2);
+        if (gx) message.channel.send(gx);
+        else message.channel.send('none found');
+        break;
       }
       break;
     case 'gzi':
@@ -1590,7 +1621,7 @@ function runDJCommand (message) {
       '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
       '\`resign\` - forfeit DJ permissions')
       .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
-        'The DJ can override these by using the force commands above.');
+        'The DJ can override voting by using the force commands above.');
     message.channel.send(msgEmbed);
   } else {
     let ix = 0;
@@ -2555,7 +2586,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
   if (isPlaylist) {
     playlistKey = numOfTimes;
     if (verifyPlaylist(cdb.get(playlistKey))) numOfTimes = 2;
-    else return message.channel.send('incorrect format: argument must be a number or playlist');
+    else return message.channel.send('argument must be a positive number or playlist key-name');
   }
   if (numOfTimes > 100) sentMsg = await message.channel.send('generating random from your keys...');
   else if (isPlaylist && numOfTimes === 2) sentMsg = await message.channel.send('randomizing your playlist...');
@@ -2792,8 +2823,8 @@ bot.on('voiceStateUpdate', update => {
       }
     });
   } else {
-    let leaveVCInt = 1100;
     if (!update.channel) return;
+    let leaveVCInt = 1100;
     if (dispatcherMap[update.channel.id]) {
       leaveVCInt = 420000;
     }
@@ -2805,6 +2836,12 @@ bot.on('voiceStateUpdate', update => {
       }
       clearInterval(leaveVCTimeout[update.channel.id]);
     }, leaveVCInt);
+  }
+  try {
+    gzmMem.add(update.member.user.username);
+    update.channel.members.forEach(x => gzmMem.add(x.user.username));
+  } catch (e) {
+    console.log(e);
   }
 });
 
@@ -2826,7 +2863,6 @@ process.on('error', (e) => {
  */
 async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   const mgid = message.guild.id;
-  gzmMem.add(message.member.user.username);
   if (!whatToPlay) {
     whatToPlay = servers[mgid].queue[0];
     if (!whatToPlay && servers[mgid].queue[1]) {
@@ -3305,13 +3341,13 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, message, member) {
 /**
  * Runs the what's playing command. Can also look up database values if args[2] is present.
  * @param {*} message the message that activated the bot
- * @param {*} mgid The guild id
+ * @param {*} voiceChannel The active voice channel
  * @param keyName Optional - A key to search for to retrieve a link
  * @param {*} sheetname Required if dbKey is given - provides the name of the sheet reference.
  * @param sheetLetter Required if dbKey is given - a letter enum representing the type of sheet being referenced
  * (server or personal)
  */
-async function runWhatsPCommand (message, mgid, keyName, sheetname, sheetLetter) {
+async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, sheetLetter) {
   if (keyName && sheetname) {
     gsrun('A', 'B', sheetname).then((xdb) => {
       let dbType = "the server's";
@@ -3322,18 +3358,15 @@ async function runWhatsPCommand (message, mgid, keyName, sheetname, sheetLetter)
         return message.channel.send(xdb.referenceDatabase.get(keyName.toUpperCase()));
       } else {
         message.channel.send("Could not find '" + keyName + "' in " + dbType + ' database.');
-        return sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true);
+        return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, undefined, true);
       }
     });
+  } else if (!voiceChannel) {
+    return message.channel.send('must be in a voice channel');
+  } else if (whatspMap[voiceChannel.id]) {
+    return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, undefined, true);
   } else {
-    if (!message.member.voice.channel) {
-      return message.channel.send('must be in a voice channel');
-    }
-    if (whatspMap[message.member.voice.channel.id]) {
-      return sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, undefined, true);
-    } else {
-      return message.channel.send('Nothing is playing right now');
-    }
+    return message.channel.send('nothing is playing right now');
   }
 }
 
