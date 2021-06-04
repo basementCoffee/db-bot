@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.1.1';
-const buildNo = '05010102'; // major, minor, patch, build
+const version = '5.1.2';
+const buildNo = '05010202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -333,6 +333,8 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
  */
 async function runRestartCommand (message, mgid, keyword) {
   if (!servers[mgid].queue[0] && !servers[mgid].queueHistory) return message.channel.send('must be actively playing to ' + keyword);
+  if (servers[message.guild.id].dictator && message.member !== servers[message.guild.id].dictator)
+    return message.channel.send('only the dictator can ' + keyword);
   if (servers[mgid].queue[0]) {
     await playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
   } else if (servers[mgid].queueHistory.length > 0) {
@@ -341,6 +343,32 @@ async function runRestartCommand (message, mgid, keyword) {
   } else {
     message.channel.send('there is nothing to ' + keyword);
   }
+}
+
+/**
+ * Initializes the server with all the required params.
+ * @param mgid The message guild id.
+ */
+function initializeServer (mgid) {
+  servers[mgid] = {
+    queue: [],
+    queueHistory: [],
+    loop: false,
+    collector: false,
+    followUpMessage: undefined,
+    currentEmbedLink: undefined,
+    currentEmbed: undefined,
+    numSinceLastEmbed: 0,
+    currentEmbedChannelId: undefined,
+    verbose: false,
+    // A list of vote admins (members) in a server
+    voteAdmin: [],
+    voteSkipMembersId: [],
+    voteRewindMembersId: [],
+    votePlayPauseMembersId: [],
+    // The member that is the acting dictator
+    dictator: false
+  };
 }
 
 /**
@@ -395,23 +423,7 @@ async function runCommandCases (message) {
     }
     if (contentContainCongrats(message)) {
       if (!servers[message.guild.id]) {
-        servers[mgid] = {
-          queue: [],
-          queueHistory: [],
-          loop: false,
-          collector: false,
-          followUpMessage: undefined,
-          currentEmbedLink: undefined,
-          currentEmbed: undefined,
-          numSinceLastEmbed: 0,
-          currentEmbedChannelId: undefined,
-          verbose: false,
-          voteAdmin: [],
-          voteSkipMembersId: [],
-          voteRewindMembersId: [],
-          votePlayPauseMembersId: [],
-          dictator: false
-        };
+        initializeServer(message.guild.id);
       } else if (!message.guild.voice || !message.guild.voice.channel) {
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
@@ -432,23 +444,7 @@ async function runCommandCases (message) {
   }
   // the server guild playback data
   if (!servers[mgid]) {
-    servers[mgid] = {
-      queue: [],
-      queueHistory: [],
-      loop: false,
-      collector: false,
-      followUpMessage: undefined,
-      currentEmbedLink: undefined,
-      currentEmbed: undefined,
-      numSinceLastEmbed: 0,
-      currentEmbedChannelId: undefined,
-      verbose: false,
-      voteAdmin: [],
-      voteSkipMembersId: [],
-      voteRewindMembersId: [],
-      votePlayPauseMembersId: [],
-      dictator: false
-    };
+    initializeServer(mgid);
   }
   if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed += 2;
   switch (statement) {
@@ -1658,8 +1654,8 @@ function runDictatorCommand (message, mgid, prefixString) {
         }
       }
       servers[mgid].dictator = message.member;
-      message.channel.send('The dictator is missing! ***' + message.member.nickname ?
-        message.member.nickname : message.member.user.username + ' is now the new dictator.***');
+      message.channel.send('The dictator is missing! ***' + (message.member.nickname ?
+        message.member.nickname : message.member.user.username) + ' is now the new dictator.***');
     }
   } else {
     servers[mgid].dictator = message.member;
@@ -1694,15 +1690,23 @@ function runDJCommand (message) {
   } else {
     let ix = 0;
     for (let x of servers[message.guild.id].voteAdmin) {
-      ix++;
       if (!vcMembersId.includes(x.id)) {
         let oldMem = servers[message.guild.id].voteAdmin[ix];
         oldMem = (oldMem.nickname ? oldMem.nickname : oldMem.user.username);
         let newMem = message.member;
         servers[message.guild.id].voteAdmin[ix] = message.member;
         newMem = (newMem.nickname ? newMem.nickname : newMem.user.username);
-        return message.channel.send('*db bot DJ ' + oldMem + ' is missing. ' + newMem + ' is now the new DJ.*');
+        message.channel.send('*DJ ' + oldMem + ' is missing.* ***' + newMem + ' is now the new DJ.***');
+        const msgEmbed = new MessageEmbed();
+        msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
+          '\`forcerewind\`- force rewind a track [fr]\n' +
+          '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
+          '\`resign\` - forfeit DJ permissions')
+          .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
+            'The DJ can override voting by using the force commands above.');
+        return message.channel.send(msgEmbed);
       }
+      ix++;
     }
     const currentAdmin = servers[message.guild.id].voteAdmin[0];
     message.channel.send((currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
@@ -2877,6 +2881,10 @@ bot.on('voiceStateUpdate', update => {
   if (isInactive) return;
   // if the bot is the one leaving
   const mgid = update.guild.id;
+  if (update.channel && update.channel.members && update.channel.members.has(bot.user.id)) {
+    gzmMem.add(update.member.user.username);
+    update.channel.members.forEach(x => gzmMem.add(x.user.username));
+  }
   if (update.member.id === bot.user.id && !update.connection && servers[mgid]) {
     servers[mgid].numSinceLastEmbed = 0;
     sendLinkAsEmbed(servers[mgid].currentEmbed, servers[mgid].currentEmbedLink, update.channel, undefined, false).then(() => {
@@ -2911,9 +2919,6 @@ bot.on('voiceStateUpdate', update => {
       clearInterval(leaveVCTimeout[update.channel.id]);
     }, leaveVCInt);
   }
-  gzmMem.add(update.member.user.username);
-  if (update.channel && update.channel.members)
-    update.channel.members.forEach(x => gzmMem.add(x.user.username));
 });
 
 bot.on('error', (e) => {
@@ -3345,8 +3350,9 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
               servers[mgid].followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '⏹') {
-            collector.stop();
-            runStopPlayingCommand(mgid, voiceChannel, false, message, message.member.voice.channel.members.get(reactionCollector.id));
+            const mem = message.member.voice.channel.members.get(reactionCollector.id);
+            if (!servers[mgid].dictator || servers[mgid].dictator === mem) collector.stop();
+            runStopPlayingCommand(mgid, voiceChannel, false, message, mem);
             if (servers[mgid].followUpMessage) {
               servers[mgid].followUpMessage.delete();
               servers[mgid].followUpMessage = undefined;
