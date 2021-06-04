@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.1.0';
-const buildNo = '05010002'; // major, minor, patch, build
+const version = '5.1.1';
+const buildNo = '05010102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1089,6 +1089,8 @@ async function runCommandCases (message) {
       if (!message.member.voice.channel) return message.channel.send('must be in a voice channel to clear');
       if (servers[mgid].voteAdmin.length > 0 && !servers[mgid].voteAdmin.includes(message.member))
         return message.channel.send('only the DJ can clear the queue');
+      if (servers[mgid].dictator && servers[mgid].dictator !== message.member)
+        return message.channel.send('only the Dictator can clear the queue');
       const currentSong =
         (dispatcherMap[message.member.voice.channel.id] && message.guild.voice && message.guild.voice.channel)
           ? servers[mgid].queue[0] : undefined;
@@ -1651,8 +1653,8 @@ function runDictatorCommand (message, mgid, prefixString) {
       const dic = servers[mgid].dictator;
       for (let i of vcMembersId) {
         if (i === dic.id) {
-          return message.channel.send(dic.nickname ? dic.nickname : dic.user.username + ' is the dictator, and has control over '
-          + message.guild.me.nickname ? message.guild.me.nickname : message.guild.me.user.username);
+          return message.channel.send((dic.nickname ? dic.nickname : dic.user.username) + ' is the dictator, and has control over '
+            + (message.guild.me.nickname ? message.guild.me.nickname : message.guild.me.user.username));
         }
       }
       servers[mgid].dictator = message.member;
