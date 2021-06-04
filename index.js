@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.1.2';
-const buildNo = '05010202'; // major, minor, patch, build
+const version = '5.1.3';
+const buildNo = '05010302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -333,8 +333,11 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
  */
 async function runRestartCommand (message, mgid, keyword) {
   if (!servers[mgid].queue[0] && !servers[mgid].queueHistory) return message.channel.send('must be actively playing to ' + keyword);
-  if (servers[message.guild.id].dictator && message.member !== servers[message.guild.id].dictator)
+  if (servers[mgid].dictator && message.member !== servers[mgid].dictator)
     return message.channel.send('only the dictator can ' + keyword);
+  if (servers[mgid].voteAdmin && !servers[mgid].voteAdmin.includes(message.member)) {
+    return message.channel.send('as of right now, only the DJ can restart tracks');
+  }
   if (servers[mgid].queue[0]) {
     await playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
   } else if (servers[mgid].queueHistory.length > 0) {
@@ -449,57 +452,38 @@ async function runCommandCases (message) {
   if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed += 2;
   switch (statement) {
     // !p is just the basic rhythm bot
+    case 'play':
     case 'p':
       runPlayLinkCommand(message, args, mgid, undefined);
       break;
-    case 'play':
-      runPlayLinkCommand(message, args, mgid, undefined);
-      break;
+    case 'mplay':
     case 'mp':
       runPlayLinkCommand(message, args, mgid, 'p' + message.member.id);
       break;
-    case 'mplay':
-      runPlayLinkCommand(message, args, mgid, 'p' + message.member.id);
-      break;
+    case 'gplay':
     case 'gp':
       runPlayLinkCommand(message, args, mgid, 'entries');
       break;
-    case 'gplay':
-      runPlayLinkCommand(message, args, mgid, 'entries');
-      break;
     // !pn is the play now command
+    case 'gpnow':
     case 'gpn':
       runPlayNowCommand(message, args, mgid, 'entries');
       break;
+    case 'pnow':
+    case 'playnow':
     case 'pn':
       runPlayNowCommand(message, args, mgid, undefined);
       break;
-    case 'pnow':
-      runPlayNowCommand(message, args, mgid, undefined);
-      break;
-    case 'playnow':
-      runPlayNowCommand(message, args, mgid, undefined);
-      break;
+    case 'mplaynow':
+    case 'mpnow':
     case 'mpn':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
       break;
-    case 'mpnow':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
-      break;
-    case 'mplaynow':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
-      break;
-    //! e is the Stop feature
-    case 'e':
-      runStopPlayingCommand(mgid, message.member.voice.channel, false, message, message.member);
-      break;
-    case 'end':
-      runStopPlayingCommand(mgid, message.member.voice.channel, false, message, message.member);
-      break;
-    case 'leave':
-      runStopPlayingCommand(mgid, message.member.voice.channel, false, message, message.member);
-      break;
+    //! e is the stop feature
     case 'quit':
+    case 'leave':
+    case 'end':
+    case 'e':
       runStopPlayingCommand(mgid, message.member.voice.channel, false, message, message.member);
       break;
     case 'loop':
@@ -514,25 +498,19 @@ async function runCommandCases (message) {
         message.channel.send('*looping enabled*');
       }
       break;
-    case 'lyrics':
-      runLyricsCommand(message, mgid, args);
-      break;
     case 'lyric':
+    case 'lyrics':
       runLyricsCommand(message, mgid, args);
       break;
     // !gd is to run database songs
     case 'gd':
       runDatabasePlayCommand(args, message, 'entries', false, true);
       break;
+    case 'gdnow':
     case 'gdn':
       runDatabasePlayCommand(args, message, 'entries', true, true);
       break;
-    case 'gdnow':
-      runDatabasePlayCommand(args, message, 'entries', true, true);
-      break;
     case 'gkn':
-      runDatabasePlayCommand(args, message, 'entries', true, true);
-      break;
     case 'gknow':
       runDatabasePlayCommand(args, message, 'entries', true, true);
       break;
@@ -540,86 +518,55 @@ async function runCommandCases (message) {
     case 'd':
       runDatabasePlayCommand(args, message, mgid, false, false);
       break;
-    case 'dn':
-      runPlayNowCommand(message, args, mgid, mgid, true);
-      break;
-    case 'dnow':
-      runPlayNowCommand(message, args, mgid, mgid, true);
-      break;
-    case 'kn':
-      runPlayNowCommand(message, args, mgid, mgid, true);
-      break;
     case 'know':
+    case 'kn':
+    case 'dnow':
+    case 'dn':
       runPlayNowCommand(message, args, mgid, mgid, true);
       break;
     // !md is the personal database
     case 'md':
       runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true);
       break;
+    case 'mkn':
+    case 'mknow':
+    case 'mdnow':
     case 'mdn':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
       break;
-    case 'mdnow':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
-      break;
-    case 'mkn':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
-      break;
-    case 'mknow':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
-      break;
     // !r is a random that works with the normal queue
+    case 'rand':
     case 'r':
       runRandomToQueue(args[1], message, mgid);
       break;
-    case 'rand':
-      runRandomToQueue(args[1], message, mgid);
-      break;
     // !gr is the global random to work with the normal queue
+    case 'grand':
     case 'gr':
       runRandomToQueue(args[1], message, 'entries');
       break;
     // !mr is the personal random that works with the normal queue
+    case 'mrand':
     case 'mr':
       runRandomToQueue(args[1], message, 'p' + message.member.id);
       break;
-    case 'mrand':
-      runRandomToQueue(args[1], message, 'p' + message.member.id);
-      break;
     // !keys is server keys
-    case 'keys':
-      runKeysCommand(message, prefixString, mgid, '', '', '');
-      break;
-    // !key
-    case 'key':
-      runKeysCommand(message, prefixString, mgid, '', '', '');
-      break;
     case 'k':
+    case 'key':
+    case 'keys':
       if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false);
       else runKeysCommand(message, prefixString, mgid, '', '', '');
       break;
     // !mkeys is personal keys
-    case 'mkeys':
-      runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
-      break;
-    // !mkey is personal keys
-    case 'mkey':
-      runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
-      break;
     case 'mk':
+    case 'mkey':
+    case 'mkeys':
       if (args[1]) runDatabasePlayCommand(args, message, 'p' + message.member.id, false, false);
       else runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
-    case 'gk':
-      if (args[1]) runDatabasePlayCommand(args, message, 'entries', false, false);
-      else runKeysCommand(message, prefixString, 'entries', 'g', '', '');
-      break;
     // !gkeys is global keys
-    case 'gkeys':
-      runKeysCommand(message, prefixString, 'entries', 'g', '', '');
-      break;
-    // !gkey is global keys
+    case 'gk':
     case 'gkey':
+    case 'gkeys':
       runKeysCommand(message, prefixString, 'entries', 'g', '', '');
       break;
     // !search is the search
@@ -700,25 +647,13 @@ async function runCommandCases (message) {
       });
       break;
     // !? is the command for what's playing?
-    case '?':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
-      break;
-    case 'np':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
-      break;
-    case 'now':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
-      break;
-    case 'what':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
-      break;
-    case 'nowplaying':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
-      break;
-    case 'playing':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
-      break;
     case 'current':
+    case '?':
+    case 'np':
+    case 'nowplaying':
+    case 'playing':
+    case 'what':
+    case 'now':
       await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'g?':
@@ -727,6 +662,7 @@ async function runCommandCases (message) {
     case 'm?':
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
+    case 'gurl':
     case 'glink':
       if (!args[1]) {
         if (servers[mgid].queue[0] && message.member.voice.channel) {
@@ -735,14 +671,7 @@ async function runCommandCases (message) {
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
       break;
-    case 'mlink':
-      if (!args[1]) {
-        if (servers[mgid].queue[0] && message.member.voice.channel) {
-          return message.channel.send(servers[mgid].queue[0]);
-        }
-      }
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
-      break;
+    case 'url':
     case 'link':
       if (!args[1]) {
         if (servers[mgid].queue[0] && message.member.voice.channel) {
@@ -751,15 +680,8 @@ async function runCommandCases (message) {
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
-    case 'gurl':
-      if (!args[1]) {
-        if (servers[mgid].queue[0] && message.member.voice.channel) {
-          return message.channel.send(servers[mgid].queue[0]);
-        }
-      }
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
-      break;
     case 'murl':
+    case 'mlink':
       if (!args[1]) {
         if (servers[mgid].queue[0] && message.member.voice.channel) {
           return message.channel.send(servers[mgid].queue[0]);
@@ -767,27 +689,14 @@ async function runCommandCases (message) {
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
-    case 'url':
-      if (!args[1]) {
-        if (servers[mgid].queue[0] && message.member.voice.channel) {
-          return message.channel.send(servers[mgid].queue[0]);
-        }
-      }
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
-      break;
-    case 'queue':
-      runQueueCommand(message, mgid);
-      break;
+
     case 'q':
       runQueueCommand(message, mgid, true);
       break;
     case 'que':
-      runQueueCommand(message, mgid);
-      break;
     case 'list':
-      runQueueCommand(message, mgid);
-      break;
     case 'upnext':
+    case 'queue':
       runQueueCommand(message, mgid);
       break;
     case 'changeprefix':
@@ -860,57 +769,33 @@ async function runCommandCases (message) {
       break;
     // list commands for public commands
     case 'h':
-      servers[mgid].numSinceLastEmbed += 10;
-      sendHelp(message, prefixString);
-      break;
     case 'help':
       servers[mgid].numSinceLastEmbed += 10;
       sendHelp(message, prefixString);
       break;
     // !skip
+    case 'sk':
     case 'skip':
       runSkipCommand(message, message.member.voice.channel, args[1], 1, false, message.member);
       break;
-    // !sk
-    case 'sk':
-      runSkipCommand(message, message.member.voice.channel, args[1], 1, false, message.member);
-      break;
     case 'dic' :
-      runDictatorCommand(message, mgid, prefixString);
-      break;
     case 'dict' :
-      runDictatorCommand(message, mgid, prefixString);
-      break;
     case 'dictator' :
       runDictatorCommand(message, mgid, prefixString);
       break;
     case 'vote':
-      runDJCommand(message);
-      break;
     case 'dj':
       runDJCommand(message);
       break;
-    case 'forceskip' :
-      if (!servers[mgid].voteAdmin || servers[mgid].voteAdmin.includes(message.member)) {
-        runSkipCommand(message, message.member.voice.channel, args[1], true, true, message.member);
-      }
-      break;
     case 'fs' :
+    case 'forceskip' :
       if (hasDJPermissions(message, message.member, true)) {
         runSkipCommand(message, message.member.voice.channel, args[1], true, true, message.member);
-      }
-      break;
-    case 'forcerewind':
-      if (hasDJPermissions(message, message.member, true)) {
-        runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
       }
       break;
     case 'fr':
-      if (hasDJPermissions(message, message.member, true)) {
-        runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
-      }
-      break;
     case 'frw':
+    case 'forcerewind':
       if (hasDJPermissions(message, message.member, true)) {
         runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
       }
@@ -920,22 +805,14 @@ async function runCommandCases (message) {
         message.channel.send('use \'fpl\' to force play and \'fpa\' to force pause.');
       }
       break;
+    case 'fpl' :
     case 'forceplay' :
       if (hasDJPermissions(message, message.member, true)) {
         runPlayCommand(message, message.member, false, true);
       }
       break;
-    case 'fpl' :
-      if (hasDJPermissions(message, message.member, true)) {
-        runPlayCommand(message, message.member, false, true);
-      }
-      break;
-    case 'forcepause' :
-      if (hasDJPermissions(message, message.member, true)) {
-        runPauseCommand(message, message.member, false, true);
-      }
-      break;
     case 'fpa' :
+    case 'forcepause' :
       if (hasDJPermissions(message, message.member, true)) {
         runPauseCommand(message, message.member, false, true);
       }
@@ -968,35 +845,19 @@ async function runCommandCases (message) {
       break;
     // !pa
     case 'pa':
-      runPauseCommand(message, message.member);
-      break;
     case 'stop':
-      runPauseCommand(message, message.member);
-      break;
     case 'pause':
       runPauseCommand(message, message.member);
       break;
     // !pl
     case 'pl':
-      runPlayCommand(message, message.member);
-      break;
     case 'res':
-      runPlayCommand(message, message.member);
-      break;
     case 'resume':
       runPlayCommand(message, message.member);
       break;
-    case 'time':
-      if (dispatcherMap[message.member.voice.channel.id]) {
-        message.channel.send('timestamp: ' + formatDuration(dispatcherMap[message.member.voice.channel.id].streamTime));
-      }
-      break;
-    case 'timestamp':
-      if (dispatcherMap[message.member.voice.channel.id]) {
-        message.channel.send('timestamp: ' + formatDuration(dispatcherMap[message.member.voice.channel.id].streamTime));
-      }
-      break;
     case 'ts':
+    case 'time':
+    case 'timestamp':
       if (dispatcherMap[message.member.voice.channel.id]) {
         message.channel.send('timestamp: ' + formatDuration(dispatcherMap[message.member.voice.channel.id].streamTime));
       }
@@ -1010,9 +871,13 @@ async function runCommandCases (message) {
         message.channel.send('***verbose mode disabled***');
       }
       break;
-    // !v prints out the version number
-    case 'v':
-      message.channel.send('version: ' + version + '\n' + 'build: ' + buildNo);
+    case 'unverbose':
+      if (!servers[mgid].verbose) {
+        message.channel.send('*verbose mode is not currently enabled*');
+      } else {
+        servers[mgid].verbose = false;
+        message.channel.send('***verbose mode disabled***');
+      }
       break;
     // !devadd
     case 'devadd':
@@ -1026,29 +891,21 @@ async function runCommandCases (message) {
       break;
     // !ga adds to the server database
     case 'ga':
-      runAddCommandWrapper(message, args, 'entries', true, prefixString);
-      break;
     case 'gadd':
       runAddCommandWrapper(message, args, 'entries', true, prefixString);
       break;
     // !a is normal add
     case 'a':
-      runAddCommandWrapper(message, args, mgid, true, prefixString);
-      break;
     case 'add':
       runAddCommandWrapper(message, args, mgid, true, prefixString);
       break;
     // !ma is personal add
     case 'ma':
-      runAddCommandWrapper(message, args, 'p' + message.member.id, true, prefixString);
-      break;
     case 'madd':
       runAddCommandWrapper(message, args, 'p' + message.member.id, true, prefixString);
       break;
     // !rm removes database entries
     case 'rm':
-      runRemoveItemCommand(message, args[1], mgid, true);
-      break;
     case 'remove':
       runRemoveItemCommand(message, args[1], mgid, true);
       break;
@@ -1058,27 +915,19 @@ async function runCommandCases (message) {
       break;
     // !rm removes database entries
     case 'mrm':
-      runRemoveItemCommand(message, args[1], 'p' + message.member.id, true);
-      break;
     case 'mremove':
       runRemoveItemCommand(message, args[1], 'p' + message.member.id, true);
       break;
+    case 'rw':
     case 'rewind':
       runRewindCommand(message, mgid, message.member.voice.channel, args[1], false, false, message.member);
       break;
-    case 'rw':
-      runRewindCommand(message, mgid, message.member.voice.channel, args[1], false, false, message.member);
-      break;
+    case 'rp':
     case 'replay':
       runRestartCommand(message, mgid, 'replay');
       break;
-    case 'rp':
-      runRestartCommand(message, mgid, 'replay');
-      break;
-    case 'restart':
-      runRestartCommand(message, mgid, 'restart');
-      break;
     case 'rs':
+    case 'restart':
       runRestartCommand(message, mgid, 'restart');
       break;
     case 'clear' :
@@ -1102,30 +951,30 @@ async function runCommandCases (message) {
         whatspMap[message.member.voice.channel.id] = false;
       }
       break;
+    case 'inv':
     case 'invite':
       message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>");
       break;
-    case 'inv':
-      message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>");
-      break;
+    case 'hide':
     case 'silence':
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to silence');
       }
-      if (silenceMap[mgid]) {
+      if (servers[mgid].silence) {
         return message.channel.send('*song notifications already silenced, use \'unsilence\' to unsilence.*');
       }
-      silenceMap[mgid] = true;
+      servers[mgid].silence = true;
       message.channel.send('*song notifications silenced for this session*');
       break;
+    case 'unhide':
     case 'unsilence':
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to unsilence');
       }
-      if (!silenceMap[mgid]) {
+      if (!servers[mgid].silence) {
         return message.channel.send('*song notifications already unsilenced*');
       }
-      silenceMap[mgid] = false;
+      servers[mgid].silence = false;
       message.channel.send('*song notifications enabled*');
       if (dispatcherMap[message.member.voice.channel.id]) {
         sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel).then();
@@ -1168,8 +1017,12 @@ async function runCommandCases (message) {
       message.channel.send('g: ' + message.guild.id);
       message.channel.send('c: ' + message.channel.id);
       break;
+    // print out the version number
     case 'version':
-      message.channel.send('version: ' + version);
+    case 'v':
+      const vEmbed = new MessageEmbed();
+      vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
+      message.channel.send(vEmbed);
       break;
     case 'gzs':
       const embed = new MessageEmbed()
@@ -2490,19 +2343,17 @@ function sendHelp (message, prefixString) {
     'search [key] \` Search keys  *[s]*\n' +
     '\n-----------  **Personal Music Database**  -----------\n' +
     "*Prepend 'm' to the above commands to access your personal music database*\nex: \`" + prefixString + "mkeys \`\n" +
-    '\n--------------  **Advanced Music Commands**  -----------------\n\`' +
+    '\n-----------  **Advanced Music Commands**  -----------\n\`' +
     prefixString +
     'lyrics \` Get lyrics of what\'s currently playing\n\`' +
     prefixString +
-    'dj \` Enable DJ mode, requires members to vote skip tracks\n\`' +
-    prefixString +
-    'dictator \` Enable dictator mode, one member controls all music commands\n\`' +
-    prefixString +
     'verbose \` Keep all song embeds during a session\n\`' +
     prefixString +
-    'silence \` Silence now playing embeds \n\`' +
+    'silence \` Silence/hide now playing embeds \n\`' +
     prefixString +
-    'unsilence \` Re-enable now playing embeds \n' +
+    'dj \` Enable DJ mode, requires members to vote skip tracks\n\`' +
+    prefixString +
+    'dictator \` Enable dictator mode, one member controls all music commands\n' +
     '\n--------------  **Other Commands**  -----------------\n\`' +
     prefixString +
     'guess \` Random roll for the number of people in the voice channel \n\`' +
@@ -3035,7 +2886,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       dispatcher.pause();
       dispatcherMap[voiceChannel.id] = dispatcher;
       // if the server is not silenced then send the embed when playing
-      if (!silenceMap[mgid] && sendEmbed) {
+      if (sendEmbed && !servers[mgid].silence) {
         await sendLinkAsEmbed(message, urlOrg, voiceChannel, infos).then(() => dispatcher.setVolume(0.5));
       }
       skipTimesMap[mgid] = 0;
@@ -3455,8 +3306,6 @@ const gzmMem = new Set();
 const whatspMap = new Map();
 // The server's prefix, uses guild id
 const prefixMap = new Map();
-// Whether silence mode is on (true, false), uses guild id
-const silenceMap = new Map();
 // The song stream, uses voice channel id
 const dispatcherMap = new Map();
 // The messages containing embeds, uses guild id
