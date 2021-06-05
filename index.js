@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.1.3';
-const buildNo = '05010302'; // major, minor, patch, build
+const version = '5.1.4';
+const buildNo = '05010402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -328,14 +328,14 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
  * Restarts the song playing and what was within an older session.
  * @param message The message that triggered the bot
  * @param mgid The message guild id
- * @param keyword Enum being either 'restart' or 'replay'
+ * @param keyword Enum in string format, being either 'restart' or 'replay'
  * @returns {*}
  */
 async function runRestartCommand (message, mgid, keyword) {
   if (!servers[mgid].queue[0] && !servers[mgid].queueHistory) return message.channel.send('must be actively playing to ' + keyword);
   if (servers[mgid].dictator && message.member !== servers[mgid].dictator)
     return message.channel.send('only the dictator can ' + keyword);
-  if (servers[mgid].voteAdmin && !servers[mgid].voteAdmin.includes(message.member)) {
+  if (servers[mgid].voteAdmin.length > 0 && !servers[mgid].voteAdmin.includes(message.member)) {
     return message.channel.send('as of right now, only the DJ can restart tracks');
   }
   if (servers[mgid].queue[0]) {
@@ -3245,8 +3245,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, message, actionUse
   if (servers[mgid].dictator && actionUser && actionUser !== servers[mgid].dictator)
     return message.channel.send('only the dictator can perform this action');
   if (servers[mgid].voteAdmin.length > 0 && actionUser) {
-    const djAdminsIds = servers[mgid].voteAdmin.map(x => x.id);
-    if (!djAdminsIds.includes(actionUser))
+    if (!servers[mgid].voteAdmin.map(x => x.id).includes(actionUser.id))
       return message.channel.send('*only the DJ can end the session*');
   }
   if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
