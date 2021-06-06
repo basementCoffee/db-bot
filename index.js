@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.1.4';
-const buildNo = '05010402'; // major, minor, patch, build
+const version = '5.1.5';
+const buildNo = '05010502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -97,15 +97,15 @@ function skipSong (message, voiceChannel, playMessageToChannel, noHistory) {
 }
 
 /**
- * Removes an item from the google sheets music database
+ * Removes an item from the google sheets database.
  * @param message the message that triggered the bot
  * @param {string} keyName the key to remove
- * @param sheetName the name of the sheet to alter
- * @param sendMsgToChannel whether to send a response to the channel
+ * @param sheetName the name of the sheet to remove from
+ * @param sendMsgToChannel whether to send a response to the channel when looking for track keys
  */
-function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
+async function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
   if (keyName) {
-    gsrun('A', 'B', sheetName).then(async (xdb) => {
+    await gsrun('A', 'B', sheetName).then(async (xdb) => {
       let couldNotFindKey = true;
       for (let i = 0; i < xdb.line.length; i++) {
         const itemToCheck = xdb.line[i];
@@ -120,7 +120,7 @@ function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
         }
       }
       if (couldNotFindKey && sendMsgToChannel) {
-        gsrun('A', 'B', sheetName).then(async (xdb) => {
+        await gsrun('A', 'B', sheetName).then(async (xdb) => {
           const foundStrings = runSearchCommand(keyName, xdb).ss;
           if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
             message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + foundStrings + '*');
@@ -162,8 +162,7 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
   if (!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
     servers[mgid].queue = [];
     servers[mgid].queueHistory = [];
-  }
-  if (servers[mgid].queue.length >= maxQueueSize) {
+  } else if (servers[mgid].queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
   if (servers[message.guild.id].followUpMessage) {
@@ -279,17 +278,19 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
   }
   if (servers[message.guild.id].dictator && message.member !== servers[message.guild.id].dictator)
     return message.channel.send('only the dictator can perform this action');
+  // in case of force disconnect
+  if (!message.guild.voice || !message.guild.voice.channel) {
+    servers[mgid].queue = [];
+    servers[mgid].queueHistory = [];
+  } else if (servers[mgid].queue.length >= maxQueueSize) {
+    return message.channel.send('*max queue size has been reached*');
+  }
   if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !verifyPlaylist(args[1])) {
     if (sheetName) {
       return runDatabasePlayCommand(args, message, sheetName, false, false);
     } else {
       return runYoutubeSearch(message, args, mgid, false);
     }
-  }
-  // in case of force disconnect
-  if (!message.guild.voice || !message.guild.voice.channel) {
-    servers[mgid].queue = [];
-    servers[mgid].queueHistory = [];
   }
   let queueWasEmpty = false;
   if (servers[mgid].queue.length < 1) {
@@ -712,58 +713,59 @@ async function runCommandCases (message) {
       if (args[1] === '+' || args[1] === '=' || args[1] === '\'') {
         return message.channel.send('Cannot have ' + args[1] + ' as a prefix.');
       }
-      if (args[1].toUpperCase() !== args[1].toLowerCase() || args[1].charCodeAt(0) > 120) {
+      if (args[1].toUpperCase() !== args[1].toLowerCase() || args[1].charCodeAt(0) > 126) {
         return message.channel.send("cannot have a letter as a prefix.");
       }
       args[2] = args[1];
       args[1] = mgid;
-      message.channel.send('*changing prefix...*');
-      await gsrun('A', 'B', 'prefixes').then(async () => {
-        await runRemoveItemCommand(message, args[1], 'prefixes', false);
-        await runAddCommand(args, message, 'prefixes', false);
-        await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
-          await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
-          prefixMap[mgid] = args[2];
-          message.channel.send('Prefix successfully changed to ' + args[2]);
-          prefixString = args[2];
-          let name = 'db bot';
-          let prefixName = '[' + prefixString + ']';
-          if (message.guild.me.nickname) {
-            name = message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 1);
-          }
-
-          async function changeNamePrefix () {
-            if (!message.guild.me.nickname) {
-              await message.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
-            } else if (message.guild.me.nickname.indexOf('[') > -1 && message.guild.me.nickname.indexOf(']') > -1) {
-              await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 2));
-            } else {
-              await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname);
+      message.channel.send('*changing prefix...*').then(async sentPrefixMsg => {
+        await gsrun('A', 'B', 'prefixes').then(async () => {
+          await runRemoveItemCommand(message, args[1], 'prefixes', false);
+          await runAddCommand(args, message, 'prefixes', false);
+          await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
+            await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
+            prefixMap[mgid] = args[2];
+            message.channel.send('Prefix successfully changed to ' + args[2]);
+            prefixString = '\\' + args[2];
+            sentPrefixMsg.delete();
+            let name = 'db bot';
+            if (message.guild.me.nickname) {
+              name = message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 1);
             }
-          }
 
-          if (!message.guild.me.nickname || (message.guild.me.nickname.substr(0, 1) !== '[' && message.guild.me.nickname.substr(2, 1) !== ']')) {
-            message.channel.send('---------------------');
-            message.channel.send('Would you like me to update my name to reflect this? (yes or no)\nFrom **' + (message.guild.me.nickname || 'db bot') + '**  -->  **' + prefixName + " " + name + '**').then(() => {
-              const filter = m => message.author.id === m.author.id;
+            async function changeNamePrefix () {
+              if (!message.guild.me.nickname) {
+                await message.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
+              } else if (message.guild.me.nickname.indexOf('[') > -1 && message.guild.me.nickname.indexOf(']') > -1) {
+                await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 2));
+              } else {
+                await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname);
+              }
+            }
 
-              message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
-                .then(async messages => {
-                  // message.channel.send(`You've entered: ${messages.first().content}`);
-                  if (messages.first().content.toLowerCase() === 'yes' || messages.first().content.toLowerCase() === 'y') {
-                    await changeNamePrefix();
-                    message.channel.send('name has been updated, prefix is: ' + prefixString);
-                  } else {
+            if (!message.guild.me.nickname || (message.guild.me.nickname.substr(0, 1) !== '[' && message.guild.me.nickname.substr(2, 1) !== ']')) {
+              message.channel.send('----------------------\nWould you like me to update my name to reflect this? (yes or no)\nFrom **' +
+                (message.guild.me.nickname || 'db bot') + '**  -->  **[' + prefixString + '] ' + name + '**').then(() => {
+                const filter = m => message.author.id === m.author.id;
+
+                message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
+                  .then(async messages => {
+                    // message.channel.send(`You've entered: ${messages.first().content}`);
+                    if (messages.first().content.toLowerCase() === 'yes' || messages.first().content.toLowerCase() === 'y') {
+                      await changeNamePrefix();
+                      message.channel.send('name has been updated, prefix is: ' + prefixString);
+                    } else {
+                      message.channel.send('name remains the same, prefix is: ' + prefixString);
+                    }
+                  })
+                  .catch(() => {
                     message.channel.send('name remains the same, prefix is: ' + prefixString);
-                  }
-                })
-                .catch(() => {
-                  message.channel.send('name remains the same, prefix is: ' + prefixString);
-                });
-            });
-          } else if (message.guild.me.nickname.substr(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
-            await changeNamePrefix();
-          }
+                  });
+              });
+            } else if (message.guild.me.nickname.substr(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
+              await changeNamePrefix();
+            }
+          });
         });
       });
       break;
@@ -907,16 +909,16 @@ async function runCommandCases (message) {
     // !rm removes database entries
     case 'rm':
     case 'remove':
-      runRemoveItemCommand(message, args[1], mgid, true);
+      runRemoveItemCommand(message, args[1], mgid, true).catch((e) => console.log(e));
       break;
     // !grm removes database entries
     case 'grm':
-      runRemoveItemCommand(message, args[1], 'entries', true);
+      runRemoveItemCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
       break;
     // !rm removes database entries
     case 'mrm':
     case 'mremove':
-      runRemoveItemCommand(message, args[1], 'p' + message.member.id, true);
+      runRemoveItemCommand(message, args[1], 'p' + message.member.id, true).catch((e) => console.log(e));
       break;
     case 'rw':
     case 'rewind':
@@ -1394,7 +1396,6 @@ function runPauseCommand (message, actionUser, noErrorMsg, force, noPrintMsg) {
         servers[message.guild.id].votePlayPauseMembersId = vs.votes;
         if (vs.bool) {
           cmdResponse = '***Pausing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***';
-          if (!cmdResponse) return console.log('AHHHHH'); // todo remove
           servers[message.guild.id].votePlayPauseMembersId = [];
         } else return true;
       }
@@ -1913,8 +1914,10 @@ function getYoutubeSubtitles (message, url) {
           res.on('data', function (data_) { data += data_.toString(); });
           res.on('end', function () {
             parser.parseString(data, function (err, result) {
-              if (err) return console.log('ERROR: ' + err);
-              else {
+              if (err) {
+                console.log('ERROR in getYouTubeSubtitles');
+                return console.log(err);
+              } else {
                 let finalString = '';
                 for (let i of result.transcript.text) {
                   finalString += i._;
@@ -1973,8 +1976,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   if (!message.guild.voice || !message.guild.voice.channel) {
     servers[mgid].queue = [];
     servers[mgid].queueHistory = [];
-  }
-  if (servers[mgid].queue.length >= maxQueueSize) {
+  } else if (servers[mgid].queue.length >= maxQueueSize) {
     message.channel.send('*max queue size has been reached*');
     return true;
   }
@@ -2369,6 +2371,7 @@ function sendHelp (message, prefixString) {
 
 /**
  * Function for searching for message contents on youtube for playback.
+ * Does not check for force disconnect.
  * @param message The discord message
  * @param args The args to verify content
  * @param mgid The message guild id
@@ -2399,11 +2402,6 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
     indexToLookup--;
   }
   const args2 = [];
-  // in case of force disconnect
-  if (!message.guild.voice || !message.guild.voice.channel) {
-    servers[mgid].queue = [];
-    servers[mgid].queueHistory = [];
-  }
   if (searchResult.items[indexToLookup].type === 'video') {
     args2[1] = searchResult.items[indexToLookup].url;
   } else {
@@ -2510,12 +2508,12 @@ function runRandomToQueue (num, message, sheetName) {
  */
 async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
   let playlistKey;
-  let sentMsg;
   if (isPlaylist) {
     playlistKey = numOfTimes;
     if (verifyPlaylist(cdb.get(playlistKey))) numOfTimes = 2;
     else return message.channel.send('argument must be a positive number or playlist key-name');
   }
+  let sentMsg;
   if (numOfTimes > 100) sentMsg = await message.channel.send('generating random from your keys...');
   else if (isPlaylist && numOfTimes === 2) sentMsg = await message.channel.send('randomizing your playlist...');
   const rKeyArray = Array.from(cdb.keys());
@@ -2610,9 +2608,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
 async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel, user) {
   gsrun('A', 'B', sheetname).then((xdb) => {
     let keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
-    let keyArraySorted = [];
-    keyArraySorted = keyArrayUnsorted.map(x => x);
-    keyArraySorted.sort();
+    let keyArraySorted = keyArrayUnsorted.map(x => x).sort();
     let sortByRecents = false;
     let dbName = '';
     let keyArray = keyArraySorted;
@@ -2660,7 +2656,6 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
           keyEmbedColor = '#b35536';
         }
         const embedKeysMessage = new MessageEmbed();
-
         embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
           .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
         return embedKeysMessage;
@@ -2678,7 +2673,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
             if (dbName === "server's keys") {
               nameToSend = 'the server';
               descriptionSuffix = 'The server keys are keys that any person in a server can play. ' +
-                '\nA server has it\'s own server keys and can be used by any member in the server.';
+                '\nEach server has it\'s own server keys and can be used by any member in the server.';
             } else {
               nameToSend = 'your personal';
               descriptionSuffix = 'Your personal keys are keys that only you can play. \nThey work in any server ' +
