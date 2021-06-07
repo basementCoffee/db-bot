@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.1.5';
-const buildNo = '05010502'; // major, minor, patch, build
+const version = '5.1.6';
+const buildNo = '05010602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -97,7 +97,7 @@ function skipSong (message, voiceChannel, playMessageToChannel, noHistory) {
 }
 
 /**
- * Removes an item from the google sheets database.
+ * Removes an item from the database.
  * @param message the message that triggered the bot
  * @param {string} keyName the key to remove
  * @param sheetName the name of the sheet to remove from
@@ -426,8 +426,8 @@ async function runCommandCases (message) {
       }
     }
     if (contentContainCongrats(message)) {
-      if (!servers[message.guild.id]) {
-        initializeServer(message.guild.id);
+      if (!servers[mgid]) {
+        initializeServer(mgid);
       } else if (!message.guild.voice || !message.guild.voice.channel) {
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
@@ -439,7 +439,7 @@ async function runCommandCases (message) {
     return;
   }
   const args = message.content.replace(/\s+/g, ' ').split(' ');
-  console.log(args); // see recent bot commands within console for testing
+  // console.log(args); // see recent bot commands within console for testing
   const statement = args[0].substr(1).toLowerCase();
   if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
     if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
@@ -452,7 +452,7 @@ async function runCommandCases (message) {
   }
   if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed += 2;
   switch (statement) {
-    // !p is just the basic rhythm bot
+    // the normal play command
     case 'play':
     case 'p':
       runPlayLinkCommand(message, args, mgid, undefined);
@@ -461,26 +461,29 @@ async function runCommandCases (message) {
     case 'mp':
       runPlayLinkCommand(message, args, mgid, 'p' + message.member.id);
       break;
+    // test purposes - play command
     case 'gplay':
     case 'gp':
       runPlayLinkCommand(message, args, mgid, 'entries');
       break;
-    // !pn is the play now command
+    // test purposes - play now command
     case 'gpnow':
     case 'gpn':
       runPlayNowCommand(message, args, mgid, 'entries');
       break;
+    // the play now command
     case 'pnow':
     case 'playnow':
     case 'pn':
       runPlayNowCommand(message, args, mgid, undefined);
       break;
+    // the personal play now command
     case 'mplaynow':
     case 'mpnow':
     case 'mpn':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
       break;
-    //! e is the stop feature
+    // stop session commands
     case 'quit':
     case 'leave':
     case 'end':
@@ -503,19 +506,21 @@ async function runCommandCases (message) {
     case 'lyrics':
       runLyricsCommand(message, mgid, args);
       break;
-    // !gd is to run database songs
+    // test purposes - run database songs
     case 'gd':
       runDatabasePlayCommand(args, message, 'entries', false, true);
       break;
+    // test purposes - run database command
     case 'gdnow':
     case 'gdn':
       runDatabasePlayCommand(args, message, 'entries', true, true);
       break;
+    // test purposes - run database command
     case 'gkn':
     case 'gknow':
       runDatabasePlayCommand(args, message, 'entries', true, true);
       break;
-    // !d
+    // .d is the normal play link from database command
     case 'd':
       runDatabasePlayCommand(args, message, mgid, false, false);
       break;
@@ -525,59 +530,60 @@ async function runCommandCases (message) {
     case 'dn':
       runPlayNowCommand(message, args, mgid, mgid, true);
       break;
-    // !md is the personal database
+    // .md is retrieves and plays from the keys list
     case 'md':
       runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true);
       break;
+    // .mdnow retrieves and plays from the keys list immediately
     case 'mkn':
     case 'mknow':
     case 'mdnow':
     case 'mdn':
       runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
       break;
-    // !r is a random that works with the normal queue
+    // .r is a random that works with the normal queue
     case 'rand':
     case 'r':
       runRandomToQueue(args[1], message, mgid);
       break;
-    // !gr is the global random to work with the normal queue
+    // test purposes - random command
     case 'grand':
     case 'gr':
       runRandomToQueue(args[1], message, 'entries');
       break;
-    // !mr is the personal random that works with the normal queue
+    // .mr is the personal random that works with the normal queue
     case 'mrand':
     case 'mr':
       runRandomToQueue(args[1], message, 'p' + message.member.id);
       break;
-    // !keys is server keys
+    // .keys is server keys
     case 'k':
     case 'key':
     case 'keys':
       if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false);
       else runKeysCommand(message, prefixString, mgid, '', '', '');
       break;
-    // !mkeys is personal keys
+    // .mkeys is personal keys
     case 'mk':
     case 'mkey':
     case 'mkeys':
       if (args[1]) runDatabasePlayCommand(args, message, 'p' + message.member.id, false, false);
       else runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
-    // !gkeys is global keys
+    // test purposes - return keys
     case 'gk':
     case 'gkey':
     case 'gkeys':
       runKeysCommand(message, prefixString, 'entries', 'g', '', '');
       break;
-    // !search is the search
+    // .search is the search
     case 'search':
       if (!args[1]) {
         return message.channel.send('No argument was given.');
       }
       runUniversalSearchCommand(message, mgid, args[1]);
       break;
-    // !s prints out the db size or searches
+    // .s prints out the db size or searches
     case 's':
       if (!args[1]) {
         return gsrun('A', 'B', mgid).then((xdb) =>
@@ -600,6 +606,7 @@ async function runCommandCases (message) {
         );
       }
       break;
+    // .m is the personal search command
     case 'msearch':
       if (!args[1]) {
         return message.channel.send('No argument was given.');
@@ -881,41 +888,40 @@ async function runCommandCases (message) {
         message.channel.send('***verbose mode disabled***');
       }
       break;
-    // !devadd
     case 'devadd':
       if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
         return;
       }
       message.channel.send(
-        "Here's link to add to the database:\n" +
+        "Here's the dev docs:\n" +
         "<https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622>"
       );
       break;
-    // !ga adds to the server database
+    // TEST - .ga adds to the server database
     case 'ga':
     case 'gadd':
       runAddCommandWrapper(message, args, 'entries', true, prefixString);
       break;
-    // !a is normal add
+    // .a is normal add
     case 'a':
     case 'add':
       runAddCommandWrapper(message, args, mgid, true, prefixString);
       break;
-    // !ma is personal add
+    // .ma is personal add
     case 'ma':
     case 'madd':
       runAddCommandWrapper(message, args, 'p' + message.member.id, true, prefixString);
       break;
-    // !rm removes database entries
+    // .rm removes database entries
     case 'rm':
     case 'remove':
       runRemoveItemCommand(message, args[1], mgid, true).catch((e) => console.log(e));
       break;
-    // !grm removes database entries
+    // test remove database entries
     case 'grm':
       runRemoveItemCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
       break;
-    // !rm removes database entries
+    // .mrm removes personal database entries
     case 'mrm':
     case 'mremove':
       runRemoveItemCommand(message, args[1], 'p' + message.member.id, true).catch((e) => console.log(e));
@@ -994,13 +1000,21 @@ async function runCommandCases (message) {
         message.channel.send('*looping enabled*');
       }
       break;
+    // print out the version number
+    case 'version':
+    case 'v':
+      const vEmbed = new MessageEmbed();
+      vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
+      message.channel.send(vEmbed);
+      break;
+    // dev commands for testing purposes
     case 'gzh':
       const devCEmbed = new MessageEmbed()
         .setTitle('Dev Commands')
         .setDescription(
           prefixString + 'gzs - statistics' +
           '\n' + prefixString + 'gzi - user and bot id' +
-          '\n' + prefixString + 'gzid - guild and channel id' +
+          '\n' + prefixString + 'gzid - guild id' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n\n**calibrate multiple bots**' +
@@ -1016,15 +1030,7 @@ async function runCommandCases (message) {
       message.channel.send("restarting the bot... (may only shutdown)").then(process.exit());
       break;
     case 'gzid':
-      message.channel.send('g: ' + message.guild.id);
-      message.channel.send('c: ' + message.channel.id);
-      break;
-    // print out the version number
-    case 'version':
-    case 'v':
-      const vEmbed = new MessageEmbed();
-      vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
-      message.channel.send(vEmbed);
+      message.channel.send('guild id: ' + message.guild.id);
       break;
     case 'gzs':
       const embed = new MessageEmbed()
@@ -1247,22 +1253,7 @@ bot.on('message', async (message) => {
       message.member.id === '443150640823271436' ||
       message.member.id === '268554823283113985')) {
     const zmsg = message.content.substr(2, 2);
-    if (zmsg === 'zp' && isInactive) {
-      await message.channel.send('*** This command will be depreciated, use gzk to start/kill a process ***');
-      const zargs = message.content.split(' ');
-      let dm = '';
-      if (devMode) {
-        dm = '(dev mode)';
-      }
-      if (!zargs[1]) {
-        await message.channel.send('sidelined: ' + process.pid + ' (' + version + ') ' + dm);
-      } else if (zargs[1] === process.pid.toString() || zargs[1] === 'all') {
-        isInactive = false;
-        await message.channel.send('db bot ' + process.pid + ' is now active');
-        console.log('-active-');
-      }
-      return;
-    } else if (zmsg === 'zk') {
+    if (zmsg === 'zk') {
       if (message.member.id === '730350452268597300') {
         if (!isInactive && !devMode) {
           message.channel.send('~db-bot-process-on' + buildNo + 'ver' + process.pid);
@@ -1354,6 +1345,9 @@ bot.on('message', async (message) => {
         msg.reactions.cache.get(mb).remove();
       });
     });
+    if (message.content.substr(1, 6) === 'invite' || message.content.substr(0, 6) === 'invite') {
+      message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>').then();
+    }
   } else {
     return runCommandCases(message);
   }
@@ -1564,7 +1558,7 @@ function runDJCommand (message) {
     }
     const currentAdmin = servers[message.guild.id].voteAdmin[0];
     message.channel.send((currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
-      'the DJ. Any skip/rewind/play/pause command can be used to vote for that action.');
+      'the DJ. Any skip, rewind, play, or pause command can be used to vote for that action.');
   }
 }
 
@@ -1956,7 +1950,7 @@ function getYoutubeSubtitles (message, url) {
  * The database referenced depends on what is passed in via mgid.
  * @param {*} args the message split by spaces into an array
  * @param {*} message the message that triggered the bot
- * @param {*} sheetName the name of the google sheet to reference
+ * @param {*} sheetName the name of the sheet to reference
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
  * @returns whether the play command has been handled accordingly
