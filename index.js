@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.0';
-const buildNo = '05030002'; // major, minor, patch, build
+const version = '5.3.1';
+const buildNo = '05030102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -3023,12 +3023,12 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
       playSongToVC(message, server.queue[0], voiceChannel, true, server);
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
+    song = false;
     // remove undefined links from queueHistory
     while (server.queueHistory.length > 0 && !song) {
       song = server.queueHistory.pop();
     }
     if (song) server.queue.unshift(song);
-    song = false;
     rwIncrementor++;
   }
   if (song) {
