@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.2.1';
-const buildNo = '05020102'; // major, minor, patch, build
+const version = '5.3.0';
+const buildNo = '05030002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -71,28 +71,28 @@ function contentContainCongrats (message) {
  * @param message the message that triggered the bot
  * @param voiceChannel the voice channel that the bot is in
  * @param playMessageToChannel whether to play message on successful skip
+ * @param server The server playback metadata
  * @param noHistory Optional - true excludes song from the queue history
  */
-function skipSong (message, voiceChannel, playMessageToChannel, noHistory) {
-
+function skipSong (message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
-  if (servers[message.guild.id].queue.length > 0) {
-    if (noHistory) servers[message.guild.id].queue.shift();
-    else servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
+  if (server.queue.length > 0) {
+    if (noHistory) server.queue.shift();
+    else server.queueHistory.push(server.queue.shift());
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next song
-    if (servers[message.guild.id].queue.length > 0) {
+    if (server.queue.length > 0) {
       // get rid of previous dispatch
-      playSongToVC(message, servers[message.guild.id].queue[0], voiceChannel, true);
+      playSongToVC(message, server.queue[0], voiceChannel, true, server);
     } else {
-      runStopPlayingCommand(message.guild.id, voiceChannel, true, message, message.member);
+      runStopPlayingCommand(message.guild.id, voiceChannel, true, server, message, message.member);
     }
   } else {
-    runStopPlayingCommand(message.guild.id, voiceChannel, true, message, message.member);
+    runStopPlayingCommand(message.guild.id, voiceChannel, true, server, message, message.member);
   }
-  if (servers[message.guild.id].followUpMessage) {
-    servers[message.guild.id].followUpMessage.delete();
-    servers[message.guild.id].followUpMessage = undefined;
+  if (server.followUpMessage) {
+    server.followUpMessage.delete();
+    server.followUpMessage = undefined;
   }
 }
 
@@ -146,43 +146,44 @@ async function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChann
  * @param message the message that triggered the bot
  * @param args the message split into an array
  * @param mgid the message guild id
+ * @param server The server playback metadata
  * @param sheetName the name of the sheet to reference
  */
-async function runPlayNowCommand (message, args, mgid, sheetName) {
+async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   const voiceChannel = message.member.voice.channel;
   if (!voiceChannel) {
     return message.channel.send('must be in a voice channel to play');
   }
-  if (servers[message.guild.id].dictator && message.member !== servers[message.guild.id].dictator)
+  if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can play perform this action');
   if (!args[1]) {
     return message.channel.send('What should I play now? Put a link or some words.');
   }
   // in case of force disconnect
   if (!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
-    servers[mgid].queue = [];
-    servers[mgid].queueHistory = [];
-  } else if (servers[mgid].queue.length >= maxQueueSize) {
+    server.queue = [];
+    server.queueHistory = [];
+  } else if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
-  if (servers[message.guild.id].followUpMessage) {
-    servers[message.guild.id].followUpMessage.delete();
-    servers[message.guild.id].followUpMessage = undefined;
+  if (server.followUpMessage) {
+    server.followUpMessage.delete();
+    server.followUpMessage = undefined;
   }
-  servers[mgid].numSinceLastEmbed += 3;
+  server.numSinceLastEmbed += 3;
   if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !args[1].includes('spotify.com/playlist')) {
     if (sheetName) {
-      return runDatabasePlayCommand(args, message, sheetName, true, false);
+      return runDatabasePlayCommand(args, message, sheetName, true, false, server);
     } else {
-      return runYoutubeSearch(message, args, mgid, true);
+      return runYoutubeSearch(message, args, mgid, true, server);
     }
   }
   try {
     // places the currently playing into the queue history if played long enough
     const dsp = dispatcherMap[voiceChannel.id];
-    if (servers[mgid].queue[0] && servers[mgid].queue[0] === whatspMap[voiceChannel.id] &&
-    dsp && dsp.streamTime && servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
-      servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+    if (server.queue[0] && server.queue[0] === whatspMap[voiceChannel.id] &&
+    dsp && dsp.streamTime && server.queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
+      server.queueHistory.push(server.queue.shift());
     }
   } catch (e) {}
   let pNums = 0;
@@ -192,10 +193,10 @@ async function runPlayNowCommand (message, args, mgid, sheetName) {
     await addPlaylistToQueue(message, mgid, pNums, args[1], false, true);
   } else {
     // push to queue
-    servers[mgid].queue.unshift(args[1]);
+    server.queue.unshift(args[1]);
   }
   message.channel.send('*playing now*');
-  playSongToVC(message, servers[mgid].queue[0], voiceChannel, true).then();
+  playSongToVC(message, server.queue[0], voiceChannel, true, server).then();
 }
 
 /**
@@ -266,34 +267,35 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
  * @param message The message that triggered the bot
  * @param args An array of given play parameters, should be links or keywords
  * @param mgid The message guild id
+ * @param server The server playback metadata
  * @param sheetName The name of the sheet to reference
  */
-async function runPlayLinkCommand (message, args, mgid, sheetName) {
+async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   if (!message.member.voice.channel) {
     return message.channel.send("must be in a voice channel to play");
   }
   if (!args[1]) {
-    if (runPlayCommand(message, message.member, true)) return;
+    if (runPlayCommand(message, message.member, server, true)) return;
     return message.channel.send('What should I play? Put a link or some words.');
   }
-  if (servers[message.guild.id].dictator && message.member !== servers[message.guild.id].dictator)
+  if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can perform this action');
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
-    servers[mgid].queue = [];
-    servers[mgid].queueHistory = [];
-  } else if (servers[mgid].queue.length >= maxQueueSize) {
+    server.queue = [];
+    server.queueHistory = [];
+  } else if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
   if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !verifyPlaylist(args[1])) {
     if (sheetName) {
-      return runDatabasePlayCommand(args, message, sheetName, false, false);
+      return runDatabasePlayCommand(args, message, sheetName, false, false, server);
     } else {
-      return runYoutubeSearch(message, args, mgid, false);
+      return runYoutubeSearch(message, args, mgid, false, server);
     }
   }
   let queueWasEmpty = false;
-  if (servers[mgid].queue.length < 1) {
+  if (server.queue.length < 1) {
     queueWasEmpty = true;
   }
   let pNums = 0;
@@ -309,7 +311,7 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
         linkZ = linkZ.substring(0, linkZ.length - 1);
       }
       // push to queue
-      servers[mgid].queue.push(args[pNums]);
+      server.queue.push(args[pNums]);
       pNums += 1;
     }
     // make pNums the number of added songs
@@ -317,7 +319,7 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
   }
   // if queue was empty then play
   if (queueWasEmpty) {
-    playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+    playSongToVC(message, server.queue[0], message.member.voice.channel, true, server);
   } else if (pNums < 2) {
     message.channel.send('*added to queue*');
   } else {
@@ -330,20 +332,21 @@ async function runPlayLinkCommand (message, args, mgid, sheetName) {
  * @param message The message that triggered the bot
  * @param mgid The message guild id
  * @param keyword Enum in string format, being either 'restart' or 'replay'
+ * @param server The server playback metadata
  * @returns {*}
  */
-async function runRestartCommand (message, mgid, keyword) {
-  if (!servers[mgid].queue[0] && !servers[mgid].queueHistory) return message.channel.send('must be actively playing to ' + keyword);
-  if (servers[mgid].dictator && message.member !== servers[mgid].dictator)
+async function runRestartCommand (message, mgid, keyword, server) {
+  if (!server.queue[0] && !server.queueHistory) return message.channel.send('must be actively playing to ' + keyword);
+  if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can ' + keyword);
-  if (servers[mgid].voteAdmin.length > 0 && !servers[mgid].voteAdmin.includes(message.member)) {
+  if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member)) {
     return message.channel.send('as of right now, only the DJ can restart tracks');
   }
-  if (servers[mgid].queue[0]) {
-    await playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
-  } else if (servers[mgid].queueHistory.length > 0) {
-    servers[mgid].queue.push(servers[mgid].queueHistory.pop());
-    await playSongToVC(message, servers[mgid].queue[0], message.member.voice.channel, true);
+  if (server.queue[0]) {
+    await playSongToVC(message, server.queue[0], message.member.voice.channel, true, server);
+  } else if (server.queueHistory.length > 0) {
+    server.queue.push(server.queueHistory.pop());
+    await playSongToVC(message, server.queue[0], message.member.voice.channel, true, server);
   } else {
     message.channel.send('there is nothing to ' + keyword);
   }
@@ -434,7 +437,7 @@ async function runCommandCases (message) {
         servers[mgid].loop = false;
       }
       message.channel.send('Congratulations!').then();
-      return playSongToVC(message, 'https://www.youtube.com/watch?v=oyFQVZ2h0V8', message.member.voice.channel, false);
+      return playSongToVC(message, 'https://www.youtube.com/watch?v=oyFQVZ2h0V8', message.member.voice.channel, false, servers[mgid]);
     }
     return;
   }
@@ -450,124 +453,125 @@ async function runCommandCases (message) {
   if (!servers[mgid]) {
     initializeServer(mgid);
   }
-  if (message.channel.id === servers[mgid].currentEmbedChannelId) servers[mgid].numSinceLastEmbed += 2;
+  const server = servers[mgid];
+  if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
   switch (statement) {
     // the normal play command
     case 'play':
     case 'p':
-      runPlayLinkCommand(message, args, mgid, undefined);
+      runPlayLinkCommand(message, args, mgid, server, undefined);
       break;
     case 'mplay':
     case 'mp':
-      runPlayLinkCommand(message, args, mgid, 'p' + message.member.id);
+      runPlayLinkCommand(message, args, mgid, server, 'p' + message.member.id);
       break;
     // test purposes - play command
     case 'gplay':
     case 'gp':
-      runPlayLinkCommand(message, args, mgid, 'entries');
+      runPlayLinkCommand(message, args, mgid, server, 'entries');
       break;
     // test purposes - play now command
     case 'gpnow':
     case 'gpn':
-      runPlayNowCommand(message, args, mgid, 'entries');
+      runPlayNowCommand(message, args, mgid, server, 'entries');
       break;
     // the play now command
     case 'pnow':
     case 'playnow':
     case 'pn':
-      runPlayNowCommand(message, args, mgid, undefined);
+      runPlayNowCommand(message, args, mgid, server, undefined);
       break;
     // the personal play now command
     case 'mplaynow':
     case 'mpnow':
     case 'mpn':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id);
+      runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id);
       break;
     // stop session commands
     case 'quit':
     case 'leave':
     case 'end':
     case 'e':
-      runStopPlayingCommand(mgid, message.member.voice.channel, false, message, message.member);
+      runStopPlayingCommand(mgid, message.member.voice.channel, false, server, message, message.member);
       break;
     case 'loop':
       if (!message.guild.voice || !message.guild.voice.channel) {
         return message.channel.send('must be playing a song to loop');
       }
-      if (servers[mgid].loop) {
-        servers[mgid].loop = false;
+      if (server.loop) {
+        server.loop = false;
         message.channel.send('*looping disabled*');
       } else {
-        servers[mgid].loop = true;
+        server.loop = true;
         message.channel.send('*looping enabled*');
       }
       break;
     case 'lyric':
     case 'lyrics':
-      runLyricsCommand(message, mgid, args);
+      runLyricsCommand(message, mgid, args, server);
       break;
     // test purposes - run database songs
     case 'gd':
-      runDatabasePlayCommand(args, message, 'entries', false, true);
+      runDatabasePlayCommand(args, message, 'entries', false, true, server);
       break;
     // test purposes - run database command
     case 'gdnow':
     case 'gdn':
-      runDatabasePlayCommand(args, message, 'entries', true, true);
+      runDatabasePlayCommand(args, message, 'entries', true, true, server);
       break;
     // test purposes - run database command
     case 'gkn':
     case 'gknow':
-      runDatabasePlayCommand(args, message, 'entries', true, true);
+      runDatabasePlayCommand(args, message, 'entries', true, true, server);
       break;
     // .d is the normal play link from database command
     case 'd':
-      runDatabasePlayCommand(args, message, mgid, false, false);
+      runDatabasePlayCommand(args, message, mgid, false, false, server);
       break;
     case 'know':
     case 'kn':
     case 'dnow':
     case 'dn':
-      runPlayNowCommand(message, args, mgid, mgid, true);
+      runPlayNowCommand(message, args, mgid, server, mgid);
       break;
     // .md is retrieves and plays from the keys list
     case 'md':
-      runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true);
+      runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true, server);
       break;
     // .mdnow retrieves and plays from the keys list immediately
     case 'mkn':
     case 'mknow':
     case 'mdnow':
     case 'mdn':
-      runPlayNowCommand(message, args, mgid, 'p' + message.member.id, true);
+      runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id);
       break;
     // .r is a random that works with the normal queue
     case 'rand':
     case 'r':
-      runRandomToQueue(args[1], message, mgid);
+      runRandomToQueue(args[1], message, mgid, server);
       break;
     // test purposes - random command
     case 'grand':
     case 'gr':
-      runRandomToQueue(args[1], message, 'entries');
+      runRandomToQueue(args[1], message, 'entries', server);
       break;
     // .mr is the personal random that works with the normal queue
     case 'mrand':
     case 'mr':
-      runRandomToQueue(args[1], message, 'p' + message.member.id);
+      runRandomToQueue(args[1], message, 'p' + message.member.id, server);
       break;
     // .keys is server keys
     case 'k':
     case 'key':
     case 'keys':
-      if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false);
+      if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false, server);
       else runKeysCommand(message, prefixString, mgid, '', '', '');
       break;
     // .mkeys is personal keys
     case 'mk':
     case 'mkey':
     case 'mkeys':
-      if (args[1]) runDatabasePlayCommand(args, message, 'p' + message.member.id, false, false);
+      if (args[1]) runDatabasePlayCommand(args, message, 'p' + message.member.id, false, false, server);
       else runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
       break;
     // test purposes - return keys
@@ -673,8 +677,8 @@ async function runCommandCases (message) {
     case 'gurl':
     case 'glink':
       if (!args[1]) {
-        if (servers[mgid].queue[0] && message.member.voice.channel) {
-          return message.channel.send(servers[mgid].queue[0]);
+        if (server.queue[0] && message.member.voice.channel) {
+          return message.channel.send(server.queue[0]);
         }
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
@@ -682,8 +686,8 @@ async function runCommandCases (message) {
     case 'url':
     case 'link':
       if (!args[1]) {
-        if (servers[mgid].queue[0] && message.member.voice.channel) {
-          return message.channel.send(servers[mgid].queue[0]);
+        if (server.queue[0] && message.member.voice.channel) {
+          return message.channel.send(server.queue[0]);
         }
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
@@ -691,13 +695,12 @@ async function runCommandCases (message) {
     case 'murl':
     case 'mlink':
       if (!args[1]) {
-        if (servers[mgid].queue[0] && message.member.voice.channel) {
-          return message.channel.send(servers[mgid].queue[0]);
+        if (server.queue[0] && message.member.voice.channel) {
+          return message.channel.send(server.queue[0]);
         }
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
-
     case 'q':
       runQueueCommand(message, mgid, true);
       break;
@@ -779,34 +782,34 @@ async function runCommandCases (message) {
     // list commands for public commands
     case 'h':
     case 'help':
-      servers[mgid].numSinceLastEmbed += 10;
+      server.numSinceLastEmbed += 10;
       sendHelp(message, prefixString);
       break;
     // !skip
     case 'sk':
     case 'skip':
-      runSkipCommand(message, message.member.voice.channel, args[1], 1, false, message.member);
+      runSkipCommand(message, message.member.voice.channel, server, args[1], true, false, message.member);
       break;
     case 'dic' :
     case 'dict' :
     case 'dictator' :
-      runDictatorCommand(message, mgid, prefixString);
+      runDictatorCommand(message, mgid, prefixString, server);
       break;
     case 'vote':
     case 'dj':
-      runDJCommand(message);
+      runDJCommand(message, server);
       break;
     case 'fs' :
     case 'forceskip' :
       if (hasDJPermissions(message, message.member, true)) {
-        runSkipCommand(message, message.member.voice.channel, args[1], true, true, message.member);
+        runSkipCommand(message, message.member.voice.channel, server, args[1], true, true, message.member);
       }
       break;
     case 'fr':
     case 'frw':
     case 'forcerewind':
       if (hasDJPermissions(message, message.member, true)) {
-        runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member);
+        runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member, server);
       }
       break;
     case 'fp':
@@ -817,34 +820,34 @@ async function runCommandCases (message) {
     case 'fpl' :
     case 'forceplay' :
       if (hasDJPermissions(message, message.member, true)) {
-        runPlayCommand(message, message.member, false, true);
+        runPlayCommand(message, message.member, server, false, true);
       }
       break;
     case 'fpa' :
     case 'forcepause' :
       if (hasDJPermissions(message, message.member, true)) {
-        runPauseCommand(message, message.member, false, true);
+        runPauseCommand(message, message.member, server, false, true);
       }
       break;
     case 'resign':
-      if (!servers[mgid].voteAdmin.length && !servers[mgid].dictator) {
+      if (!server.voteAdmin.length && !server.dictator) {
         message.channel.send('There is no DJ or dictator right now');
-      } else if (servers[mgid].dictator) {
-        if (message.member === servers[mgid].dictator) {
-          servers[mgid].dictator = false;
+      } else if (server.dictator) {
+        if (message.member === server.dictator) {
+          server.dictator = false;
           message.channel.send((message.member.nickname ? message.member.nickname : message.member.user.username) +
             ' has resigned from being the dictator!');
         } else {
           message.channel.send('Only the dictator can resign');
         }
-      } else if (servers[mgid].voteAdmin[0] === message.member) {
-        servers[mgid].voteAdmin.pop();
+      } else if (server.voteAdmin[0] === message.member) {
+        server.voteAdmin.pop();
         let resignMsg = (message.member.nickname ? message.member.nickname : message.member.user.username) +
           ' has resigned from being DJ.';
-        if (servers[mgid].voteAdmin.length < 1) {
-          servers[mgid].voteSkipMembersId = [];
-          servers[mgid].voteRewindMembersId = [];
-          servers[mgid].votePlayPauseMembersId = [];
+        if (server.voteAdmin.length < 1) {
+          server.voteSkipMembersId = [];
+          server.voteRewindMembersId = [];
+          server.votePlayPauseMembersId = [];
           resignMsg += ' DJ mode is disabled.';
         }
         message.channel.send(resignMsg);
@@ -856,13 +859,13 @@ async function runCommandCases (message) {
     case 'pa':
     case 'stop':
     case 'pause':
-      runPauseCommand(message, message.member);
+      runPauseCommand(message, message.member, server);
       break;
     // !pl
     case 'pl':
     case 'res':
     case 'resume':
-      runPlayCommand(message, message.member);
+      runPlayCommand(message, message.member, server);
       break;
     case 'ts':
     case 'time':
@@ -872,19 +875,19 @@ async function runCommandCases (message) {
       }
       break;
     case 'verbose':
-      if (!servers[mgid].verbose) {
-        servers[mgid].verbose = true;
+      if (!server.verbose) {
+        server.verbose = true;
         message.channel.send('***verbose mode enabled***, *embeds will be kept during this listening session*');
       } else {
-        servers[mgid].verbose = false;
+        server.verbose = false;
         message.channel.send('***verbose mode disabled***');
       }
       break;
     case 'unverbose':
-      if (!servers[mgid].verbose) {
+      if (!server.verbose) {
         message.channel.send('*verbose mode is not currently enabled*');
       } else {
-        servers[mgid].verbose = false;
+        server.verbose = false;
         message.channel.send('***verbose mode disabled***');
       }
       break;
@@ -928,34 +931,34 @@ async function runCommandCases (message) {
       break;
     case 'rw':
     case 'rewind':
-      runRewindCommand(message, mgid, message.member.voice.channel, args[1], false, false, message.member);
+      runRewindCommand(message, mgid, message.member.voice.channel, args[1], false, false, message.member, server);
       break;
     case 'rp':
     case 'replay':
-      runRestartCommand(message, mgid, 'replay');
+      runRestartCommand(message, mgid, 'replay', server);
       break;
     case 'rs':
     case 'restart':
-      runRestartCommand(message, mgid, 'restart');
+      runRestartCommand(message, mgid, 'restart', server);
       break;
     case 'clear' :
       if (!message.member.voice.channel) return message.channel.send('must be in a voice channel to clear');
-      if (servers[mgid].voteAdmin.length > 0 && !servers[mgid].voteAdmin.includes(message.member))
+      if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member))
         return message.channel.send('only the DJ can clear the queue');
-      if (servers[mgid].dictator && servers[mgid].dictator !== message.member)
+      if (server.dictator && server.dictator !== message.member)
         return message.channel.send('only the Dictator can clear the queue');
       const currentSong =
         (dispatcherMap[message.member.voice.channel.id] && message.guild.voice && message.guild.voice.channel)
-          ? servers[mgid].queue[0] : undefined;
-      servers[mgid].queue = [];
-      servers[mgid].queueHistory = [];
+          ? server.queue[0] : undefined;
+      server.queue = [];
+      server.queueHistory = [];
       message.channel.send('The queue has been scrubbed clean');
       if (currentSong) {
-        servers[mgid].queue[0] = currentSong;
+        server.queue[0] = currentSong;
         message.channel.send('queue size: 1');
         await runWhatsPCommand(message, message.member.voice.channel, undefined);
       } else {
-        servers[mgid].currentEmbedLink = false;
+        server.currentEmbedLink = false;
         whatspMap[message.member.voice.channel.id] = false;
       }
       break;
@@ -968,10 +971,10 @@ async function runCommandCases (message) {
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to silence');
       }
-      if (servers[mgid].silence) {
+      if (server.silence) {
         return message.channel.send('*song notifications already silenced, use \'unsilence\' to unsilence.*');
       }
-      servers[mgid].silence = true;
+      server.silence = true;
       message.channel.send('*song notifications silenced for this session*');
       break;
     case 'unhide':
@@ -979,24 +982,24 @@ async function runCommandCases (message) {
       if (!message.member.voice.channel) {
         return message.channel.send('You must be in a voice channel to unsilence');
       }
-      if (!servers[mgid].silence) {
+      if (!server.silence) {
         return message.channel.send('*song notifications already unsilenced*');
       }
-      servers[mgid].silence = false;
+      server.silence = false;
       message.channel.send('*song notifications enabled*');
       if (dispatcherMap[message.member.voice.channel.id]) {
-        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel).then();
+        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, server).then();
       }
       break;
     case 'l':
       if (!message.guild.voice || !message.guild.voice.channel) {
         return;
       }
-      if (servers[mgid].loop) {
-        servers[mgid].loop = false;
+      if (server.loop) {
+        server.loop = false;
         message.channel.send('*looping disabled*');
       } else {
-        servers[mgid].loop = true;
+        server.loop = true;
         message.channel.send('*looping enabled*');
       }
       break;
@@ -1159,6 +1162,9 @@ const mainTimerTimeout = 600000;
 let mainActiveTimer;
 let resHandlerTimer;
 
+/**
+ * Sends a message to a shared channel to see all active processes, responds accordingly using responseHandler.
+ */
 function checkToSeeActive () {
   if (devMode) return;
   setOfBotsOn.clear();
@@ -1377,24 +1383,26 @@ function hasDJPermissions (message, member, printErrMsg) {
  * Pauses the now playing, if playing.
  * @param message The message content metadata
  * @param actionUser The user that is performing the action
+ * @param server The server playback metadata
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
  * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
  */
-function runPauseCommand (message, actionUser, noErrorMsg, force, noPrintMsg) {
+
+function runPauseCommand (message, actionUser, server, noErrorMsg, force, noPrintMsg) {
   if (actionUser.voice && message.guild.voice && message.guild.voice.channel &&
     dispatcherMap[actionUser.voice.channel.id]) {
-    if (servers[message.guild.id].dictator && actionUser !== servers[message.guild.id].dictator)
+    if (server.dictator && actionUser !== server.dictator)
       return message.channel.send('only the dictator can pause');
     let cmdResponse = '*paused*';
-    if (servers[message.guild.id].voteAdmin.length > 0) {
-      if (force) servers[message.guild.id].votePlayPauseMembersId = [];
+    if (server.voteAdmin.length > 0) {
+      if (force) server.votePlayPauseMembersId = [];
       else {
-        const vs = voteSystem(message, message.guild.id, 'pause', actionUser, servers[message.guild.id].votePlayPauseMembersId);
-        servers[message.guild.id].votePlayPauseMembersId = vs.votes;
+        const vs = voteSystem(message, message.guild.id, 'pause', actionUser, server.votePlayPauseMembersId);
+        server.votePlayPauseMembersId = vs.votes;
         if (vs.bool) {
           cmdResponse = '***Pausing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***';
-          servers[message.guild.id].votePlayPauseMembersId = [];
+          server.votePlayPauseMembersId = [];
         } else return true;
       }
     }
@@ -1415,24 +1423,25 @@ function runPauseCommand (message, actionUser, noErrorMsg, force, noPrintMsg) {
  * Plays the now playing if paused.
  * @param message The message content metadata
  * @param actionUser The user that is performing the action
+ * @param server The server playback metadata
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
  * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
  */
-function runPlayCommand (message, actionUser, noErrorMsg, force, noPrintMsg) {
+function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrintMsg) {
   if (actionUser.voice && message.guild.voice && message.guild.voice.channel &&
     dispatcherMap[actionUser.voice.channel.id]) {
-    if (servers[message.guild.id].dictator && actionUser !== servers[message.guild.id].dictator)
+    if (server.dictator && actionUser !== server.dictator)
       return message.channel.send('only the dictator can play');
     let cmdResponse = '*playing*';
-    if (servers[message.guild.id].voteAdmin.length > 0) {
-      if (force) servers[message.guild.id].votePlayPauseMembersId = [];
+    if (server.voteAdmin.length > 0) {
+      if (force) server.votePlayPauseMembersId = [];
       else {
-        const vs = voteSystem(message, message.guild.id, 'play', actionUser, servers[message.guild.id].votePlayPauseMembersId);
-        servers[message.guild.id].votePlayPauseMembersId = vs.votes;
+        const vs = voteSystem(message, message.guild.id, 'play', actionUser, server.votePlayPauseMembersId);
+        server.votePlayPauseMembersId = vs.votes;
         if (vs.bool) {
           cmdResponse = '***Playing with ' + vs.votesNow + ' vote' + (vs.votesNow > 1 ? 's' : '') + '***';
-          servers[message.guild.id].votePlayPauseMembersId = [];
+          server.votePlayPauseMembersId = [];
         } else return true;
       }
     }
@@ -1485,32 +1494,33 @@ function sendMessageToUser (message, userID, reactionUserID) {
  * @param message The message metadata
  * @param mgid The message guild id
  * @param prefixString The prefix string for the guild
+ * @param server The server playback metadata
  * @returns {*}
  */
-function runDictatorCommand (message, mgid, prefixString) {
+function runDictatorCommand (message, mgid, prefixString, server) {
   if (!message.guild.voice || !message.guild.voice.channel || !message.member.voice || !message.member.voice.channel)
     return message.channel.send('must be in a voice channel with the db bot for this command');
   const vcMembersId = message.guild.voice.channel.members.map(x => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
-  if (servers[mgid].voteAdmin.length > 0)
+  if (server.voteAdmin.length > 0)
     return message.channel.send('cannot have a dictator while there is a DJ');
-  if (servers[mgid].dictator) {
-    if (servers[mgid].dictator === message.member) {
+  if (server.dictator) {
+    if (server.dictator === message.member) {
       message.channel.send('**you are the dictator.** If you want to forfeit your powers say \`' + prefixString + 'resign\`');
     } else {
-      const dic = servers[mgid].dictator;
+      const dic = server.dictator;
       for (let i of vcMembersId) {
         if (i === dic.id) {
           return message.channel.send((dic.nickname ? dic.nickname : dic.user.username) + ' is the dictator, and has control over '
             + (message.guild.me.nickname ? message.guild.me.nickname : message.guild.me.user.username));
         }
       }
-      servers[mgid].dictator = message.member;
+      server.dictator = message.member;
       message.channel.send('The dictator is missing! ***' + (message.member.nickname ?
         message.member.nickname : message.member.user.username) + ' is now the new dictator.***');
     }
   } else {
-    servers[mgid].dictator = message.member;
+    server.dictator = message.member;
     const dicEmbed = new MessageEmbed();
     dicEmbed.setTitle('Dictator Commands')
       .setDescription('\`resign\` - forfeit being dictator')
@@ -1524,16 +1534,17 @@ function runDictatorCommand (message, mgid, prefixString) {
 /**
  * Handles the validation and provision of DJ permissions to members within a server.
  * @param message The message metadata
+ * @param server The server playback metadata
  * @returns {*}
  */
-function runDJCommand (message) {
+function runDJCommand (message, server) {
   if (!message.guild.voice || !message.guild.voice.channel || !message.member.voice || !message.member.voice.channel)
     return message.channel.send('must be in a voice channel with the db bot for this command');
   const vcMembersId = message.guild.voice.channel.members.map(x => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
-  if (servers[message.guild.id].dictator) return message.channel.send('There is a dictator, cannot enable DJ mode.');
-  if (servers[message.guild.id].voteAdmin.length < 1) {
-    servers[message.guild.id].voteAdmin.push(message.member);
+  if (server.dictator) return message.channel.send('There is a dictator, cannot enable DJ mode.');
+  if (server.voteAdmin.length < 1) {
+    server.voteAdmin.push(message.member);
     const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
     message.channel.send('***DJ mode has been enabled for this session (DJ: ' + dj + ') (BETA)***');
     const msgEmbed = new MessageEmbed();
@@ -1546,12 +1557,12 @@ function runDJCommand (message) {
     message.channel.send(msgEmbed);
   } else {
     let ix = 0;
-    for (let x of servers[message.guild.id].voteAdmin) {
+    for (let x of server.voteAdmin) {
       if (!vcMembersId.includes(x.id)) {
-        let oldMem = servers[message.guild.id].voteAdmin[ix];
+        let oldMem = server.voteAdmin[ix];
         oldMem = (oldMem.nickname ? oldMem.nickname : oldMem.user.username);
         let newMem = message.member;
-        servers[message.guild.id].voteAdmin[ix] = message.member;
+        server.voteAdmin[ix] = message.member;
         newMem = (newMem.nickname ? newMem.nickname : newMem.user.username);
         message.channel.send('*DJ ' + oldMem + ' is missing.* ***' + newMem + ' is now the new DJ.***');
         const msgEmbed = new MessageEmbed();
@@ -1565,7 +1576,7 @@ function runDJCommand (message) {
       }
       ix++;
     }
-    const currentAdmin = servers[message.guild.id].voteAdmin[0];
+    const currentAdmin = server.voteAdmin[0];
     message.channel.send((currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
       'the DJ. Any skip, rewind, play, or pause command can be used to vote for that action.');
   }
@@ -1576,19 +1587,20 @@ function runDJCommand (message) {
  * @param message The message metadata
  * @param mgid The message guild id
  * @param args The args with the message content
+ * @param server The server playback metadata
  * @returns {*}
  */
-function runLyricsCommand (message, mgid, args) {
-  if ((!message.guild.voice || !message.guild.voice.channel || !servers[mgid].queue[0]) && !args[1]) {
+function runLyricsCommand (message, mgid, args, server) {
+  if ((!message.guild.voice || !message.guild.voice.channel || !server.queue[0]) && !args[1]) {
     return message.channel.send('must be playing a song');
   }
   message.channel.send('retrieving lyrics...').then(async sentMsg => {
-    servers[mgid].numSinceLastEmbed += 2;
+    server.numSinceLastEmbed += 2;
     let searchTerm;
     let searchTermRemix;
     let songName;
     let artistName;
-    const lUrl = servers[mgid].queue[0];
+    const lUrl = server.queue[0];
     if (args[1]) {
       args[0] = '';
       searchTerm = args.join(' ').trim();
@@ -1692,7 +1704,7 @@ function runLyricsCommand (message, mgid, args) {
           const collector = sentMsg.createReactionCollector(filter, {time: 600000});
 
           collector.once('collect', (reaction, user) => {
-            message.channel.send(lyricsText).then(servers[mgid].numSinceLastEmbed += 10);
+            message.channel.send(lyricsText).then(server.numSinceLastEmbed += 10);
           });
 
         });
@@ -1709,7 +1721,7 @@ function runLyricsCommand (message, mgid, args) {
         getYoutubeSubtitles(message, lUrl);
       } else {
         message.channel.send('no results found');
-        servers[mgid].numSinceLastEmbed -= 9;
+        server.numSinceLastEmbed -= 9;
       }
     }
     sentMsg.delete();
@@ -1815,7 +1827,6 @@ function runQueueCommand (message, mgid, noErrorMsg) {
     if (noErrorMsg) return;
     return message.channel.send('There is no active queue right now');
   }
-  servers[mgid].numSinceLastEmbed += 10;
   const serverQueue = servers[mgid].queue.map((x) => x);
   let qIterations = serverQueue.length;
   if (qIterations > 11) qIterations = 11;
@@ -1962,9 +1973,10 @@ function getYoutubeSubtitles (message, url) {
  * @param {*} sheetName the name of the sheet to reference
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
- * @returns whether the play command has been handled accordingly
+ * @param server The server playback metadata
+ * @returns bool whether the play command has been handled accordingly
  */
-function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg) {
+function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg, server) {
   if (!args[1]) {
     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
     return true;
@@ -1977,17 +1989,17 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
-    servers[mgid].queue = [];
-    servers[mgid].queueHistory = [];
-  } else if (servers[mgid].queue.length >= maxQueueSize) {
+    server.queue = [];
+    server.queueHistory = [];
+  } else if (server.queue.length >= maxQueueSize) {
     message.channel.send('*max queue size has been reached*');
     return true;
   }
-  servers[mgid].numSinceLastEmbed += 5;
+  server.numSinceLastEmbed += 5;
   gsrun('A', 'B', sheetName).then(async (xdb) => {
     let queueWasEmpty = false;
     // if the queue is empty then play
-    if (servers[mgid].queue.length < 1) {
+    if (server.queue.length < 1) {
       queueWasEmpty = true;
     }
     let tempUrl;
@@ -2004,7 +2016,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           if (verifyPlaylist(tempUrl)) {
             dbAddedToQueue += await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), false);
           } else {
-            servers[mgid].queue.push(tempUrl);
+            server.queue.push(tempUrl);
             dbAddedToQueue++;
           }
         } else {
@@ -2021,11 +2033,11 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
               if (verifyPlaylist(tempUrl)) {
                 dbAddedToQueue += await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
               } else if (playRightNow) {
-                servers[mgid].queue.unshift(tempUrl);
+                server.queue.unshift(tempUrl);
                 dbAddedToQueue++;
                 playRightNow = false;
               } else {
-                servers[mgid].queue.push(tempUrl);
+                server.queue.push(tempUrl);
                 dbAddedToQueue++;
               }
               dbAddInt++;
@@ -2055,24 +2067,24 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           if (playRightNow) { // push to queue and play
             let dsp = dispatcherMap[voiceChannel.id];
             try {
-              if (servers[mgid].queue[0] && dsp && dsp.streamTime &&
-              servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000) {
-                servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+              if (server.queue[0] && dsp && dsp.streamTime &&
+              server.queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000) {
+                server.queueHistory.push(server.queue.shift());
               }
             } catch (e) {console.log(e);}
             if (verifyPlaylist(tempUrl)) {
               await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
             } else {
-              servers[mgid].queue.unshift(tempUrl);
+              server.queue.unshift(tempUrl);
             }
-            playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+            playSongToVC(message, server.queue[0], voiceChannel, true, server);
             message.channel.send('*playing now*');
             return true;
           } else {
             if (verifyPlaylist(tempUrl)) {
               dbAddedToQueue = await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
             } else {
-              servers[mgid].queue.push(tempUrl);
+              server.queue.push(tempUrl);
             }
           }
         } else if (!printErrorMsg) {
@@ -2080,7 +2092,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             message.channel.send("Could not find '" + args[1] + "' in database.");
             return true;
           } else {
-            runDatabasePlayCommand(args, message, 'p' + message.member.id, playRightNow, false);
+            runDatabasePlayCommand(args, message, 'p' + message.member.id, playRightNow, false, server);
             return true;
           }
         } else if (ss && ss.length > 0) {
@@ -2094,17 +2106,17 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         if (playRightNow) { // push to queue and play
           let dsp = dispatcherMap[voiceChannel.id];
           try {
-            if (servers[mgid].queue[0] && dsp && dsp.streamTime &&
-            servers[mgid].queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000) {
-              servers[mgid].queueHistory.push(servers[mgid].queue.shift());
+            if (server.queue[0] && dsp && dsp.streamTime &&
+            server.queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000) {
+              server.queueHistory.push(server.queue.shift());
             }
           } catch (e) {console.log(e);}
           if (verifyPlaylist(tempUrl)) {
             await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
           } else {
-            servers[mgid].queue.unshift(tempUrl);
+            server.queue.unshift(tempUrl);
           }
-          playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+          playSongToVC(message, server.queue[0], voiceChannel, true, server);
           message.channel.send('*playing now*');
           return true;
         } else {
@@ -2112,15 +2124,15 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           if (verifyPlaylist(tempUrl)) {
             await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
           } else {
-            servers[mgid].queue.push(tempUrl);
+            server.queue.push(tempUrl);
           }
         }
       }
       if (!queueWasEmpty) message.channel.send('*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*');
     }
     // if queue was empty then play
-    if (queueWasEmpty && servers[mgid].queue.length > 0) {
-      playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+    if (queueWasEmpty && server.queue.length > 0) {
+      playSongToVC(message, server.queue[0], voiceChannel, true, server);
     }
   });
   return true;
@@ -2209,23 +2221,24 @@ function runSearchCommand (keyName, xdb) {
  * Recommended if voice channel is not present.
  * @param message the message that triggered the bot
  * @param voiceChannel The active voice channel
+ * @param server The server playback metadata
  * @param skipTimes Optional - the number of times to skip
  * @param sendSkipMsg Whether to send a 'skipped' message when a single song is skipped
  * @param forceSkip Optional - If there is a DJ, grants force skip abilities
  * @param mem The user that is completing the action, used for DJ mode
  */
-function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSkip, mem) {
+function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, forceSkip, mem) {
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) return;
   if (!voiceChannel) {
     voiceChannel = mem.voice.channel;
     if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
   }
-  if (servers[message.guild.id].dictator && mem !== servers[message.guild.id].dictator)
+  if (server.dictator && mem !== server.dictator)
     return message.channel.send('only the dictator can perform this action');
-  if (servers[message.guild.id].voteAdmin.length > 0 && !forceSkip) {
-    const vs = voteSystem(message, message.guild.id, 'skip', mem, servers[message.guild.id].voteSkipMembersId);
-    servers[message.guild.id].voteSkipMembersId = vs.votes;
+  if (server.voteAdmin.length > 0 && !forceSkip) {
+    const vs = voteSystem(message, message.guild.id, 'skip', mem, server.voteSkipMembersId);
+    server.voteSkipMembersId = vs.votes;
     if (vs.bool) {
       skipTimes = 1;
       sendSkipMsg = false;
@@ -2238,15 +2251,15 @@ function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSki
       skipTimes = parseInt(skipTimes);
       if (skipTimes > 0 && skipTimes < 1001) {
         let skipCounter = 0;
-        while (skipTimes > 1 && servers[message.guild.id].queue.length > 0) {
-          servers[message.guild.id].queueHistory.push(servers[message.guild.id].queue.shift());
+        while (skipTimes > 1 && server.queue.length > 0) {
+          server.queueHistory.push(server.queue.shift());
           skipTimes--;
           skipCounter++;
         }
-        if (skipTimes === 1 && servers[message.guild.id].queue.length > 0) {
+        if (skipTimes === 1 && server.queue.length > 0) {
           skipCounter++;
         }
-        skipSong(message, voiceChannel, sendSkipMsg ? skipCounter === 1 : false);
+        skipSong(message, voiceChannel, (sendSkipMsg ? skipCounter === 1 : false), server);
         if (skipCounter > 1) {
           message.channel.send('*skipped ' + skipCounter + ' times*');
         }
@@ -2254,10 +2267,10 @@ function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSki
         message.channel.send('*invalid skip amount (must be between 1 - 1000)*');
       }
     } catch (e) {
-      skipSong(message, voiceChannel, true);
+      skipSong(message, voiceChannel, true, server);
     }
   } else {
-    skipSong(message, voiceChannel, true);
+    skipSong(message, voiceChannel, true, server);
   }
 }
 
@@ -2379,12 +2392,13 @@ function sendHelp (message, prefixString) {
  * @param args The args to verify content
  * @param mgid The message guild id
  * @param playNow Bool, whether to override the queue
+ * @param server The server playback metadata
  * @param indexToLookup Optional - The search index, requires searchResult to be valid
  * @param searchTerm Optional - The specific phrase to search
  * @param searchResult Optional - For recursive call with memoization
  * @returns {Promise<*|boolean|undefined>}
  */
-async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, searchTerm, searchResult) {
+async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLookup, searchTerm, searchResult) {
   if (!searchTerm) {
     const tempArray = args.map(x => x);
     tempArray[0] = '';
@@ -2395,7 +2409,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
     searchResult = await ytsr(searchTerm, {pages: 1});
     if (!searchResult.items[0]) {
       if (!searchTerm.includes('video')) {
-        return runYoutubeSearch(message, args, mgid, playNow, indexToLookup, searchTerm + ' video', undefined);
+        return runYoutubeSearch(message, args, mgid, playNow, server, indexToLookup, searchTerm + ' video', undefined);
       }
       return message.channel.send('could not find video');
     }
@@ -2408,22 +2422,22 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
   if (searchResult.items[indexToLookup].type === 'video') {
     args2[1] = searchResult.items[indexToLookup].url;
   } else {
-    if (servers[mgid].queue[0] === args2[1]) servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-    return runYoutubeSearch(message, args, mgid, playNow, indexToLookup += 2, searchTerm, searchResult);
+    if (server.queue[0] === args2[1]) server.queueHistory.push(server.queue.shift());
+    return runYoutubeSearch(message, args, mgid, playNow, server, indexToLookup += 2, searchTerm, searchResult);
   }
   if (!args2[1]) return message.channel.send('could not find video');
   if (playNow) {
-    servers[mgid].queue.unshift(args2[1]);
-    await playSongToVC(message, args2[1], message.member.voice.channel, true);
+    server.queue.unshift(args2[1]);
+    await playSongToVC(message, args2[1], message.member.voice.channel, true, server);
   } else {
-    servers[mgid].queue.push(args2[1]);
-    if (servers[mgid].queue.length === 1) {
-      await playSongToVC(message, args2[1], message.member.voice.channel, true);
+    server.queue.push(args2[1]);
+    if (server.queue.length === 1) {
+      await playSongToVC(message, args2[1], message.member.voice.channel, true, server);
     } else {
       message.channel.send('*added to queue*');
     }
   }
-  if (indexToLookup < 4 && (playNow || servers[mgid].queue.length < 2)) {
+  if (indexToLookup < 4 && (playNow || server.queue.length < 2)) {
     await message.react('➡️');
     const filter = (reaction, user) => {
       if (message.member.voice.channel) {
@@ -2448,8 +2462,8 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
       } else {
         reaction.users.remove(reactionCollector.id);
       }
-      if (servers[mgid].queue[0] === args2[1]) servers[mgid].queueHistory.push(servers[mgid].queue.shift());
-      runYoutubeSearch(message, args, mgid, true, indexToLookup += 2, searchTerm, searchResult);
+      if (server.queue[0] === args2[1]) server.queueHistory.push(server.queue.shift());
+      runYoutubeSearch(message, args, mgid, true, server, indexToLookup += 2, searchTerm, searchResult);
     });
   }
 }
@@ -2459,12 +2473,13 @@ async function runYoutubeSearch (message, args, mgid, playNow, indexToLookup, se
  * @param num The number of songs to be added to random, could be string
  * @param message The message that triggered the bot
  * @param sheetName The name of the sheet to reference
+ * @param server The server playback metadata
  */
-function runRandomToQueue (num, message, sheetName) {
+function runRandomToQueue (num, message, sheetName, server) {
   if (!message.member.voice.channel) {
     return message.channel.send('must be in a voice channel to play random');
   }
-  if (servers[message.guild.id].dictator && message.member !== servers[message.guild.id].dictator)
+  if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can randomize to queue');
   if (!num) num = 1;
   let isPlaylist;
@@ -2479,24 +2494,24 @@ function runRandomToQueue (num, message, sheetName) {
   }
   // in case of force disconnect
   if (!message.guild.voice || !message.guild.voice.channel) {
-    servers[message.guild.id].queue = [];
-    servers[message.guild.id].queueHistory = [];
+    server.queue = [];
+    server.queueHistory = [];
   }
-  if (servers[message.guild.id].queue.length >= maxQueueSize) {
+  if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
   gsrun('A', 'B', sheetName).then((xdb) => {
     if (isPlaylist) {
-      addRandomToQueue(message, numCpy, xdb.congratsDatabase, true);
+      addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true);
     } else {
       try {
         if (num && num > maxQueueSize) {
           message.channel.send('*max limit for random is ' + maxQueueSize + '*');
           num = maxQueueSize;
         }
-        addRandomToQueue(message, num, xdb.congratsDatabase);
+        addRandomToQueue(message, num, xdb.congratsDatabase, server);
       } catch (e) {
-        addRandomToQueue(message, 1, xdb.congratsDatabase);
+        addRandomToQueue(message, 1, xdb.congratsDatabase, server);
       }
     }
   });
@@ -2507,9 +2522,10 @@ function runRandomToQueue (num, message, sheetName) {
  * @param message The message that triggered the bot
  * @param numOfTimes The number of items to add to the queue, or a playlist url if isPlaylist
  * @param {Map} cdb The database to reference
+ * @param server The server playback metadata
  * @param isPlaylist Optional - True if to randomize just a playlist
  */
-async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
+async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   let playlistKey;
   if (isPlaylist) {
     playlistKey = numOfTimes;
@@ -2523,7 +2539,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
   if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
     return message.channel.send('Your music list is empty.');
   }
-  const serverQueueLength = servers[message.guild.id].queue.length;
+  const serverQueueLength = server.queue.length;
   // mutate numberOfTimes to not exceed maxQueueSize
   if (numOfTimes + serverQueueLength > maxQueueSize) {
     numOfTimes = maxQueueSize - serverQueueLength;
@@ -2533,7 +2549,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
   }
   let rn;
   let queueWasEmpty = false;
-  if (servers[message.guild.id].queue.length < 1) {
+  if (server.queue.length < 1) {
     queueWasEmpty = true;
   }
   try {
@@ -2571,7 +2587,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
           } catch (e) {}
         }
         if (url) {
-          servers[message.guild.id].queue.push(url);
+          server.queue.push(url);
           i++;
         }
         tempArray.splice(randomNumber, 1);
@@ -2586,11 +2602,11 @@ async function addRandomToQueue (message, numOfTimes, cdb, isPlaylist) {
       if (sentMsg) sentMsg.delete();
       return message.channel.send('There was an error.');
     }
-    servers[message.guild.id].queue.push(cdb.get(rKeyArray[rn]));
+    server.queue.push(cdb.get(rKeyArray[rn]));
   }
-  // rKeyArrayFinal.forEach(e => {servers[message.guild.id].queue.push(cdb.get(e));});
-  if (queueWasEmpty && servers[message.guild.id].queue.length > 0) {
-    playSongToVC(message, servers[message.guild.id].queue[0], message.member.voice.channel, true).then(() => {
+  // rKeyArrayFinal.forEach(e => {server.queue.push(cdb.get(e));});
+  if (queueWasEmpty && server.queue.length > 0) {
+    playSongToVC(message, server.queue[0], message.member.voice.channel, true, server).then(() => {
       if (sentMsg) sentMsg.delete();
     });
   } else {
@@ -2703,10 +2719,10 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
                   } else {
                     message.channel.send('*randomizing...*');
                   }
-                  runRandomToQueue(100, message, 'p' + reactionCollector.id);
+                  runRandomToQueue(100, message, 'p' + reactionCollector.id, servers[message.guild.id]);
                 } else {
                   message.channel.send('*randomizing from the server keys...*');
-                  runRandomToQueue(100, message, sheetname);
+                  runRandomToQueue(100, message, sheetname, servers[message.guild.id]);
                 }
                 return;
               }
@@ -2731,18 +2747,17 @@ bot.on('voiceStateUpdate', update => {
   // if the bot is the one leaving
   if (update.member.id === bot.user.id && !update.connection && servers[update.guild.id]) {
     const server = servers[update.guild.id];
-    server.numSinceLastEmbed = 0;
-    sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, undefined, false).then(() => {
-      server.currentEmbed = undefined;
+    sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, undefined, false).then(() => {
+      server.numSinceLastEmbed = 0;
       server.silence = false;
       server.verbose = false;
       server.loop = false;
       server.voteAdmin = [];
       server.dictator = false;
-      if (embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions) {
+      if (server.currentEmbed && server.currentEmbed.reactions) {
         server.collector.stop();
-        embedMessageMap[update.guild.id].reactions.removeAll().then();
-        embedMessageMap[update.guild.id] = false;
+        server.currentEmbed.reactions.removeAll().then();
+        server.currentEmbed = false;
       }
       if (server.followUpMessage) {
         server.followUpMessage.delete();
@@ -2778,14 +2793,15 @@ process.on('error', (e) => {
  * @param {string} whatToPlay the link of the song to play
  * @param voiceChannel the voice channel to play the song in
  * @param sendEmbed whether to send an embed to the text channel
+ * @param server The server playback metadata
  */
-async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
+async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, server) {
   const mgid = message.guild.id;
   if (!whatToPlay) {
-    whatToPlay = servers[mgid].queue[0];
-    if (!whatToPlay && servers[mgid].queue[1]) {
-      servers[mgid].queue.shift();
-      whatToPlay = servers[mgid].queue[0];
+    whatToPlay = server.queue[0];
+    if (!whatToPlay && server.queue[1]) {
+      server.queue.shift();
+      whatToPlay = server.queue[0];
     } else return;
   }
   if (!voiceChannel) {
@@ -2794,12 +2810,12 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
   }
   if (isInactive) {
     message.channel.send('*db bot has been updated*');
-    return runStopPlayingCommand(message.guild.id, voiceChannel);
+    return runStopPlayingCommand(message.guild.id, voiceChannel, false, server);
   }
-  if (servers[mgid].voteAdmin.length > 0) {
-    servers[mgid].voteSkipMembersId = [];
-    servers[mgid].voteRewindMembersId = [];
-    servers[mgid].votePlayPauseMembersId = [];
+  if (server.voteAdmin.length > 0) {
+    server.voteSkipMembersId = [];
+    server.voteRewindMembersId = [];
+    server.votePlayPauseMembersId = [];
   }
   // the display url
   let urlOrg = whatToPlay;
@@ -2814,7 +2830,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       console.log(e);
       message.channel.send('could not play <' + urlOrg + '>');
       whatspMap[voiceChannel.id] = '';
-      return skipSong(message, voiceChannel, true, true);
+      return skipSong(message, voiceChannel, true, server, true);
     }
     let artists = '';
     if (infos.artists) {
@@ -2852,18 +2868,17 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     if (search.items[itemIndex]) urlAlt = search.items[itemIndex].url;
     else {
       message.channel.send('could not find <' + urlOrg + '>');
-      runSkipCommand(message, voiceChannel, 1, true, true, message.member);
+      runSkipCommand(message, voiceChannel, server, 1, true, true, message.member);
     }
   }
   voiceChannel.join().then(async connection => {
     whatspMap[voiceChannel.id] = urlOrg;
     // remove previous embed buttons
-    if (servers[mgid].numSinceLastEmbed > 4 && servers[mgid].currentEmbed &&
-      (!servers[mgid].loop || whatspMap[voiceChannel.id] !== urlOrg)) {
-      servers[mgid].numSinceLastEmbed = 0;
-      servers[mgid].currentEmbed.delete();
-      servers[mgid].currentEmbed = undefined;
-      embedMessageMap[mgid] = false;
+    if (server.numSinceLastEmbed > 4 && server.currentEmbed &&
+      (!server.loop || whatspMap[voiceChannel.id] !== urlOrg)) {
+      server.numSinceLastEmbed = 0;
+      server.currentEmbed.delete();
+      server.currentEmbed = false;
     }
     try {
       connection.voice.setSelfDeaf(true).then();
@@ -2876,8 +2891,8 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       dispatcher.pause();
       dispatcherMap[voiceChannel.id] = dispatcher;
       // if the server is not silenced then send the embed when playing
-      if (sendEmbed && !servers[mgid].silence) {
-        await sendLinkAsEmbed(message, urlOrg, voiceChannel, infos).then(() => dispatcher.setVolume(0.5));
+      if (sendEmbed && !server.silence) {
+        await sendLinkAsEmbed(message, urlOrg, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
       }
       skipTimesMap[mgid] = 0;
       dispatcherMapStatus[voiceChannel.id] = false;
@@ -2895,28 +2910,26 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
               console.log(e);
             }
           }
-          const server = servers[mgid];
-          if (servers[mgid].currentEmbed && servers[mgid].currentEmbed.reactions && !server.loop && server.queue.length < 2) {
-            servers[mgid].currentEmbed.reactions.removeAll();
-            servers[mgid].currentEmbed = undefined;
-            embedMessageMap[mgid] = undefined;
+          if (server.currentEmbed && server.currentEmbed.reactions && !server.loop && server.queue.length < 2) {
+            server.currentEmbed.reactions.removeAll();
+            server.currentEmbed = false;
           }
           if (voiceChannel.members.size < 2) {
             connection.disconnect();
           } else if (server.loop) {
-            playSongToVC(message, urlOrg, voiceChannel, true);
+            playSongToVC(message, urlOrg, voiceChannel, true, server);
           } else {
             server.queueHistory.push(server.queue.shift());
             if (server.queue.length > 0) {
-              playSongToVC(message, server.queue[0], voiceChannel, true);
+              playSongToVC(message, server.queue[0], voiceChannel, true, server);
             } else {
               dispatcherMap[voiceChannel.id] = false;
             }
           }
         }, 700);
-        if (servers[mgid] && servers[mgid].followUpMessage) {
-          servers[mgid].followUpMessage.delete();
-          servers[mgid].followUpMessage = undefined;
+        if (server && server.followUpMessage) {
+          server.followUpMessage.delete();
+          server.followUpMessage = undefined;
         }
       });
       dispatcher.once('error', (e) => console.log(e));
@@ -2936,7 +2949,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       // search the db to find possible broken keys
       searchForBrokenLinkWithinDB(message, urlOrg);
       whatspMap[voiceChannel.id] = '';
-      skipSong(message, voiceChannel, true, true);
+      skipSong(message, voiceChannel, true, server, true);
     }
   });
 }
@@ -2973,15 +2986,16 @@ function searchForBrokenLinkWithinDB (message, whatToPlayS) {
  * @param voiceChannel The active voice channel
  * @param numberOfTimes The number of times to rewind
  * @param ignoreSingleRewind whether to print out the rewind text
- * @param force Optional - During DJ mode, can override votes
+ * @param force true can override votes during DJ mode
  * @param mem The metadata of the member using the command, used for DJ mode
+ * @param server The server playback metadata
  * @returns {*}
  */
-function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSingleRewind, force, mem) {
+function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSingleRewind, force, mem, server) {
   if (!voiceChannel) {
     return message.channel.send('You must be in a voice channel to rewind');
   }
-  if (servers[mgid].dictator && mem !== servers[mgid].dictator)
+  if (server.dictator && mem !== server.dictator)
     return message.channel.send('only the dictator can perform this action');
   let song;
   let rewindTimes = 1;
@@ -2993,9 +3007,9 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
     rewindTimes = 1;
     message.channel.send('rewinding once');
   }
-  if (servers[message.guild.id].voteAdmin.length > 0 && !force) {
-    const vs = voteSystem(message, message.guild.id, 'rewind', mem, servers[message.guild.id].voteRewindMembersId);
-    servers[message.guild.id].voteRewindMembersId = vs.votes;
+  if (server.voteAdmin.length > 0 && !force) {
+    const vs = voteSystem(message, message.guild.id, 'rewind', mem, server.voteRewindMembersId);
+    server.voteRewindMembersId = vs.votes;
     if (vs.bool) {
       rewindTimes = 1;
       ignoreSingleRewind = true;
@@ -3004,16 +3018,17 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
   }
   if (!rewindTimes || rewindTimes < 1 || rewindTimes > 10000) return message.channel.send('invalid rewind amount');
   let rwIncrementor = 0;
-  while (servers[mgid].queueHistory.length > 0 && rwIncrementor < rewindTimes) {
-    if (servers[mgid].queue.length > (maxQueueSize + 99)) {
-      playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+  while (server.queueHistory.length > 0 && rwIncrementor < rewindTimes) {
+    if (server.queue.length > (maxQueueSize + 99)) {
+      playSongToVC(message, server.queue[0], voiceChannel, true, server);
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
     // remove undefined links from queueHistory
-    while (servers[mgid].queueHistory.length > 0 && !song) {
-      song = servers[mgid].queueHistory.pop();
+    while (server.queueHistory.length > 0 && !song) {
+      song = server.queueHistory.pop();
     }
-    if (song) servers[mgid].queue.unshift(song);
+    if (song) server.queue.unshift(song);
+    song = false;
     rwIncrementor++;
   }
   if (song) {
@@ -3022,16 +3037,16 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
     } else {
       message.channel.send('*rewound ' + rwIncrementor + ' times*');
     }
-    playSongToVC(message, song, voiceChannel, true);
-  } else if (servers[mgid].queue[0]) {
-    playSongToVC(message, servers[mgid].queue[0], voiceChannel, true);
+    playSongToVC(message, song, voiceChannel, true, server);
+  } else if (server.queue[0]) {
+    playSongToVC(message, server.queue[0], voiceChannel, true, server);
     message.channel.send('*replaying first song*');
   } else {
     message.channel.send('cannot find previous song');
   }
-  if (servers[message.guild.id].followUpMessage) {
-    servers[message.guild.id].followUpMessage.delete();
-    servers[message.guild.id].followUpMessage = undefined;
+  if (server.followUpMessage) {
+    server.followUpMessage.delete();
+    server.followUpMessage = undefined;
   }
 }
 
@@ -3041,20 +3056,22 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  * @param message the message to send the channel to
  * @param url the url to generate the embed for
  * @param voiceChannel the voice channel that the song is being played in, if playing
+ * @param server The server playback metadata
  * @param infos Optional - Spotify information if already generated
  * @param forceEmbed Optional - force the embed to be regenerated
  * @returns {Promise<void>}
  */
-async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
+async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, forceEmbed) {
   if (!message) return;
   const mgid = message.guild.id;
   if (!mgid) return;
-  if (servers[mgid].verbose) forceEmbed = true;
-  if (!url || servers[mgid].loop && servers[mgid].currentEmbedLink === url && !forceEmbed && message.reactions) {
+  if (server.verbose) forceEmbed = true;
+  if (!url || server.loop && server.currentEmbedLink === url && !forceEmbed &&
+    server.currentEmbed.reactions) {
     return;
   }
-  servers[mgid].currentEmbedChannelId = message.channel.id;
-  servers[mgid].currentEmbedLink = url;
+  server.currentEmbedChannelId = message.channel.id;
+  server.currentEmbedLink = url;
   let embed;
   let timeMS = 0;
   let showButtons = true;
@@ -3085,31 +3102,28 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
       .addField('Duration', duration, true)
       .setThumbnail(infos.videoDetails.thumbnails[0].url);
   }
-  if (servers[mgid].queue.length > 0 && message.guild.voice && message.guild.voice.channel) {
-    embed.addField('Queue', ' 1 / ' + servers[mgid].queue.length, true);
+  if (server.queue.length > 0 && message.guild.voice && message.guild.voice.channel) {
+    embed.addField('Queue', ' 1 / ' + server.queue.length, true);
   } else {
     embed.addField('-', 'Last played', true);
     showButtons = false;
   }
   const generateNewEmbed = async () => {
-    if (servers[mgid].currentEmbed && !forceEmbed) {
-      servers[mgid].numSinceLastEmbed = 0;
-      servers[mgid].currentEmbed.delete();
-      servers[mgid].currentEmbed = undefined;
-      embedMessageMap[message.guild.id] = '';
-    } else if (servers[mgid].currentEmbed && servers[mgid].currentEmbed.reactions) {
-      servers[mgid].numSinceLastEmbed = 0;
-      await servers[mgid].collector.stop();
-      await servers[mgid].currentEmbed.reactions.removeAll();
-      servers[mgid].currentEmbed = undefined;
-      embedMessageMap[message.guild.id] = '';
+    if (server.currentEmbed && !forceEmbed) {
+      server.numSinceLastEmbed = 0;
+      server.currentEmbed.delete();
+      server.currentEmbed = false;
+    } else if (server.currentEmbed && server.currentEmbed.reactions) {
+      server.numSinceLastEmbed = 0;
+      await server.collector.stop();
+      await server.currentEmbed.reactions.removeAll();
+      server.currentEmbed = undefined;
     }
     message.channel.send(embed)
       .then((sentMsg) => {
         if (!showButtons || !dispatcherMap[voiceChannel.id]) return;
-        servers[mgid].currentEmbed = sentMsg;
-        servers[mgid].numSinceLastEmbed = 0;
-        embedMessageMap[mgid] = sentMsg;
+        server.currentEmbed = sentMsg;
+        server.numSinceLastEmbed = 0;
         if (!sentMsg) return;
         sentMsg.react('⏪').then(() => {
           if (collector.ended) return;
@@ -3142,66 +3156,66 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
 
         const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
 
-        servers[mgid].collector = collector;
+        server.collector = collector;
         collector.on('collect', (reaction, reactionCollector) => {
           if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
             return;
           }
           if (reaction.emoji.name === '⏩') {
             reaction.users.remove(reactionCollector.id);
-            runSkipCommand(message, voiceChannel, 1, false, false, message.member.voice.channel.members.get(reactionCollector.id));
-            if (servers[mgid].followUpMessage) {
-              servers[mgid].followUpMessage.delete();
-              servers[mgid].followUpMessage = undefined;
+            runSkipCommand(message, voiceChannel, server, 1, false, false, message.member.voice.channel.members.get(reactionCollector.id));
+            if (server.followUpMessage) {
+              server.followUpMessage.delete();
+              server.followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
             let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-            runPauseCommand(message, tempUser, true, false, true);
+            runPauseCommand(message, tempUser, server, true, false, true);
             tempUser = tempUser.nickname;
-            if (servers[mgid].voteAdmin.length < 1 && !servers[mgid].dictator) {
-              if (servers[mgid].followUpMessage) {
-                servers[mgid].followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+            if (server.voteAdmin.length < 1 && !server.dictator) {
+              if (server.followUpMessage) {
+                server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
                   '\`*');
               } else {
                 message.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                  '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
+                  '\`*').then(msg => {server.followUpMessage = msg;});
               }
             }
             reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
             let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-            runPlayCommand(message, tempUser, true, false, true);
-            if (servers[mgid].voteAdmin.length < 1 && !servers[mgid].dictator) {
+            runPlayCommand(message, tempUser, server, true, false, true);
+            if (server.voteAdmin.length < 1 && !server.dictator) {
               tempUser = tempUser.nickname;
-              if (servers[mgid].followUpMessage) {
-                servers[mgid].followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
+              if (server.followUpMessage) {
+                server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
                   '\`*');
               } else {
                 message.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                  '\`*').then(msg => {servers[mgid].followUpMessage = msg;});
+                  '\`*').then(msg => {server.followUpMessage = msg;});
               }
             }
             reaction.users.remove(reactionCollector.id);
           } else if (reaction.emoji.name === '⏪') {
             reaction.users.remove(reactionCollector.id);
-            runRewindCommand(message, mgid, voiceChannel, undefined, true, false, message.member.voice.channel.members.get(reactionCollector.id));
-            if (servers[mgid].followUpMessage) {
-              servers[mgid].followUpMessage.delete();
-              servers[mgid].followUpMessage = undefined;
+            runRewindCommand(message, mgid, voiceChannel, undefined, true, false, message.member.voice.channel.members.get(reactionCollector.id), server);
+            if (server.followUpMessage) {
+              server.followUpMessage.delete();
+              server.followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '⏹') {
             const mem = message.member.voice.channel.members.get(reactionCollector.id);
-            if (!servers[mgid].dictator || servers[mgid].dictator === mem) collector.stop();
-            runStopPlayingCommand(mgid, voiceChannel, false, message, mem);
-            if (servers[mgid].followUpMessage) {
-              servers[mgid].followUpMessage.delete();
-              servers[mgid].followUpMessage = undefined;
+            if (!server.dictator || server.dictator === mem) collector.stop();
+            runStopPlayingCommand(mgid, voiceChannel, false, server, message, mem);
+            if (server.followUpMessage) {
+              server.followUpMessage.delete();
+              server.followUpMessage = undefined;
             }
           } else if (reaction.emoji.name === '🔑') {
             runKeysCommand(message, prefixMap[mgid], mgid, '', voiceChannel, '');
-            servers[mgid].numSinceLastEmbed += 5;
+            server.numSinceLastEmbed += 5;
           } else if (reaction.emoji.name === '🔐') {
-            servers[mgid].numSinceLastEmbed += 5;
+            server.numSinceLastEmbed += 5;
             // console.log(reaction.users.valueOf().array().pop());
             runKeysCommand(message, prefixMap[mgid], 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector);
           }
@@ -3209,9 +3223,9 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
       });
   };
   if (url === whatspMap[voiceChannel.id]) {
-    if (servers[mgid].numSinceLastEmbed < 5 && !forceEmbed && servers[mgid].currentEmbed && embedMessageMap[mgid]) {
+    if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed) {
       try {
-        servers[mgid].currentEmbed.edit(embed);
+        server.currentEmbed.edit(embed);
       } catch (e) {
         await generateNewEmbed();
       }
@@ -3226,28 +3240,28 @@ async function sendLinkAsEmbed (message, url, voiceChannel, infos, forceEmbed) {
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
+ * @param server The server plagback metadata
  * @param message Optional - The message metadata, used in the case of verifying a dj or dictator
  * @param actionUser Optional - The member requesting to stop playing, used in the case of verifying a dj or dictator
  */
-function runStopPlayingCommand (mgid, voiceChannel, stayInVC, message, actionUser) {
+function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, actionUser) {
   if (!voiceChannel) return;
-  if (servers[mgid].dictator && actionUser && actionUser !== servers[mgid].dictator)
+  if (server.dictator && actionUser && actionUser !== server.dictator)
     return message.channel.send('only the dictator can perform this action');
-  if (servers[mgid].voteAdmin.length > 0 && actionUser) {
-    if (!servers[mgid].voteAdmin.map(x => x.id).includes(actionUser.id))
+  if (server.voteAdmin.length > 0 && actionUser) {
+    if (!server.voteAdmin.map(x => x.id).includes(actionUser.id))
       return message.channel.send('*only the DJ can end the session*');
   }
-  if (embedMessageMap[mgid] && embedMessageMap[mgid].reactions) {
-    servers[mgid].collector.stop();
-    embedMessageMap[mgid].reactions.removeAll().then();
-    embedMessageMap[mgid] = '';
+  if (server.currentEmbed && server.currentEmbed.reactions) {
+    server.collector.stop();
+    server.currentEmbed.reactions.removeAll().then();
   }
   try {
     dispatcherMap[voiceChannel.id].pause();
   } catch (e) {}
-  if (servers[mgid].followUpMessage) {
-    servers[mgid].followUpMessage.delete();
-    servers[mgid].followUpMessage = undefined;
+  if (server.followUpMessage) {
+    server.followUpMessage.delete();
+    server.followUpMessage = undefined;
   }
   if (voiceChannel && !stayInVC) {
     const waitForInit = setInterval(() => {
@@ -3277,13 +3291,13 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, shee
         return message.channel.send(xdb.referenceDatabase.get(keyName.toUpperCase()));
       } else {
         message.channel.send("Could not find '" + keyName + "' in " + dbType + ' database.');
-        return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, undefined, true);
+        return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], undefined, true);
       }
     });
   } else if (!voiceChannel) {
     return message.channel.send('must be in a voice channel');
   } else if (whatspMap[voiceChannel.id]) {
-    return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, undefined, true);
+    return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], undefined, true);
   } else {
     return message.channel.send('nothing is playing right now');
   }
@@ -3295,8 +3309,6 @@ const whatspMap = new Map();
 const prefixMap = new Map();
 // The song stream, uses voice channel id
 const dispatcherMap = new Map();
-// The messages containing embeds, uses guild id
-const embedMessageMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
 const dispatcherMapStatus = new Map();
 // the timers for the bot to leave a VC, uses channel id
