@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.2.0';
-const buildNo = '05020002'; // major, minor, patch, build
+const version = '5.2.1';
+const buildNo = '05020102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1074,24 +1074,6 @@ async function runCommandCases (message) {
         });
         if (gx) message.channel.send(gx);
         else message.channel.send('none found');
-        break;
-      } else if (args[1] === 'mem') {
-        let mems = '';
-        gzmMem.forEach(x => mems += (x + ', '));
-        if (!mems || message.member.id !== '443150640823271436') mems = 'none found  ';
-        message.channel.send(mems.substr(0, mems.length - 2));
-      } else if (args[1] === 'clear') {
-        if (message.member.id === '443150640823271436') gzmMem.clear();
-        message.channel.send('*cleared*');
-      } else if (args[1] === 'list') {
-        message.channel.send('listu, mem, clear');
-      } else if (args[1] === 'find') {
-        let gx = '';
-        bot.voice.connections.forEach(x => gx += x.channel.guild.name + ', ');
-        gx = gx.substring(0, gx.length - 2);
-        if (gx) message.channel.send(gx);
-        else message.channel.send('none found');
-        break;
       }
       break;
     // !rand
@@ -1539,6 +1521,11 @@ function runDictatorCommand (message, mgid, prefixString) {
   }
 }
 
+/**
+ * Handles the validation and provision of DJ permissions to members within a server.
+ * @param message The message metadata
+ * @returns {*}
+ */
 function runDJCommand (message) {
   if (!message.guild.voice || !message.guild.voice.channel || !message.member.voice || !message.member.voice.channel)
     return message.channel.send('must be in a voice channel with the db bot for this command');
@@ -2276,11 +2263,11 @@ function runSkipCommand (message, voiceChannel, skipTimes, sendSkipMsg, forceSki
 
 /**
  * A system to manage votes for various bot actions. Used for DJ mode.
- * @param message
- * @param mgid The messsage guild id
- * @param commandName
+ * @param message THe message metadata
+ * @param mgid The message guild id
+ * @param commandName The action for which the voting is for
  * @param voter The member that is doing the voting
- * @param votes
+ * @param votes An array representing the ids of the members who voted for the action
  * @returns {{bool: boolean}|{bool: boolean, votesNow: number, votes, votesNeeded: number}}
  */
 function voteSystem (message, mgid, commandName, voter, votes) {
@@ -2742,43 +2729,36 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
 bot.on('voiceStateUpdate', update => {
   if (isInactive) return;
   // if the bot is the one leaving
-  const mgid = update.guild.id;
-  if (update.channel && update.channel.members && update.channel.members.has(bot.user.id)) {
-    gzmMem.add(update.member.user.username);
-    update.channel.members.forEach(x => gzmMem.add(x.user.username));
-  }
-  if (update.member.id === bot.user.id && !update.connection && servers[mgid]) {
-    servers[mgid].numSinceLastEmbed = 0;
-    sendLinkAsEmbed(servers[mgid].currentEmbed, servers[mgid].currentEmbedLink, update.channel, undefined, false).then(() => {
-      servers[mgid].currentEmbed = undefined;
-      servers[mgid].silence = false;
-      servers[mgid].verbose = false;
-      servers[mgid].loop = false;
-      servers[mgid].voteAdmin = [];
-      servers[mgid].dictator = false;
-      if (embedMessageMap[update.guild.id] && embedMessageMap[mgid].reactions) {
-        servers[mgid].collector.stop();
-        embedMessageMap[mgid].reactions.removeAll().then();
-        embedMessageMap[mgid] = false;
+  if (update.member.id === bot.user.id && !update.connection && servers[update.guild.id]) {
+    const server = servers[update.guild.id];
+    server.numSinceLastEmbed = 0;
+    sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, undefined, false).then(() => {
+      server.currentEmbed = undefined;
+      server.silence = false;
+      server.verbose = false;
+      server.loop = false;
+      server.voteAdmin = [];
+      server.dictator = false;
+      if (embedMessageMap[update.guild.id] && embedMessageMap[update.guild.id].reactions) {
+        server.collector.stop();
+        embedMessageMap[update.guild.id].reactions.removeAll().then();
+        embedMessageMap[update.guild.id] = false;
       }
-      if (servers[mgid].followUpMessage) {
-        servers[mgid].followUpMessage.delete();
-        servers[mgid].followUpMessage = undefined;
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
       }
     });
   } else {
     if (!update.channel) return;
     let leaveVCInt = 1100;
-    if (dispatcherMap[update.channel.id]) {
-      leaveVCInt = 420000;
-    }
+    if (dispatcherMap[update.channel.id]) leaveVCInt = 420000;
     clearInterval(leaveVCTimeout[update.channel.id]);
     leaveVCTimeout[update.channel.id] = setInterval(() => {
+      clearInterval(leaveVCTimeout[update.channel.id]);
       if (update.channel.members.size < 2) {
-        // console.log(update.channel.members.values());
         update.channel.leave();
       }
-      clearInterval(leaveVCTimeout[update.channel.id]);
     }, leaveVCInt);
   }
 });
@@ -3309,7 +3289,6 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, shee
   }
 }
 
-const gzmMem = new Set();
 // What's playing, uses voice channel id
 const whatspMap = new Map();
 // The server's prefix, uses guild id
@@ -3320,7 +3299,7 @@ const dispatcherMap = new Map();
 const embedMessageMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
 const dispatcherMapStatus = new Map();
-// the timers for the bot to leave a VC, uses channel
+// the timers for the bot to leave a VC, uses channel id
 const leaveVCTimeout = new Map();
 // login to discord
 bot.login(token);
