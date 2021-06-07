@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "5.1.6",
+  "version": "5.2.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -15,9 +15,9 @@
     "ffmpeg-static": "^4.3.0",
     "fs-extra": "^10.0.0",
     "genius-lyrics": "^4.2.9",
-    "googleapis": "^74.2.0",
+    "googleapis": "^75.0.0",
     "node-gyp": "^8.1.0",
-    "npm": "^7.15.1",
+    "npm": "^7.16.0",
     "npm-install": "^1.7.4",
     "npm-start": "^1.4.2",
     "npm-start-command": "^1.0.1",

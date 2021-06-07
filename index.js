@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.1.6';
-const buildNo = '05010602'; // major, minor, patch, build
+const version = '5.2.0';
+const buildNo = '05020002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1013,8 +1013,7 @@ async function runCommandCases (message) {
         .setTitle('Dev Commands')
         .setDescription(
           prefixString + 'gzs - statistics' +
-          '\n' + prefixString + 'gzi - user and bot id' +
-          '\n' + prefixString + 'gzid - guild id' +
+          '\n' + prefixString + 'gzid - user, bot, and guild id' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n\n**calibrate multiple bots**' +
@@ -1030,7 +1029,8 @@ async function runCommandCases (message) {
       message.channel.send("restarting the bot... (may only shutdown)").then(process.exit());
       break;
     case 'gzid':
-      message.channel.send('guild id: ' + message.guild.id);
+      message.channel.send('guild id: ' + message.guild.id + '\nbot id: ' + bot.user.id +
+        '\nyour id: ' + message.member.id);
       break;
     case 'gzs':
       const embed = new MessageEmbed()
@@ -1093,9 +1093,6 @@ async function runCommandCases (message) {
         else message.channel.send('none found');
         break;
       }
-      break;
-    case 'gzi':
-      message.channel.send('bot id: ' + bot.user.id + '\nyour id: ' + message.member.id);
       break;
     // !rand
     case 'guess':
@@ -1224,6 +1221,30 @@ function verifyPlaylist (url) {
 }
 
 /**
+ * Checks the status of ytdl-core-discord and exits the active process if the test link is unplayable.
+ */
+function checkStatusOfYtdl () {
+  bot.channels.cache.get('833458014124113991').join().then(async (connection) => {
+    try {
+      connection.play(await ytdl('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {}), {
+        type: 'opus',
+        filter: 'audioonly',
+        quality: '140',
+        volume: false
+      });
+      const verifyPlaying = setInterval(() => {
+        clearInterval(verifyPlaying);
+        connection.disconnect();
+      }, 6000);
+    } catch (e) {
+      await bot.channels.cache.get('827195452507160627').send('=gzk');
+      await bot.channels.cache.get('826195051188191293').send('ytdl status was unhealthy, shutting off bot');
+      process.exit(0);
+    }
+  });
+}
+
+/**
  * Check to see if there was a response. If not then makes the current bot active.
  * @returns {boolean} if there was an initial response
  */
@@ -1238,6 +1259,7 @@ function responseHandler () {
       const waitForFollowup = setInterval(() => {
         clearInterval(waitForFollowup);
         bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
+        checkStatusOfYtdl();
       }, 2500);
     });
   } else if (setOfBotsOn.size > 1) {
@@ -2865,8 +2887,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
     }
     try {
       connection.voice.setSelfDeaf(true).then();
-      let dispatcher;
-      dispatcher = connection.play(await ytdl(urlAlt, {}), {
+      let dispatcher = connection.play(await ytdl(urlAlt, {}), {
         type: 'opus',
         filter: 'audioonly',
         quality: '140',
@@ -2925,7 +2946,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed) {
       if (!numberOfPrevSkips) {
         skipTimesMap[mgid] = 1;
       } else if (numberOfPrevSkips > 3) {
-        ytdl = await require('ytdl-core-discord');
         connection.disconnect();
         return;
       } else {
