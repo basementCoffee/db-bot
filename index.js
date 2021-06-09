@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.1';
-const buildNo = '05030102'; // major, minor, patch, build
+const version = '5.3.2';
+const buildNo = '05030202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2839,8 +2839,13 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     } else artists = 'N/A';
     let search = await ytsr(infos.name + ' ' + artists, {pages: 1});
     let youtubeDuration;
+    // todo: 2 - durationAmount should NOT be a number but addresses the crash, fix later using these broken links
+    // https://open.spotify.com/track/2GaEWytjsb64OFuNdfNVJU?si=af92d10f74d04158
+    // https://www.youtube.com/watch?v=NgVH_mEDLaI
+    let durationAmount = 180000;
     if (search.items[0]) {
       const convertYTFormatToMS = (durationArray) => {
+        try {
         if (durationArray) {
           youtubeDuration = 0;
           durationArray.reverse();
@@ -2848,9 +2853,13 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
           if (durationArray[2]) youtubeDuration += durationArray[1] * 3600000;
           youtubeDuration += durationArray[0] * 1000;
         }
+      } catch (e) {youtubeDuration = 180000} // todo: 3 - remove once durationArray is addressed
         return youtubeDuration;
       };
-      youtubeDuration = convertYTFormatToMS(search.items[0].duration.split(':'));
+      // fix for broken links, todo: 1 - figure out another way to get the time when this fails, maybe ytdl-core-discord
+      // remove temporary if-statement once fixed
+      if (search.items[0].duration) durationAmount = search.items[0].duration.split(':');
+      youtubeDuration = convertYTFormatToMS(durationAmount);
       let spotifyDuration = parseInt(infos.duration_ms);
       itemIndex++;
       while (search.items[itemIndex] && search.items[itemIndex].type !== 'video' && itemIndex < 6) {
