@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.6';
-const buildNo = '05030602'; // major, minor, patch, build
+const version = '5.3.7';
+const buildNo = '05030702'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2104,10 +2104,10 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         }
       } else { // did find in database
         if (playRightNow) { // push to queue and play
-          let dsp = dispatcherMap[voiceChannel.id];
+          const dsp = dispatcherMap[voiceChannel.id];
           try {
             if (server.queue[0] && dsp && dsp.streamTime &&
-            server.queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000) {
+              (server.queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000)) {
               server.queueHistory.push(server.queue.shift());
             }
           } catch (e) {console.log(e);}
@@ -2884,7 +2884,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     }
   }
   let connection = servers[message.guild.id].connection;
-  if (!connection || !voiceChannel || (connection.channel.id !== voiceChannel.id)) {
+  if (!message.guild.voice || !message.guild.voice.channel || !connection || (connection.channel.id !== voiceChannel.id)) {
     connection = await voiceChannel.join();
     servers[message.guild.id].connection = connection;
   }
