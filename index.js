@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.5';
-const buildNo = '05030502'; // major, minor, patch, build
+const version = '5.3.6';
+const buildNo = '05030602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2584,7 +2584,10 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
             }
             if (isPlaylist) numOfTimes = itemCounter;
             url = undefined;
-          } catch (e) {}
+          } catch (e) {
+            console.log(e);
+            url = undefined;
+          }
         }
         if (url) {
           server.queue.push(url);
@@ -2881,7 +2884,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     }
   }
   let connection = servers[message.guild.id].connection;
-  if (connection && (connection.channel !== voiceChannel)) {
+  if (!connection || !voiceChannel || (connection.channel.id !== voiceChannel.id)) {
     connection = await voiceChannel.join();
     servers[message.guild.id].connection = connection;
   }
