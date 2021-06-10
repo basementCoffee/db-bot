@@ -26,9 +26,9 @@ const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
-let devMode = true; // default false
-const version = '5.3.3';
-const buildNo = '05030302'; // major, minor, patch, build
+let devMode = false; // default false
+const version = '5.3.4';
+const buildNo = '05030402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
