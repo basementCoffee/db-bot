@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.8';
-const buildNo = '05030802'; // major, minor, patch, build
+const version = '5.3.9';
+const buildNo = '05030902'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2949,6 +2949,14 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
       }
     });
     dispatcher.once('error', (e) => console.log(e));
+    setTimeout(() => {
+      if (dispatcher.streamTime && dispatcher.streamTime < 1) {
+        bot.channels.cache.get('821993147466907659').send('there was a stream time error: ' +
+          dispatcher.streamTime.toString());
+        if (message.guild.voice && message.guild.voice.channel)
+          playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, server);
+      }
+    }, 1000);
   } catch (e) {
     console.log(e);
     const numberOfPrevSkips = skipTimesMap[mgid];
