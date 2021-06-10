@@ -26,7 +26,7 @@ const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
-let devMode = false; // default false
+let devMode = true; // default false
 const version = '5.3.3';
 const buildNo = '05030302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
@@ -2960,7 +2960,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
       whatspMap[voiceChannel.id] = '';
       skipSong(message, voiceChannel, true, server, true);
     }
-  });
+  }).catch(message.channel.send('*permissions error: cannot operate in a full vc and/or vc is not found*'));
 }
 
 // number of consecutive error skips in a server, uses guild id
