@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.4';
-const buildNo = '05030402'; // major, minor, patch, build
+const version = '5.3.5';
+const buildNo = '05030502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2880,87 +2880,90 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
       runSkipCommand(message, voiceChannel, server, 1, true, true, message.member);
     }
   }
-  voiceChannel.join().then(async connection => {
-    whatspMap[voiceChannel.id] = urlOrg;
-    // remove previous embed buttons
-    if (server.numSinceLastEmbed > 4 && server.currentEmbed &&
-      (!server.loop || whatspMap[voiceChannel.id] !== urlOrg)) {
-      server.numSinceLastEmbed = 0;
-      server.currentEmbed.delete();
-      server.currentEmbed = false;
+  let connection = servers[message.guild.id].connection;
+  if (connection && (connection.channel !== voiceChannel)) {
+    connection = await voiceChannel.join();
+    servers[message.guild.id].connection = connection;
+  }
+  whatspMap[voiceChannel.id] = urlOrg;
+  // remove previous embed buttons
+  if (server.numSinceLastEmbed > 4 && server.currentEmbed &&
+    (!server.loop || whatspMap[voiceChannel.id] !== urlOrg)) {
+    server.numSinceLastEmbed = 0;
+    server.currentEmbed.delete();
+    server.currentEmbed = false;
+  }
+  try {
+    connection.voice.setSelfDeaf(true).then();
+    let dispatcher = connection.play(await ytdl(urlAlt, {}), {
+      type: 'opus',
+      filter: 'audioonly',
+      quality: '140',
+      volume: false
+    });
+    dispatcher.pause();
+    dispatcherMap[voiceChannel.id] = dispatcher;
+    // if the server is not silenced then send the embed when playing
+    if (sendEmbed && !server.silence) {
+      await sendLinkAsEmbed(message, urlOrg, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
     }
-    try {
-      connection.voice.setSelfDeaf(true).then();
-      let dispatcher = connection.play(await ytdl(urlAlt, {}), {
-        type: 'opus',
-        filter: 'audioonly',
-        quality: '140',
-        volume: false
-      });
-      dispatcher.pause();
-      dispatcherMap[voiceChannel.id] = dispatcher;
-      // if the server is not silenced then send the embed when playing
-      if (sendEmbed && !server.silence) {
-        await sendLinkAsEmbed(message, urlOrg, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
-      }
-      skipTimesMap[mgid] = 0;
-      dispatcherMapStatus[voiceChannel.id] = false;
-      dispatcher.resume();
-      dispatcher.once('finish', () => {
-        const songFinish = setInterval(() => {
-          clearInterval(songFinish);
-          if (urlOrg !== whatspMap[voiceChannel.id]) {
-            console.log('There was a mismatch -------------------');
-            console.log('old url: ' + urlOrg);
-            console.log('current url: ' + whatspMap[voiceChannel.id]);
-            try {
-              bot.channels.cache.get('821993147466907659').send('there was a mismatch with playback');
-            } catch (e) {
-              console.log(e);
-            }
+    skipTimesMap[mgid] = 0;
+    dispatcherMapStatus[voiceChannel.id] = false;
+    dispatcher.resume();
+    dispatcher.once('finish', () => {
+      const songFinish = setInterval(() => {
+        clearInterval(songFinish);
+        if (urlOrg !== whatspMap[voiceChannel.id]) {
+          console.log('There was a mismatch -------------------');
+          console.log('old url: ' + urlOrg);
+          console.log('current url: ' + whatspMap[voiceChannel.id]);
+          try {
+            bot.channels.cache.get('821993147466907659').send('there was a mismatch with playback');
+          } catch (e) {
+            console.log(e);
           }
-          if (server.currentEmbed && server.currentEmbed.reactions && !server.loop && server.queue.length < 2) {
-            server.currentEmbed.reactions.removeAll();
-            server.currentEmbed = false;
-          }
-          if (voiceChannel.members.size < 2) {
-            connection.disconnect();
-          } else if (server.loop) {
-            playSongToVC(message, urlOrg, voiceChannel, true, server);
-          } else {
-            server.queueHistory.push(server.queue.shift());
-            if (server.queue.length > 0) {
-              playSongToVC(message, server.queue[0], voiceChannel, true, server);
-            } else {
-              dispatcherMap[voiceChannel.id] = false;
-            }
-          }
-        }, 700);
-        if (server && server.followUpMessage) {
-          server.followUpMessage.delete();
-          server.followUpMessage = undefined;
         }
-      });
-      dispatcher.once('error', (e) => console.log(e));
-    } catch (e) {
-      console.log(e);
-      const numberOfPrevSkips = skipTimesMap[mgid];
-      if (!numberOfPrevSkips) {
-        skipTimesMap[mgid] = 1;
-      } else if (numberOfPrevSkips > 3) {
-        connection.disconnect();
-        return;
-      } else {
-        skipTimesMap[mgid] += 1;
+        if (server.currentEmbed && server.currentEmbed.reactions && !server.loop && server.queue.length < 2) {
+          server.currentEmbed.reactions.removeAll();
+          server.currentEmbed = false;
+        }
+        if (voiceChannel.members.size < 2) {
+          connection.disconnect();
+        } else if (server.loop) {
+          playSongToVC(message, urlOrg, voiceChannel, true, server);
+        } else {
+          server.queueHistory.push(server.queue.shift());
+          if (server.queue.length > 0) {
+            playSongToVC(message, server.queue[0], voiceChannel, true, server);
+          } else {
+            dispatcherMap[voiceChannel.id] = false;
+          }
+        }
+      }, 700);
+      if (server && server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
       }
-      // Error catching - fault with the link?
-      message.channel.send('Could not play <' + urlOrg + '>');
-      // search the db to find possible broken keys
-      searchForBrokenLinkWithinDB(message, urlOrg);
-      whatspMap[voiceChannel.id] = '';
-      skipSong(message, voiceChannel, true, server, true);
+    });
+    dispatcher.once('error', (e) => console.log(e));
+  } catch (e) {
+    console.log(e);
+    const numberOfPrevSkips = skipTimesMap[mgid];
+    if (!numberOfPrevSkips) {
+      skipTimesMap[mgid] = 1;
+    } else if (numberOfPrevSkips > 3) {
+      connection.disconnect();
+      return;
+    } else {
+      skipTimesMap[mgid] += 1;
     }
-  }).catch(message.channel.send('*permissions error: cannot operate in a full vc and/or vc is not found*'));
+    // Error catching - fault with the link?
+    message.channel.send('Could not play <' + urlOrg + '>');
+    // search the db to find possible broken keys
+    searchForBrokenLinkWithinDB(message, urlOrg);
+    whatspMap[voiceChannel.id] = '';
+    skipSong(message, voiceChannel, true, server, true);
+  }
 }
 
 // number of consecutive error skips in a server, uses guild id
