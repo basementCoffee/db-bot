@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.10';
-const buildNo = '05031002'; // major, minor, patch, build
+const version = '5.3.11';
+const buildNo = '05031102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -795,6 +795,7 @@ async function runCommandCases (message) {
     case 'dictator' :
       runDictatorCommand(message, mgid, prefixString, server);
       break;
+    case 'voteskip':
     case 'vote':
     case 'dj':
       runDJCommand(message, server);
@@ -1506,7 +1507,7 @@ function runDictatorCommand (message, mgid, prefixString, server) {
     return message.channel.send('cannot have a dictator while there is a DJ');
   if (server.dictator) {
     if (server.dictator === message.member) {
-      message.channel.send('**you are the dictator.** If you want to forfeit your powers say \`' + prefixString + 'resign\`');
+      return message.channel.send('***You are the dictator.*** *If you want to forfeit your powers say \`' + prefixString + 'resign\`*');
     } else {
       const dic = server.dictator;
       for (let i of vcMembersId) {
@@ -1521,14 +1522,14 @@ function runDictatorCommand (message, mgid, prefixString, server) {
     }
   } else {
     server.dictator = message.member;
-    const dicEmbed = new MessageEmbed();
-    dicEmbed.setTitle('Dictator Commands')
-      .setDescription('\`resign\` - forfeit being dictator')
-      .setFooter('The dictator has control over all music commands for the session. Enjoy!');
     message.channel.send('***' + (message.member.nickname ?
-      message.member.nickname : message.member.user.username) + ', you are the dictator. (BETA)***')
-      .then(message.channel.send(dicEmbed));
+      message.member.nickname : message.member.user.username) + ', you are the dictator.***');
   }
+  const dicEmbed = new MessageEmbed();
+  dicEmbed.setTitle('Dictator Commands')
+    .setDescription('\`resign\` - forfeit being dictator')
+    .setFooter('The dictator has control over all music commands for the session. Enjoy!');
+  message.channel.send(dicEmbed);
 }
 
 /**
@@ -1546,15 +1547,7 @@ function runDJCommand (message, server) {
   if (server.voteAdmin.length < 1) {
     server.voteAdmin.push(message.member);
     const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
-    message.channel.send('***DJ mode has been enabled for this session (DJ: ' + dj + ') (BETA)***');
-    const msgEmbed = new MessageEmbed();
-    msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
-      '\`forcerewind\`- force rewind a track [fr]\n' +
-      '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
-      '\`resign\` - forfeit DJ permissions')
-      .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
-        'The DJ can override voting by using the force commands above.');
-    message.channel.send(msgEmbed);
+    message.channel.send('***DJ mode has been enabled for this session (DJ: ' + dj + ')***');
   } else {
     let ix = 0;
     for (let x of server.voteAdmin) {
@@ -1565,21 +1558,21 @@ function runDJCommand (message, server) {
         server.voteAdmin[ix] = message.member;
         newMem = (newMem.nickname ? newMem.nickname : newMem.user.username);
         message.channel.send('*DJ ' + oldMem + ' is missing.* ***' + newMem + ' is now the new DJ.***');
-        const msgEmbed = new MessageEmbed();
-        msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
-          '\`forcerewind\`- force rewind a track [fr]\n' +
-          '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
-          '\`resign\` - forfeit DJ permissions')
-          .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
-            'The DJ can override voting by using the force commands above.');
-        return message.channel.send(msgEmbed);
       }
       ix++;
     }
     const currentAdmin = server.voteAdmin[0];
-    message.channel.send((currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
-      'the DJ. Any skip, rewind, play, or pause command can be used to vote for that action.');
+    message.channel.send('***' + (currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
+      'the DJ.*** *Use a skip, rewind, play, or pause command to vote for that action.*');
   }
+  const msgEmbed = new MessageEmbed();
+  msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
+    '\`forcerewind\`- force rewind a track [fr]\n' +
+    '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
+    '\`resign\` - forfeit DJ permissions')
+    .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
+      'The DJ can override voting by using the force commands above.');
+  message.channel.send(msgEmbed);
 }
 
 /**
@@ -2358,7 +2351,9 @@ function sendHelp (message, prefixString) {
     prefixString +
     'rand [# times] \` Play a random song from server keys  *[r]*\n\`' +
     prefixString +
-    'search [key] \` Search keys  *[s]*\n' +
+    'search [key] \` Search keys  *[s]*\n\`' +
+    prefixString +
+    'link [key] \` Get the full link of a specific key  *[url]*\n' +
     '\n-----------  **Personal Music Database**  -----------\n' +
     "*Prepend 'm' to the above commands to access your personal music database*\nex: \`" + prefixString + "mkeys \`\n" +
     '\n-----------  **Advanced Music Commands**  -----------\n\`' +
