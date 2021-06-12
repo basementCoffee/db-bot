@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.12';
-const buildNo = '05031202'; // major, minor, patch, build
+const version = '5.3.13';
+const buildNo = '05031302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1221,8 +1221,7 @@ function checkStatusOfYtdl () {
         quality: '140',
         volume: false
       });
-      const verifyPlaying = setInterval(() => {
-        clearInterval(verifyPlaying);
+      setTimeout(() => {
         connection.disconnect();
       }, 6000);
     } catch (e) {
@@ -1245,8 +1244,7 @@ function responseHandler () {
     bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
       console.log('-active-');
       servers = {};
-      const waitForFollowup = setInterval(() => {
-        clearInterval(waitForFollowup);
+      setTimeout(() => {
         bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
         checkStatusOfYtdl();
       }, 2500);
@@ -2945,11 +2943,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     dispatcher.once('error', (e) => console.log(e));
     setTimeout(() => {
       if (dispatcher.streamTime < 1) {
-        bot.channels.cache.get('821993147466907659').send('there was a stream time error - playback');
         if (message.guild.voice && message.guild.voice.channel)
-          playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, server);
+          return playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, server);
       }
-    }, 700);
+    }, 250);
   } catch (e) {
     console.log(e);
     const numberOfPrevSkips = skipTimesMap[mgid];
@@ -3282,8 +3279,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     server.followUpMessage = undefined;
   }
   if (voiceChannel && !stayInVC) {
-    const waitForInit = setInterval(() => {
-      clearInterval(waitForInit);
+    setTimeout(() => {
       voiceChannel.leave();
     }, 600);
   }
