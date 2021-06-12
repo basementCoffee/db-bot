@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.11';
-const buildNo = '05031102'; // major, minor, patch, build
+const version = '5.3.12';
+const buildNo = '05031202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1634,7 +1634,7 @@ function runLyricsCommand (message, mgid, args, server) {
         const infos = await ytdl.getInfo(lUrl);
         if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
           // use video metadata
-          songName = infos.videoDetails.media.song;
+          searchTerm = songName = infos.videoDetails.media.song;
           let songNameSubIndex = songName.search('[(]');
           if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
           else {
@@ -1686,18 +1686,17 @@ function runLyricsCommand (message, mgid, args, server) {
         const firstSong = searches[0];
         const lyrics = await firstSong.lyrics();
         message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(sentMsg => {
-          const lyricsText = lyrics.length > 1900 ? lyrics.substr(0, 1900) + '...' : lyrics;
-          const mb = '📄';
-          sentMsg.react(mb);
+          sentMsg.react('📄');
 
           const filter = (reaction, user) => {
-            return user.id !== bot.user.id && [mb].includes(reaction.emoji.name);
+            return user.id !== bot.user.id && ['📄'].includes(reaction.emoji.name);
           };
 
           const collector = sentMsg.createReactionCollector(filter, {time: 600000});
 
           collector.once('collect', (reaction, user) => {
-            message.channel.send(lyricsText).then(server.numSinceLastEmbed += 10);
+            // send the lyrics text on reaction click
+            message.channel.send((lyrics.length > 1900 ? lyrics.substr(0, 1900) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
           });
 
         });
@@ -2866,7 +2865,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
       // if the next video is a better match then play the next video
       if (search.items[itemIndex2] && search.items[itemIndex2].duration &&
         Math.abs(spotifyDuration - youtubeDuration) >
-        (Math.abs(spotifyDuration - (convertYTFormatToMS(search.items[itemIndex2].duration.split(':'))) + 1000))) {
+        (Math.abs(spotifyDuration - (convertYTFormatToMS(search.items[itemIndex2].duration.split(':')))) + 1000)) {
         itemIndex = itemIndex2;
       }
     } else {
@@ -2946,12 +2945,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     dispatcher.once('error', (e) => console.log(e));
     setTimeout(() => {
       if (dispatcher.streamTime < 1) {
-        bot.channels.cache.get('821993147466907659').send('there was a stream time error: ' +
-          dispatcher.streamTime.toString());
+        bot.channels.cache.get('821993147466907659').send('there was a stream time error - playback');
         if (message.guild.voice && message.guild.voice.channel)
           playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, server);
       }
-    }, 1000);
+    }, 700);
   } catch (e) {
     console.log(e);
     const numberOfPrevSkips = skipTimesMap[mgid];
