@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.3.13';
-const buildNo = '05031302'; // major, minor, patch, build
+const version = '5.4.0';
+const buildNo = '05040002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1278,16 +1278,56 @@ bot.on('message', async (message) => {
           dm = bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : '';
         }
         message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
-          ' (' + version + ')' + dm);
+          ' (' + version + ')' + dm).then(sentMsg => {
+          if (devMode) return sentMsg.react('🔸');
+          sentMsg.react((isInactive ? '🔺' : '🔻'));
+
+          const filter = (reaction, user) => {
+            return user.id !== bot.user.id && user.id === message.member.id &&
+              ['🔺', '🔻'].includes(reaction.emoji.name);
+          };
+
+          const collector = sentMsg.createReactionCollector(filter, {time: 30000});
+
+          collector.once('collect', (reaction, user) => {
+            if (!isInactive && bot.voice.connections.size > 0) {
+              message.channel.send('***' + process.pid + ' - button is disabled***\n*This process should not be ' +
+                'sidelined because it has active members using it (VCs: ' + bot.voice.connections.size + ')*');
+              collector.stop();
+              return;
+            }
+            isInactive = !isInactive;
+            message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
+            console.log((isInactive ? '-sidelined-' : '-active-'));
+            sentMsg.reactions.removeAll().then(() => {
+              collector.stop();
+              sentMsg.react('🔹');
+            });
+            let dm;
+            if (devMode) {
+              dm = ' (dev mode)';
+            } else {
+              dm = bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : '';
+            }
+            sentMsg.edit((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
+              ' (' + version + ')' + dm);
+          });
+
+          collector.once('end', () => {
+            if (sentMsg.reactions) sentMsg.reactions.removeAll().then(() => sentMsg.react('🔹'));
+            else sentMsg.react('🔹');
+          });
+        });
       } else if (zargs[1] === 'all') {
         isInactive = true;
-        message.channel.send('db bot ' + process.pid + ' has been sidelined');
+        message.channel.send('*db bot ' + process.pid + ' has been sidelined*');
+        console.log('-sidelined-');
       } else {
         let i = 1;
         while (zargs[i]) {
           if (zargs[i].replace(/,/g, '') === process.pid.toString()) {
             isInactive = !isInactive;
-            message.channel.send('db bot ' + process.pid + (isInactive ? ' has been sidelined' : ' is now active'));
+            message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
             console.log((isInactive ? '-sidelined-' : '-active-'));
             return;
           }
@@ -2789,8 +2829,9 @@ process.on('error', (e) => {
  * @param voiceChannel the voice channel to play the song in
  * @param sendEmbed whether to send an embed to the text channel
  * @param server The server playback metadata
+ * @param avoidReplay Optional - Bool to not replay the song after initial replay
  */
-async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, server) {
+async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, server, avoidReplay) {
   const mgid = message.guild.id;
   if (!whatToPlay) {
     whatToPlay = server.queue[0];
@@ -2942,11 +2983,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     });
     dispatcher.once('error', (e) => console.log(e));
     setTimeout(() => {
-      if (dispatcher.streamTime < 1) {
-        if (message.guild.voice && message.guild.voice.channel)
-          return playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, server);
+      if (server.queue[0] === whatToPlay && dispatcher.streamTime < 1 && message.guild.voice &&
+        message.guild.voice.channel && !avoidReplay) {
+        return playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, server, true);
       }
-    }, 250);
+    }, 500);
   } catch (e) {
     console.log(e);
     const numberOfPrevSkips = skipTimesMap[mgid];
