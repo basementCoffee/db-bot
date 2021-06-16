@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.1';
-const buildNo = '05040102'; // major, minor, patch, build
+const version = '5.4.2';
+const buildNo = '05040202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1279,31 +1279,22 @@ bot.on('message', async (message) => {
         }
         message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
           ' (' + version + ')' + dm).then(sentMsg => {
-          if (devMode) return sentMsg.react('🔸');
-          sentMsg.react((isInactive ? '🔺' : '🔻'));
+          if (devMode) {
+            sentMsg.react('🔸');
+            const collector = sentMsg.createReactionCollector(() => false, {time: 30000});
+            collector.on('end', () => {
+              if (sentMsg.reactions) sentMsg.reactions.removeAll();
+            });
+            return;
+          }
+          sentMsg.react('⚙️');
 
           const filter = (reaction, user) => {
             return user.id !== bot.user.id && user.id === message.member.id &&
-              ['🔺', '🔻'].includes(reaction.emoji.name);
+              ['⚙️'].includes(reaction.emoji.name);
           };
 
-          const collector = sentMsg.createReactionCollector(filter, {time: 30000});
-
-          collector.once('collect', (reaction, user) => {
-            if (!isInactive && bot.voice.connections.size > 0) {
-              message.channel.send('***' + process.pid + ' - button is disabled***\n*This process should not be ' +
-                'sidelined because it has active members using it (VCs: ' + bot.voice.connections.size + ')*');
-              collector.stop();
-              return;
-            }
-            isInactive = !isInactive;
-            message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
-            console.log((isInactive ? '-sidelined-' : '-active-'));
-            sentMsg.reactions.removeAll().then(() => {
-              collector.stop();
-              sentMsg.react('🔹');
-            });
-            let dm;
+          const updateMessage = () => {
             if (devMode) {
               dm = ' (dev mode)';
             } else {
@@ -1311,11 +1302,33 @@ bot.on('message', async (message) => {
             }
             sentMsg.edit((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
               ' (' + version + ')' + dm);
-          });
+          };
+          const collector = sentMsg.createReactionCollector(filter, {time: 30000});
+          let vcSize = bot.voice.connections.size;
+          let statusInterval = setInterval(() => {
+            if (bot.voice.connections.size !== vcSize) {
+              vcSize = bot.voice.connections.size;
+              updateMessage();
+            }
+          }, 8000);
 
+          collector.on('collect', (reaction, user) => {
+            if (!isInactive && bot.voice.connections.size > 0) {
+              message.channel.send('***' + process.pid + ' - button is disabled***\n*This process should not be ' +
+                'sidelined because it has active members using it (VCs: ' + bot.voice.connections.size + ')*\n' +
+                '*If you just activated another process, please deactivate it.*');
+              return;
+            }
+            isInactive = !isInactive;
+            message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
+            console.log((isInactive ? '-sidelined-' : '-active-'));
+            updateMessage();
+            reaction.users.remove(user.id);
+          });
           collector.once('end', () => {
-            if (sentMsg.reactions) sentMsg.reactions.removeAll().then(() => sentMsg.react('🔹'));
-            else sentMsg.react('🔹');
+            clearInterval(statusInterval);
+            if (sentMsg.reactions) sentMsg.reactions.removeAll();
+            updateMessage();
           });
         });
       } else if (zargs[1] === 'all') {
