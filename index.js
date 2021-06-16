@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.0';
-const buildNo = '05040002'; // major, minor, patch, build
+const version = '5.4.1';
+const buildNo = '05040102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1722,16 +1722,14 @@ function runLyricsCommand (message, mgid, args, server) {
       try {
         const searches = await GeniusClient.songs.search(searchTerm);
         const firstSong = searches[0];
-        const lyrics = await firstSong.lyrics();
-        message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(sentMsg => {
+        message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
           sentMsg.react('📄');
-
+          const lyrics = await firstSong.lyrics();
           const filter = (reaction, user) => {
             return user.id !== bot.user.id && ['📄'].includes(reaction.emoji.name);
           };
 
           const collector = sentMsg.createReactionCollector(filter, {time: 600000});
-
           collector.once('collect', (reaction, user) => {
             // send the lyrics text on reaction click
             message.channel.send((lyrics.length > 1900 ? lyrics.substr(0, 1900) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
@@ -2945,7 +2943,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     }
     skipTimesMap[mgid] = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
-    dispatcher.resume();
     dispatcher.once('finish', () => {
       const songFinish = setInterval(() => {
         clearInterval(songFinish);
@@ -2981,13 +2978,13 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
         server.followUpMessage = undefined;
       }
     });
-    dispatcher.once('error', (e) => console.log(e));
+    dispatcher.resume();
     setTimeout(() => {
       if (server.queue[0] === whatToPlay && dispatcher.streamTime < 1 && message.guild.voice &&
         message.guild.voice.channel && !avoidReplay) {
         return playSongToVC(message, whatToPlay, voiceChannel, sendEmbed, server, true);
       }
-    }, 500);
+    }, 600);
   } catch (e) {
     console.log(e);
     const numberOfPrevSkips = skipTimesMap[mgid];
@@ -3164,6 +3161,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     embed.addField('-', 'Last played', true);
     showButtons = false;
   }
+  let sentMsg;
   const generateNewEmbed = async () => {
     if (server.currentEmbed && !forceEmbed) {
       server.numSinceLastEmbed = 0;
@@ -3175,113 +3173,19 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
       await server.currentEmbed.reactions.removeAll();
       server.currentEmbed = undefined;
     }
-    message.channel.send(embed)
-      .then((sentMsg) => {
-        if (!showButtons || !dispatcherMap[voiceChannel.id]) return;
-        server.currentEmbed = sentMsg;
-        server.numSinceLastEmbed = 0;
-        if (!sentMsg) return;
-        sentMsg.react('⏪').then(() => {
-          if (collector.ended) return;
-          sentMsg.react('⏯').then(() => {
-            if (collector.ended) return;
-            sentMsg.react('⏩').then(() => {
-              if (collector.ended) return;
-              sentMsg.react('⏹').then(() => {
-                if (collector.ended) return;
-                sentMsg.react('🔑').then(() => {
-                  if (collector.ended) return;
-                  sentMsg.react('🔐').then();
-                });
-              });
-            });
-          });
-        });
-        const filter = (reaction, user) => {
-          if (voiceChannel) {
-            for (const mem of voiceChannel.members) {
-              if (user.id === mem[1].id) {
-                return user.id !== bot.user.id && ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name);
-              }
-            }
-          }
-          return false;
-        };
-
-        timeMS += 3600000;
-
-        const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
-
-        server.collector = collector;
-        collector.on('collect', (reaction, reactionCollector) => {
-          if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
-            return;
-          }
-          if (reaction.emoji.name === '⏩') {
-            reaction.users.remove(reactionCollector.id);
-            runSkipCommand(message, voiceChannel, server, 1, false, false, message.member.voice.channel.members.get(reactionCollector.id));
-            if (server.followUpMessage) {
-              server.followUpMessage.delete();
-              server.followUpMessage = undefined;
-            }
-          } else if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
-            let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-            runPauseCommand(message, tempUser, server, true, false, true);
-            tempUser = tempUser.nickname;
-            if (server.voteAdmin.length < 1 && !server.dictator) {
-              if (server.followUpMessage) {
-                server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                  '\`*');
-              } else {
-                message.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                  '\`*').then(msg => {server.followUpMessage = msg;});
-              }
-            }
-            reaction.users.remove(reactionCollector.id);
-          } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
-            let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-            runPlayCommand(message, tempUser, server, true, false, true);
-            if (server.voteAdmin.length < 1 && !server.dictator) {
-              tempUser = tempUser.nickname;
-              if (server.followUpMessage) {
-                server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                  '\`*');
-              } else {
-                message.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                  '\`*').then(msg => {server.followUpMessage = msg;});
-              }
-            }
-            reaction.users.remove(reactionCollector.id);
-          } else if (reaction.emoji.name === '⏪') {
-            reaction.users.remove(reactionCollector.id);
-            runRewindCommand(message, mgid, voiceChannel, undefined, true, false, message.member.voice.channel.members.get(reactionCollector.id), server);
-            if (server.followUpMessage) {
-              server.followUpMessage.delete();
-              server.followUpMessage = undefined;
-            }
-          } else if (reaction.emoji.name === '⏹') {
-            const mem = message.member.voice.channel.members.get(reactionCollector.id);
-            if (!server.dictator || server.dictator === mem) collector.stop();
-            runStopPlayingCommand(mgid, voiceChannel, false, server, message, mem);
-            if (server.followUpMessage) {
-              server.followUpMessage.delete();
-              server.followUpMessage = undefined;
-            }
-          } else if (reaction.emoji.name === '🔑') {
-            runKeysCommand(message, prefixMap[mgid], mgid, '', voiceChannel, '');
-            server.numSinceLastEmbed += 5;
-          } else if (reaction.emoji.name === '🔐') {
-            server.numSinceLastEmbed += 5;
-            // console.log(reaction.users.valueOf().array().pop());
-            runKeysCommand(message, prefixMap[mgid], 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector);
-          }
-        });
-      });
+    sentMsg = await message.channel.send(embed);
+    if (!showButtons || !dispatcherMap[voiceChannel.id]) return;
+    server.numSinceLastEmbed = 0;
+    generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid);
   };
   if (url === whatspMap[voiceChannel.id]) {
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed) {
       try {
-        server.currentEmbed.edit(embed);
+        sentMsg = await server.currentEmbed.edit(embed);
+        if (sentMsg.reactions.cache.size < 1) {
+          if (!showButtons || !dispatcherMap[voiceChannel.id]) return;
+          generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid);
+        }
       } catch (e) {
         await generateNewEmbed();
       }
@@ -3289,6 +3193,110 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
       await generateNewEmbed();
     }
   }
+}
+
+/**
+ * Generates the playback reactions and handles the collection of the reactions.
+ * @param sentMsg The message that the bot sent
+ * @param server The server metadata
+ * @param voiceChannel The voice channel metadata
+ * @param timeMS The time for the reaction collector
+ * @param mgid The message guild id
+ */
+function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid) {
+  server.currentEmbed = sentMsg;
+  if (!sentMsg) return;
+  sentMsg.react('⏪').then(() => {
+    if (collector.ended) return;
+    sentMsg.react('⏯').then(() => {
+      if (collector.ended) return;
+      sentMsg.react('⏩').then(() => {
+        if (collector.ended) return;
+        sentMsg.react('⏹').then(() => {
+          if (collector.ended) return;
+          sentMsg.react('🔑').then(() => {
+            if (collector.ended) return;
+            sentMsg.react('🔐').then();
+          });
+        });
+      });
+    });
+  });
+
+  const filter = (reaction, user) => {
+    if (voiceChannel && user.id !== bot.user.id) {
+      if (voiceChannel.members.has(user.id)) return ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name);
+    }
+    return false;
+  };
+
+  timeMS += 3600000;
+  const collector = sentMsg.createReactionCollector(filter, {time: timeMS});
+  server.collector = collector;
+
+  collector.on('collect', (reaction, reactionCollector) => {
+    if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
+      return;
+    }
+    if (reaction.emoji.name === '⏩') {
+      reaction.users.remove(reactionCollector.id);
+      runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice.channel.members.get(reactionCollector.id));
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+    } else if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
+      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
+      runPauseCommand(sentMsg, tempUser, server, true, false, true);
+      tempUser = tempUser.nickname;
+      if (server.voteAdmin.length < 1 && !server.dictator) {
+        if (server.followUpMessage) {
+          server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+            '\`*');
+        } else {
+          sentMsg.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+            '\`*').then(msg => {server.followUpMessage = msg;});
+        }
+      }
+      reaction.users.remove(reactionCollector.id);
+    } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
+      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
+      runPlayCommand(sentMsg, tempUser, server, true, false, true);
+      if (server.voteAdmin.length < 1 && !server.dictator) {
+        tempUser = tempUser.nickname;
+        if (server.followUpMessage) {
+          server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
+            '\`*');
+        } else {
+          sentMsg.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
+            '\`*').then(msg => {server.followUpMessage = msg;});
+        }
+      }
+      reaction.users.remove(reactionCollector.id);
+    } else if (reaction.emoji.name === '⏪') {
+      reaction.users.remove(reactionCollector.id);
+      runRewindCommand(sentMsg, mgid, voiceChannel, undefined, true, false, sentMsg.member.voice.channel.members.get(reactionCollector.id), server);
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+    } else if (reaction.emoji.name === '⏹') {
+      const mem = sentMsg.member.voice.channel.members.get(reactionCollector.id);
+      if (!server.dictator || server.dictator === mem) collector.stop();
+      runStopPlayingCommand(mgid, voiceChannel, false, server, sentMsg, mem);
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+    } else if (reaction.emoji.name === '🔑') {
+      runKeysCommand(sentMsg, prefixMap[mgid], mgid, '', voiceChannel, '');
+      server.numSinceLastEmbed += 5;
+    } else if (reaction.emoji.name === '🔐') {
+      server.numSinceLastEmbed += 5;
+      // console.log(reaction.users.valueOf().array().pop());
+      runKeysCommand(sentMsg, prefixMap[mgid], 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector);
+    }
+  });
 }
 
 /**
