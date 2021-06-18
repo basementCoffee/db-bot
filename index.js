@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.2';
-const buildNo = '05040202'; // major, minor, patch, build
+const version = '5.4.3';
+const buildNo = '05040302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -160,7 +160,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     return message.channel.send('What should I play now? Put a link or some words.');
   }
   // in case of force disconnect
-  if (!message.guild.client.voice || !message.guild.voice || !message.guild.voice.channel) {
+  if (!botInVC(message)) {
     server.queue = [];
     server.queueHistory = [];
   } else if (server.queue.length >= maxQueueSize) {
@@ -197,6 +197,15 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   }
   message.channel.send('*playing now*');
   playSongToVC(message, server.queue[0], voiceChannel, true, server).then();
+}
+
+/**
+ * Returns whether the bot is in a voice channel within the guild.
+ * @param message The message that triggered the bot.
+ * @returns {Boolean} True if the bot is in a voice channel.
+ */
+function botInVC (message) {
+  return message.guild.voice && message.guild.voice.channel;
 }
 
 /**
@@ -281,7 +290,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can perform this action');
   // in case of force disconnect
-  if (!message.guild.voice || !message.guild.voice.channel) {
+  if (!botInVC(message)) {
     server.queue = [];
     server.queueHistory = [];
   } else if (server.queue.length >= maxQueueSize) {
@@ -358,20 +367,33 @@ async function runRestartCommand (message, mgid, keyword, server) {
  */
 function initializeServer (mgid) {
   servers[mgid] = {
+    // now playing is the first element
     queue: [],
+    // newest items are pushed
     queueHistory: [],
+    // boolean status of looping
     loop: false,
+    // the collector for the current embed message
     collector: false,
+    // the playback status message
     followUpMessage: undefined,
+    // the active link of what is playing
     currentEmbedLink: undefined,
+    // the current embed message
     currentEmbed: undefined,
+    // the number of items sent since embed generation
     numSinceLastEmbed: 0,
+    // the id of the channel for now-playing embeds
     currentEmbedChannelId: undefined,
+    // boolean status of verbose mode - save embeds on true
     verbose: false,
     // A list of vote admins (members) in a server
     voteAdmin: [],
+    // the ids of members who voted to skip
     voteSkipMembersId: [],
+    // the ids of members who voted to rewind
     voteRewindMembersId: [],
+    // the ids of members who voted to play/pause the link
     votePlayPauseMembersId: [],
     // The member that is the acting dictator
     dictator: false
@@ -431,7 +453,7 @@ async function runCommandCases (message) {
     if (contentContainCongrats(message)) {
       if (!servers[mgid]) {
         initializeServer(mgid);
-      } else if (!message.guild.voice || !message.guild.voice.channel) {
+      } else if (!botInVC(message)) {
         servers[mgid].queue = [];
         servers[mgid].queueHistory = [];
         servers[mgid].loop = false;
@@ -495,7 +517,7 @@ async function runCommandCases (message) {
       runStopPlayingCommand(mgid, message.member.voice.channel, false, server, message, message.member);
       break;
     case 'loop':
-      if (!message.guild.voice || !message.guild.voice.channel) {
+      if (!botInVC(message)) {
         return message.channel.send('must be playing a song to loop');
       }
       if (server.loop) {
@@ -648,7 +670,7 @@ async function runCommandCases (message) {
         );
       }
       gsrun('A', 'B', 'entries').then((xdb) => {
-        ss = runSearchCommand(args[1], xdb).ss;
+        const ss = runSearchCommand(args[1], xdb).ss;
         if (ss && ss.length > 0) {
           message.channel.send('Keys found: ' + ss);
         } else {
@@ -993,7 +1015,7 @@ async function runCommandCases (message) {
       }
       break;
     case 'l':
-      if (!message.guild.voice || !message.guild.voice.channel) {
+      if (!botInVC(message)) {
         return;
       }
       if (server.loop) {
@@ -1550,7 +1572,7 @@ function sendMessageToUser (message, userID, reactionUserID) {
  * @returns {*}
  */
 function runDictatorCommand (message, mgid, prefixString, server) {
-  if (!message.guild.voice || !message.guild.voice.channel || !message.member.voice || !message.member.voice.channel)
+  if (!botInVC(message) || !message.member.voice || !message.member.voice.channel)
     return message.channel.send('must be in a voice channel with the db bot for this command');
   const vcMembersId = message.guild.voice.channel.members.map(x => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
@@ -1590,7 +1612,7 @@ function runDictatorCommand (message, mgid, prefixString, server) {
  * @returns {*}
  */
 function runDJCommand (message, server) {
-  if (!message.guild.voice || !message.guild.voice.channel || !message.member.voice || !message.member.voice.channel)
+  if (!botInVC(message) || !message.member.voice || !message.member.voice.channel)
     return message.channel.send('must be in a voice channel with the db bot for this command');
   const vcMembersId = message.guild.voice.channel.members.map(x => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
@@ -1635,7 +1657,7 @@ function runDJCommand (message, server) {
  * @returns {*}
  */
 function runLyricsCommand (message, mgid, args, server) {
-  if ((!message.guild.voice || !message.guild.voice.channel || !server.queue[0]) && !args[1]) {
+  if ((!botInVC(message) || !server.queue[0]) && !args[1]) {
     return message.channel.send('must be playing a song');
   }
   message.channel.send('retrieving lyrics...').then(async sentMsg => {
@@ -2029,7 +2051,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     return true;
   }
   // in case of force disconnect
-  if (!message.guild.voice || !message.guild.voice.channel) {
+  if (!botInVC(message)) {
     server.queue = [];
     server.queueHistory = [];
   } else if (server.queue.length >= maxQueueSize) {
@@ -2101,8 +2123,9 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     } else {
       tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
       if (!tempUrl) {
-        const ss = runSearchCommand(args[1], xdb).ss;
-        if (ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
+        const sObj = runSearchCommand(args[1], xdb);
+        const ss = sObj.ss;
+        if (sObj.ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
           message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
           tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
           if (playRightNow) { // push to queue and play
@@ -2179,11 +2202,6 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   return true;
 }
 
-// the search string
-let ss;
-// the number of searches found
-let ssi;
-
 /**
  * A search command that searches both the server and personal database for the string.
  * @param message The message that triggered the bot
@@ -2192,7 +2210,7 @@ let ssi;
  */
 function runUniversalSearchCommand (message, mgid, providedString) {
   gsrun('A', 'B', mgid).then(async (xdb) => {
-    ss = runSearchCommand(providedString, xdb).ss;
+    const ss = runSearchCommand(providedString, xdb).ss;
     if (ss && ss.length > 0) {
       message.channel.send('Server keys found: ' + ss);
     } else if (providedString.length < 2) {
@@ -2207,7 +2225,7 @@ function runUniversalSearchCommand (message, mgid, providedString) {
         .then(async messages => {
           if (messages.first().content.toLowerCase() === 'y' || messages.first().content.toLowerCase() === 'yes') {
             gsrun('A', 'B', 'p' + message.member.id).then(async (xdb) => {
-              ss = runSearchCommand(providedString, xdb).ss;
+              const ss = runSearchCommand(providedString, xdb).ss;
               if (ss && ss.length > 0) {
                 message.channel.send('Personal keys found: ' + ss);
               } else if (providedString.length < 2) {
@@ -2229,19 +2247,15 @@ function runUniversalSearchCommand (message, mgid, providedString) {
  * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values
  */
 function runSearchCommand (keyName, xdb) {
-  const givenSLength = keyName.length;
+  const keyNameLen = keyName.length;
   const keyArray2 = Array.from(xdb.congratsDatabase.keys());
-  ss = '';
-  ssi = 0;
+  let ss = '';
+  let ssi = 0;
   let searchKey;
   for (let ik = 0; ik < keyArray2.length; ik++) {
     searchKey = keyArray2[ik];
-    if (
-      keyName.toUpperCase() ===
-      searchKey.substr(0, givenSLength).toUpperCase() ||
-      (keyName.length > 1 &&
-        searchKey.toUpperCase().includes(keyName.toUpperCase()))
-    ) {
+    if (keyName.toUpperCase() === searchKey.substr(0, keyNameLen).toUpperCase() ||
+      (keyNameLen > 1 && searchKey.toUpperCase().includes(keyName.toUpperCase()))) {
       ssi++;
       if (!ss) {
         ss = searchKey;
@@ -2252,7 +2266,9 @@ function runSearchCommand (keyName, xdb) {
   }
 
   return {
+    // the search string
     ss: ss,
+    // the number of searches found
     ssi: ssi
   };
 }
@@ -2270,7 +2286,7 @@ function runSearchCommand (keyName, xdb) {
  */
 function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, forceSkip, mem) {
   // in case of force disconnect
-  if (!message.guild.voice || !message.guild.voice.channel) return;
+  if (!botInVC(message)) return;
   if (!voiceChannel) {
     voiceChannel = mem.voice.channel;
     if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
@@ -2536,7 +2552,7 @@ function runRandomToQueue (num, message, sheetName, server) {
     isPlaylist = true;
   }
   // in case of force disconnect
-  if (!message.guild.voice || !message.guild.voice.channel) {
+  if (!botInVC(message)) {
     server.queue = [];
     server.queueHistory = [];
   }
@@ -2928,7 +2944,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     }
   }
   let connection = servers[message.guild.id].connection;
-  if (!message.guild.voice || !message.guild.voice.channel || !connection || (connection.channel.id !== voiceChannel.id)) {
+  if (!botInVC(message) || !connection || (connection.channel.id !== voiceChannel.id)) {
     connection = await voiceChannel.join();
     servers[message.guild.id].connection = connection;
   }
@@ -3390,4 +3406,6 @@ const dispatcherMapStatus = new Map();
 // the timers for the bot to leave a VC, uses channel id
 const leaveVCTimeout = new Map();
 // login to discord
-bot.login(token);
+(async () => {
+  await bot.login(token);
+})();
