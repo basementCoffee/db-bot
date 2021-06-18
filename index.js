@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.3';
-const buildNo = '05040302'; // major, minor, patch, build
+const version = '5.4.4';
+const buildNo = '05040402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -329,10 +329,8 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   // if queue was empty then play
   if (queueWasEmpty) {
     playSongToVC(message, server.queue[0], message.member.voice.channel, true, server);
-  } else if (pNums < 2) {
-    message.channel.send('*added to queue*');
   } else {
-    message.channel.send('*added ' + pNums + ' to queue*');
+    message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
   }
 }
 
@@ -351,10 +349,10 @@ async function runRestartCommand (message, mgid, keyword, server) {
   if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member)) {
     return message.channel.send('as of right now, only the DJ can restart tracks');
   }
-  if (server.queue[0]) {
+  if (server.queueHistory.length > 0) {
+    server.queue.unshift(server.queueHistory.pop());
     await playSongToVC(message, server.queue[0], message.member.voice.channel, true, server);
-  } else if (server.queueHistory.length > 0) {
-    server.queue.push(server.queueHistory.pop());
+  } else if (server.queue[0]) {
     await playSongToVC(message, server.queue[0], message.member.voice.channel, true, server);
   } else {
     message.channel.send('there is nothing to ' + keyword);
@@ -375,6 +373,8 @@ function initializeServer (mgid) {
     loop: false,
     // the collector for the current embed message
     collector: false,
+    // the metadata of the link
+    infos: false,
     // the playback status message
     followUpMessage: undefined,
     // the active link of what is playing
@@ -2809,13 +2809,14 @@ bot.on('voiceStateUpdate', update => {
   // if the bot is the one leaving
   if (update.member.id === bot.user.id && !update.connection && servers[update.guild.id]) {
     const server = servers[update.guild.id];
-    sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, undefined, false).then(() => {
+    sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, server.infos, false).then(() => {
       server.numSinceLastEmbed = 0;
       server.silence = false;
       server.verbose = false;
       server.loop = false;
       server.voteAdmin = [];
       server.dictator = false;
+      server.infos = false;
       if (server.currentEmbed && server.currentEmbed.reactions) {
         server.collector.stop();
         server.currentEmbed.reactions.removeAll().then();
@@ -2880,6 +2881,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, sendEmbed, serve
     server.voteRewindMembersId = [];
     server.votePlayPauseMembersId = [];
   }
+  servers[message.guild.id].infos = false;
   // the display url
   let urlOrg = whatToPlay;
   // the alternative url to play
@@ -3171,7 +3173,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     timeMS = parseInt(infos.duration_ms);
     // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
   } else {
-    const infos = await ytdl.getInfo(url);
+    if (!infos) infos = await ytdl.getInfo(url);
     let duration = formatDuration(infos.formats[0].approxDurationMs);
     timeMS = parseInt(duration);
     if (duration === 'NaNm NaNs') {
@@ -3184,17 +3186,18 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
       .addField('Duration', duration, true)
       .setThumbnail(infos.videoDetails.thumbnails[0].url);
   }
-  if (server.queue.length > 0 && message.guild.voice && message.guild.voice.channel) {
-    embed.addField('Queue', ' 1 / ' + server.queue.length, true);
+  server.infos = infos;
+  if (message.guild.voice && message.guild.voice.channel) {
+    embed.addField('Queue', (server.queue.length > 0 ? ' 1 / ' + server.queue.length : 'empty'), true);
   } else {
-    embed.addField('-', 'Last played', true);
+    embed.addField('-', 'Session ended', true);
     showButtons = false;
   }
   let sentMsg;
   const generateNewEmbed = async () => {
     if (server.currentEmbed && !forceEmbed) {
       server.numSinceLastEmbed = 0;
-      server.currentEmbed.delete();
+      try {server.currentEmbed.delete();} catch (e) {console.log('error: no message to delete');}
       server.currentEmbed = false;
     } else if (server.currentEmbed && server.currentEmbed.reactions) {
       server.numSinceLastEmbed = 0;
@@ -3341,9 +3344,9 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
   if (!voiceChannel) return;
   if (server.dictator && actionUser && actionUser !== server.dictator)
     return message.channel.send('only the dictator can perform this action');
-  if (server.voteAdmin.length > 0 && actionUser) {
-    if (!server.voteAdmin.map(x => x.id).includes(actionUser.id))
-      return message.channel.send('*only the DJ can end the session*');
+  if (server.voteAdmin.length > 0 && actionUser &&
+    !server.voteAdmin.map(x => x.id).includes(actionUser.id) && server.queue.length > 0) {
+    return message.channel.send('*only the DJ can end the session*');
   }
   if (server.currentEmbed && server.currentEmbed.reactions) {
     server.collector.stop();
@@ -3360,7 +3363,11 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     setTimeout(() => {
       voiceChannel.leave();
     }, 600);
+  } else {
+    dispatcherMap[voiceChannel.id] = false;
+    sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, server, server.infos);
   }
+  if (server.queue[0]) server.queueHistory.push(server.queue.shift());
 }
 
 /**
@@ -3383,13 +3390,13 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, shee
         return message.channel.send(xdb.referenceDatabase.get(keyName.toUpperCase()));
       } else {
         message.channel.send("Could not find '" + keyName + "' in " + dbType + ' database.');
-        return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], undefined, true);
+        return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], servers[message.guild.id].infos, true);
       }
     });
   } else if (!voiceChannel) {
     return message.channel.send('must be in a voice channel');
   } else if (whatspMap[voiceChannel.id]) {
-    return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], undefined, true);
+    return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], servers[message.guild.id].infos, true);
   } else {
     return message.channel.send('nothing is playing right now');
   }
