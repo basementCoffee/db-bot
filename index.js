@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.5';
-const buildNo = '05040502'; // major, minor, patch, build
+const version = '5.4.6';
+const buildNo = '05040602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -450,8 +450,7 @@ async function runCommandCases (message) {
         }
       }
     }
-    if (contentContainCongrats(message.content) || message.content === 'ztest') {
-      if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985' && message.member.id.toString() !== '799524729173442620' && message.member.id !== '434532121244073984') return;
+    if (contentContainCongrats(message.content)) {
       let server = servers[mgid];
       if (!servers[mgid]) {
         server = initializeServer(mgid);
@@ -475,38 +474,35 @@ async function runCommandCases (message) {
       let name = '';
       if (findIndexOfWord('grats') !== -1 || findIndexOfWord('gratz') !== -1 || findIndexOfWord('congratulations') !== -1) {
         name = args[parseInt(indexOfWord) + 1];
-        let excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to'];
+        let excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
         if (excludedWords.includes(name)) name = '';
         if (name && name.length > 1) name = name.substr(0, 1).toUpperCase() + name.substr(1);
       } else {
         name = '';
       }
-      const randomEmojis = ['🥲', '😉', '😇', '😗', '😅', ' '];
+      const randomEmojis = ['🥲', '😉', '😇', '😗', '😅', '🥳', '😄'];
       const randENum = Math.floor(Math.random() * randomEmojis.length);
+      const oneInThree = Math.floor(Math.random() * 3);
+      const text = (oneInThree === 0 ? '!   ||*I would\'ve sung for you in a voice channel*  '
+        + randomEmojis[randENum] + '||' : '!');
       message.channel.send('Congratulations' + (name ? (' ' + name) : '') +
         ((message.member.voice && message.member.voice.channel) ?
-          '!' : '!   ||*I would\'ve sung for you in a voice channel*  '
-          + randomEmojis[randENum] + '||'));
-      if (server.currentEmbed && server.currentEmbed.reactions) {
-        server.collector.stop();
-        await server.currentEmbed.reactions.removeAll();
-      }
-      const silenceStatus = server.silence;
-      server.silence = true;
+          '!' : text));
       const congratsLink = 'https://www.youtube.com/watch?v=oyFQVZ2h0V8';
-      server.queue.unshift(congratsLink);
+      if (server.queue[0] !== congratsLink) server.queue.unshift(congratsLink);
+      else return;
       if (message.member.voice && message.member.voice.channel) {
         const vc = message.member.voice.channel;
         setTimeout(() => {
-          if (whatspMap[vc.id] === congratsLink)
+          if (whatspMap[vc.id] === congratsLink && parseInt(dispatcherMap[vc.id].streamTime) > 18000)
             skipSong(message, vc, false, server, true);
-          const item = server.queueHistory.indexOf(congratsLink);
+          let item = server.queueHistory.indexOf(congratsLink);
           if (item !== -1)
             server.queueHistory.splice(item, 1);
         }, 20000);
         return playSongToVC(message, congratsLink, vc, servers[mgid]).then(() => {
-          servers[mgid].silence = silenceStatus;
-          const item = server.queueHistory.indexOf(congratsLink);
+          setTimeout(() => servers[mgid].silence = false, 400);
+          let item = server.queueHistory.indexOf(congratsLink);
           if (item !== -1)
             server.queueHistory.splice(item, 1);
         });
@@ -2998,8 +2994,8 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
   let connection = servers[message.guild.id].connection;
   if (!botInVC(message) || !connection || (connection.channel.id !== voiceChannel.id)) {
     connection = await voiceChannel.join();
-    connection.voice.setSelfDeaf(true);
     servers[message.guild.id].connection = connection;
+    connection.voice.setSelfDeaf(true).then();
   }
   whatspMap[voiceChannel.id] = urlOrg;
   // remove previous embed buttons
@@ -3197,8 +3193,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
   if (!message) return;
   if (!message.guild.id) return;
   if (server.verbose) forceEmbed = true;
-  if (!url || server.loop && server.currentEmbedLink === url && !forceEmbed &&
-    server.currentEmbed.reactions) {
+  if (!url || (server.loop && server.currentEmbedLink === url && !forceEmbed &&
+    server.currentEmbed.reactions)) {
     return;
   }
   server.currentEmbedChannelId = message.channel.id;
