@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.65';
-const buildNo = '05040603'; // major, minor, patch, build
+const version = '5.4.7';
+const buildNo = '05040703'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1295,7 +1295,7 @@ function checkStatusOfYtdl () {
       }, 6000);
     } catch (e) {
       await bot.channels.cache.get('827195452507160627').send('=gzk');
-      await bot.channels.cache.get('826195051188191293').send('ytdl status was unhealthy, shutting off bot');
+      await bot.channels.cache.get('856338454237413396').send('ytdl status was unhealthy, shutting off bot');
       process.exit(0);
     }
   });
@@ -2939,7 +2939,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       infos = await getData(urlOrg);
     } catch (e) {
       console.log(e);
-      message.channel.send('could not play <' + urlOrg + '>');
+      message.channel.send('error: could not get link metadata <' + urlOrg + '>');
       whatspMap[voiceChannel.id] = '';
       return skipSong(message, voiceChannel, true, server, true);
     }
@@ -3028,7 +3028,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
           console.log('old url: ' + urlOrg);
           console.log('current url: ' + whatspMap[voiceChannel.id]);
           try {
-            bot.channels.cache.get('821993147466907659').send('there was a mismatch with playback');
+            bot.channels.cache.get('856338454237413396').send('there was a mismatch with playback');
           } catch (e) {
             console.log(e);
           }
@@ -3063,6 +3063,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       }
     }, 600);
   } catch (e) {
+    console.log('error in playSongToVC');
     console.log(e);
     const numberOfPrevSkips = skipTimesMap[mgid];
     if (!numberOfPrevSkips) {
@@ -3076,11 +3077,15 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       skipTimesMap[mgid] += 1;
     }
     // Error catching - fault with the link?
-    message.channel.send('Could not play <' + urlOrg + '>');
+    message.channel.send('Could not play <' + urlOrg + '>' +
+      ((skipTimesMap[mgid] === 1) ? '\nIf the link is not broken, please try again.' : ''));
     // search the db to find possible broken keys
     searchForBrokenLinkWithinDB(message, urlOrg);
     whatspMap[voiceChannel.id] = '';
     skipSong(message, voiceChannel, true, server, true);
+    bot.channels.cache.get('856338454237413396').send('there was a playback error within playSongToVC').then(() => {
+      bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1900));
+    });
   }
 }
 
