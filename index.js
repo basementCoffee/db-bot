@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.7';
-const buildNo = '05040703'; // major, minor, patch, build
+const version = '5.4.8';
+const buildNo = '05040803'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -3056,12 +3056,13 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       }
     });
     dispatcher.resume();
-    setTimeout(() => {
-      if (server.queue[0] === whatToPlay && dispatcher.streamTime < 1 && message.guild.voice &&
-        message.guild.voice.channel && !avoidReplay) {
-        return playSongToVC(message, whatToPlay, voiceChannel, server, true);
-      }
-    }, 600);
+    if (!avoidReplay)
+      setTimeout(() => {
+        if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
+          dispatcher.streamTime < 1) {
+          return playSongToVC(message, whatToPlay, voiceChannel, server, true);
+        }
+      }, 800);
   } catch (e) {
     console.log('error in playSongToVC');
     console.log(e);
