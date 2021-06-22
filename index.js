@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.8';
-const buildNo = '05040803'; // major, minor, patch, build
+const version = '5.4.9';
+const buildNo = '05040903'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2634,7 +2634,7 @@ function runRandomToQueue (num, message, sheetName, server) {
 async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   let playlistKey;
   if (isPlaylist) {
-    playlistKey = numOfTimes;
+    playlistKey = numOfTimes; // playlist name would be where the number would be
     if (verifyPlaylist(cdb.get(playlistKey))) numOfTimes = 2;
     else return message.channel.send('argument must be a positive number or playlist key-name');
   }
@@ -2654,10 +2654,10 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
     }
   }
   let rn;
-  let queueWasEmpty = false;
-  if (server.queue.length < 1) {
-    queueWasEmpty = true;
-  }
+  let queueWasEmpty = server.queue.length < 1;
+  // place a filler string in the queue to show that it will no longer be empty
+  // in case of another function call at the same time
+  server.queue[0] = 'filler link';
   try {
     for (let i = 0; i < numOfTimes;) {
       let tempArray = [];
@@ -2713,8 +2713,9 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
     }
     server.queue.push(cdb.get(rKeyArray[rn]));
   }
-  // rKeyArrayFinal.forEach(e => {server.queue.push(cdb.get(e));});
-  if (queueWasEmpty && server.queue.length > 0) {
+  if (queueWasEmpty && server.queue.length <= (numOfTimes + 1)) {
+    // remove the filler string
+    server.queue.shift();
     playSongToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
       if (sentMsg) sentMsg.delete();
     });
