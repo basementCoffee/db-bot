@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.9';
-const buildNo = '05040903'; // major, minor, patch, build
+const version = '5.4.10';
+const buildNo = '05041003'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2654,10 +2654,10 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
     }
   }
   let rn;
-  let queueWasEmpty = server.queue.length < 1;
+  const queueWasEmpty = server.queue.length < 1;
   // place a filler string in the queue to show that it will no longer be empty
   // in case of another function call at the same time
-  server.queue[0] = 'filler link';
+  if (queueWasEmpty) server.queue[0] = 'filler link';
   try {
     for (let i = 0; i < numOfTimes;) {
       let tempArray = [];
@@ -3065,6 +3065,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
         }
       }, 800);
   } catch (e) {
+    if (e.toString().substr(0, 30).includes('Status code: 404') && !avoidReplay) {
+      console.log('status code 404 error');
+      return playSongToVC(message, whatToPlay, voiceChannel, server, true);
+    }
     console.log('error in playSongToVC');
     console.log(e);
     const numberOfPrevSkips = skipTimesMap[mgid];
