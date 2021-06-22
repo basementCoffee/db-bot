@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.11';
-const buildNo = '05041103'; // major, minor, patch, build
+const version = '5.4.12';
+const buildNo = '05041203'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1831,7 +1831,7 @@ function runLyricsCommand (message, mgid, args, server) {
         getYoutubeSubtitles(message, lUrl);
       } else {
         message.channel.send('no results found');
-        server.numSinceLastEmbed -= 9;
+        server.numSinceLastEmbed--;
       }
     }
     sentMsg.delete();
