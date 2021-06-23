@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.4';
-const buildNo = '05050402'; // major, minor, patch, build
+const version = '5.5.5';
+const buildNo = '05050502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -171,7 +171,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     server.followUpMessage = undefined;
   }
   server.numSinceLastEmbed += 3;
-  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !args[1].includes('/playlist')) {
+  if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !verifyPlaylist(args[1])) {
     if (sheetName) {
       return runDatabasePlayCommand(args, message, sheetName, true, false, server);
     } else {
@@ -187,7 +187,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     }
   } catch (e) {}
   let pNums = 0;
-  if (args[1].includes('/playlist') && args[1].includes('spotify.com')) {
+  if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
     await addPlaylistToQueue(message, mgid, pNums, args[1], true, true);
   } else if (ytpl.validateID(args[1])) {
     await addPlaylistToQueue(message, mgid, pNums, args[1], false, true);
@@ -308,7 +308,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
     queueWasEmpty = true;
   }
   let pNums = 0;
-  if (args[1].includes('/playlist') && args[1].includes('spotify.com')) {
+  if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
     pNums = await addPlaylistToQueue(message, mgid, pNums, args[1], true);
   } else if (ytpl.validateID(args[1])) {
     pNums = await addPlaylistToQueue(message, mgid, pNums, args[1], false);
@@ -1259,7 +1259,7 @@ function verifyUrl (message, url) {
     message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
     return false;
   }
-  if (url.includes('spotify.com') ? (!spdl.validateURL(url) && !url.includes('/playlist'))
+  if (url.includes('spotify.com') ? (!spdl.validateURL(url) && !url.includes('/playlist/'))
     : (!ytdl.validateURL(url) && !ytpl.validateID(url))) {
     message.channel.send('Invalid link');
     return false;
@@ -1275,7 +1275,8 @@ function verifyUrl (message, url) {
 function verifyPlaylist (url) {
   try {
     url = url.toLowerCase();
-    return (url.includes('/playlist') && url.includes('spotify.com')) || (ytpl.validateID(url) && !url.includes('&index='));
+    return (url.includes('/playlist') && (url.includes('spotify.com') || url.includes('/playlist?list='))) ||
+      (ytpl.validateID(url) && !url.includes('&index='));
   } catch (e) {
     return false;
   }
