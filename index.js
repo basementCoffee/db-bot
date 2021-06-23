@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.3';
-const buildNo = '05050302'; // major, minor, patch, build
+const version = '5.5.4';
+const buildNo = '05050402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1543,11 +1543,17 @@ function runPauseCommand (message, actionUser, server, noErrorMsg, force, noPrin
         } else return true;
       }
     }
-    dispatcherMap[actionUser.voice.channel.id].pause();
-    dispatcherMap[actionUser.voice.channel.id].resume();
-    dispatcherMap[actionUser.voice.channel.id].pause();
-    dispatcherMapStatus[actionUser.voice.channel.id] = true;
+    if (!dispatcherMapStatus[actionUser.voice.channel.id]) {
+      dispatcherMap[actionUser.voice.channel.id].pause();
+      dispatcherMap[actionUser.voice.channel.id].resume();
+      dispatcherMap[actionUser.voice.channel.id].pause();
+      dispatcherMapStatus[actionUser.voice.channel.id] = true;
+    }
     if (noPrintMsg && cmdResponse === '*paused*') return true;
+    if (server.followUpMessage) {
+      server.followUpMessage.delete();
+      server.followUpMessage = undefined;
+    }
     message.channel.send(cmdResponse);
     return true;
   } else if (!noErrorMsg) {
@@ -1582,11 +1588,17 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
         } else return true;
       }
     }
-    dispatcherMap[actionUser.voice.channel.id].resume();
-    dispatcherMap[actionUser.voice.channel.id].pause();
-    dispatcherMap[actionUser.voice.channel.id].resume();
-    dispatcherMapStatus[actionUser.voice.channel.id] = false;
+    if (dispatcherMapStatus[actionUser.voice.channel.id]) {
+      dispatcherMap[actionUser.voice.channel.id].resume();
+      dispatcherMap[actionUser.voice.channel.id].pause();
+      dispatcherMap[actionUser.voice.channel.id].resume();
+      dispatcherMapStatus[actionUser.voice.channel.id] = false;
+    }
     if (noPrintMsg && cmdResponse === '*playing*') return true;
+    if (server.followUpMessage) {
+      server.followUpMessage.delete();
+      server.followUpMessage = undefined;
+    }
     message.channel.send(cmdResponse);
     return true;
   } else if (!noErrorMsg) {
