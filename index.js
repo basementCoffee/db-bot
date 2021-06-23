@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.1';
-const buildNo = '05050102'; // major, minor, patch, build
+const version = '5.5.2';
+const buildNo = '05050202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1353,14 +1353,14 @@ bot.on('message', async (message) => {
         }
         message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
           ' (' + version + ')' + dm).then(sentMsg => {
-          // if (devMode) {
-          //   sentMsg.react('🔸');
-          //   const collector = sentMsg.createReactionCollector(() => false, {time: 30000});
-          //   collector.on('end', () => {
-          //     if (sentMsg.reactions) sentMsg.reactions.removeAll();
-          //   });
-          //   return;
-          // }
+          if (devMode) {
+            sentMsg.react('🔸');
+            const collector = sentMsg.createReactionCollector(() => false, {time: 30000});
+            collector.on('end', () => {
+              if (sentMsg.reactions) sentMsg.reactions.removeAll();
+            });
+            return;
+          }
           sentMsg.react('⚙️');
 
           const filter = (reaction, user) => {
