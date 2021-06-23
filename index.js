@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.4.12';
-const buildNo = '05041203'; // major, minor, patch, build
+const version = '5.5.0';
+const buildNo = '05050003'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -870,6 +870,7 @@ async function runCommandCases (message) {
       runDJCommand(message, server);
       break;
     case 'fs' :
+    case 'forcesk':
     case 'forceskip' :
       if (hasDJPermissions(message, message.member, true)) {
         runSkipCommand(message, message.member.voice.channel, server, args[1], true, true, message.member);
@@ -877,6 +878,7 @@ async function runCommandCases (message) {
       break;
     case 'fr':
     case 'frw':
+    case 'forcerw':
     case 'forcerewind':
       if (hasDJPermissions(message, message.member, true)) {
         runRewindCommand(message, mgid, message.member.voice.channel, args[1], true, false, message.member, server);
@@ -888,12 +890,14 @@ async function runCommandCases (message) {
       }
       break;
     case 'fpl' :
+    case 'forcepl':
     case 'forceplay' :
       if (hasDJPermissions(message, message.member, true)) {
         runPlayCommand(message, message.member, server, false, true);
       }
       break;
     case 'fpa' :
+    case 'forcepa':
     case 'forcepause' :
       if (hasDJPermissions(message, message.member, true)) {
         runPauseCommand(message, message.member, server, false, true);
@@ -978,7 +982,7 @@ async function runCommandCases (message) {
     // .a is normal add
     case 'a':
     case 'add':
-      runAddCommandWrapper(message, args, mgid, true, 'a');
+      runAddCommandWrapper(message, args, mgid, true, '');
       break;
     // .ma is personal add
     case 'ma':
@@ -1102,8 +1106,7 @@ async function runCommandCases (message) {
       message.channel.send("restarting the bot... (may only shutdown)").then(process.exit());
       break;
     case 'gzid':
-      message.channel.send('guild id: ' + message.guild.id + '\nbot id: ' + bot.user.id +
-        '\nyour id: ' + message.member.id);
+      message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', y: ' + message.member.id);
       break;
     case 'gzs':
       const embed = new MessageEmbed()
@@ -1179,7 +1182,7 @@ async function runCommandCases (message) {
 
 bot.on('guildCreate', guild => {
   if (isInactive) return;
-  guild.systemChannel.send("Thanks for adding me :) \nType '.help' to see my commands.");
+  guild.systemChannel.send("Type '.help' to see my commands.");
 });
 
 bot.once('ready', () => {
@@ -1281,7 +1284,7 @@ function verifyPlaylist (url) {
 /**
  * Checks the status of ytdl-core-discord and exits the active process if the test link is unplayable.
  */
-function checkStatusOfYtdl () {
+function checkStatusOfYtdl (message) {
   bot.channels.cache.get('833458014124113991').join().then(async (connection) => {
     try {
       connection.play(await ytdl('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {}), {
@@ -1292,10 +1295,12 @@ function checkStatusOfYtdl () {
       });
       setTimeout(() => {
         connection.disconnect();
+        if (message) message.channel.send('*db bot does not appear to have any issues*');
       }, 6000);
     } catch (e) {
       await bot.channels.cache.get('827195452507160627').send('=gzk');
       await bot.channels.cache.get('856338454237413396').send('ytdl status was unhealthy, shutting off bot');
+      connection.disconnect();
       process.exit(0);
     }
   });
@@ -1849,8 +1854,9 @@ function runLyricsCommand (message, mgid, args, server) {
  */
 function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString) {
   if (!args[1] || !args[2]) {
-    return message.channel.send('Could not add to the database. Put a desired name followed by a link. *(ex:\` ' +
-      prefixString + 'add [key] [link]\`)*');
+    let pf = prefixMap[message.guild.id];
+    return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the')
+      + ' database. Put a desired name followed by a link. *(ex:\` ' + pf + prefixString + 'add [key] [link]\`)*');
   }
   if (args[2].substr(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
     args[2] = args[2].substr(1, args[2].length - 2);
@@ -2592,6 +2598,7 @@ function runRandomToQueue (num, message, sheetName, server) {
   const numCpy = num;
   try {
     num = parseInt(num);
+    if (num < 1) return message.channel.send('*invalid number*');
   } catch (e) {
     isPlaylist = true;
   }
@@ -2643,12 +2650,20 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   else if (isPlaylist && numOfTimes === 2) sentMsg = await message.channel.send('randomizing your playlist...');
   const rKeyArray = Array.from(cdb.keys());
   if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
-    return message.channel.send('Your music list is empty.');
+    let pf = prefixMap[message.guild.id];
+    return message.channel.send('Your music list is empty *(Try  `' + pf + 'a` or `' + pf
+      + 'ma` to add to a keys list)*');
+  }
+  let addAll = false;
+  if (numOfTimes < 0) {
+    addAll = true;
+    numOfTimes = cdb.size; // number of times is now the size of the db
   }
   const serverQueueLength = server.queue.length;
   // mutate numberOfTimes to not exceed maxQueueSize
   if (numOfTimes + serverQueueLength > maxQueueSize) {
     numOfTimes = maxQueueSize - serverQueueLength;
+    addAll = false; // no longer want to add all
     if (numOfTimes === 0) {
       return message.channel.send('*max queue size has been reached*');
     }
@@ -2663,7 +2678,8 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
       let tempArray = [];
       if (isPlaylist) tempArray.push(cdb.get(playlistKey));
       else tempArray = [...rKeyArray];
-      while ((tempArray.length > 0 && i < numOfTimes)) {
+      // continues until numOfTimes is 0 or the tempArray is completed
+      while (tempArray.length > 0 && (i < numOfTimes || addAll)) {
         const randomNumber = Math.floor(Math.random() * tempArray.length);
         let url;
         if (tempArray[randomNumber].includes('.')) url = tempArray[randomNumber];
@@ -2689,18 +2705,20 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
               }
             }
             if (isPlaylist) numOfTimes = itemCounter;
-            url = undefined;
           } catch (e) {
             console.log(e);
-            url = undefined;
           }
-        }
-        if (url) {
+        } else if (url) {
+          // it is not a playlist
           server.queue.push(url);
           i++;
         }
         tempArray.splice(randomNumber, 1);
       }
+      if (addAll) {
+        numOfTimes = i;
+        break;
+      } // break as all items have been added
     }
     // rKeyArrayFinal should have list of randoms here
   } catch (e) {
@@ -2713,7 +2731,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
     }
     server.queue.push(cdb.get(rKeyArray[rn]));
   }
-  if (queueWasEmpty && server.queue.length <= (numOfTimes + 1)) {
+  if (queueWasEmpty && (server.queue.length <= (numOfTimes + 1) || addAll)) {
     // remove the filler string
     server.queue.shift();
     playSongToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
@@ -2789,6 +2807,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
           .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
         return embedKeysMessage;
       };
+      const server = servers[message.guild.id];
       message.channel.send(generateKeysEmbed(sortByRecents)).then(async sentMsg => {
         sentMsg.react('❔').then(() => sentMsg.react('🔀').then(sentMsg.react('🔄')));
         const filter = (reaction, user) => {
@@ -2821,6 +2840,11 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
               voiceChannel = message.member.voice.channel;
               if (!voiceChannel) return message.channel.send("must be in a voice channel to randomize");
             }
+            // in case of force disconnect
+            if (!botInVC(message)) {
+              server.queue = [];
+              server.queueHistory = [];
+            }
             for (const mem of voiceChannel.members) {
               if (reactionCollector.id === mem[1].id) {
                 if (sheetname.includes('p')) {
@@ -2829,10 +2853,20 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
                   } else {
                     message.channel.send('*randomizing...*');
                   }
-                  runRandomToQueue(100, message, 'p' + reactionCollector.id, servers[message.guild.id]);
+
+                  if (reactionCollector.id === user.id) {
+                    addRandomToQueue(message, -1, xdb.congratsDatabase, server, false);
+                    return;
+                  } else {
+                    gsrun('A', 'B', 'p' + reactionCollector.id).then((xdb2) => {
+                      addRandomToQueue(message, -1, xdb2.congratsDatabase, server, false);
+                    });
+                  }
+                  // runRandomToQueue(-1, message, 'p' + reactionCollector.id, servers[message.guild.id]);
                 } else {
                   message.channel.send('*randomizing from the server keys...*');
-                  runRandomToQueue(100, message, sheetname, servers[message.guild.id]);
+                  addRandomToQueue(message, -1, xdb.congratsDatabase, server, false);
+                  // runRandomToQueue(-1, message, sheetname, servers[message.guild.id]);
                 }
                 return;
               }
@@ -3006,8 +3040,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.currentEmbed.delete();
     server.currentEmbed = false;
   }
+  let dispatcher;
   try {
-    let dispatcher = connection.play(await ytdl(urlAlt, {}), {
+    dispatcher = connection.play(await ytdl(urlAlt, {}), {
       type: 'opus',
       filter: 'audioonly',
       quality: '140',
@@ -3057,17 +3092,26 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       }
     });
     dispatcher.resume();
-    if (!avoidReplay)
-      setTimeout(() => {
-        if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
-          dispatcher.streamTime < 1) {
-          return playSongToVC(message, whatToPlay, voiceChannel, server, true);
-        }
-      }, 800);
   } catch (e) {
-    if (e.toString().substr(0, 55).includes('Status code: 404') && !avoidReplay) {
-      console.log('status code 404 error');
-      return playSongToVC(message, whatToPlay, voiceChannel, server, true);
+    let errorMsg = e.toString().substr(0, 100);
+    if (errorMsg.includes('ode: 404')) {
+      if (!avoidReplay)
+        playSongToVC(message, whatToPlay, voiceChannel, server, true);
+      else {
+        console.log('status code 404 error');
+        connection.disconnect();
+        message.channel.send('*db bot is facing issues ... play commands are unreliable at this time.*').then(() => {
+          console.log(e);
+          bot.channels.cache.get('856338454237413396').send('***status code 404 error***' +
+            '\n*if this error persists, try to change the active process*');
+        });
+      }
+      return;
+    }
+    if (errorMsg.includes('No suitable format found')) {
+      message.channel.send('*this video contains a restriction preventing it from being played*');
+      skipSong(message, voiceChannel, true, server, true);
+      return;
     }
     console.log('error in playSongToVC');
     console.log(e);
@@ -3075,9 +3119,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     if (!numberOfPrevSkips) {
       skipTimesMap[mgid] = 1;
     } else if (numberOfPrevSkips > 3) {
-      message.channel.send('***db bot is facing some issues, may restart***');
       connection.disconnect();
-      checkStatusOfYtdl();
+      message.channel.send('***db bot is facing some issues, may restart***');
+      checkStatusOfYtdl(message);
       return;
     } else {
       skipTimesMap[mgid] += 1;
@@ -3092,7 +3136,15 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     bot.channels.cache.get('856338454237413396').send('there was a playback error within playSongToVC').then(() => {
       bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1900));
     });
+    return;
   }
+  if (!avoidReplay)
+    setTimeout(() => {
+      if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
+        dispatcher.streamTime < 1) {
+        return playSongToVC(message, whatToPlay, voiceChannel, server, true);
+      }
+    }, 800);
 }
 
 // number of consecutive error skips in a server, uses guild id
