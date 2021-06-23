@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.0';
-const buildNo = '05050003'; // major, minor, patch, build
+const version = '5.5.1';
+const buildNo = '05050102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1353,14 +1353,14 @@ bot.on('message', async (message) => {
         }
         message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
           ' (' + version + ')' + dm).then(sentMsg => {
-          if (devMode) {
-            sentMsg.react('🔸');
-            const collector = sentMsg.createReactionCollector(() => false, {time: 30000});
-            collector.on('end', () => {
-              if (sentMsg.reactions) sentMsg.reactions.removeAll();
-            });
-            return;
-          }
+          // if (devMode) {
+          //   sentMsg.react('🔸');
+          //   const collector = sentMsg.createReactionCollector(() => false, {time: 30000});
+          //   collector.on('end', () => {
+          //     if (sentMsg.reactions) sentMsg.reactions.removeAll();
+          //   });
+          //   return;
+          // }
           sentMsg.react('⚙️');
 
           const filter = (reaction, user) => {
@@ -1388,10 +1388,21 @@ bot.on('message', async (message) => {
 
           collector.on('collect', (reaction, user) => {
             if (!isInactive && bot.voice.connections.size > 0) {
-              message.channel.send('***' + process.pid + ' - button is disabled***\n*This process should not be ' +
-                'sidelined because it has active members using it (VCs: ' + bot.voice.connections.size + ')*\n' +
-                '*If you just activated another process, please deactivate it.*');
-              return;
+              let hasDeveloper = false;
+              if (bot.voice.connections.size === 1) {
+                bot.voice.connections.forEach(x => {
+                  if (x.channel.members.get('730350452268597300') || x.channel.members.get('443150640823271436')) {
+                    hasDeveloper = true;
+                    x.disconnect();
+                  }
+                });
+              }
+              if (!hasDeveloper) {
+                message.channel.send('***' + process.pid + ' - button is disabled***\n*This process should not be ' +
+                  'sidelined because it has active members using it (VCs: ' + bot.voice.connections.size + ')*\n' +
+                  '*If you just activated another process, please deactivate it.*');
+                return;
+              }
             }
             isInactive = !isInactive;
             message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
@@ -3028,7 +3039,16 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
   }
   let connection = servers[message.guild.id].connection;
   if (!botInVC(message) || !connection || (connection.channel.id !== voiceChannel.id)) {
-    connection = await voiceChannel.join();
+    try {
+      connection = await voiceChannel.join();
+    } catch (e) {
+      const eMsg = e.toString();
+      if (eMsg.includes('it is full'))
+        return message.channel.send('*cannot join voice channel, it is full*');
+      else if (eMsg.includes('VOICE_JOIN_CHANNEL'))
+        return message.channel.send('*permissions error: cannot join voice channel*');
+      return message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
+    }
     servers[message.guild.id].connection = connection;
     connection.voice.setSelfDeaf(true).then();
   }
