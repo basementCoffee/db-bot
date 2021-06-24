@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.5';
-const buildNo = '05050502'; // major, minor, patch, build
+const version = '5.5.6';
+const buildNo = '05050602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -396,7 +396,9 @@ function initializeServer (mgid) {
     // the ids of members who voted to play/pause the link
     votePlayPauseMembersId: [],
     // The member that is the acting dictator
-    dictator: false
+    dictator: false,
+    // If a start up message has been sent
+    startUpMessage: false
   };
 }
 
@@ -1092,6 +1094,7 @@ async function runCommandCases (message) {
           prefixString + 'gzs - statistics' +
           '\n' + prefixString + 'gzid - user, bot, and guild id' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
+          '\n' + prefixString + 'gzsm - set a startup message on voice channel join' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n\n**calibrate multiple bots**' +
           '\n=gzl - return the bot\'s ping and latency' +
@@ -1107,6 +1110,20 @@ async function runCommandCases (message) {
       break;
     case 'gzid':
       message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', y: ' + message.member.id);
+      break;
+    case 'gzsm':
+      if (args[1]) {
+        if (args[1] === 'clear') {
+          startUpMessage = '';
+          return message.channel.send('start up message is cleared');
+        }
+        startUpMessage = message.content.substr(message.content.indexOf(args[1]));
+        Object.values(servers).forEach(x => x.startUpMessage = false);
+        message.channel.send('new startup message is set');
+      } else {
+        message.channel.send('current start up message:' + (startUpMessage ? `\n\`${startUpMessage}\`` : ' ') +
+          '\nuse \`gzsm clear\` to clear the startup message');
+      }
       break;
     case 'gzs':
       const embed = new MessageEmbed()
@@ -1189,7 +1206,7 @@ bot.once('ready', () => {
   // if (!devMode && !isInactive) bot.channels.cache.get("827195452507160627").send("=gzc");
   // bot starts up as inactive, if no response from the channel then activates itself
   if (!devMode) {
-    bot.user.setActivity('[ .help ]', {type: 'WATCHING'}).then();
+    bot.user.setActivity('music | .help', {type: 'PLAYING'}).then();
     mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
     bot.channels.cache.get('827195452507160627').send('starting up: ' + process.pid);
     if (isInactive) {
@@ -2619,6 +2636,7 @@ function runRandomToQueue (num, message, sheetName, server) {
     return message.channel.send('only the dictator can randomize to queue');
   if (!num) num = 1;
   let isPlaylist;
+  // holds the string
   const numCpy = num;
   try {
     num = parseInt(num);
@@ -2637,6 +2655,7 @@ function runRandomToQueue (num, message, sheetName, server) {
   if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
+  if (numCpy && numCpy.toString().includes('.')) return addRandomToQueue(message, numCpy, undefined, server, true);
   gsrun('A', 'B', sheetName).then((xdb) => {
     if (isPlaylist) {
       addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true);
@@ -2665,18 +2684,21 @@ function runRandomToQueue (num, message, sheetName, server) {
 async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   let playlistKey;
   if (isPlaylist) {
-    playlistKey = numOfTimes; // playlist name would be where the number would be
-    if (verifyPlaylist(cdb.get(playlistKey))) numOfTimes = 2;
-    else return message.channel.send('argument must be a positive number or playlist key-name');
+    playlistKey = numOfTimes; // playlist name would come from numOfTimes
+    if (verifyPlaylist((cdb ? cdb.get(playlistKey) : playlistKey))) numOfTimes = 2;
+    else return message.channel.send('argument must be a positive number or a key-name that is a playlist');
   }
   let sentMsg;
   if (numOfTimes > 100) sentMsg = await message.channel.send('generating random from your keys...');
   else if (isPlaylist && numOfTimes === 2) sentMsg = await message.channel.send('randomizing your playlist...');
-  const rKeyArray = Array.from(cdb.keys());
-  if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
-    let pf = prefixMap[message.guild.id];
-    return message.channel.send('Your music list is empty *(Try  `' + pf + 'a` or `' + pf
-      + 'ma` to add to a keys list)*');
+  let rKeyArray;
+  if (!isPlaylist) {
+    rKeyArray = Array.from(cdb.keys());
+    if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
+      let pf = prefixMap[message.guild.id];
+      return message.channel.send('Your music list is empty *(Try  `' + pf + 'a` or `' + pf
+        + 'ma` to add to a keys list)*');
+    }
   }
   let addAll = false;
   if (numOfTimes < 0) {
@@ -2700,7 +2722,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   try {
     for (let i = 0; i < numOfTimes;) {
       let tempArray = [];
-      if (isPlaylist) tempArray.push(cdb.get(playlistKey));
+      if (isPlaylist) tempArray.push((cdb ? cdb.get(playlistKey) : playlistKey));
       else tempArray = [...rKeyArray];
       // continues until numOfTimes is 0 or the tempArray is completed
       while (tempArray.length > 0 && (i < numOfTimes || addAll)) {
@@ -2748,6 +2770,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   } catch (e) {
     console.log('error in random: ');
     console.log(e);
+    if (isPlaylist) return;
     rn = Math.floor(Math.random() * rKeyArray.length);
     if (verifyPlaylist(rKeyArray[rn])) {
       if (sentMsg) sentMsg.delete();
@@ -3061,6 +3084,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       else if (eMsg.includes('VOICE_JOIN_CHANNEL'))
         return message.channel.send('*permissions error: cannot join voice channel*');
       return message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
+    }
+    if (startUpMessage.length > 1 && !server.startUpMessage) {
+      server.startUpMessage = true;
+      message.channel.send(startUpMessage);
     }
     servers[message.guild.id].connection = connection;
     connection.voice.setSelfDeaf(true).then();
@@ -3542,6 +3569,8 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, shee
   }
 }
 
+// A message for users on first VC join
+let startUpMessage = '';
 // What's playing, uses voice channel id
 const whatspMap = new Map();
 // The server's prefix, uses guild id
