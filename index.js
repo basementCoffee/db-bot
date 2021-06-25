@@ -25,10 +25,19 @@ const https = require('https');
 const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 
+// apply ytdl-core 404 error fix
+const fs = require('fs');
+try {
+  let file = fs.readFileSync(__dirname + "/info.js");
+  fs.writeFileSync(__dirname + "/node_modules/ytdl-core/lib/info.js", file);
+} catch (error) {
+  console.log(error);
+}
+
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.6';
-const buildNo = '05050602'; // major, minor, patch, build
+const version = '5.5.7';
+const buildNo = '05050702'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1307,7 +1316,7 @@ function checkStatusOfYtdl (message) {
     try {
       connection.play(await ytdl('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {}), {
         type: 'opus',
-        filter: 'audioonly',
+        filter: 'audio',
         quality: '140',
         volume: false
       });
@@ -3169,8 +3178,12 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       return;
     }
     if (errorMsg.includes('No suitable format found')) {
-      message.channel.send('*this video contains a restriction preventing it from being played*');
-      skipSong(message, voiceChannel, true, server, true);
+      if (!skipTimesMap[mgid]) {
+        message.channel.send('*this video contains a restriction preventing it from being played*');
+        server.numSinceLastEmbed;
+        skipTimesMap[mgid] = 1;
+        skipSong(message, voiceChannel, true, server, true);
+      } else skipSong(message, voiceChannel, false, server, true);
       return;
     }
     console.log('error in playSongToVC');
@@ -3340,7 +3353,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
   } else {
     if (!infos) infos = await ytdl.getInfo(url);
-    let duration = formatDuration(infos.formats[0].approxDurationMs);
+    let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
     timeMS = parseInt(duration);
     if (duration === 'NaNm NaNs') {
       duration = 'N/A';
@@ -3360,20 +3373,19 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     showButtons = false;
   }
   const generateNewEmbed = async () => {
-    if (server.currentEmbed && !forceEmbed) {
-      server.numSinceLastEmbed = 0;
-      try {server.currentEmbed.delete();} catch (e) {console.log('error: no message to delete');}
-      server.currentEmbed = false;
-    } else if (server.currentEmbed && server.currentEmbed.reactions) {
-      server.numSinceLastEmbed = 0;
-      server.collector.stop();
-      await server.currentEmbed.reactions.removeAll();
-      server.currentEmbed = undefined;
+    server.numSinceLastEmbed = 0;
+    if (server.currentEmbed) {
+      if (!forceEmbed) {
+        try {server.currentEmbed.delete();} catch (e) {console.log('error: no message to delete');}
+      } else if (server.currentEmbed.reactions) {
+        server.collector.stop();
+        await server.currentEmbed.reactions.removeAll();
+      }
     }
+    server.currentEmbed = false;
     message.channel.send(embed).then(sentMsg => {
       if (!showButtons || !dispatcherMap[voiceChannel.id]) return;
       generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
-      server.numSinceLastEmbed = 0;
     });
   };
   if (url === whatspMap[voiceChannel.id]) {
