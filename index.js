@@ -25,19 +25,10 @@ const https = require('https');
 const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 
-// apply ytdl-core 404 error fix
-const fs = require('fs');
-try {
-  let file = fs.readFileSync(__dirname + "/info.js");
-  fs.writeFileSync(__dirname + "/node_modules/ytdl-core/lib/info.js", file);
-} catch (error) {
-  console.log(error);
-}
-
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.7';
-const buildNo = '05050702'; // major, minor, patch, build
+const version = '5.5.8';
+const buildNo = '05050802'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
