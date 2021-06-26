@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.9';
-const buildNo = '05050902'; // major, minor, patch, build
+const version = '5.5.10';
+const buildNo = '05051002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2166,12 +2166,19 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
       let unFoundString = '*could not find: ';
       let firstUnfoundRan = false;
       let otherSheet;
+      let first = true;
       while (args[dbAddInt]) {
         tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
         if (tempUrl) {
           // push to queue
           if (verifyPlaylist(tempUrl)) {
             dbAddedToQueue += await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), false);
+          } else if (playRightNow) {
+            if (first) {
+              server.queue.unshift(tempUrl);
+              first = false;
+            } else server.queue.splice(1, 0, tempUrl);
+            dbAddedToQueue++;
           } else {
             server.queue.push(tempUrl);
             dbAddedToQueue++;
@@ -2190,9 +2197,11 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
               if (verifyPlaylist(tempUrl)) {
                 dbAddedToQueue += await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
               } else if (playRightNow) {
-                server.queue.unshift(tempUrl);
+                if (first) {
+                  server.queue.unshift(tempUrl);
+                  first = false;
+                } else server.queue.splice(1, 0, tempUrl);
                 dbAddedToQueue++;
-                playRightNow = false;
               } else {
                 server.queue.push(tempUrl);
                 dbAddedToQueue++;
@@ -2209,11 +2218,13 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         }
         dbAddInt++;
       }
-      message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
       if (firstUnfoundRan) {
         unFoundString = unFoundString.concat('*');
         message.channel.send(unFoundString);
       }
+      if (playRightNow) {
+        return playSongToVC(message, server.queue[0], voiceChannel, server);
+      } else message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
     } else {
       tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
       if (!tempUrl) {
