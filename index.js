@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.8';
-const buildNo = '05050802'; // major, minor, patch, build
+const version = '5.5.9';
+const buildNo = '05050902'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2385,6 +2385,7 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
     voiceChannel = mem.voice.channel;
     if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
   }
+  if (server.queue.length < 1) return message.channel.send('*nothing is playing right now*');
   if (server.dictator && mem !== server.dictator)
     return message.channel.send('only the dictator can perform this action');
   if (server.voteAdmin.length > 0 && !forceSkip) {
@@ -3131,7 +3132,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
         }
         if (server.currentEmbed && server.currentEmbed.reactions && !server.loop && server.queue.length < 2) {
           server.currentEmbed.reactions.removeAll();
-          server.currentEmbed = false;
         }
         if (voiceChannel.members.size < 2) {
           connection.disconnect();
@@ -3339,7 +3339,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
       .setColor('#1DB954')
       .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, artists, true)
       .addField('Duration', formatDuration(infos.duration_ms), true)
-      .setThumbnail(infos.album.images.reverse()[0].url);
+      .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
     timeMS = parseInt(infos.duration_ms);
     // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
   } else {
@@ -3359,6 +3359,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
   server.infos = infos;
   if (botInVC(message)) {
     embed.addField('Queue', (server.queue.length > 0 ? ' 1 / ' + server.queue.length : 'empty'), true);
+    if (server.numSinceLastEmbed > 0) server.numSinceLastEmbed--;
   } else {
     embed.addField('-', 'Session ended', true);
     showButtons = false;
@@ -3373,8 +3374,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
         await server.currentEmbed.reactions.removeAll();
       }
     }
-    server.currentEmbed = false;
     message.channel.send(embed).then(sentMsg => {
+      server.currentEmbed = sentMsg;
       if (!showButtons || !dispatcherMap[voiceChannel.id]) return;
       generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
     });
@@ -3405,7 +3406,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
  * @param mgid The message guild id
  */
 function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid) {
-  server.currentEmbed = sentMsg;
   if (!sentMsg) return;
   sentMsg.react('⏪').then(() => {
     if (collector.ended) return;
