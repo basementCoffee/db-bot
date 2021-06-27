@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.10';
-const buildNo = '05051002'; // major, minor, patch, build
+const version = '5.5.11';
+const buildNo = '05051102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2177,7 +2177,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             if (first) {
               server.queue.unshift(tempUrl);
               first = false;
-            } else server.queue.splice(1, 0, tempUrl);
+            } else server.queue.splice(dbAddedToQueue, 0, tempUrl);
             dbAddedToQueue++;
           } else {
             server.queue.push(tempUrl);
@@ -2200,7 +2200,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
                 if (first) {
                   server.queue.unshift(tempUrl);
                   first = false;
-                } else server.queue.splice(1, 0, tempUrl);
+                } else server.queue.splice(dbAddedToQueue, 0, tempUrl);
                 dbAddedToQueue++;
               } else {
                 server.queue.push(tempUrl);
