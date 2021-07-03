@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.11';
-const buildNo = '05051102'; // major, minor, patch, build
+const version = '5.5.12';
+const buildNo = '05051202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -462,6 +462,7 @@ async function runCommandCases (message) {
         server.queueHistory = [];
         server.loop = false;
       }
+      server.numSinceLastEmbed++;
       const args = message.content.toLowerCase().replace(/\s+/g, ' ').split(' ');
       let indexOfWord;
       const findIndexOfWord = (word) => {
@@ -1319,7 +1320,7 @@ function checkStatusOfYtdl (message) {
       await bot.channels.cache.get('827195452507160627').send('=gzk');
       await bot.channels.cache.get('856338454237413396').send('ytdl status was unhealthy, shutting off bot');
       connection.disconnect();
-      process.exit(0);
+      setTimeout(() => process.exit(0), 1000);
     }
   });
 }
@@ -3205,7 +3206,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     message.channel.send('Could not play <' + urlOrg + '>' +
       ((skipTimesMap[mgid] === 1) ? '\nIf the link is not broken, please try again.' : ''));
     // search the db to find possible broken keys
-    searchForBrokenLinkWithinDB(message, urlOrg);
+    if (skipTimesMap[mgid] < 2) searchForBrokenLinkWithinDB(message, urlOrg);
     whatspMap[voiceChannel.id] = '';
     skipSong(message, voiceChannel, true, server, true);
     bot.channels.cache.get('856338454237413396').send('there was a playback error within playSongToVC').then(() => {
