@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.12';
-const buildNo = '05051202'; // major, minor, patch, build
+const version = '5.5.13';
+const buildNo = '05051302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -398,7 +398,9 @@ function initializeServer (mgid) {
     // The member that is the acting dictator
     dictator: false,
     // If a start up message has been sent
-    startUpMessage: false
+    startUpMessage: false,
+    // the timeout IDs for the bot to leave a VC
+    leaveVCTimeout: false
   };
 }
 
@@ -1249,22 +1251,6 @@ bot.on('message', async (message) => {
   }
 });
 
-const mainTimerTimeout = 600000;
-let mainActiveTimer;
-let resHandlerTimer;
-
-/**
- * Sends a message to a shared channel to see all active processes, responds accordingly using responseHandler.
- */
-function checkToSeeActive () {
-  if (devMode) return;
-  setOfBotsOn.clear();
-  // see if any bots are active
-  bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
-    resHandlerTimer = setInterval(responseHandler, 9000);
-  });
-}
-
 /**
  * Returns whether a given URL is valid. Also sends an appropriate error
  * message to the channel if the link were to be invalid.
@@ -1300,6 +1286,22 @@ function verifyPlaylist (url) {
   }
 }
 
+const mainTimerTimeout = 600000;
+let mainActiveTimer = false;
+let resHandlerTimeout = false;
+
+/**
+ * Sends a message to a shared channel to see all active processes, responds accordingly using responseHandler.
+ */
+function checkToSeeActive () {
+  if (devMode) return;
+  setOfBotsOn.clear();
+  // see if any bots are active
+  bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
+    if (!resHandlerTimeout) resHandlerTimeout = setTimeout(responseHandler, 9000);
+  });
+}
+
 /**
  * Checks the status of ytdl-core-discord and exits the active process if the test link is unplayable.
  */
@@ -1330,7 +1332,7 @@ function checkStatusOfYtdl (message) {
  * @returns {boolean} if there was an initial response
  */
 function responseHandler () {
-  clearInterval(resHandlerTimer);
+  resHandlerTimeout = false;
   if (setOfBotsOn.size < 1) {
     isInactive = false;
     devMode = false;
@@ -1338,8 +1340,11 @@ function responseHandler () {
       console.log('-active-');
       servers = {};
       setTimeout(() => {
-        bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
-        checkStatusOfYtdl();
+        // handle active bots  - 9 second process
+        checkToSeeActive();
+        setTimeout(() => {
+          if (!isInactive) checkStatusOfYtdl();
+        }, 10000);
       }, 2500);
     });
   } else if (setOfBotsOn.size > 1) {
@@ -1386,7 +1391,7 @@ bot.on('message', async (message) => {
             return user.id !== bot.user.id && user.id === message.member.id &&
               ['⚙️'].includes(reaction.emoji.name);
           };
-
+          // updates the existing gzk message
           const updateMessage = () => {
             if (devMode) {
               dm = ' (dev mode)';
@@ -1426,6 +1431,7 @@ bot.on('message', async (message) => {
             isInactive = !isInactive;
             message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
             console.log((isInactive ? '-sidelined-' : '-active-'));
+            if (!isInactive) setTimeout(() => {if (!isInactive) checkStatusOfYtdl();}, 10000);
             updateMessage();
             reaction.users.remove(user.id);
           });
@@ -2969,18 +2975,23 @@ bot.on('voiceStateUpdate', update => {
         server.followUpMessage = undefined;
       }
     });
-  } else {
-    if (!update.channel) return;
-    let leaveVCInt = 1100;
-    if (dispatcherMap[update.channel.id]) leaveVCInt = 420000;
-    clearInterval(leaveVCTimeout[update.channel.id]);
-    leaveVCTimeout[update.channel.id] = setInterval(() => {
-      clearInterval(leaveVCTimeout[update.channel.id]);
-      if (update.channel.members.size < 2) {
-        update.channel.leave();
-      }
-    }, leaveVCInt);
+  } else if (update.channel) {
+    const server = servers[update.guild.id];
+    if (server) {
+      let leaveVCInt = 1100;
+      // if there is an active dispatch - timeout is 5 min
+      if (dispatcherMap[update.channel.id]) leaveVCInt = 420000;
+      // if timeout exists then clear
+      if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
+      server.leaveVCTimeout = setTimeout(() => {
+        server.leaveVCTimeout = false;
+        if (update.channel.members.size < 2) {
+          update.channel.leave();
+        }
+      }, leaveVCInt);
+    }
   }
+
 });
 
 bot.on('error', (e) => {
@@ -3130,8 +3141,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     skipTimesMap[mgid] = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
     dispatcher.once('finish', () => {
-      const songFinish = setInterval(() => {
-        clearInterval(songFinish);
+      setTimeout(() => {
         if (urlOrg !== whatspMap[voiceChannel.id]) {
           console.log('There was a mismatch -------------------');
           console.log('old url: ' + urlOrg);
@@ -3220,7 +3230,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
         dispatcher.streamTime < 1) {
         return playSongToVC(message, whatToPlay, voiceChannel, server, true);
       }
-    }, 800);
+    }, 1000);
 }
 
 // number of consecutive error skips in a server, uses guild id
@@ -3594,9 +3604,13 @@ const prefixMap = new Map();
 const dispatcherMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
 const dispatcherMapStatus = new Map();
-// the timers for the bot to leave a VC, uses channel id
-const leaveVCTimeout = new Map();
 // login to discord
 (async () => {
   await bot.login(token);
 })();
+
+// server - guild id
+// dispatchermap, dispatchermapstatus - voice channel id
+// server -> active dispatcher
+// use active dispatcher to check validity
+
