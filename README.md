@@ -1,6 +1,6 @@
 # db-bot
 
-<img align="right" src="assets/dbBotLogoBanner2.jpg" height=150>
+<img align="right" src="assets/dbBotLogoBanner2.jpg" height=120>
 
 A discord playback bot that saves your favorite links for you. Available for free.  
 
