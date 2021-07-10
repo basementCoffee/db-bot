@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.13';
-const buildNo = '05051302'; // major, minor, patch, build
+const version = '5.5.14';
+const buildNo = '05051402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -620,16 +620,19 @@ async function runCommandCases (message) {
       runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id);
       break;
     // .r is a random that works with the normal queue
+    case 'shuffle':
     case 'rand':
     case 'r':
       runRandomToQueue(args[1], message, mgid, server);
       break;
     // test purposes - random command
+    case 'gshuffle':
     case 'grand':
     case 'gr':
       runRandomToQueue(args[1], message, 'entries', server);
       break;
     // .mr is the personal random that works with the normal queue
+    case 'mshuffle':
     case 'mrand':
     case 'mr':
       runRandomToQueue(args[1], message, 'p' + message.member.id, server);
@@ -860,6 +863,7 @@ async function runCommandCases (message) {
       sendHelp(message, prefixString);
       break;
     // !skip
+    case 'next':
     case 'sk':
     case 'skip':
       runSkipCommand(message, message.member.voice.channel, server, args[1], true, false, message.member);
@@ -1008,7 +1012,10 @@ async function runCommandCases (message) {
     case 'mremove':
       runRemoveItemCommand(message, args[1], 'p' + message.member.id, true).catch((e) => console.log(e));
       break;
+    case 'prev':
+    case 'previous':
     case 'rw':
+    case 'rew':
     case 'rewind':
       runRewindCommand(message, mgid, message.member.voice.channel, args[1], false, false, message.member, server);
       break;
