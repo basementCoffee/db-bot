@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.15';
-const buildNo = '05051502'; // major, minor, patch, build
+const version = '5.5.16';
+const buildNo = '05051602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2043,13 +2043,13 @@ function runQueueCommand (message, mgid, noErrorMsg) {
         queueSB = 'queue is empty';
       }
       queueMsgEmbed.setDescription(queueSB);
-      if (startingIndex + 10 < serverQueue.length) {
+      if (startingIndex + 11 < serverQueue.length) {
         queueMsgEmbed.setFooter('embed displays 10 at a time');
       }
       msg.delete();
       message.channel.send(queueMsgEmbed).then(sentMsg => {
         servers[mgid].numSinceLastEmbed += 10;
-        if (startingIndex + 10 < serverQueue.length) {
+        if (startingIndex + 11 < serverQueue.length) {
           sentMsg.react('➡️');
 
           const filter = (reaction, user) => {
@@ -3029,7 +3029,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
   }
   if (!voiceChannel) {
     voiceChannel = message.member.voice.channel;
-    if (!voiceChannel || voiceChannel.members.size < 1) return;
+    if (!voiceChannel) return;
   }
   if (isInactive) {
     message.channel.send('*db bot has been updated*');
@@ -3347,7 +3347,10 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  */
 async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, forceEmbed) {
   if (!message) return;
-  if (!message.guild.id) return;
+  if (!voiceChannel) {
+    voiceChannel = message.member.voice.channel;
+    if (!voiceChannel) return;
+  }
   if (server.verbose) forceEmbed = true;
   if (!url || (server.loop && server.currentEmbedLink === url && !forceEmbed &&
     server.currentEmbed.reactions)) {
