@@ -12,7 +12,7 @@ A discord playback bot that saves your favorite links for you. Available for fre
 - `play [YouTube video URL]` - plays a YouTube link (accepts both youtube.com and youtu.be URLs)
 - `play [YouTube playlist URL]` - plays a YouTube playlist in sequential order
 - `play [Spotify URL]` - plays a Spotify track
-- `play [YouTube playlist URL]` - plays a Spotify playlist in sequential order
+- `play [Spotify playlist URL]` - plays a Spotify playlist in sequential order
 - `play [search]` - plays the first YouTube link from a search query
 - `pause` - pauses playback
 - `resume` - resumes playback
