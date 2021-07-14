@@ -340,7 +340,6 @@ const gsUpdateOverwrite = (value, addOn, nameOfSheet, dsInt) => {
         console.error('Execute error', err);
       }
     );
-  gsrun('A', 'B', nameOfSheet).then();
 };
 
 // What is returned when searching the db, uses key-name
