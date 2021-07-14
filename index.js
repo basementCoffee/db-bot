@@ -1,14 +1,14 @@
+'use strict';
 require('dotenv').config();
 const {MessageEmbed, Client} = require('discord.js');
 const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./database');
-
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 
 // initialization
 const bot = new Client();
 
 // YouTube imports
-let ytdl = require('ytdl-core-discord');
+const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 
@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.0';
-const buildNo = '05060002'; // major, minor, patch, build
+const version = '5.6.1';
+const buildNo = '05060102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2060,12 +2060,11 @@ function runQueueCommand (message, mgid, noErrorMsg) {
             return false;
           };
           const collector = sentMsg.createReactionCollector(filter, {time: 300000});
-          const arrowReactionInterval = setInterval(() => {
-            clearInterval(arrowReactionInterval);
+          const arrowReactionInterval = setTimeout(() => {
             sentMsg.reactions.removeAll();
           }, 300500);
           collector.on('collect', (reaction, reactionCollector) => {
-            clearInterval(arrowReactionInterval);
+            clearTimeout(arrowReactionInterval);
             sentMsg.reactions.removeAll();
             qIterations += 10;
             generateQueue(startingIndex + 10, true);
@@ -2102,7 +2101,7 @@ function getYoutubeSubtitles (message, url) {
               } else {
                 let finalString = '';
                 for (let i of result.transcript.text) {
-                  finalString += i._;
+                  finalString += i._ + ' ';
                 }
                 finalString = finalString.replace(/&#39;/g, '\'');
                 finalString = finalString.length > 1900 ? finalString.substr(0, 1900) + '...' : finalString;
@@ -2627,12 +2626,11 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     };
 
     const collector = message.createReactionCollector(filter, {time: 20000});
-    const arrowReactionInterval = setInterval(() => {
-      clearInterval(arrowReactionInterval);
+    const arrowReactionInterval = setTimeout(() => {
       message.reactions.removeAll();
     }, 20000);
     collector.once('collect', (reaction, reactionCollector) => {
-      clearInterval(arrowReactionInterval);
+      clearTimeout(arrowReactionInterval);
       if (indexToLookup > 2) {
         message.reactions.removeAll();
       } else {
