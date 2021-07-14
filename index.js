@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.5.16';
-const buildNo = '05051602'; // major, minor, patch, build
+const version = '5.6.0';
+const buildNo = '05060002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1140,6 +1140,7 @@ async function runCommandCases (message) {
         .setTitle('db bot - statistics')
         .setDescription('version: ' + version +
           '\nbuild: ' + buildNo +
+          '\nprocess: ' + process.pid.toString() +
           '\nservers: ' + bot.guilds.cache.size +
           '\nuptime: ' + formatDuration(bot.uptime) +
           '\nup since: ' + bot.readyAt.toString().substr(0, 21) +
@@ -1234,26 +1235,24 @@ const setOfBotsOn = new Set();
 // calibrate on startup
 bot.on('message', async (message) => {
   if (devMode) return;
+  // ~db-bot-process (standard)[15] | -on [3 or 0] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
   // turn off active bots -- activates on '~db-bot-process'
   if (message.content.substr(0, 15) === '~db-bot-process' &&
-    message.member.id.toString() === '730350452268597300' && !devMode) {
+    message.member.id === '730350452268597300' && !devMode) {
     // if seeing bots that are on
     if (message.content.substr(15, 3) === '-on') {
-      const oBuildNo = message.content.substr(18, 8);
+      const activeUsers = message.content.substr(18, 1);
+      console.log('activeUsersCount', activeUsers);
+      const oBuildNo = message.content.substr(19, 8);
+      console.log('oBuildNo', oBuildNo);
       // if the other bot's version number is less than this bot's then turn the other bot off
-      if (parseInt(oBuildNo) >= buildNo) {
+      if (parseInt(oBuildNo) >= buildNo || activeUsers === '1') {
         setOfBotsOn.add(oBuildNo);
       }
-    } else if (!isInactive) {
-      console.log('calibrating...');
-      const oBuildNo = message.content.substr(15, 8);
-      if (parseInt(oBuildNo) > parseInt(buildNo)) {
-        isInactive = true;
-        return console.log('-sidelined(1)-');
-      } else if (parseInt(oBuildNo) === parseInt(buildNo) && parseInt(message.content.substr(message.content.lastIndexOf('ver') + 3, 10)) > process.pid) {
-        isInactive = true;
-        return console.log('-sidelined(2)-');
-      }
+    } else if (message.content.substr(15, 4) === '-off') {
+      const oProcess = message.content.substr(27);
+      console.log('oProcess', oProcess);
+      if (oProcess !== process.pid.toString()) isInactive = true;
     }
   }
 });
@@ -1340,23 +1339,22 @@ function checkStatusOfYtdl (message) {
  */
 function responseHandler () {
   resHandlerTimeout = false;
-  if (setOfBotsOn.size < 1) {
+  if (setOfBotsOn.size < 1 && isInactive) {
+    servers = {};
     isInactive = false;
     devMode = false;
-    bot.channels.cache.get('827195452507160627').send('=gzk').then(() => {
-      console.log('-active-');
-      servers = {};
-      setTimeout(() => {
-        // handle active bots  - 9 second process
-        checkToSeeActive();
-        setTimeout(() => {
-          if (!isInactive) checkStatusOfYtdl();
-        }, 10000);
-      }, 2500);
-    });
+    console.log('-active-');
+    // handle active bots  - 9 second process
+    checkToSeeActive();
+    setTimeout(() => {
+      if (!isInactive) checkStatusOfYtdl();
+    }, 10000);
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
+    setTimeout(() => {
+      if (isInactive) checkToSeeActive();
+    }, 3000);
   }
 }
 
@@ -1370,7 +1368,7 @@ bot.on('message', async (message) => {
     if (zmsg === 'zk') {
       if (message.member.id === '730350452268597300') {
         if (!isInactive && !devMode) {
-          message.channel.send('~db-bot-process-on' + buildNo + 'ver' + process.pid);
+          message.channel.send('~db-bot-process-on' + (bot.voice.connections.size > 0 ? '1' : '0') + buildNo + 'ver' + process.pid);
         }
         return;
       }
@@ -1467,12 +1465,11 @@ bot.on('message', async (message) => {
       return;
     } else if (zmsg === 'zc') {
       if (!devMode) {
-        if (message.member.id !== '730350452268597300') {
-          await message.channel.send((isInactive ? 'inactive' : 'active') +
-            ' bot #' + process.pid + ' (' + version + ') ' +
-            ' **is calibrating...** (may take up to 30 seconds)');
+        if (message.member.id !== '730350452268597300' && !isInactive) {
+          return message.channel.send('this a bot only command');
         }
-        bot.channels.cache.get('827195452507160627').send('~db-bot-process' + buildNo + 'ver' + process.pid);
+        bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
+          process.pid.toString());
       }
     } else if (zmsg === 'zd') {
       const zargs = message.content.split(' ');
@@ -3165,11 +3162,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
         if (voiceChannel.members.size < 2) {
           connection.disconnect();
         } else if (server.loop) {
-          playSongToVC(message, urlOrg, voiceChannel, server);
+          playSongToVC(message, urlOrg, voiceChannel, server, false);
         } else {
           server.queueHistory.push(server.queue.shift());
           if (server.queue.length > 0) {
-            playSongToVC(message, server.queue[0], voiceChannel, server);
+            playSongToVC(message, server.queue[0], voiceChannel, server, false);
           } else {
             dispatcherMap[voiceChannel.id] = false;
           }
@@ -3184,8 +3181,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
   } catch (e) {
     let errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404')) {
-      if (!avoidReplay)
-        playSongToVC(message, whatToPlay, voiceChannel, server, true);
+      if (!avoidReplay) playSongToVC(message, whatToPlay, voiceChannel, server, true);
       else {
         console.log('status code 404 error');
         connection.disconnect();
@@ -3200,7 +3196,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     if (errorMsg.includes('No suitable format found')) {
       if (!skipTimesMap[mgid]) {
         message.channel.send('*this video contains a restriction preventing it from being played*');
-        server.numSinceLastEmbed;
+        server.numSinceLastEmbed++;
         skipTimesMap[mgid] = 1;
         skipSong(message, voiceChannel, true, server, true);
       } else skipSong(message, voiceChannel, false, server, true);
@@ -3235,7 +3231,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     setTimeout(() => {
       if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
         dispatcher.streamTime < 1) {
-        return playSongToVC(message, whatToPlay, voiceChannel, server, true);
+        playSongToVC(message, whatToPlay, voiceChannel, server, true);
       }
     }, 1000);
 }
