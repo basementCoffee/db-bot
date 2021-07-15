@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.1';
-const buildNo = '05060102'; // major, minor, patch, build
+const version = '5.6.2';
+const buildNo = '05060202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1871,7 +1871,7 @@ function runLyricsCommand (message, mgid, args, server) {
           const collector = sentMsg.createReactionCollector(filter, {time: 600000});
           collector.once('collect', (reaction, user) => {
             // send the lyrics text on reaction click
-            message.channel.send((lyrics.length > 1900 ? lyrics.substr(0, 1900) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
+            message.channel.send((lyrics.length > 1910 ? lyrics.substr(0, 1910) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
           });
 
         });
@@ -2100,11 +2100,22 @@ function getYoutubeSubtitles (message, url) {
                 return console.log(err);
               } else {
                 let finalString = '';
+                let prevDuration = 0;
+                let newDuration;
                 for (let i of result.transcript.text) {
-                  finalString += i._ + ' ';
+                  if (i._.trim().substr(0, 1) === '[') {
+                    finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
+                      i._;
+                    prevDuration -= 5;
+                  } else {
+                    newDuration = parseInt(i.$.start);
+                    finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ')
+                      + i._;
+                    prevDuration = newDuration;
+                  }
                 }
                 finalString = finalString.replace(/&#39;/g, '\'');
-                finalString = finalString.length > 1900 ? finalString.substr(0, 1900) + '...' : finalString;
+                finalString = finalString.length > 1910 ? finalString.substr(0, 1910) + '...' : finalString;
                 message.channel.send('Could not find lyrics. Video captions are available.').then(sentMsg => {
                   const mb = '📄';
                   sentMsg.react(mb);
@@ -3221,7 +3232,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     whatspMap[voiceChannel.id] = '';
     skipSong(message, voiceChannel, true, server, true);
     bot.channels.cache.get('856338454237413396').send('there was a playback error within playSongToVC').then(() => {
-      bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1900));
+      bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1910));
     });
     return;
   }
