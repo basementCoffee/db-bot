@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.3';
-const buildNo = '05060302'; // major, minor, patch, build
+const version = '5.6.4';
+const buildNo = '05060402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1250,7 +1250,7 @@ bot.on('message', async (message) => {
         setOfBotsOn.add(oBuildNo);
       }
     } else if (message.content.substr(15, 4) === '-off') {
-      const oProcess = message.content.substr(27);
+      const oProcess = message.content.substr(28);
       console.log('oProcess', oProcess);
       if (oProcess !== process.pid.toString()) isInactive = true;
     }
