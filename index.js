@@ -27,7 +27,7 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.4';
+const version = '5.6.5';
 const buildNo = '05060402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
@@ -1109,8 +1109,7 @@ async function runCommandCases (message) {
           '\n\n**calibrate multiple bots**' +
           '\n=gzl - return the bot\'s ping and latency' +
           '\n=gzk - start/kill a process' +
-          '\n=gzd - toggle dev mode' +
-          '\n=gzc - ensure no two bots are on at the same time\n*(do not call gzc more than once within 5 minutes)*'
+          '\n=gzd - toggle dev mode'
         )
         .setFooter('version: ' + version);
       message.channel.send(devCEmbed);
@@ -1225,7 +1224,8 @@ bot.once('ready', () => {
       console.log('checking status of other bots...');
       checkToSeeActive();
     } else {
-      bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
+      bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
+        process.pid.toString());
     }
   } else {
     console.log('-devmode enabled-');
@@ -1344,7 +1344,8 @@ function responseHandler () {
     isInactive = false;
     devMode = false;
     console.log('-active-');
-    bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
+    bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
+      process.pid.toString());;
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
       setTimeout(() => {
@@ -1353,7 +1354,8 @@ function responseHandler () {
     }, 3000);
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
-    bot.channels.cache.get('827195452507160627').send('=gzc ' + process.pid);
+    bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
+      process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, 3000);
@@ -1465,14 +1467,6 @@ bot.on('message', async (message) => {
         }
       }
       return;
-    } else if (zmsg === 'zc') {
-      if (!devMode) {
-        if (message.member.id !== '730350452268597300' && !isInactive) {
-          return message.channel.send('this a bot only command');
-        }
-        bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
-          process.pid.toString());
-      }
     } else if (zmsg === 'zd') {
       const zargs = message.content.split(' ');
       let activeStatus = 'active';
