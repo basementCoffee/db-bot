@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.6';
-const buildNo = '05060602'; // major, minor, patch, build
+const version = '5.6.7';
+const buildNo = '05060702'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -229,8 +229,9 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
       playlist = playlist.items;
     }
     let url;
+    const server = servers[mgid];
     if (addToFront) {
-      let itemsLeft = maxQueueSize - servers[mgid].queue.length;
+      let itemsLeft = maxQueueSize - server.queue.length;
       let lowestLengthIndex = Math.min(playlist.length, itemsLeft) - 1;
       let item;
       while (lowestLengthIndex > -1) {
@@ -239,7 +240,7 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
         url = isSpotify ? item.external_urls.spotify : (item.shortUrl ? item.shortUrl : item.url);
         if (itemsLeft > 0) {
           if (url) {
-            servers[mgid].queue.unshift(url);
+            server.queue.unshift(url);
             pNums++;
             itemsLeft--;
           }
@@ -249,12 +250,12 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
         }
       }
     } else {
-      let itemsLeft = maxQueueSize - servers[mgid].queue.length;
+      let itemsLeft = maxQueueSize - server.queue.length;
       for (let j of playlist) {
         url = isSpotify ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
         if (itemsLeft > 0) {
           if (url) {
-            servers[mgid].queue.push(url);
+            server.queue.push(url);
             pNums++;
             itemsLeft--;
           }
@@ -400,7 +401,9 @@ function initializeServer (mgid) {
     // If a start up message has been sent
     startUpMessage: false,
     // the timeout IDs for the bot to leave a VC
-    leaveVCTimeout: false
+    leaveVCTimeout: false,
+    // the number of consecutive playback errors
+    skipTimes: 0
   };
 }
 
@@ -860,7 +863,7 @@ async function runCommandCases (message) {
     case 'h':
     case 'help':
       server.numSinceLastEmbed += 10;
-      sendHelp(message, prefixString);
+      message.channel.send(getHelpList(prefixString));
       break;
     // !skip
     case 'next':
@@ -1492,8 +1495,13 @@ bot.on('message', async (message) => {
     return;
   }
   if (message.channel.type === 'dm') {
+    if (message.content.trim() === 'help') {
+      return message.author.send(getHelpList('.'));
+    } else if (message.content.substr(1, 6) === 'invite' || message.content.substr(0, 6) === 'invite') {
+      return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
+    }
     const mb = '📤';
-    bot.channels.cache.get('840420205867302933')
+    bot.channels.cache.get('870800306655592489')
       .send('------------------------------------------\n' +
         '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
         message.content + '\n------------------------------------------').then(msg => {
@@ -1514,9 +1522,6 @@ bot.on('message', async (message) => {
         msg.reactions.cache.get(mb).remove();
       });
     });
-    if (message.content.substr(1, 6) === 'invite' || message.content.substr(0, 6) === 'invite') {
-      message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>').then();
-    }
   } else {
     return runCommandCases(message);
   }
@@ -2491,11 +2496,10 @@ function voteSystem (message, mgid, commandName, voter, votes) {
 }
 
 /**
- * Function to display help list.
- * @param {*} message the message that triggered the bot
+ * Function to generate the help list.
  * @param {*} prefixString the prefix in string format
  */
-function sendHelp (message, prefixString) {
+function getHelpList (prefixString) {
   const helpListEmbed = new MessageEmbed();
   const description =
     '--------------  **Music Commands** --------------\n\`' +
@@ -2561,7 +2565,7 @@ function sendHelp (message, prefixString) {
   helpListEmbed
     .setTitle('Help List *[with aliases]*')
     .setDescription(description);
-  message.channel.send(helpListEmbed);
+  return helpListEmbed;
 }
 
 /**
@@ -3103,7 +3107,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       runSkipCommand(message, voiceChannel, server, 1, true, true, message.member);
     }
   }
-  let connection = servers[message.guild.id].connection;
+  let connection = server.connection;
   if (!botInVC(message) || !connection || (connection.channel.id !== voiceChannel.id)) {
     try {
       connection = await voiceChannel.join();
@@ -3119,7 +3123,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       server.startUpMessage = true;
       message.channel.send(startUpMessage);
     }
-    servers[message.guild.id].connection = connection;
+    server.connection = connection;
     connection.voice.setSelfDeaf(true).then();
   }
   whatspMap[voiceChannel.id] = urlOrg;
@@ -3144,7 +3148,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     if (!server.silence) {
       await sendLinkAsEmbed(message, urlOrg, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
     }
-    skipTimesMap[mgid] = 0;
+    server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
     dispatcher.once('finish', () => {
       setTimeout(() => {
@@ -3185,11 +3189,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     if (errorMsg.includes('ode: 404')) {
       if (!avoidReplay) playSongToVC(message, whatToPlay, voiceChannel, server, true);
       else {
-        if (!skipTimesMap[mgid]) skipTimesMap[mgid] = 1;
-        else skipTimesMap[mgid]++;
-        if (skipTimesMap < 3) {
+        server.skipTimes++;
+        if (server.skipTimes < 3) {
           message.channel.send('error code 404: *this video may contain a restriction preventing it from being played. '
-            + (skipTimesMap < 2 ? 'And if so, it may be resolved sometime in the future.*' : '*'));
+            + (server.skipTimes < 2 ? 'And if so, it may be resolved sometime in the future.*' : '*'));
           server.numSinceLastEmbed++;
           skipSong(message, voiceChannel, true, server, true);
         } else {
@@ -3205,32 +3208,32 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       return;
     }
     if (errorMsg.includes('No suitable format found')) {
-      if (!skipTimesMap[mgid]) {
+      if (server.skipTimes === 0) {
         message.channel.send('*this video contains a restriction preventing it from being played*');
         server.numSinceLastEmbed++;
-        skipTimesMap[mgid] = 1;
+        server.skipTimes = 1;
         skipSong(message, voiceChannel, true, server, true);
       } else skipSong(message, voiceChannel, false, server, true);
       return;
     }
     console.log('error in playSongToVC');
     console.log(e);
-    const numberOfPrevSkips = skipTimesMap[mgid];
-    if (!numberOfPrevSkips) {
-      skipTimesMap[mgid] = 1;
+    const numberOfPrevSkips = server.skipTimes;
+    if (numberOfPrevSkips < 1) {
+      server.skipTimes++;
     } else if (numberOfPrevSkips > 3) {
       connection.disconnect();
       message.channel.send('***db bot is facing some issues, may restart***');
       checkStatusOfYtdl(message);
       return;
     } else {
-      skipTimesMap[mgid] += 1;
+      server.skipTimes++;
     }
     // Error catching - fault with the link?
     message.channel.send('Could not play <' + urlOrg + '>' +
-      ((skipTimesMap[mgid] === 1) ? '\nIf the link is not broken, please try again.' : ''));
+      ((server.skipTimes === 1) ? '\nIf the link is not broken, please try again.' : ''));
     // search the db to find possible broken keys
-    if (skipTimesMap[mgid] < 2) searchForBrokenLinkWithinDB(message, urlOrg);
+    if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, urlOrg);
     whatspMap[voiceChannel.id] = '';
     skipSong(message, voiceChannel, true, server, true);
     bot.channels.cache.get('856338454237413396').send('there was a playback error within playSongToVC').then(() => {
@@ -3246,9 +3249,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       }
     }, 1000);
 }
-
-// number of consecutive error skips in a server, uses guild id
-const skipTimesMap = new Map();
 
 /**
  * Searches the guild db and personal message db for a broken link
