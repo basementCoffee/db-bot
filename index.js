@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.7';
-const buildNo = '05060702'; // major, minor, patch, build
+const version = '5.6.8';
+const buildNo = '05060802'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1495,9 +1495,10 @@ bot.on('message', async (message) => {
     return;
   }
   if (message.channel.type === 'dm') {
-    if (message.content.trim() === 'help') {
+    const messageContent = message.content.toLowerCase().trim() + ' ';
+    if (messageContent.length < 7 && messageContent.includes('help ')) {
       return message.author.send(getHelpList('.'));
-    } else if (message.content.substr(1, 6) === 'invite' || message.content.substr(0, 6) === 'invite') {
+    } else if (messageContent.length < 9 && messageContent.includes('invite ')) {
       return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
     }
     const mb = '📤';
@@ -1879,8 +1880,8 @@ function runLyricsCommand (message, mgid, args, server) {
       }
     };
     if (searchTermRemix ? (!await sendSongLyrics(searchTermRemix)
-      && !await sendSongLyrics(searchTermRemix.replace(' remix', ''))
-      && !await sendSongLyrics(searchTerm)) :
+        && !await sendSongLyrics(searchTermRemix.replace(' remix', ''))
+        && !await sendSongLyrics(searchTerm)) :
       !await sendSongLyrics(searchTerm)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
         getYoutubeSubtitles(message, lUrl);
