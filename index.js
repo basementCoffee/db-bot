@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.8';
-const buildNo = '05060802'; // major, minor, patch, build
+const version = '5.6.9';
+const buildNo = '05060902'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -3187,7 +3187,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     dispatcher.resume();
   } catch (e) {
     let errorMsg = e.toString().substr(0, 100);
-    if (errorMsg.includes('ode: 404')) {
+    if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
       if (!avoidReplay) playSongToVC(message, whatToPlay, voiceChannel, server, true);
       else {
         server.skipTimes++;
