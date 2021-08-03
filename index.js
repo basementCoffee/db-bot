@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.9';
-const buildNo = '05060902'; // major, minor, patch, build
+const version = '5.6.10';
+const buildNo = '05061002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -3192,14 +3192,17 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       else {
         server.skipTimes++;
         if (server.skipTimes < 3) {
-          message.channel.send('error code 404: *this video may contain a restriction preventing it from being played. '
-            + (server.skipTimes < 2 ? 'And if so, it may be resolved sometime in the future.*' : '*'));
+          message.channel.send(
+            '***error code 404:*** *this video may contain a restriction preventing it from being played.*'
+            + (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
           server.numSinceLastEmbed++;
           skipSong(message, voiceChannel, true, server, true);
         } else {
           console.log('status code 404 error');
           connection.disconnect();
-          message.channel.send('*db bot is facing issues ... play commands are unreliable at this time.*').then(() => {
+          message.channel.send(
+            '*db bot appears to be facing some issues ... play commands are unreliable at this time.*'
+          ).then(() => {
             console.log(e);
             bot.channels.cache.get('856338454237413396').send('***status code 404 error***' +
               '\n*if this error persists, try to change the active process*');
