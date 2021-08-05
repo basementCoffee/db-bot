@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.10';
-const buildNo = '05061002'; // major, minor, patch, build
+const version = '5.6.11';
+const buildNo = '05061102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1942,8 +1942,8 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
         let alreadyExists = false;
         if (printMsgToChannel) {
           for (const x of xdb.congratsDatabase.keys()) {
-            if (x === args[z]) {
-              message.channel.send("'" + args[z] + "' is already in your list");
+            if (x.toUpperCase() === args[z].toUpperCase()) {
+              message.channel.send("'" + x + "' is already in your list");
               alreadyExists = true;
               songsAddedInt--;
               break;
