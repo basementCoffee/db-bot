@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.11';
-const buildNo = '05061102'; // major, minor, patch, build
+const version = '5.6.12';
+const buildNo = '05061202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -403,7 +403,9 @@ function initializeServer (mgid) {
     // the timeout IDs for the bot to leave a VC
     leaveVCTimeout: false,
     // the number of consecutive playback errors
-    skipTimes: 0
+    skipTimes: 0,
+    // the server's prefix
+    prefix: undefined
   };
 }
 
@@ -414,32 +416,32 @@ function initializeServer (mgid) {
  */
 async function runCommandCases (message) {
   const mgid = message.guild.id;
-  if (devMode) {
-    if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985' && message.member.id.toString() !== '799524729173442620' && message.member.id !== '434532121244073984') {
-      return; // DEBUG MODE
-    }
-    prefixMap[mgid] = '=';
+  // the server guild playback data
+  if (!servers[mgid]) {
+    initializeServer(mgid);
   }
-  if (servers[mgid] && servers[mgid].currentEmbedChannelId === message.channel.id && servers[mgid].numSinceLastEmbed < 10) {
-    servers[mgid].numSinceLastEmbed++;
+  const server = servers[mgid];
+  if (devMode) server.prefix = '=';
+  if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
+    server.numSinceLastEmbed++;
   }
-  let prefixString = prefixMap[mgid];
+  let prefixString = server.prefix;
   if (!prefixString) {
     try {
       await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
         const newPrefix = xdb.congratsDatabase.get(mgid);
         if (!newPrefix) {
-          prefixMap[mgid] = '.';
+          server.prefix = '.';
           await gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', xdb.dsInt);
         } else {
-          prefixMap[mgid] = newPrefix;
+          server.prefix = newPrefix;
         }
       });
     } catch (e) {
-      prefixMap[mgid] = '.';
+      server.prefix = '.';
       gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', 1);
     }
-    prefixString = prefixMap[mgid];
+    prefixString = server.prefix;
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
   const fwPrefix = firstWordBegin.substr(0, 1);
@@ -458,10 +460,6 @@ async function runCommandCases (message) {
       }
     }
     if (contentContainCongrats(message.content)) {
-      let server = servers[mgid];
-      if (!servers[mgid]) {
-        server = initializeServer(mgid);
-      }
       if (!botInVC(message)) {
         server.queue = [];
         server.queueHistory = [];
@@ -526,11 +524,6 @@ async function runCommandCases (message) {
       return;
     }
   }
-  // the server guild playback data
-  if (!servers[mgid]) {
-    initializeServer(mgid);
-  }
-  const server = servers[mgid];
   if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
   switch (statement) {
     // the normal play command
@@ -814,7 +807,7 @@ async function runCommandCases (message) {
           await runAddCommand(args, message, 'prefixes', false);
           await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
             await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
-            prefixMap[mgid] = args[2];
+            server.prefix = args[2];
             message.channel.send('Prefix successfully changed to ' + args[2]);
             prefixString = '\\' + args[2];
             sentPrefixMsg.delete();
@@ -1479,11 +1472,11 @@ bot.on('message', async (message) => {
       }
       if (devMode && zargs[1] === process.pid.toString()) {
         devMode = false;
-        prefixMap[message.guild.id] = undefined;
+        servers[message.guild.id].prefix = undefined;
         return message.channel.send('*devmode is off* ' + process.pid.toString());
       } else if (zargs[1] === process.pid.toString()) {
         devMode = true;
-        prefixMap[message.guild.id] = '=';
+        servers[message.guild.id].prefix = '=';
         return message.channel.send('*devmode is on* ' + process.pid.toString());
       }
     } else if (zmsg === 'zl') {
@@ -1491,7 +1484,9 @@ bot.on('message', async (message) => {
         `: Latency is ${Date.now() - message.createdTimestamp}ms.\nNetwork latency is ${Math.round(bot.ws.ping)}ms`);
     }
   }
-  if (message.author.bot || isInactive) {
+  if (message.author.bot || isInactive || (devMode && message.member.id.toString() !== '443150640823271436' &&
+    message.member.id.toString() !== '268554823283113985' && message.member.id.toString() !== '799524729173442620' &&
+    message.member.id !== '434532121244073984')) {
     return;
   }
   if (message.channel.type === 'dm') {
@@ -1905,7 +1900,7 @@ function runLyricsCommand (message, mgid, args, server) {
  */
 function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString) {
   if (!args[1] || !args[2]) {
-    let pf = prefixMap[message.guild.id];
+    let pf = servers[message.guild.id].prefix;
     return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the')
       + ' database. Put a desired name followed by a link. *(ex:\` ' + pf + prefixString + 'add [key] [link]\`)*');
   }
@@ -1958,7 +1953,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
       songsAddedInt += 1;
     }
     if (printMsgToChannel) {
-      const ps = prefixMap[message.guild.id];
+      const ps = servers[message.guild.id].prefix;
       // the specific database user-access character
       let databaseType = args[0].substr(1, 1).toLowerCase();
       if (databaseType === 'a') {
@@ -2725,7 +2720,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   if (!isPlaylist) {
     rKeyArray = Array.from(cdb.keys());
     if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
-      let pf = prefixMap[message.guild.id];
+      let pf = server.prefix;
       return message.channel.send('Your music list is empty *(Try  `' + pf + 'a` or `' + pf
         + 'ma` to add to a keys list)*');
     }
@@ -3406,6 +3401,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
   } else {
     embed.addField('-', 'Session ended', true);
     showButtons = false;
+    server.currentEmbedChannelId = false;
   }
   const generateNewEmbed = async () => {
     server.numSinceLastEmbed = 0;
@@ -3533,12 +3529,11 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         server.followUpMessage = undefined;
       }
     } else if (reaction.emoji.name === '🔑') {
-      runKeysCommand(sentMsg, prefixMap[mgid], mgid, '', voiceChannel, '');
+      runKeysCommand(sentMsg, server.prefix, mgid, '', voiceChannel, '');
       server.numSinceLastEmbed += 5;
     } else if (reaction.emoji.name === '🔐') {
       server.numSinceLastEmbed += 5;
-      // console.log(reaction.users.valueOf().array().pop());
-      runKeysCommand(sentMsg, prefixMap[mgid], 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector);
+      runKeysCommand(sentMsg, server.prefix, 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector);
     }
   });
 }
@@ -3619,8 +3614,6 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, shee
 let startUpMessage = '';
 // What's playing, uses voice channel id
 const whatspMap = new Map();
-// The server's prefix, uses guild id
-const prefixMap = new Map();
 // The song stream, uses voice channel id
 const dispatcherMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
