@@ -26,9 +26,9 @@ const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
-let devMode = false; // default false
-const version = '5.6.12';
-const buildNo = '05061202'; // major, minor, patch, build
+let devMode = true; // default false
+const version = '5.6.13';
+const buildNo = '05061302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -949,9 +949,10 @@ async function runCommandCases (message) {
     case 'ts':
     case 'time':
     case 'timestamp':
-      if (dispatcherMap[message.member.voice.channel.id]) {
+      if (!message.member.voice.channel) message.channel.send('must be in a voice channel');
+      else if (dispatcherMap[message.member.voice.channel.id])
         message.channel.send('timestamp: ' + formatDuration(dispatcherMap[message.member.voice.channel.id].streamTime));
-      }
+      else message.channel.send('nothing is playing right now');
       break;
     case 'verbose':
       if (!server.verbose) {
@@ -979,7 +980,7 @@ async function runCommandCases (message) {
         "<https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622>"
       );
       break;
-    // TEST - .ga adds to the server database
+    // .ga adds to the test database
     case 'ga':
     case 'gadd':
       runAddCommandWrapper(message, args, 'entries', true, 'g');
@@ -1074,9 +1075,7 @@ async function runCommandCases (message) {
       }
       break;
     case 'l':
-      if (!botInVC(message)) {
-        return;
-      }
+      if (!botInVC(message)) return;
       if (server.loop) {
         server.loop = false;
         message.channel.send('*looping disabled*');
@@ -1111,7 +1110,10 @@ async function runCommandCases (message) {
       message.channel.send(devCEmbed);
       break;
     case 'gzq':
-      message.channel.send("restarting the bot... (may only shutdown)").then(process.exit());
+      if (bot.voice.connections.size > 0 && args[1] !== 'force')
+        message.channel.send('People are using the bot. Use this command again with \'force\' to restart the bot');
+      else message.channel.send("restarting the bot... (may only shutdown)").then(() =>
+        setTimeout(() => {process.exit();}, 2000));
       break;
     case 'gzid':
       message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', y: ' + message.member.id);
