@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.6.15';
-const buildNo = '05061502'; // major, minor, patch, build
+const version = '5.7.0';
+const buildNo = '05070002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -216,9 +216,10 @@ function botInVC (message) {
  * @param playlistUrl The url of the playlist
  * @param isSpotify If the playlist is a spotify playlist
  * @param addToFront Optional - true if to add to the front of the queue
+ * @param position Optional - the position of the queue to add the item to
  * @returns {Promise<void>} The number of items added to the queue
  */
-async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify, addToFront) {
+async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify, addToFront, position) {
   let playlist;
   try {
     if (isSpotify) {
@@ -255,7 +256,10 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
         url = isSpotify ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
         if (itemsLeft > 0) {
           if (url) {
-            server.queue.push(url);
+            if (position && !(position > server.queue.length)) {
+              server.queue.splice(position, 0, url);
+              position++;
+            } else server.queue.push(url);
             pNums++;
             itemsLeft--;
           }
@@ -774,6 +778,17 @@ async function runCommandCases (message) {
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
+    case 'input':
+    case 'insert':
+      if (!args[1]) return message.channel.send('put a link followed by the position in the queue \`(i.e. insert [link] [num])\`');
+      if (!verifyUrl(args[1]) && !verifyPlaylist(args[1])) return message.channel.send('invalid url');
+      let num = parseInt(args[2]);
+      if (!num) return message.channel.send('put a number in the queue to insert (0-' + server.queue.length + ')');
+      if (num < 1) return message.channel.send('position must be greater than 0');
+      if (num > server.queue.length) num = server.queue.length;
+      server.queue.splice(num, 0, args[1]);
+      message.channel.send('inserted link into position ' + num);
+      break;
     case 'q':
       runQueueCommand(message, mgid, true);
       break;
@@ -1255,21 +1270,15 @@ bot.on('message', async (message) => {
 /**
  * Returns whether a given URL is valid. Also sends an appropriate error
  * message to the channel if the link were to be invalid.
- * @param message The message that triggered the bot
  * @param url The url to verify
  * @returns {boolean} True if the bot was able to verify the link
  */
-function verifyUrl (message, url) {
+function verifyUrl (url) {
   if (!url.includes('.')) {
-    message.channel.send('You can only add links to the database. (Names cannot be more than one word)');
     return false;
   }
-  if (url.includes('spotify.com') ? (!spdl.validateURL(url) && !url.includes('/playlist/'))
-    : (!ytdl.validateURL(url) && !ytpl.validateID(url))) {
-    message.channel.send('Invalid link');
-    return false;
-  }
-  return true;
+  return !(url.includes('spotify.com') ? (!spdl.validateURL(url) && !url.includes('/playlist/'))
+    : (!ytdl.validateURL(url) && !ytpl.validateID(url)));
 }
 
 /**
@@ -1903,13 +1912,14 @@ function runLyricsCommand (message, mgid, args, server) {
 function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString) {
   if (!args[1] || !args[2]) {
     let pf = servers[message.guild.id].prefix;
-    return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the')
-      + ' database. Put a desired name followed by a link. *(ex:\` ' + pf + prefixString + 'add [key] [link]\`)*');
+    return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
+      + ' keys list. Put a desired name followed by a link. *(ex:\` ' + pf + prefixString + 'add [key] [link]\`)*');
   }
   if (args[2].substr(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
     args[2] = args[2].substr(1, args[2].length - 2);
   }
-  if (!verifyUrl(message, args[2])) return;
+  if (!verifyUrl(args[2]))
+    return message.channel.send('You can only add links to the keys list. (Names cannot be more than one word)');
   // in case the database has not been initialized
   gsrun('A', 'B', sheetName).then(() => {
     runAddCommand(args, message, sheetName, printMsgToChannel);
@@ -1968,11 +1978,11 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
         } else {
           typeString = "the server's";
         }
-        message.channel.send('*song added to ' + typeString + " database. (see '" + ps + databaseType + "keys')*");
+        message.channel.send('*song added to ' + typeString + " keys list. (see '" + ps + databaseType + "keys')*");
       } else if (songsAddedInt > 1) {
         gsrun('A', 'B', sheetName).then((xdb) => {
           gsUpdateOverwrite(-1, songsAddedInt, sheetName, xdb.dsInt);
-          message.channel.send('*' + songsAddedInt + " songs added to the database. (see '" + ps + databaseType + "keys')*");
+          message.channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + databaseType + "keys')*");
         });
       }
     }
@@ -2043,13 +2053,12 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       message.channel.send(queueMsgEmbed).then(sentMsg => {
         servers[mgid].numSinceLastEmbed += 10;
         if (startingIndex + 11 < serverQueue.length) {
-          sentMsg.react('➡️');
-
+          sentMsg.react('➡️').then(() => sentMsg.react('📥'));
           const filter = (reaction, user) => {
             if (message.member.voice.channel) {
               for (const mem of message.member.voice.channel.members) {
                 if (user.id === mem[1].id) {
-                  return user.id !== bot.user.id && ['➡️'].includes(reaction.emoji.name);
+                  return user.id !== bot.user.id && ['➡️', '📥'].includes(reaction.emoji.name);
                 }
               }
             }
@@ -2060,10 +2069,70 @@ function runQueueCommand (message, mgid, noErrorMsg) {
             sentMsg.reactions.removeAll();
           }, 300500);
           collector.on('collect', (reaction, reactionCollector) => {
-            clearTimeout(arrowReactionInterval);
-            sentMsg.reactions.removeAll();
-            qIterations += 10;
-            generateQueue(startingIndex + 10, true);
+            if (reaction.emoji.name === '➡️') {
+              clearTimeout(arrowReactionInterval);
+              sentMsg.reactions.removeAll();
+              qIterations += 10;
+              generateQueue(startingIndex + 10, true);
+            } else if (reaction.emoji.name === '📥') {
+              let link;
+              let position;
+              let server = servers[message.guild.id];
+              message.channel.send('What link would you like to insert (or type \'cancel\')').then(msg => {
+                const filter = m => {
+                  return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
+                };
+                message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+                  .then(messages => {
+                    link = messages.first().content.trim();
+                    if (link === 'cancel') {
+                      return message.channel.send('cancelled.');
+                    }
+                    if (link) {
+                      if (!verifyUrl(link) && !verifyPlaylist(link)) return message.channel.send('cancelled: invalid url');
+                      // second question
+                      message.channel.send('What position in the queue would you like to insert this into (or type \'cancel\')').then(msg => {
+                        const filter = m => {
+                          return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
+                        };
+                        message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+                          .then(async messages => {
+                            position = messages.first().content.trim();
+                            if (position === 'cancel') {
+                              return message.channel.send('cancelled.');
+                            }
+                            if (position) {
+                              let num = parseInt(position);
+                              if (!num) return message.channel.send('please put a number in the queue to insert (1-' + server.queue.length + ')');
+                              if (num < 1) return message.channel.send('cancelled: position must be positive');
+                              let pNums = 0;
+                              if (verifyPlaylist(link)) {
+                                if (link.includes('/playlist/') && link.includes('spotify.com')) {
+                                  await addPlaylistToQueue(message, mgid, 0, link, true, false, position);
+                                } else if (ytpl.validateID(link)) {
+                                  await addPlaylistToQueue(message, mgid, 0, link, false, false, position);
+                                } else {
+                                  bot.channels.cache.get('856338454237413396').send('there was a playlist reading error: ' + link);
+                                  return message.channel.send('there was a link reading issue');
+                                }
+                              }
+                              if (num > server.queue.length) {
+                                num = server.queue.length;
+                              } else server.queue.splice(num, 0, link);
+                              return message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
+                            } else msg.delete();
+                          }).catch(() => {
+                          message.channel.send('No message sent.');
+                          msg.delete();
+                        });
+                      });
+                    } else msg.delete();
+                  }).catch(() => {
+                  message.channel.send('No message sent.');
+                  msg.delete();
+                });
+              });
+            }
           });
         }
       });
@@ -3500,6 +3569,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
             '\`*').then(msg => {server.followUpMessage = msg;});
         }
       }
+      reaction.users.remove(reactionCollector.id);
     } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
       let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
       runPlayCommand(sentMsg, tempUser, server, true, false, true);
@@ -3513,6 +3583,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
             '\`*').then(msg => {server.followUpMessage = msg;});
         }
       }
+      reaction.users.remove(reactionCollector.id);
     } else if (reaction.emoji.name === '⏪') {
       reaction.users.remove(reactionCollector.id);
       runRewindCommand(sentMsg, mgid, voiceChannel, undefined, true, false, sentMsg.member.voice.channel.members.get(reactionCollector.id), server);
@@ -3536,37 +3607,6 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
       server.numSinceLastEmbed += 5;
     }
   });
-
-  collector.on('remove', (reaction, reactionCollector) => {
-    if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
-      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-      runPauseCommand(sentMsg, tempUser, server, true, false, true);
-      tempUser = tempUser.nickname;
-      if (server.voteAdmin.length < 1 && !server.dictator) {
-        if (server.followUpMessage) {
-          server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-            '\`*');
-        } else {
-          sentMsg.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-            '\`*').then(msg => {server.followUpMessage = msg;});
-        }
-      }
-    } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
-      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-      runPlayCommand(sentMsg, tempUser, server, true, false, true);
-      if (server.voteAdmin.length < 1 && !server.dictator) {
-        tempUser = tempUser.nickname;
-        if (server.followUpMessage) {
-          server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-            '\`*');
-        } else {
-          sentMsg.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-            '\`*').then(msg => {server.followUpMessage = msg;});
-        }
-      }
-    }
-  });
-
 }
 
 /**
