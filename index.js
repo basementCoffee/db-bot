@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.7.1';
-const buildNo = '05070102'; // major, minor, patch, build
+const version = '5.7.2';
+const buildNo = '05070202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -891,7 +891,28 @@ async function runCommandCases (message) {
     case 'h':
     case 'help':
       server.numSinceLastEmbed += 10;
-      message.channel.send(getHelpList(prefixString));
+      let helpPages = getHelpList(prefixString, 2);
+      message.channel.send(helpPages[0]).then((sentMsg) => {
+        let currentHelp = 0;
+        const hr = '➡️';
+        sentMsg.react(hr);
+        const filter = (reaction, user) => {
+          return user.id !== bot.user.id;
+        };
+
+        const collector = sentMsg.createReactionCollector(filter, {time: 600000, dispose: true});
+
+        collector.on('collect', (reaction, user) => {
+          if (reaction.emoji.name === hr) {
+            sentMsg.edit(helpPages[(++currentHelp % 2)]);
+          }
+        });
+        collector.on('remove', (reaction, user) => {
+          if (reaction.emoji.name === hr) {
+            sentMsg.edit(helpPages[(++currentHelp % 2)]);
+          }
+        });
+      });
       break;
     // !skip
     case 'next':
@@ -1515,15 +1536,15 @@ bot.on('message', async (message) => {
         `: Latency is ${Date.now() - message.createdTimestamp}ms.\nNetwork latency is ${Math.round(bot.ws.ping)}ms`);
     }
   }
-  if (message.author.bot || isInactive || (devMode && message.member.id.toString() !== '443150640823271436' &&
-    message.member.id.toString() !== '268554823283113985' && message.member.id.toString() !== '799524729173442620' &&
-    message.member.id !== '434532121244073984')) {
+  if (message.author.bot || isInactive || (devMode && message.author.id !== '443150640823271436' &&
+    message.author.id !== '268554823283113985' && message.author.id !== '799524729173442620' &&
+    message.author.id !== '434532121244073984')) {
     return;
   }
   if (message.channel.type === 'dm') {
     const messageContent = message.content.toLowerCase().trim() + ' ';
     if (messageContent.length < 7 && messageContent.includes('help ')) {
-      return message.author.send(getHelpList('.'));
+      return message.author.send(getHelpList('.', 1)[0]);
     } else if (messageContent.length < 9 && messageContent.includes('invite ')) {
       return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
     }
@@ -2138,7 +2159,8 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                               }
                             }
                             if (num > server.queue.length) num = server.queue.length;
-                            server.queue.splice(num, 0, link);
+                            if (num === 0) playSongToVC(message, link, message.member.voice.channel, server);
+                            else server.queue.splice(num, 0, link);
                             return message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
                           } else msg.delete();
                         }).catch(() => {
@@ -2582,12 +2604,12 @@ function voteSystem (message, mgid, commandName, voter, votes) {
 }
 
 /**
- * Function to generate the help list.
+ * Function to generate an array of embeds representing the help list.
  * @param {*} prefixString the prefix in string format
+ * @param numOfPages the number of embeds to generate
  */
-function getHelpList (prefixString) {
-  const helpListEmbed = new MessageEmbed();
-  const description =
+function getHelpList (prefixString, numOfPages) {
+  let page1 =
     '--------------  **Music Commands** --------------\n\`' +
     prefixString +
     'play [link] \` Play YouTube/Spotify link *[p]* \n\`' +
@@ -2611,7 +2633,21 @@ function getHelpList (prefixString) {
     'loop \` Loops songs on finish *[l]*\n\`' +
     prefixString +
     'queue \` Displays the queue *[q]*\n' +
-    '\n-----------  **Server Music Database**  -----------\n\`' +
+    '\n-----------  **Advanced Music Commands**  -----------\n\`' +
+    prefixString +
+    'lyrics \` Get lyrics of what\'s currently playing\n\`' +
+    prefixString +
+    'insert [link] [num] \` Insert a link into a position within the queue\n\`' +
+    prefixString +
+    'dj \` Enable DJ mode, requires members to vote skip tracks\n\`' +
+    prefixString +
+    'dictator \` Enable dictator mode, one member controls all music commands\n\`' +
+    prefixString +
+    'verbose \` Keep all song embeds during a session\n\`' +
+    prefixString +
+    'silence \` Silence/hide now playing embeds \n';
+  let page2 =
+    '-----------  **Server Keys**  -----------\n\`' +
     prefixString +
     "keys \` See all of the server's keys *[k]*\n\`" +
     prefixString +
@@ -2628,30 +2664,35 @@ function getHelpList (prefixString) {
     'search [key] \` Search keys  *[s]*\n\`' +
     prefixString +
     'link [key] \` Get the full link of a specific key  *[url]*\n' +
-    '\n-----------  **Personal Music Database**  -----------\n' +
-    "*Prepend 'm' to the above commands to access your personal music database*\nex: \`" + prefixString + "mkeys \`\n" +
-    '\n-----------  **Advanced Music Commands**  -----------\n\`' +
-    prefixString +
-    'lyrics \` Get lyrics of what\'s currently playing\n\`' +
-    prefixString +
-    'verbose \` Keep all song embeds during a session\n\`' +
-    prefixString +
-    'silence \` Silence/hide now playing embeds \n\`' +
-    prefixString +
-    'dj \` Enable DJ mode, requires members to vote skip tracks\n\`' +
-    prefixString +
-    'dictator \` Enable dictator mode, one member controls all music commands\n' +
+    '\n-----------  **Personal Keys**  -----------\n' +
+    "*Prepend 'm' to the above commands to access your personal keys list*\nex: \`" + prefixString + "mkeys \`\n" +
     '\n--------------  **Other Commands**  -----------------\n\`' +
     prefixString +
     'guess \` Random roll for the number of people in the voice channel \n\`' +
     prefixString +
     'changeprefix [new prefix] \` Changes the prefix for all commands \n' +
-    '\n**Or just say congrats to a friend. I will chime in too! :) **'
-  ;
-  helpListEmbed
-    .setTitle('Help List *[with aliases]*')
-    .setDescription(description);
-  return helpListEmbed;
+    '\n**Or just say congrats to a friend. I will chime in too! :) **';
+  const helpListEmbed = new MessageEmbed();
+  helpListEmbed.setTitle('Help List *[with aliases]*');
+  let arrayOfPages = [];
+  if (numOfPages > 1) {
+    const helpListEmbed2 = new MessageEmbed();
+    helpListEmbed
+      .setTitle('Help List *[with aliases]*')
+      .setDescription(page1)
+      .setFooter('(1/2)');
+    helpListEmbed2
+      .setTitle('Help List *[with aliases]*')
+      .setDescription(page2)
+      .setFooter('(2/2)');
+    arrayOfPages.push(helpListEmbed);
+    arrayOfPages.push(helpListEmbed2);
+  } else {
+    helpListEmbed
+      .setDescription(page1 + '\n' + '\n' + page2);
+    arrayOfPages.push(helpListEmbed);
+  }
+  return arrayOfPages;
 }
 
 /**
