@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.7.3';
-const buildNo = '05070302'; // major, minor, patch, build
+const version = '5.7.4';
+const buildNo = '05070402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -3499,7 +3499,10 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     server.currentEmbed.reactions)) {
     return;
   }
-  server.currentEmbedChannelId = message.channel.id;
+  if (server.currentEmbedChannelId !== message.channel.id) {
+    server.currentEmbedChannelId = message.channel.id;
+    server.numSinceLastEmbed += 10;
+  }
   server.currentEmbedLink = url;
   let embed;
   let timeMS = 0;
@@ -3538,7 +3541,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
   } else {
     embed.addField('-', 'Session ended', true);
     showButtons = false;
-    server.currentEmbedChannelId = false;
   }
   const generateNewEmbed = async () => {
     server.numSinceLastEmbed = 0;
