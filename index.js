@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.8.0';
-const buildNo = '05080002'; // major, minor, patch, build
+const version = '5.8.1';
+const buildNo = '05080102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2204,10 +2204,10 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                         message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
                         let pageNum;
                         if (num === 11) pageNum = 0;
-                        else pageNum = Math.floor(num / 10);
-                        qIterations = startingIndex + (startingIndex === 0 ? 11 : 10);
+                        else pageNum = Math.floor((num - 1) / 10);
+                        qIterations = startingIndex + 11;
                         collector.stop();
-                        generateQueue((pageNum === 0 ? 0 : (pageNum * 10) + 1), false, sentMsg, sentMsgArray);
+                        generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
                       } else msg.delete();
                     }).catch(() => {
                     message.channel.send('*cancelled*');
@@ -2240,10 +2240,10 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 message.channel.send('removed item from queue');
                 let pageNum;
                 if (num === 11) pageNum = 0;
-                else pageNum = Math.floor(num / 10);
-                qIterations = startingIndex + (startingIndex === 0 ? 11 : 10);
+                else pageNum = Math.floor((num - 1) / 10);
+                qIterations = startingIndex + 11;
                 collector.stop();
-                generateQueue((pageNum === 0 ? 0 : (pageNum * 10) + 1), false, sentMsg, sentMsgArray);
+                generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
               } else msg.delete();
             }).catch((e) => {
             console.log(e);
