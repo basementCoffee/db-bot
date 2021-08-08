@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.8.1';
-const buildNo = '05080102'; // major, minor, patch, build
+const version = '5.8.2';
+const buildNo = '05080202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2200,7 +2200,10 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                         }
                         if (num > server.queue.length) num = server.queue.length;
                         if (num === 0) playSongToVC(message, link, message.member.voice.channel, server);
-                        else server.queue.splice(num, 0, link);
+                        else {
+                          server.queue.splice(num, 0, link);
+                          serverQueue.splice(num, 0, link);
+                        }
                         message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
                         let pageNum;
                         if (num === 11) pageNum = 0;
@@ -2234,7 +2237,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
               num = parseInt(num);
               if (num) {
                 if (server.queue[num] !== serverQueue[num])
-                  return message.channel.send('this queue is out of date so the position numbers may not align properly\nplease call \'queue\' again');
+                  return message.channel.send('**queue is out of date:** the positions may not align properly with the embed shown\n*please type \'queue\' again*');
                 server.queue.splice(num, 1);
                 serverQueue.splice(num, 1);
                 message.channel.send('removed item from queue');
