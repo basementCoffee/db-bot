@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.7.4';
-const buildNo = '05070402'; // major, minor, patch, build
+const version = '5.8.0';
+const buildNo = '05080002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -97,13 +97,13 @@ function skipSong (message, voiceChannel, playMessageToChannel, server, noHistor
 }
 
 /**
- * Removes an item from the database.
+ * Deletes an item from the database.
  * @param message the message that triggered the bot
- * @param {string} keyName the key to remove
- * @param sheetName the name of the sheet to remove from
+ * @param {string} keyName the key to delete
+ * @param sheetName the name of the sheet to delete from
  * @param sendMsgToChannel whether to send a response to the channel when looking for track keys
  */
-async function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChannel) {
+async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChannel) {
   if (keyName) {
     await gsrun('A', 'B', sheetName).then(async (xdb) => {
       let couldNotFindKey = true;
@@ -115,7 +115,7 @@ async function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChann
           await gsUpdateOverwrite(-1, -1, sheetName, xdb.dsInt);
           await deleteRows(message, sheetName, i);
           if (sendMsgToChannel) {
-            message.channel.send("*removed '" + itemToCheck + "'*");
+            message.channel.send("*deleted '" + itemToCheck + "'*");
           }
         }
       }
@@ -136,7 +136,7 @@ async function runRemoveItemCommand (message, keyName, sheetName, sendMsgToChann
     });
   } else {
     if (sendMsgToChannel) {
-      message.channel.send('Need to specify the key to delete.');
+      message.channel.send('This command deletes keys from the keys-list. You need to specify the key to delete. (i.e. delete [link])');
     }
   }
 }
@@ -784,6 +784,18 @@ async function runCommandCases (message) {
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
+    case 'rm':
+    case 'remove':
+      if (!message.member.voice.channel) return message.channel.send('you must be in a voice channel to remove items from the queue');
+      if (server.queue.length < 1) return message.channel.send('cannot remove when the queue is empty');
+      let rNum = parseInt(args[1]);
+      if (!rNum) {
+        if (server.queue.length === 1) rNum = 1;
+        else return message.channel.send('put a number in the queue to remove (1-' + (server.queue.length - 1) + ')');
+      }
+      server.queue.splice(rNum, 1);
+      message.channel.send('removed item from queue');
+      break;
     case 'input':
     case 'insert':
       if (!message.member.voice.channel) return message.channel.send('must be in a voice channel');
@@ -844,7 +856,7 @@ async function runCommandCases (message) {
       args[1] = mgid;
       message.channel.send('*changing prefix...*').then(async sentPrefixMsg => {
         await gsrun('A', 'B', 'prefixes').then(async () => {
-          await runRemoveItemCommand(message, args[1], 'prefixes', false);
+          await runDeleteItemCommand(message, args[1], 'prefixes', false);
           await runAddCommand(args, message, 'prefixes', false);
           await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
             await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
@@ -1057,19 +1069,24 @@ async function runCommandCases (message) {
     case 'madd':
       runAddCommandWrapper(message, args, 'p' + message.member.id, true, 'm');
       break;
-    // .rm removes database entries
-    case 'rm':
-    case 'remove':
-      runRemoveItemCommand(message, args[1], mgid, true).catch((e) => console.log(e));
+    // .del deletes database entries
+    case 'del':
+    case 'delete':
+      runDeleteItemCommand(message, args[1], mgid, true).catch((e) => console.log(e));
       break;
     // test remove database entries
     case 'grm':
-      runRemoveItemCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
+    case 'gdel':
+    case 'gdelete':
+    case 'gremove':
+      runDeleteItemCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
       break;
     // .mrm removes personal database entries
     case 'mrm':
+    case 'mdel':
     case 'mremove':
-      runRemoveItemCommand(message, args[1], 'p' + message.member.id, true).catch((e) => console.log(e));
+    case 'mdelete':
+      runDeleteItemCommand(message, args[1], 'p' + message.member.id, true).catch((e) => console.log(e));
       break;
     case 'prev':
     case 'previous':
@@ -1697,7 +1714,7 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
 function sendMessageToUser (message, userID, reactionUserID) {
   const user = bot.users.cache.get(userID);
   message.channel.send('What would you like me to send to ' + user.username +
-    '? (type \'cancel\' to not send anything)').then(msg => {
+    '? [type \'cancel\' to not send anything]').then(msg => {
     const filter = m => {
       return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== bot.user.id);
     };
@@ -2072,121 +2089,173 @@ function runQueueCommand (message, mgid, noErrorMsg) {
     return title;
   }
 
-  async function generateQueue (startingIndex, notFirstRun) {
+  async function generateQueue (startingIndex, notFirstRun, sentMsg, sentMsgArray) {
     let queueSB = '';
     const queueMsgEmbed = new MessageEmbed();
     if (!authorName) {
       authorName = await getTitle(serverQueue[0], 50);
     }
     const n = serverQueue.length - startingIndex - 1;
-    let msgTxt = (notFirstRun ? 'generating ' + (n < 11 ? 'remaining ' + n : 'next 10') : 'generating queue') + '...';
-    message.channel.send(msgTxt).then(async msg => {
-      queueMsgEmbed.setTitle('Up Next')
-        .setAuthor('playing:  ' + authorName)
-        .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
-      for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length); qi++) {
-        const title = (await getTitle(serverQueue[qi]));
-        const url = serverQueue[qi];
-        queueSB += qi + '. ' + `[${title}](${url})\n`;
-      }
-      if (queueSB.length === 0) {
-        queueSB = 'queue is empty';
-      }
-      queueMsgEmbed.setDescription(queueSB);
-      if (startingIndex + 11 < serverQueue.length) {
-        queueMsgEmbed.setFooter('embed displays 10 at a time');
-      }
-      msg.delete();
-      message.channel.send(queueMsgEmbed).then(sentMsg => {
-        servers[mgid].numSinceLastEmbed += 10;
-        if (startingIndex + 11 < serverQueue.length) {
-          sentMsg.react('➡️').then(() => sentMsg.react('📥'));
-        } else sentMsg.react('📥');
-        const filter = (reaction, user) => {
-          if (message.member.voice.channel) {
-            for (const mem of message.member.voice.channel.members) {
-              if (user.id === mem[1].id) {
-                return user.id !== bot.user.id && ['➡️', '📥'].includes(reaction.emoji.name);
-              }
-            }
-          }
-          return false;
-        };
-        const collector = sentMsg.createReactionCollector(filter, {time: 300000});
-        const arrowReactionInterval = setTimeout(() => {
-          sentMsg.reactions.removeAll();
-        }, 300500);
-        collector.on('collect', (reaction, reactionCollector) => {
-          if (reaction.emoji.name === '➡️' && startingIndex + 11 < serverQueue.length) {
-            clearTimeout(arrowReactionInterval);
-            sentMsg.reactions.removeAll();
-            qIterations += 10;
-            generateQueue(startingIndex + 10, true);
-          } else if (reaction.emoji.name === '📥') {
-            let link;
-            let position;
-            let server = servers[message.guild.id];
-            message.channel.send('What link would you like to insert (or type \'cancel\')').then(msg => {
-              const filter = m => {
-                return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
-              };
-              message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-                .then(messages => {
-                  link = messages.first().content.trim();
-                  if (link === 'cancel') {
-                    return message.channel.send('*cancelled*');
-                  }
-                  if (link) {
-                    if (!verifyUrl(link) && !verifyPlaylist(link)) return message.channel.send('*invalid url*');
-                    // second question
-                    message.channel.send('What position in the queue would you like to insert this into (or type \'cancel\')').then(msg => {
-                      const filter = m => {
-                        return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
-                      };
-                      message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-                        .then(async messages => {
-                          position = messages.first().content.trim();
-                          if (position === 'cancel') {
-                            return message.channel.send('*cancelled*');
-                          }
-                          if (position) {
-                            let num = parseInt(position);
-                            if (!num) return message.channel.send('please put a number in the queue to insert (1-' + server.queue.length + ')');
-                            if (num < 1) return message.channel.send('*position must be positive*');
-                            let pNums = 0;
-                            if (verifyPlaylist(link)) {
-                              if (link.includes('/playlist/') && link.includes('spotify.com')) {
-                                await addPlaylistToQueue(message, mgid, 0, link, true, false, position);
-                              } else if (ytpl.validateID(link)) {
-                                await addPlaylistToQueue(message, mgid, 0, link, false, false, position);
-                              } else {
-                                bot.channels.cache.get('856338454237413396').send('there was a playlist reading error: ' + link);
-                                return message.channel.send('there was a link reading issue');
-                              }
-                            }
-                            if (num > server.queue.length) num = server.queue.length;
-                            if (num === 0) playSongToVC(message, link, message.member.voice.channel, server);
-                            else server.queue.splice(num, 0, link);
-                            return message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
-                          } else msg.delete();
-                        }).catch(() => {
-                        message.channel.send('*cancelled*');
-                        msg.delete();
-                      });
-                    });
-                  } else msg.delete();
-                }).catch(() => {
-                message.channel.send('*cancelled*');
-                msg.delete();
-              });
-            });
-          }
-        });
+    let msg;
+    if (!sentMsg) {
+      let msgTxt = (notFirstRun ? 'generating ' + (n < 11 ? 'remaining ' + n : 'next 10') : 'generating queue') + '...';
+      msg = await message.channel.send(msgTxt);
+    }
+    queueMsgEmbed.setTitle('Up Next')
+      .setAuthor('playing:  ' + authorName)
+      .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
+    let sizeConstraint = 0;
+    for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length); qi++) {
+      const title = (await getTitle(serverQueue[qi]));
+      const url = serverQueue[qi];
+      queueSB += qi + '. ' + `[${title}](${url})\n`;
+      sizeConstraint++;
+      if (sizeConstraint > 9) break;
+    }
+    if (queueSB.length === 0) {
+      queueSB = 'queue is empty';
+    }
+    queueMsgEmbed.setDescription(queueSB);
+    if (startingIndex + 11 < serverQueue.length) {
+      queueMsgEmbed.setFooter('embed displays 10 at a time');
+    }
+    if (msg) msg.delete();
+    if (sentMsg) {
+      await sentMsg.edit(queueMsgEmbed);
+    } else {
+      sentMsg = await message.channel.send(queueMsgEmbed);
+      sentMsgArray.push(sentMsg);
+    }
+    let server = servers[message.guild.id];
+    server.numSinceLastEmbed += 10;
+    if (startingIndex + 11 < serverQueue.length) {
+      sentMsg.react('➡️').then(() => {
+        if (!collector.ended)
+          sentMsg.react('📥').then(() => {
+            if (server.queue.length > 0 && !collector.ended)
+              sentMsg.react('📤');
+          });
       });
+    } else sentMsg.react('📥').then(() => {if (server.queue.length > 0) sentMsg.react('📤');});
+    const filter = (reaction, user) => {
+      if (message.member.voice.channel) {
+        for (const mem of message.member.voice.channel.members) {
+          if (user.id === mem[1].id) {
+            return user.id !== bot.user.id && ['➡️', '📥', '📤'].includes(reaction.emoji.name);
+          }
+        }
+      }
+      return false;
+    };
+    const collector = sentMsg.createReactionCollector(filter, {time: 300000, dispose: true});
+    setTimeout(() => {
+      sentMsg.reactions.removeAll();
+    }, 300500);
+    collector.on('collect', (reaction, reactionCollector) => {
+      if (reaction.emoji.name === '➡️' && startingIndex + 11 < serverQueue.length) {
+        collector.stop();
+        sentMsg.reactions.removeAll();
+        qIterations += 10;
+        generateQueue(startingIndex + 10, true, false, sentMsgArray);
+      } else if (reaction.emoji.name === '📥') {
+        let link;
+        let position;
+        message.channel.send('What link would you like to insert [or type \'cancel\']').then(msg => {
+          const filter = m => {
+            return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
+          };
+          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+            .then(messages => {
+              link = messages.first().content.trim();
+              if (link === 'cancel') {
+                return message.channel.send('*cancelled*');
+              }
+              if (link) {
+                if (!verifyUrl(link) && !verifyPlaylist(link)) return message.channel.send('*invalid url*');
+                // second question
+                message.channel.send('What position in the queue would you like to insert this into [or type \'cancel\']').then(msg => {
+                  const filter = m => {
+                    return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
+                  };
+                  message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+                    .then(async messages => {
+                      position = messages.first().content.trim();
+                      if (position === 'cancel') {
+                        return message.channel.send('*cancelled*');
+                      }
+                      if (position) {
+                        let num = parseInt(position);
+                        if (!num) return message.channel.send('*need number in the queue to insert (1-' + server.queue.length + ')*');
+                        if (num < 1) return message.channel.send('*position must be positive*');
+                        let pNums = 0;
+                        if (verifyPlaylist(link)) {
+                          if (link.includes('/playlist/') && link.includes('spotify.com')) {
+                            await addPlaylistToQueue(message, mgid, 0, link, true, false, position);
+                          } else if (ytpl.validateID(link)) {
+                            await addPlaylistToQueue(message, mgid, 0, link, false, false, position);
+                          } else {
+                            bot.channels.cache.get('856338454237413396').send('there was a playlist reading error: ' + link);
+                            return message.channel.send('there was a link reading issue');
+                          }
+                        }
+                        if (num > server.queue.length) num = server.queue.length;
+                        if (num === 0) playSongToVC(message, link, message.member.voice.channel, server);
+                        else server.queue.splice(num, 0, link);
+                        message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
+                        let pageNum;
+                        if (num === 11) pageNum = 0;
+                        else pageNum = Math.floor(num / 10);
+                        qIterations = startingIndex + (startingIndex === 0 ? 11 : 10);
+                        collector.stop();
+                        generateQueue((pageNum === 0 ? 0 : (pageNum * 10) + 1), false, sentMsg, sentMsgArray);
+                      } else msg.delete();
+                    }).catch(() => {
+                    message.channel.send('*cancelled*');
+                    msg.delete();
+                  });
+                });
+              }
+            }).catch(() => {
+            message.channel.send('*cancelled*');
+            msg.delete();
+          });
+        });
+      } else if (reaction.emoji.name === '📤') {
+        message.channel.send('What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'cancel\']').then(msg => {
+          const filter = m => {
+            return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
+          };
+          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+            .then(async messages => {
+              let num = messages.first().content.trim();
+              if (num === 'cancel') {
+                return message.channel.send('*cancelled*');
+              }
+              num = parseInt(num);
+              if (num) {
+                if (server.queue[num] !== serverQueue[num])
+                  return message.channel.send('this queue is out of date so the position numbers may not align properly\nplease call \'queue\' again');
+                server.queue.splice(num, 1);
+                serverQueue.splice(num, 1);
+                message.channel.send('removed item from queue');
+                let pageNum;
+                if (num === 11) pageNum = 0;
+                else pageNum = Math.floor(num / 10);
+                qIterations = startingIndex + (startingIndex === 0 ? 11 : 10);
+                collector.stop();
+                generateQueue((pageNum === 0 ? 0 : (pageNum * 10) + 1), false, sentMsg, sentMsgArray);
+              } else msg.delete();
+            }).catch((e) => {
+            console.log(e);
+            message.channel.send('*cancelled*');
+            msg.delete();
+          });
+        });
+      }
     });
   }
 
-  return generateQueue(0);
+  return generateQueue(0, false, false, []);
 }
 
 /**
@@ -2645,6 +2714,8 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'insert [link] [num] \` Insert a link into a position within the queue\n\`' +
     prefixString +
+    'remove [num] \` Remove a link from the queue\n\`' +
+    prefixString +
     'dj \` Enable DJ mode, requires members to vote skip tracks\n\`' +
     prefixString +
     'dictator \` Enable dictator mode, one member controls all music commands\n\`' +
@@ -2663,7 +2734,7 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'add [key] [url] \` Add a song to the server keys  *[a]*\n\`' +
     prefixString +
-    'remove [key] \` Remove a song from the server keys  *[rm]*\n\`' +
+    'delete [key] \` Deletes a song from the server keys  *[del]*\n\`' +
     prefixString +
     'rand [# times] \` Play a random song from server keys  *[r]*\n\`' +
     prefixString +
@@ -3040,8 +3111,8 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
               .setTitle('How to add/remove keys from ' + nameToSend + ' list')
               .setDescription('Add a song by putting a word followed by a link -> \` ' +
                 prefixString + cmdType + 'a [key] [link]\`\n' +
-                'Remove a song by putting the name you want to remove -> \` ' +
-                prefixString + cmdType + 'rm [key]\`')
+                'Delete a song by putting the name you want to delete -> \` ' +
+                prefixString + cmdType + 'del [key]\`')
               .setFooter(descriptionSuffix);
             message.channel.send(embed);
           } else if (reaction.emoji.name === '🔀') {
