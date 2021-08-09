@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.8.2';
-const buildNo = '05080202'; // major, minor, patch, build
+const version = '5.8.3';
+const buildNo = '05080302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -787,7 +787,7 @@ async function runCommandCases (message) {
     case 'rm':
     case 'remove':
       if (!message.member.voice.channel) return message.channel.send('you must be in a voice channel to remove items from the queue');
-      if (server.queue.length < 1) return message.channel.send('cannot remove when the queue is empty');
+      if (server.queue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
       let rNum = parseInt(args[1]);
       if (!rNum) {
         if (server.queue.length === 1) rNum = 1;
@@ -799,6 +799,7 @@ async function runCommandCases (message) {
     case 'input':
     case 'insert':
       if (!message.member.voice.channel) return message.channel.send('must be in a voice channel');
+      if (server.queue.length > maxQueueSize) return message.channel.send('*max queue size has been reached*');
       if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
       if (!args[1]) return message.channel.send('put a link followed by the position in the queue \`(i.e. insert [link] [num])\`');
       if (!verifyUrl(args[1]) && !verifyPlaylist(args[1])) return message.channel.send('invalid url');
@@ -2158,6 +2159,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
         qIterations += 10;
         generateQueue(startingIndex + 10, true, false, sentMsgArray);
       } else if (reaction.emoji.name === '📥') {
+        if (serverQueue.length > maxQueueSize) return message.channel.send('*max queue size has been reached*');
         let link;
         let position;
         message.channel.send('What link would you like to insert [or type \'cancel\']').then(msg => {
@@ -2224,6 +2226,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
           });
         });
       } else if (reaction.emoji.name === '📤') {
+        if (serverQueue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
         message.channel.send('What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'cancel\']').then(msg => {
           const filter = m => {
             return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
