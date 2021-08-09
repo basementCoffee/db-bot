@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.8.3';
-const buildNo = '05080302'; // major, minor, patch, build
+const version = '5.8.4';
+const buildNo = '05080402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -757,7 +757,7 @@ async function runCommandCases (message) {
         if (server.queue[0] && message.member.voice.channel) {
           return message.channel.send(server.queue[0]);
         } else {
-          return message.channel.send('*add a key to get it\'s ' + statement + ' \`(i.e. ' + statement + ' [key])\`*');
+          return message.channel.send('*add a key to get it\'s ' + statement.substr(1) + ' \`(i.e. ' + statement + ' [key])\`*');
         }
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
@@ -779,7 +779,7 @@ async function runCommandCases (message) {
         if (server.queue[0] && message.member.voice.channel) {
           return message.channel.send(server.queue[0]);
         } else {
-          return message.channel.send('*add a key to get it\'s ' + statement + ' \`(i.e. ' + statement + ' [key])\`*');
+          return message.channel.send('*add a key to get it\'s ' + statement.substr(1) + ' \`(i.e. ' + statement + ' [key])\`*');
         }
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
