@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.9.2';
-const buildNo = '05090202'; // major, minor, patch, build
+const version = '5.9.3';
+const buildNo = '05090302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -793,6 +793,8 @@ async function runCommandCases (message) {
         if (server.queue.length === 1) rNum = 1;
         else return message.channel.send('put a number in the queue to remove (1-' + (server.queue.length - 1) + ')');
       }
+      if (rNum >= server.queue.length) return message.channel.send('*that position is out of bounds, **' +
+        (server.queue.length - 1) + '** is the last item in the queue.*');
       server.queue.splice(rNum, 1);
       message.channel.send('removed item from queue');
       break;
@@ -2243,6 +2245,8 @@ function runQueueCommand (message, mgid, noErrorMsg) {
               if (num) {
                 if (server.queue[num] !== serverQueue[num])
                   return message.channel.send('**queue is out of date:** the positions may not align properly with the embed shown\n*please type \'queue\' again*');
+                if (num >= server.queue.length) return message.channel.send('*that position is out of bounds, **' +
+                  (server.queue.length - 1) + '** is the last item in the queue.*');
                 server.queue.splice(num, 1);
                 serverQueue.splice(num, 1);
                 message.channel.send('removed item from queue');
@@ -2832,7 +2836,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     if (server.queue.length === 1) {
       await playSongToVC(message, ytLink, message.member.voice.channel, server);
     } else {
-      message.channel.send('*added to queue*');
+      message.channel.send('*added **' + searchResult.items[indexToLookup].title + '** to queue*');
     }
   }
   if (indexToLookup < 4 && (playNow || server.queue.length < 2)) {
