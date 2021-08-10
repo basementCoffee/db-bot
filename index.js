@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.9.4';
-const buildNo = '05090402'; // major, minor, patch, build
+const version = '5.10.0';
+const buildNo = '05100002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1717,18 +1717,18 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
 function sendMessageToUser (message, userID, reactionUserID) {
   const user = bot.users.cache.get(userID);
   message.channel.send('What would you like me to send to ' + user.username +
-    '? [type \'cancel\' to not send anything]').then(msg => {
+    '? [type \'q\' to not send anything]').then(msg => {
     const filter = m => {
       return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== bot.user.id);
     };
     message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
       .then(messages => {
-        if (messages.first().content && messages.first().content.trim() !== 'cancel') {
+        if (messages.first().content && messages.first().content.trim() !== 'q') {
           user.send(messages.first().content).then(() => {
             message.channel.send('Message sent to ' + user.username + '.');
             message.react('✅').then();
           });
-        } else if (messages.first().content.trim() === 'cancel') {
+        } else if (messages.first().content.trim() === 'q') {
           message.channel.send('No message sent.');
         }
         msg.delete();
@@ -2165,28 +2165,28 @@ function runQueueCommand (message, mgid, noErrorMsg) {
         if (serverQueue.length > maxQueueSize) return message.channel.send('*max queue size has been reached*');
         let link;
         let position;
-        message.channel.send('What link would you like to insert [or type \'cancel\']').then(msg => {
+        message.channel.send('What link would you like to insert [or type \'q\' to quit]').then(msg => {
           const filter = m => {
             return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
           };
           message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
             .then(messages => {
               link = messages.first().content.trim();
-              if (link === 'cancel') {
-                return message.channel.send('*cancelled*');
+              if (link === 'q') {
+                return;
               }
               if (link) {
                 if (!verifyUrl(link) && !verifyPlaylist(link)) return message.channel.send('*invalid url*');
                 // second question
-                message.channel.send('What position in the queue would you like to insert this into [or type \'cancel\']').then(msg => {
+                message.channel.send('What position in the queue would you like to insert this into [or type \'q\' to quit]').then(msg => {
                   const filter = m => {
                     return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
                   };
                   message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
                     .then(async messages => {
                       position = messages.first().content.trim();
-                      if (position === 'cancel') {
-                        return message.channel.send('*cancelled*');
+                      if (position === 'q') {
+                        return;
                       }
                       if (position) {
                         let num = parseInt(position);
@@ -2836,24 +2836,15 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     if (server.queue.length === 1) {
       await playSongToVC(message, ytLink, message.member.voice.channel, server);
     } else {
-      message.channel.send('*added **' + searchResult.items[indexToLookup].title + '** to queue*');
+      ytdl.getInfo(ytLink).then((infos) => {
+        message.channel.send('*added **' + infos.videoDetails.title + '** to queue*');
+      });
     }
   }
   if (indexToLookup < 4 && (playNow || server.queue.length < 2)) {
     if (!playlistMsg) await message.react('📃');
-    message.react('➡️').then();
-    const filter = (reaction, user) => {
-      if (message.member.voice.channel) {
-        for (const mem of message.member.voice.channel.members) {
-          if (user.id === mem[1].id) {
-            return user.id !== bot.user.id && ['➡️'].includes(reaction.emoji.name);
-          }
-        }
-      }
-      return false;
-    };
+    let collector;
     let collector2;
-    const collector = message.createReactionCollector(filter, {time: 44000});
     let arrowReactionTimeout = setTimeout(() => {
       message.reactions.removeAll();
       if (playlistMsg) {
@@ -2895,32 +2886,57 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
               i--;
             }
           }
-          let finalString = '**-Press the arrow  ➡️  to advance-**\n';
+          let prc = '📔';
+          let finalString = '**- Press ' + prc + ' to pick a different video -**\n';
           let i = 0;
           res.forEach(x => {
             i++;
             return finalString += i + '. ' + x + '\n';
           });
           playlistMsg = await message.channel.send(finalString);
+          await playlistMsg.react(prc);
+          const filter = (reaction, user) => {
+            if (message.member.voice.channel) {
+              for (const mem of message.member.voice.channel.members) {
+                if (user.id === mem[1].id) {
+                  let res = user.id !== bot.user.id && [prc].includes(reaction.emoji.name);
+                  return user.id !== bot.user.id && [prc].includes(reaction.emoji.name);
+                }
+              }
+            }
+            return false;
+          };
+          collector = playlistMsg.createReactionCollector(filter, {time: 44000});
+          collector.on('collect', (reaction, reactionCollector) => {
+            clearTimeout(arrowReactionTimeout);
+            if (collector2) collector2.stop();
+            message.channel.send('What would you like me to play (1-' + (res.length) + '):').then(msg => {
+              const filter = m => {
+                return (m.author.id !== bot.user.id && reactionCollector.id === m.author.id);
+              };
+              message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+                .then(messages => {
+                  let playNum = parseInt(messages.first().content && messages.first().content.trim());
+                  if (!playNum) {
+                    message.channel.send('*cancelled*');
+                  } else {
+                    if (server.queue[0] === ytLink) server.queueHistory.push(server.queue.shift());
+                    runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
+                  }
+                  msg.delete();
+                }).catch(() => {
+                message.channel.send('*cancelled*');
+                msg.delete();
+              });
+            });
+            reaction.users.remove(reactionCollector.id);
+          });
         });
       });
     }
-    collector.once('collect', (reaction, reactionCollector) => {
-      clearTimeout(arrowReactionTimeout);
-      if (collector2) collector2.stop();
-      if (indexToLookup > 2) {
-        message.reactions.removeAll();
-      } else {
-        reaction.users.remove(reactionCollector.id);
-      }
-      if (server.queue[0] === ytLink) server.queueHistory.push(server.queue.shift());
-      runYoutubeSearch(message, args, mgid, true, server, indexToLookup += 2, searchTerm, searchResult, playlistMsg);
-    });
+
   } else {
     if (message.reactions) {
-      try {
-        message.reactions.cache.get('➡️').remove().then();
-      } catch (e) {}
       try {
         message.reactions.cache.get('📃').remove().then();
       } catch (e) {}
