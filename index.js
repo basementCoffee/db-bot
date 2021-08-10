@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.10.0';
-const buildNo = '05100002'; // major, minor, patch, build
+const version = '5.10.1';
+const buildNo = '05100102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1478,8 +1478,12 @@ bot.on('message', async (message) => {
             } else {
               dm = bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : '';
             }
-            sentMsg.edit((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
-              ' (' + version + ')' + dm);
+            try {
+              sentMsg.edit((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
+                ' (' + version + ')' + dm);
+            } catch (e) {
+              message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
+            }
           };
           const collector = sentMsg.createReactionCollector(filter, {time: 30000});
           let vcSize = bot.voice.connections.size;
@@ -1509,7 +1513,6 @@ bot.on('message', async (message) => {
               }
             }
             isInactive = !isInactive;
-            message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
             console.log((isInactive ? '-sidelined-' : '-active-'));
             if (!isInactive) setTimeout(() => {if (!isInactive) checkStatusOfYtdl();}, 10000);
             updateMessage();
@@ -1523,7 +1526,6 @@ bot.on('message', async (message) => {
         });
       } else if (zargs[1] === 'all') {
         isInactive = true;
-        message.channel.send('*db bot ' + process.pid + ' has been sidelined*');
         console.log('-sidelined-');
       } else {
         let i = 1;
@@ -2836,9 +2838,14 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     if (server.queue.length === 1) {
       await playSongToVC(message, ytLink, message.member.voice.channel, server);
     } else {
-      ytdl.getInfo(ytLink).then((infos) => {
-        message.channel.send('*added **' + infos.videoDetails.title + '** to queue*');
-      });
+      const foundTitle = searchResult.items[indexToLookup].title;
+      if (foundTitle.charCodeAt(0) < 120) {
+        message.channel.send('*added **' + foundTitle + '** to queue*');
+      } else {
+        ytdl.getInfo(ytLink).then((infos) => {
+          message.channel.send('*added **' + infos.videoDetails.title + '** to queue*');
+        });
+      }
     }
   }
   if (indexToLookup < 4 && (playNow || server.queue.length < 2)) {
