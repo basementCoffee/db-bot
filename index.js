@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.9.1';
-const buildNo = '05090102'; // major, minor, patch, build
+const version = '5.9.2';
+const buildNo = '05090202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2836,9 +2836,8 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     }
   }
   if (indexToLookup < 4 && (playNow || server.queue.length < 2)) {
-    message.react('➡️').then(() => {
-      if (!playlistMsg) message.react('📃');
-    });
+    if (!playlistMsg) await message.react('📃');
+    message.react('➡️').then();
     const filter = (reaction, user) => {
       if (message.member.voice.channel) {
         for (const mem of message.member.voice.channel.members) {
