@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.9.0';
-const buildNo = '05090002'; // major, minor, patch, build
+const version = '5.9.1';
+const buildNo = '05090102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2850,6 +2850,12 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       return false;
     };
     let collector2;
+    const collector = message.createReactionCollector(filter, {time: 44000});
+    let arrowReactionTimeout = setTimeout(() => {
+      message.reactions.removeAll();
+      if (collector) collector.stop();
+      if (collector2) collector2.stop();
+    }, 22000);
     if (!playlistMsg) {
       const filter2 = (reaction, user) => {
         if (message.member.voice.channel) {
@@ -2861,9 +2867,15 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
         }
         return false;
       };
-      collector2 = message.createReactionCollector(filter2, {time: 22000});
+      collector2 = message.createReactionCollector(filter2, {time: 44000});
       collector2.once('collect', (reaction, reactionCollector) => {
         message.reactions.cache.get('📃').remove().then(async () => {
+          clearTimeout(arrowReactionTimeout);
+          arrowReactionTimeout = setTimeout(() => {
+            message.reactions.removeAll();
+            if (collector) collector.stop();
+            if (collector2) collector2.stop();
+          }, 22000);
           let res = searchResult.items.slice(indexToLookup + 1, 5).map(x => {
             if (x.type === 'video') return x.title;
             else return '';
@@ -2884,13 +2896,6 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
         });
       });
     }
-
-    const collector = message.createReactionCollector(filter, {time: 22000});
-    const arrowReactionTimeout = setTimeout(() => {
-      message.reactions.removeAll();
-      if (collector) collector.stop();
-      if (collector2) collector2.stop();
-    }, 22000);
     collector.once('collect', (reaction, reactionCollector) => {
       clearTimeout(arrowReactionTimeout);
       if (collector2) collector2.stop();
