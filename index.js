@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.9.3';
-const buildNo = '05090302'; // major, minor, patch, build
+const version = '5.9.4';
+const buildNo = '05090402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2856,6 +2856,9 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     const collector = message.createReactionCollector(filter, {time: 44000});
     let arrowReactionTimeout = setTimeout(() => {
       message.reactions.removeAll();
+      if (playlistMsg) {
+        playlistMsg.delete().then(() => {playlistMsg = undefined;});
+      }
       if (collector) collector.stop();
       if (collector2) collector2.stop();
     }, 22000);
@@ -2876,6 +2879,9 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
           clearTimeout(arrowReactionTimeout);
           arrowReactionTimeout = setTimeout(() => {
             message.reactions.removeAll();
+            if (playlistMsg) {
+              playlistMsg.delete().then(() => {playlistMsg = undefined;});
+            }
             if (collector) collector.stop();
             if (collector2) collector2.stop();
           }, 22000);
@@ -2910,13 +2916,20 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       if (server.queue[0] === ytLink) server.queueHistory.push(server.queue.shift());
       runYoutubeSearch(message, args, mgid, true, server, indexToLookup += 2, searchTerm, searchResult, playlistMsg);
     });
-  } else if (message.reactions) {
-    try {
-      message.reactions.cache.get('➡️').remove().then();
-    } catch (e) {}
-    try {
-      message.reactions.cache.get('📃').remove().then();
-    } catch (e) {}
+  } else {
+    if (message.reactions) {
+      try {
+        message.reactions.cache.get('➡️').remove().then();
+      } catch (e) {}
+      try {
+        message.reactions.cache.get('📃').remove().then();
+      } catch (e) {}
+    }
+    if (playlistMsg) {
+      setTimeout(() => {
+        playlistMsg.delete().then(() => {playlistMsg = undefined;});
+      }, 7000);
+    }
   }
 }
 
