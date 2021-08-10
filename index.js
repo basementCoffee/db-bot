@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.8.4';
-const buildNo = '05080402'; // major, minor, patch, build
+const version = '5.9.0';
+const buildNo = '05090002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2149,11 +2149,12 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       return false;
     };
     const collector = sentMsg.createReactionCollector(filter, {time: 300000, dispose: true});
-    setTimeout(() => {
+    const arrowReactionTimeout = setTimeout(() => {
       sentMsg.reactions.removeAll();
     }, 300500);
     collector.on('collect', (reaction, reactionCollector) => {
       if (reaction.emoji.name === '➡️' && startingIndex + 11 < serverQueue.length) {
+        clearTimeout(arrowReactionTimeout);
         collector.stop();
         sentMsg.reactions.removeAll();
         qIterations += 10;
@@ -2211,8 +2212,9 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                         if (num === 11) pageNum = 0;
                         else pageNum = Math.floor((num - 1) / 10);
                         qIterations = startingIndex + 11;
+                        clearTimeout(arrowReactionTimeout);
                         collector.stop();
-                        generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
+                        return generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
                       } else msg.delete();
                     }).catch(() => {
                     message.channel.send('*cancelled*');
@@ -2248,8 +2250,9 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 if (num === 11) pageNum = 0;
                 else pageNum = Math.floor((num - 1) / 10);
                 qIterations = startingIndex + 11;
+                clearTimeout(arrowReactionTimeout);
                 collector.stop();
-                generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
+                return generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
               } else msg.delete();
             }).catch((e) => {
             console.log(e);
@@ -2789,9 +2792,10 @@ function getHelpList (prefixString, numOfPages) {
  * @param indexToLookup Optional - The search index, requires searchResult to be valid
  * @param searchTerm Optional - The specific phrase to search
  * @param searchResult Optional - For recursive call with memoization
+ * @param playlistMsg Optional - A message to be used for other youtube search results
  * @returns {Promise<*|boolean|undefined>}
  */
-async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLookup, searchTerm, searchResult) {
+async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLookup, searchTerm, searchResult, playlistMsg) {
   if (!searchTerm) {
     const tempArray = args.map(x => x);
     tempArray[0] = '';
@@ -2802,7 +2806,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     searchResult = await ytsr(searchTerm, {pages: 1});
     if (!searchResult.items[0]) {
       if (!searchTerm.includes('video')) {
-        return runYoutubeSearch(message, args, mgid, playNow, server, indexToLookup, searchTerm + ' video', undefined);
+        return runYoutubeSearch(message, args, mgid, playNow, server, indexToLookup, searchTerm + ' video', undefined, playlistMsg);
       }
       return message.channel.send('could not find video');
     }
@@ -2811,27 +2815,30 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     if (!indexToLookup) indexToLookup = 1;
     indexToLookup--;
   }
-  const args2 = [];
+  let ytLink;
+  // if we found a video then play it
   if (searchResult.items[indexToLookup].type === 'video') {
-    args2[1] = searchResult.items[indexToLookup].url;
+    ytLink = searchResult.items[indexToLookup].url;
   } else {
-    if (server.queue[0] === args2[1]) server.queueHistory.push(server.queue.shift());
-    return runYoutubeSearch(message, args, mgid, playNow, server, indexToLookup += 2, searchTerm, searchResult);
+    // else try again but with a new index
+    return runYoutubeSearch(message, args, mgid, playNow, server, indexToLookup += 2, searchTerm, searchResult, playlistMsg);
   }
-  if (!args2[1]) return message.channel.send('could not find video');
+  if (!ytLink) return message.channel.send('could not find video');
   if (playNow) {
-    server.queue.unshift(args2[1]);
-    await playSongToVC(message, args2[1], message.member.voice.channel, server);
+    server.queue.unshift(ytLink);
+    await playSongToVC(message, ytLink, message.member.voice.channel, server);
   } else {
-    server.queue.push(args2[1]);
+    server.queue.push(ytLink);
     if (server.queue.length === 1) {
-      await playSongToVC(message, args2[1], message.member.voice.channel, server);
+      await playSongToVC(message, ytLink, message.member.voice.channel, server);
     } else {
       message.channel.send('*added to queue*');
     }
   }
   if (indexToLookup < 4 && (playNow || server.queue.length < 2)) {
-    await message.react('➡️');
+    message.react('➡️').then(() => {
+      if (!playlistMsg) message.react('📃');
+    });
     const filter = (reaction, user) => {
       if (message.member.voice.channel) {
         for (const mem of message.member.voice.channel.members) {
@@ -2842,21 +2849,66 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       }
       return false;
     };
+    let collector2;
+    if (!playlistMsg) {
+      const filter2 = (reaction, user) => {
+        if (message.member.voice.channel) {
+          for (const mem of message.member.voice.channel.members) {
+            if (user.id === mem[1].id) {
+              return user.id !== bot.user.id && ['📃'].includes(reaction.emoji.name);
+            }
+          }
+        }
+        return false;
+      };
+      collector2 = message.createReactionCollector(filter2, {time: 22000});
+      collector2.once('collect', (reaction, reactionCollector) => {
+        message.reactions.cache.get('📃').remove().then(async () => {
+          let res = searchResult.items.slice(indexToLookup + 1, 5).map(x => {
+            if (x.type === 'video') return x.title;
+            else return '';
+          });
+          for (let i = 0; i < res.length; i++) {
+            if (res[i] === '') {
+              res.splice(i, 1);
+              i--;
+            }
+          }
+          let finalString = '**-Press the arrow  ➡️  to advance-**\n';
+          let i = 0;
+          res.forEach(x => {
+            i++;
+            return finalString += i + '. ' + x + '\n';
+          });
+          playlistMsg = await message.channel.send(finalString);
+        });
+      });
+    }
 
-    const collector = message.createReactionCollector(filter, {time: 20000});
-    const arrowReactionInterval = setTimeout(() => {
+    const collector = message.createReactionCollector(filter, {time: 22000});
+    const arrowReactionTimeout = setTimeout(() => {
       message.reactions.removeAll();
-    }, 20000);
+      if (collector) collector.stop();
+      if (collector2) collector2.stop();
+    }, 22000);
     collector.once('collect', (reaction, reactionCollector) => {
-      clearTimeout(arrowReactionInterval);
+      clearTimeout(arrowReactionTimeout);
+      if (collector2) collector2.stop();
       if (indexToLookup > 2) {
         message.reactions.removeAll();
       } else {
         reaction.users.remove(reactionCollector.id);
       }
-      if (server.queue[0] === args2[1]) server.queueHistory.push(server.queue.shift());
-      runYoutubeSearch(message, args, mgid, true, server, indexToLookup += 2, searchTerm, searchResult);
+      if (server.queue[0] === ytLink) server.queueHistory.push(server.queue.shift());
+      runYoutubeSearch(message, args, mgid, true, server, indexToLookup += 2, searchTerm, searchResult, playlistMsg);
     });
+  } else if (message.reactions) {
+    try {
+      message.reactions.cache.get('➡️').remove().then();
+    } catch (e) {}
+    try {
+      message.reactions.cache.get('📃').remove().then();
+    } catch (e) {}
   }
 }
 
