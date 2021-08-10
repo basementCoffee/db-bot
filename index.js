@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.10.2';
-const buildNo = '05100202'; // major, minor, patch, build
+const version = '5.10.3';
+const buildNo = '05100302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1457,19 +1457,16 @@ bot.on('message', async (message) => {
         }
         message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
           ' (' + version + ')' + dm).then(sentMsg => {
+          let devR = '🔸';
           if (devMode) {
-            sentMsg.react('🔸');
-            const collector = sentMsg.createReactionCollector(() => false, {time: 30000});
-            collector.on('end', () => {
-              if (sentMsg.reactions) sentMsg.reactions.removeAll();
-            });
-            return;
+            sentMsg.react(devR);
+          } else {
+            sentMsg.react('⚙️');
           }
-          sentMsg.react('⚙️');
 
           const filter = (reaction, user) => {
             return user.id !== bot.user.id && user.id === message.member.id &&
-              ['⚙️'].includes(reaction.emoji.name);
+              ['⚙️', devR].includes(reaction.emoji.name);
           };
           // updates the existing gzk message
           const updateMessage = () => {
@@ -1492,31 +1489,37 @@ bot.on('message', async (message) => {
               vcSize = bot.voice.connections.size;
               updateMessage();
             }
-          }, 8000);
+          }, 7000);
 
           collector.on('collect', (reaction, user) => {
-            if (!isInactive && bot.voice.connections.size > 0) {
-              let hasDeveloper = false;
-              if (bot.voice.connections.size === 1) {
-                bot.voice.connections.forEach(x => {
-                  if (x.channel.members.get('730350452268597300') || x.channel.members.get('443150640823271436')) {
-                    hasDeveloper = true;
-                    x.disconnect();
-                  }
-                });
+            if (reaction.emoji.name === '⚙️') {
+              if (!isInactive && bot.voice.connections.size > 0) {
+                let hasDeveloper = false;
+                if (bot.voice.connections.size === 1) {
+                  bot.voice.connections.forEach(x => {
+                    if (x.channel.members.get('730350452268597300') || x.channel.members.get('443150640823271436')) {
+                      hasDeveloper = true;
+                      x.disconnect();
+                    }
+                  });
+                }
+                if (!hasDeveloper) {
+                  message.channel.send('***' + process.pid + ' - button is disabled***\n*This process should not be ' +
+                    'sidelined because it has active members using it (VCs: ' + bot.voice.connections.size + ')*\n' +
+                    '*If you just activated another process, please deactivate it.*');
+                  return;
+                }
               }
-              if (!hasDeveloper) {
-                message.channel.send('***' + process.pid + ' - button is disabled***\n*This process should not be ' +
-                  'sidelined because it has active members using it (VCs: ' + bot.voice.connections.size + ')*\n' +
-                  '*If you just activated another process, please deactivate it.*');
-                return;
-              }
+              isInactive = !isInactive;
+              console.log((isInactive ? '-sidelined-' : '-active-'));
+              if (!isInactive) setTimeout(() => {if (!isInactive) checkStatusOfYtdl();}, 10000);
+              updateMessage();
+              reaction.users.remove(user.id);
+            } else if (reaction.emoji.name === devR) {
+              devMode = !devMode;
+              isInactive = true;
+              updateMessage();
             }
-            isInactive = !isInactive;
-            console.log((isInactive ? '-sidelined-' : '-active-'));
-            if (!isInactive) setTimeout(() => {if (!isInactive) checkStatusOfYtdl();}, 10000);
-            updateMessage();
-            reaction.users.remove(user.id);
           });
           collector.once('end', () => {
             clearInterval(statusInterval);
@@ -3436,40 +3439,38 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     }
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
+    dispatcher.resume();
     dispatcher.once('finish', () => {
-      setTimeout(() => {
-        if (urlOrg !== whatspMap[voiceChannel.id]) {
-          console.log('There was a mismatch -------------------');
-          console.log('old url: ' + urlOrg);
-          console.log('current url: ' + whatspMap[voiceChannel.id]);
-          try {
-            bot.channels.cache.get('856338454237413396').send('there was a mismatch with playback');
-          } catch (e) {
-            console.log(e);
-          }
+      if (urlOrg !== whatspMap[voiceChannel.id]) {
+        console.log('There was a mismatch -------------------');
+        console.log('old url: ' + urlOrg);
+        console.log('current url: ' + whatspMap[voiceChannel.id]);
+        try {
+          bot.channels.cache.get('856338454237413396').send('there was a mismatch with playback');
+        } catch (e) {
+          console.log(e);
         }
-        if (server.currentEmbed && server.currentEmbed.reactions && !server.loop && server.queue.length < 2) {
-          server.currentEmbed.reactions.removeAll();
-        }
-        if (voiceChannel.members.size < 2) {
-          connection.disconnect();
-        } else if (server.loop) {
-          playSongToVC(message, urlOrg, voiceChannel, server, false);
+      }
+      if (server.currentEmbed && server.currentEmbed.reactions && !server.loop && server.queue.length < 2) {
+        server.currentEmbed.reactions.removeAll();
+      }
+      if (voiceChannel.members.size < 2) {
+        connection.disconnect();
+      } else if (server.loop) {
+        playSongToVC(message, urlOrg, voiceChannel, server, false);
+      } else {
+        server.queueHistory.push(server.queue.shift());
+        if (server.queue.length > 0) {
+          playSongToVC(message, server.queue[0], voiceChannel, server, false);
         } else {
-          server.queueHistory.push(server.queue.shift());
-          if (server.queue.length > 0) {
-            playSongToVC(message, server.queue[0], voiceChannel, server, false);
-          } else {
-            dispatcherMap[voiceChannel.id] = false;
-          }
+          dispatcherMap[voiceChannel.id] = false;
         }
-      }, 700);
+      }
       if (server && server.followUpMessage) {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
       }
     });
-    dispatcher.resume();
   } catch (e) {
     let errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
@@ -3530,13 +3531,14 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     });
     return;
   }
-  if (!avoidReplay)
+  if (!avoidReplay) {
     setTimeout(() => {
       if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
         dispatcher.streamTime < 1) {
         playSongToVC(message, whatToPlay, voiceChannel, server, true);
       }
-    }, 1000);
+    }, 1500);
+  }
 }
 
 /**
