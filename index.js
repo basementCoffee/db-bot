@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.11.0';
-const buildNo = '05110002'; // major, minor, patch, build
+const version = '5.11.1';
+const buildNo = '05110102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2951,13 +2951,13 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
               if (playNum) {
                 server.queueHistory.push(server.queue.shift());
                 runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
-                clearTimeout(searchReactionTimeout);
-                searchReactionTimeout = setTimeout(() => {
-                  message.reactions.removeAll();
-                  if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
-                  if (collector) collector.stop();
-                }, 22000);
               }
+              clearTimeout(searchReactionTimeout);
+              searchReactionTimeout = setTimeout(() => {
+                message.reactions.removeAll();
+                if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
+                if (collector) collector.stop();
+              }, 22000);
               msg.delete();
             }).catch(() => {
             msg.delete();
@@ -2965,7 +2965,6 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
         });
       });
     }
-
   } else {
     if (message.reactions) {
       try {
