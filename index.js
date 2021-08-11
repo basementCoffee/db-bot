@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.11.1';
-const buildNo = '05110102'; // major, minor, patch, build
+const version = '5.12.0';
+const buildNo = '05120002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -440,7 +440,9 @@ async function runCommandCases (message) {
         const newPrefix = xdb.congratsDatabase.get(mgid);
         if (!newPrefix) {
           server.prefix = '.';
-          await gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', xdb.dsInt);
+          try {
+            gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', xdb.dsInt);
+          } catch (e) {console.log(e);}
         } else {
           server.prefix = newPrefix;
         }
