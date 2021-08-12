@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.12.0';
-const buildNo = '05120002'; // major, minor, patch, build
+const version = '5.12.1';
+const buildNo = '05120102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -413,7 +413,9 @@ function initializeServer (mgid) {
     // the number of consecutive playback errors
     skipTimes: 0,
     // the server's prefix
-    prefix: undefined
+    prefix: undefined,
+    // the timeout for the YT search results
+    searchReactionTimeout: undefined
   };
 }
 
@@ -2894,15 +2896,17 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       }
     }
   }
-  if (indexToLookup < 4 && (playNow || server.queue.length < 2)) {
+  if (playNow || server.queue.length < 2) {
     if (!playlistMsg) await message.react('📃');
     let collector;
-    let searchReactionTimeout = setTimeout(() => {
+    if (server.searchReactionTimeout) clearTimeout(server.searchReactionTimeout);
+    server.searchReactionTimeout = setTimeout(() => {
       message.reactions.removeAll();
       if (playlistMsg) {
         playlistMsg.delete().then(() => {playlistMsg = undefined;});
       }
       if (collector) collector.stop();
+      server.searchReactionTimeout = undefined;
     }, 22000);
     if (!playlistMsg) {
       const filter = (reaction, user) => {
@@ -2918,14 +2922,15 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       collector = message.createReactionCollector(filter, {time: 100000});
       let res;
       collector.on('collect', async (reaction, reactionCollector) => {
-        clearTimeout(searchReactionTimeout);
-        searchReactionTimeout = setTimeout(() => {
+        clearTimeout(server.searchReactionTimeout);
+        server.searchReactionTimeout = setTimeout(() => {
           message.reactions.removeAll();
           if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
           if (collector) collector.stop();
+          server.searchReactionTimeout = undefined;
         }, 60000);
         if (!playlistMsg) {
-          res = searchResult.items.slice(indexToLookup + 1, 5).map(x => {
+          res = searchResult.items.slice(indexToLookup + 1, 6).map(x => {
             if (x.type === 'video') return x.title;
             else return '';
           });
@@ -2951,14 +2956,19 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
             .then(messages => {
               let playNum = parseInt(messages.first().content && messages.first().content.trim());
               if (playNum) {
-                server.queueHistory.push(server.queue.shift());
-                runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
+                if (playNum < 1 || playNum > res.length) {
+                  message.channel.send('*invalid number*');
+                } else {
+                  server.queueHistory.push(server.queue.shift());
+                  runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
+                }
               }
-              clearTimeout(searchReactionTimeout);
-              searchReactionTimeout = setTimeout(() => {
+              clearTimeout(server.searchReactionTimeout);
+              server.searchReactionTimeout = setTimeout(() => {
                 message.reactions.removeAll();
                 if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
                 if (collector) collector.stop();
+                server.searchReactionTimeout = undefined;
               }, 22000);
               msg.delete();
             }).catch(() => {
