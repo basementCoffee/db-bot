@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.12.1';
-const buildNo = '05120102'; // major, minor, patch, build
+const version = '5.13.0';
+const buildNo = '05130002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -115,7 +115,8 @@ async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChann
           await gsUpdateOverwrite(-1, -1, sheetName, xdb.dsInt);
           await deleteRows(message, sheetName, i);
           if (sendMsgToChannel) {
-            message.channel.send("*deleted '" + itemToCheck + "'*");
+            message.channel.send('deleted \'' + itemToCheck + '\' from ' +
+              (sheetName.substr(0, 1) === 'p' ? 'your' : 'the server\'s') + ' keys');
           }
         }
       }
@@ -2002,7 +2003,7 @@ function runLyricsCommand (message, mgid, args, server) {
 }
 
 /**
- * Wrapper for the function 'runAddCommand', for the purpose of user-facing error checking.
+ * Wrapper for the function 'runAddCommand', for the purpose of error checking.
  * @param message The message that triggered the bot
  * @param args The args that of the message contents
  * @param sheetName The name of the sheet to add to
@@ -2011,20 +2012,50 @@ function runLyricsCommand (message, mgid, args, server) {
  * @returns {*}
  */
 function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString) {
-  if (!args[1] || !args[2]) {
-    let pf = servers[message.guild.id].prefix;
-    return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
-      + ' keys list. Put a desired name followed by a link. *(ex:\` ' + pf + prefixString + 'add [key] [link]\`)*');
+  if (args[1]) {
+    if (args[2]) {
+      if (args[2].substr(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
+        args[2] = args[2].substr(1, args[2].length - 2);
+      }
+      if (!verifyUrl(args[2]))
+        return message.channel.send('You can only add links to the keys list. (Names cannot be more than one word)');
+      // in case the database has not been initialized
+      gsrun('A', 'B', sheetName).then(() => {
+        runAddCommand(args, message, sheetName, printMsgToChannel);
+      });
+      return;
+    } else if (message.member.voice.channel && servers[message.guild.id].currentEmbedLink) {
+      args[2] = servers[message.guild.id].currentEmbedLink;
+      if (args[1].includes('.')) return message.channel.send('cannot add names with \'.\'');
+      message.channel.send('Would you like to add what\'s currently playing as **' + (args[1]) + '**?').then(sentMsg => {
+        sentMsg.react('✅').then(() => sentMsg.react('❌'));
+
+        const filter = (reaction, user) => {
+          return bot.user.id !== user.id && ['✅', '❌'].includes(reaction.emoji.name);
+        };
+
+        const collector = sentMsg.createReactionCollector(filter, {time: 300000});
+
+        collector.on('collect', (reaction, reactionCollector) => {
+          collector.stop();
+          if (reaction.emoji.name === '✅') {
+            gsrun('A', 'B', sheetName).then(() => {
+              runAddCommand(args, message, sheetName, printMsgToChannel);
+            });
+          } else {
+            message.channel.send('*cancelled*');
+          }
+        });
+        collector.on('end', () => {
+          sentMsg.delete();
+        });
+      });
+      return;
+    }
   }
-  if (args[2].substr(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
-    args[2] = args[2].substr(1, args[2].length - 2);
-  }
-  if (!verifyUrl(args[2]))
-    return message.channel.send('You can only add links to the keys list. (Names cannot be more than one word)');
-  // in case the database has not been initialized
-  gsrun('A', 'B', sheetName).then(() => {
-    runAddCommand(args, message, sheetName, printMsgToChannel);
-  });
+  return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
+    + ' keys list. Put a desired name followed by a link. *(ex:\` ' + servers[message.guild.id].prefix + prefixString +
+    'add [key] [link]\`)*');
 }
 
 /**
@@ -3143,7 +3174,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
     if (isPlaylist) return;
     rn = Math.floor(Math.random() * rKeyArray.length);
     if (verifyPlaylist(rKeyArray[rn])) {
-      if (sentMsg) sentMsg.delete();
+      if (sentMsg && sentMsg.deletable) sentMsg.delete();
       return message.channel.send('There was an error.');
     }
     server.queue.push(cdb.get(rKeyArray[rn]));
@@ -3152,10 +3183,10 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
     // remove the filler string
     server.queue.shift();
     playSongToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
-      if (sentMsg) sentMsg.delete();
+      if (sentMsg && sentMsg.deletable) sentMsg.delete();
     });
   } else {
-    if (sentMsg) sentMsg.delete();
+    if (sentMsg && sentMsg.deletable) sentMsg.delete();
     message.channel.send('*added ' + numOfTimes + ' to queue*');
   }
 }
@@ -3245,7 +3276,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
                 'with the db bot.';
             }
             const embed = new MessageEmbed()
-              .setTitle('How to add/remove keys from ' + nameToSend + ' list')
+              .setTitle('How to add/delete keys from ' + nameToSend + ' list')
               .setDescription('Add a song by putting a word followed by a link -> \` ' +
                 prefixString + cmdType + 'a [key] [link]\`\n' +
                 'Delete a song by putting the name you want to delete -> \` ' +
@@ -3317,6 +3348,7 @@ bot.on('voiceStateUpdate', update => {
       server.lockQueue = false;
       server.dictator = false;
       server.infos = false;
+      server.currentEmbedLink = false;
       if (server.currentEmbed && server.currentEmbed.reactions) {
         server.collector.stop();
         server.currentEmbed.reactions.removeAll().then();
@@ -3754,7 +3786,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     server.numSinceLastEmbed = 0;
     if (server.currentEmbed) {
       if (!forceEmbed) {
-        try {server.currentEmbed.delete();} catch (e) {console.log('error: no message to delete');}
+        if (server.currentEmbed && server.currentEmbed.deletable) server.currentEmbed.delete();
       } else if (server.currentEmbed.reactions) {
         server.collector.stop();
         await server.currentEmbed.reactions.removeAll();
@@ -3902,10 +3934,6 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     !server.voteAdmin.map(x => x.id).includes(actionUser.id) && server.queue.length > 0) {
     return message.channel.send('*only the DJ can end the session*');
   }
-  if (server.currentEmbed && server.currentEmbed.reactions) {
-    server.collector.stop();
-    server.currentEmbed.reactions.removeAll().then();
-  }
   try {
     dispatcherMap[voiceChannel.id].pause();
   } catch (e) {}
@@ -3918,6 +3946,10 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
       voiceChannel.leave();
     }, 600);
   } else {
+    if (server.currentEmbed && server.currentEmbed.reactions) {
+      server.collector.stop();
+      server.currentEmbed.reactions.removeAll().then();
+    }
     dispatcherMap[voiceChannel.id] = false;
     if (whatspMap[voiceChannel.id] !== 'https://www.youtube.com/watch?v=oyFQVZ2h0V8')
       sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, server, server.infos);
