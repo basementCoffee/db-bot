@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.13.0';
-const buildNo = '05130002'; // major, minor, patch, build
+const version = '5.13.1';
+const buildNo = '05130102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2031,7 +2031,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
         sentMsg.react('✅').then(() => sentMsg.react('❌'));
 
         const filter = (reaction, user) => {
-          return bot.user.id !== user.id && ['✅', '❌'].includes(reaction.emoji.name);
+          return bot.user.id !== user.id && ['✅', '❌'].includes(reaction.emoji.name) && message.member.id === user.id;
         };
 
         const collector = sentMsg.createReactionCollector(filter, {time: 300000});
