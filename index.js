@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.13.1';
-const buildNo = '05130102'; // major, minor, patch, build
+const version = '5.13.2';
+const buildNo = '05130202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2932,10 +2932,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     let collector;
     if (server.searchReactionTimeout) clearTimeout(server.searchReactionTimeout);
     server.searchReactionTimeout = setTimeout(() => {
-      message.reactions.removeAll();
-      if (playlistMsg) {
-        playlistMsg.delete().then(() => {playlistMsg = undefined;});
-      }
+      if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
       if (collector) collector.stop();
       server.searchReactionTimeout = undefined;
     }, 22000);
@@ -2952,12 +2949,12 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       };
       collector = message.createReactionCollector(filter, {time: 100000});
       let res;
+      let notActive = true;
       collector.on('collect', async (reaction, reactionCollector) => {
         clearTimeout(server.searchReactionTimeout);
         server.searchReactionTimeout = setTimeout(() => {
-          message.reactions.removeAll();
           if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
-          if (collector) collector.stop();
+          collector.stop();
           server.searchReactionTimeout = undefined;
         }, 60000);
         if (!playlistMsg) {
@@ -2979,41 +2976,43 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
           });
           playlistMsg = await message.channel.send(finalString);
         }
-        message.channel.send('***What would you like me to play? (1-' + (res.length) + ')*** *[or type \'q\' to quit]*').then(msg => {
-          const filter = m => {
-            return (m.author.id !== bot.user.id && reactionCollector.id === m.author.id);
-          };
-          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-            .then(messages => {
-              let playNum = parseInt(messages.first().content && messages.first().content.trim());
-              if (playNum) {
-                if (playNum < 1 || playNum > res.length) {
-                  message.channel.send('*invalid number*');
-                } else {
-                  server.queueHistory.push(server.queue.shift());
-                  runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
+        if (notActive) {
+          notActive = false;
+          message.channel.send('***What would you like me to play? (1-' + (res.length) + ')*** *[or type \'q\' to quit]*').then(msg => {
+            const filter = m => {
+              return (m.author.id !== bot.user.id && reactionCollector.id === m.author.id);
+            };
+            message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+              .then(messages => {
+                let playNum = parseInt(messages.first().content && messages.first().content.trim());
+                if (playNum) {
+                  if (playNum < 1 || playNum > res.length) {
+                    message.channel.send('*invalid number*');
+                  } else {
+                    server.queueHistory.push(server.queue.shift());
+                    runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
+                  }
                 }
-              }
-              clearTimeout(server.searchReactionTimeout);
-              server.searchReactionTimeout = setTimeout(() => {
-                message.reactions.removeAll();
-                if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
-                if (collector) collector.stop();
-                server.searchReactionTimeout = undefined;
-              }, 22000);
+                clearTimeout(server.searchReactionTimeout);
+                server.searchReactionTimeout = setTimeout(() => {
+                  if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
+                  collector.stop();
+                  server.searchReactionTimeout = undefined;
+                }, 22000);
+                msg.delete();
+                notActive = true;
+              }).catch(() => {
               msg.delete();
-            }).catch(() => {
-            msg.delete();
+              notActive = true;
+            });
           });
-        });
+        }
+      });
+      collector.on('end', () => {
+        message.reactions.removeAll();
       });
     }
   } else {
-    if (message.reactions) {
-      try {
-        message.reactions.cache.get('📃').remove().then();
-      } catch (e) {}
-    }
     if (playlistMsg) {
       setTimeout(() => {
         playlistMsg.delete().then(() => {playlistMsg = undefined;});
@@ -3351,7 +3350,6 @@ bot.on('voiceStateUpdate', update => {
       server.currentEmbedLink = false;
       if (server.currentEmbed && server.currentEmbed.reactions) {
         server.collector.stop();
-        server.currentEmbed.reactions.removeAll().then();
         server.currentEmbed = false;
       }
       if (server.followUpMessage) {
@@ -3537,7 +3535,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
         }
       }
       if (server.currentEmbed && server.currentEmbed.reactions && !server.loop && server.queue.length < 2) {
-        server.currentEmbed.reactions.removeAll();
+        server.collector.stop();
       }
       if (voiceChannel.members.size < 2) {
         connection.disconnect();
@@ -3789,7 +3787,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
         if (server.currentEmbed && server.currentEmbed.deletable) server.currentEmbed.delete();
       } else if (server.currentEmbed.reactions) {
         server.collector.stop();
-        await server.currentEmbed.reactions.removeAll();
       }
     }
     message.channel.send(embed).then(sentMsg => {
@@ -3915,6 +3912,9 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
       server.numSinceLastEmbed += 5;
     }
   });
+  collector.on('end', () => {
+    if (sentMsg.reactions) sentMsg.reactions.removeAll().then();
+  });
 }
 
 /**
@@ -3948,7 +3948,6 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
   } else {
     if (server.currentEmbed && server.currentEmbed.reactions) {
       server.collector.stop();
-      server.currentEmbed.reactions.removeAll().then();
     }
     dispatcherMap[voiceChannel.id] = false;
     if (whatspMap[voiceChannel.id] !== 'https://www.youtube.com/watch?v=oyFQVZ2h0V8')
