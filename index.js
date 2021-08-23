@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.14.0';
-const buildNo = '05140002'; // major, minor, patch, build
+const version = '5.14.1';
+const buildNo = '05140102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1205,15 +1205,18 @@ async function runCommandCases (message) {
       const devCEmbed = new MessageEmbed()
         .setTitle('Dev Commands')
         .setDescription(
-          prefixString + 'gzs - statistics' +
-          '\n' + prefixString + 'gzid - user, bot, and guild id' +
+          '**calibrate the active bot**' +
+          '\n' + prefixString + 'gzs - statistics for the active bot' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
-          '\n' + prefixString + 'gzsm - set a startup message on voice channel join' +
+          '\n' + prefixString + 'gzsm [message] - set a startup message on voice channel join' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
-          '\n\n**calibrate multiple bots**' +
+          '\n\n**calibrate any bots**' +
           '\n=gzl - return the bot\'s ping and latency' +
           '\n=gzk - start/kill a process' +
-          '\n=gzd - toggle dev mode'
+          '\n=gzd [process #] - toggle dev mode' +
+          '\n\n**other commands**' +
+          '\n' + prefixString + 'gzid - user, bot, and guild id' +
+          '\ndevadd - access the database'
         )
         .setFooter('version: ' + version);
       message.channel.send(devCEmbed);
@@ -1371,8 +1374,8 @@ function verifyUrl (url) {
   if (!url.includes('.')) {
     return false;
   }
-  return !(url.includes('spotify.com') ? (!spdl.validateURL(url) && !url.includes('/playlist/'))
-    : (!ytdl.validateURL(url) && !ytpl.validateID(url)));
+  return (url.includes('spotify.com') ? (spdl.validateURL(url) && !url.includes('/playlist/') && !url.includes('/album'))
+    : (ytdl.validateURL(url) && !ytpl.validateID(url)));
 }
 
 /**
@@ -1385,8 +1388,6 @@ function verifyPlaylist (url) {
     url = url.toLowerCase();
     return (url.includes('spotify.com') ? (url.includes('/playlist') || url.includes('/album')) :
       (url.includes('/playlist?list=') || (ytpl.validateID(url) && !url.includes('&index='))));
-    // return (url.includes('/playlist') && (url.includes('spotify.com') || url.includes('/playlist?list='))) ||
-    //   (ytpl.validateID(url) && !url.includes('&index='));
   } catch (e) {
     return false;
   }
@@ -2019,7 +2020,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       if (args[2].substr(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
         args[2] = args[2].substr(1, args[2].length - 2);
       }
-      if (!verifyUrl(args[2]))
+      if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
         return message.channel.send('You can only add links to the keys list. (Names cannot be more than one word)');
       // in case the database has not been initialized
       gsrun('A', 'B', sheetName).then(() => {
