@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.13.2';
-const buildNo = '05130202'; // major, minor, patch, build
+const version = '5.14.0';
+const buildNo = '05140002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -190,7 +190,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     }
   } catch (e) {}
   let pNums = 0;
-  if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
+  if (args[1].includes('spotify.com')) {
     await addPlaylistToQueue(message, mgid, pNums, args[1], true, true);
   } else if (ytpl.validateID(args[1])) {
     await addPlaylistToQueue(message, mgid, pNums, args[1], false, true);
@@ -316,7 +316,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
     queueWasEmpty = true;
   }
   let pNums = 0;
-  if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
+  if (args[1].includes('spotify.com')) {
     pNums = await addPlaylistToQueue(message, mgid, pNums, args[1], true);
   } else if (ytpl.validateID(args[1])) {
     pNums = await addPlaylistToQueue(message, mgid, pNums, args[1], false);
@@ -1383,8 +1383,10 @@ function verifyUrl (url) {
 function verifyPlaylist (url) {
   try {
     url = url.toLowerCase();
-    return (url.includes('/playlist') && (url.includes('spotify.com') || url.includes('/playlist?list='))) ||
-      (ytpl.validateID(url) && !url.includes('&index='));
+    return (url.includes('spotify.com') ? (url.includes('/playlist') || url.includes('/album')) :
+      (url.includes('/playlist?list=') || (ytpl.validateID(url) && !url.includes('&index='))));
+    // return (url.includes('/playlist') && (url.includes('spotify.com') || url.includes('/playlist?list='))) ||
+    //   (ytpl.validateID(url) && !url.includes('&index='));
   } catch (e) {
     return false;
   }

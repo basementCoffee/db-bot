@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "5.13.2",
+  "version": "5.14.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -9,13 +9,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/opus": "^0.5.3",
+    "@discordjs/opus": "^0.6.0",
     "discord.js": "^12.5.3",
     "dotenv": "^10.0.0",
     "genius-lyrics": "^4.2.9",
     "googleapis": "^84.0.0",
     "node-gyp": "^8.1.0",
-    "npm": "^7.20.5",
+    "npm": "^7.21.0",
     "spdl-core": "^2.0.2",
     "spotify-url-info": "^2.2.3",
     "xml2js": "^0.4.23",
