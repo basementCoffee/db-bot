@@ -26,7 +26,7 @@ const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
-let devMode = true; // default false
+let devMode = false; // default false
 const version = '5.14.2';
 const buildNo = '05140202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
