@@ -26,9 +26,9 @@ const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
-let devMode = false; // default false
-const version = '5.14.1';
-const buildNo = '05140102'; // major, minor, patch, build
+let devMode = true; // default false
+const version = '5.14.2';
+const buildNo = '05140202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2443,7 +2443,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     message.channel.send('*max queue size has been reached*');
     return true;
   }
-  server.numSinceLastEmbed += 5;
+  server.numSinceLastEmbed++;
   gsrun('A', 'B', sheetName).then(async (xdb) => {
     let queueWasEmpty = false;
     // if the queue is empty then play
@@ -3359,6 +3359,7 @@ bot.on('voiceStateUpdate', update => {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
       }
+      if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
     });
   } else if (update.channel) {
     const server = servers[update.guild.id];
@@ -3509,6 +3510,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.currentEmbed.delete();
     server.currentEmbed = false;
   }
+  if (server.leaveVCTimeout) {
+    clearTimeout(server.leaveVCTimeout);
+    server.leaveVCTimeout = false;
+  }
   let dispatcher;
   try {
     dispatcher = connection.play(await ytdl(urlAlt, {}), {
@@ -3537,9 +3542,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
           console.log(e);
         }
       }
-      if (server.currentEmbed && server.currentEmbed.reactions && !server.loop && server.queue.length < 2) {
-        server.collector.stop();
-      }
       if (voiceChannel.members.size < 2) {
         connection.disconnect();
       } else if (server.loop) {
@@ -3549,6 +3551,8 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
         if (server.queue.length > 0) {
           playSongToVC(message, server.queue[0], voiceChannel, server, false);
         } else {
+          server.collector.stop();
+          server.leaveVCTimeout = setTimeout(() => connection.disconnect(), 1800000);
           dispatcherMap[voiceChannel.id] = false;
         }
       }
