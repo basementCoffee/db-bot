@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.14.3';
-const buildNo = '05140302'; // major, minor, patch, build
+const version = '5.14.4';
+const buildNo = '05140402'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2035,7 +2035,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
           return bot.user.id !== user.id && ['✅', '❌'].includes(reaction.emoji.name) && message.member.id === user.id;
         };
 
-        const collector = sentMsg.createReactionCollector(filter, {time: 300000, dispose: true});
+        const collector = sentMsg.createReactionCollector(filter, {time: 60000, dispose: true});
         collector.once('collect', (reaction) => {
           sentMsg.delete();
           if (reaction.emoji.name === '✅') {
@@ -2047,7 +2047,9 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
           }
         });
         collector.on('end', () => {
-          if (sentMsg.deletable) sentMsg.delete();
+          if (sentMsg.deletable && sentMsg.reactions) {
+            sentMsg.reactions.removeAll().then(() => sentMsg.edit('*cancelled*'));
+          }
         });
       });
       return;
@@ -3356,6 +3358,11 @@ bot.on('voiceStateUpdate', update => {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
       }
+      if (bot.voice.connections.size < 1) {
+        whatspMap = new Map();
+        dispatcherMap = new Map();
+        dispatcherMapStatus = new Map();
+      }
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
     });
   } else if (update.channel) {
@@ -3995,16 +4002,13 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, shee
 // A message for users on first VC join
 let startUpMessage = '';
 // What's playing, uses voice channel id
-const whatspMap = new Map();
+let whatspMap = new Map();
 // The song stream, uses voice channel id
-const dispatcherMap = new Map();
+let dispatcherMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
-const dispatcherMapStatus = new Map();
+let dispatcherMapStatus = new Map();
 // login to discord
 (async () => {
   await bot.login(token);
 })();
-
-// IF the [server vc] === activeDispatch => return command usage ELSE return 'nothing is playing right now'
-// server args : dispatcher, dispatcherID, dispatcherStatus
 
