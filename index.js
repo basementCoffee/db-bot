@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.14.2';
-const buildNo = '05140202'; // major, minor, patch, build
+const version = '5.14.3';
+const buildNo = '05140302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -490,7 +490,7 @@ async function runCommandCases (message) {
         }
         return -1;
       };
-      let name = '';
+      let name;
       if (findIndexOfWord('grats') !== -1 || findIndexOfWord('gratz') !== -1 || findIndexOfWord('congratulations') !== -1) {
         name = args[parseInt(indexOfWord) + 1];
         let excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
@@ -939,16 +939,19 @@ async function runCommandCases (message) {
         };
 
         const collector = sentMsg.createReactionCollector(filter, {time: 600000, dispose: true});
-
-        collector.on('collect', (reaction, user) => {
+        collector.on('collect', (reaction) => {
           if (reaction.emoji.name === hr) {
             sentMsg.edit(helpPages[(++currentHelp % 2)]);
           }
         });
-        collector.on('remove', (reaction, user) => {
+        collector.on('remove', (reaction) => {
           if (reaction.emoji.name === hr) {
             sentMsg.edit(helpPages[(++currentHelp % 2)]);
+            currentHelp -= 2;
           }
+        });
+        collector.on('end', () => {
+          if (sentMsg.reactions) sentMsg.reactions.removeAll().then();
         });
       });
       break;
@@ -1318,27 +1321,23 @@ async function runCommandCases (message) {
 }
 
 bot.on('guildCreate', guild => {
-  if (isInactive) return;
+  if (isInactive || devMode) return;
   guild.systemChannel.send("Type '.help' to see my commands.");
 });
 
 bot.once('ready', () => {
-  // if (!devMode && !isInactive) bot.channels.cache.get("827195452507160627").send("=gzc");
   // bot starts up as inactive, if no response from the channel then activates itself
-  if (!devMode) {
+  if (process.pid.toString() === '4') devMode = false;
+  if (devMode) {
+    console.log('-devmode enabled-');
+  } else {
+    isInactive = true;
     bot.user.setActivity('music | .help', {type: 'PLAYING'}).then();
     mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
+    console.log('-starting up sidelined-');
+    console.log('checking status of other bots...');
     bot.channels.cache.get('827195452507160627').send('starting up: ' + process.pid);
-    if (isInactive) {
-      console.log('-starting up sidelined-');
-      console.log('checking status of other bots...');
-      checkToSeeActive();
-    } else {
-      bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
-        process.pid.toString());
-    }
-  } else {
-    console.log('-devmode enabled-');
+    checkToSeeActive();
   }
 });
 const setOfBotsOn = new Set();
@@ -1972,18 +1971,17 @@ function runLyricsCommand (message, mgid, args, server) {
         const searches = await GeniusClient.songs.search(searchTerm);
         const firstSong = searches[0];
         message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
-          sentMsg.react('📄');
+          sentMsg.react('📄').then();
           const lyrics = await firstSong.lyrics();
           const filter = (reaction, user) => {
             return user.id !== bot.user.id && ['📄'].includes(reaction.emoji.name);
           };
 
           const collector = sentMsg.createReactionCollector(filter, {time: 600000});
-          collector.once('collect', (reaction, user) => {
+          collector.once('collect', () => {
             // send the lyrics text on reaction click
             message.channel.send((lyrics.length > 1910 ? lyrics.substr(0, 1910) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
           });
-
         });
         return true;
       } catch (e) {
@@ -2037,10 +2035,9 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
           return bot.user.id !== user.id && ['✅', '❌'].includes(reaction.emoji.name) && message.member.id === user.id;
         };
 
-        const collector = sentMsg.createReactionCollector(filter, {time: 300000});
-
-        collector.on('collect', (reaction, reactionCollector) => {
-          collector.stop();
+        const collector = sentMsg.createReactionCollector(filter, {time: 300000, dispose: true});
+        collector.once('collect', (reaction) => {
+          sentMsg.delete();
           if (reaction.emoji.name === '✅') {
             gsrun('A', 'B', sheetName).then(() => {
               runAddCommand(args, message, sheetName, printMsgToChannel);
@@ -2050,7 +2047,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
           }
         });
         collector.on('end', () => {
-          sentMsg.delete();
+          if (sentMsg.deletable) sentMsg.delete();
         });
       });
       return;
@@ -4007,3 +4004,7 @@ const dispatcherMapStatus = new Map();
 (async () => {
   await bot.login(token);
 })();
+
+// IF the [server vc] === activeDispatch => return command usage ELSE return 'nothing is playing right now'
+// server args : dispatcher, dispatcherID, dispatcherStatus
+
