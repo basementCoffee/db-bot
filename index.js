@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.14.4';
-const buildNo = '05140402'; // major, minor, patch, build
+const version = '5.14.5';
+const buildNo = '05140502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -66,21 +66,21 @@ function contentContainCongrats (word) {
 }
 
 /**
- * Skips the song that is currently being played.
+ * Skips the link that is currently being played.
  * Use for specific voice channel playback.
  * @param message the message that triggered the bot
  * @param voiceChannel the voice channel that the bot is in
  * @param playMessageToChannel whether to play message on successful skip
  * @param server The server playback metadata
- * @param noHistory Optional - true excludes song from the queue history
+ * @param noHistory Optional - true excludes link from the queue history
  */
-function skipSong (message, voiceChannel, playMessageToChannel, server, noHistory) {
+function skipLink (message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
   if (server.queue.length > 0) {
     if (noHistory) server.queue.shift();
     else server.queueHistory.push(server.queue.shift());
     if (playMessageToChannel) message.channel.send('*skipped*');
-    // if there is still items in the queue then play next song
+    // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
       // get rid of previous dispatch
       playSongToVC(message, server.queue[0], voiceChannel, server);
@@ -158,7 +158,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can play perform this action');
   if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
-    return message.channel.send('the queue is locked: only the dj can play and add songs');
+    return message.channel.send('the queue is locked: only the dj can play and add links');
   if (!args[1]) {
     return message.channel.send('What should I play now? Put a link or some words.');
   }
@@ -331,7 +331,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
       server.queue.push(args[pNums]);
       pNums += 1;
     }
-    // make pNums the number of added songs
+    // make pNums the number of added links
     pNums--;
   }
   // if queue was empty then play
@@ -514,7 +514,7 @@ async function runCommandCases (message) {
         const vc = message.member.voice.channel;
         setTimeout(() => {
           if (whatspMap[vc.id] === congratsLink && parseInt(dispatcherMap[vc.id].streamTime) > 18000)
-            skipSong(message, vc, false, server, true);
+            skipLink(message, vc, false, server, true);
           let item = server.queueHistory.indexOf(congratsLink);
           if (item !== -1)
             server.queueHistory.splice(item, 1);
@@ -579,7 +579,7 @@ async function runCommandCases (message) {
       break;
     case 'loop':
       if (!botInVC(message)) {
-        return message.channel.send('must be playing a song to loop');
+        return message.channel.send('must be actively playing to loop');
       }
       if (server.loop) {
         server.loop = false;
@@ -593,7 +593,7 @@ async function runCommandCases (message) {
     case 'lyrics':
       runLyricsCommand(message, mgid, args, server);
       break;
-    // test purposes - run database songs
+    // test purposes - run database links
     case 'gd':
       runDatabasePlayCommand(args, message, 'entries', false, true, server);
       break;
@@ -825,7 +825,20 @@ async function runCommandCases (message) {
       let num = parseInt(args[2]);
       if (!num) {
         if (server.queue.length === 1) num = 1;
-        else return message.channel.send('put a number in the queue to insert (1-' + server.queue.length + ')');
+        else {
+          let sentMsg = await message.channel.send('What position would you like to insert? (1-' + server.queue.length + ') [or type \'q\' to quit]');
+          const filter = m => {
+            return (message.author.id === m.author.id);
+          };
+          let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+          num = messages.first().content.trim();
+          if (num === 'q') {
+            return message.channel.send('*cancelled*');
+          } else {
+            num = parseInt(num);
+          }
+          if (!num) return message.channel.send('*cancelled*');
+        }
       }
       if (num < 1) {
         if (num === 0) return message.channel.send('0 changes what\'s actively playing, use the \'playnow\' command instead.');
@@ -842,9 +855,10 @@ async function runCommandCases (message) {
           bot.channels.cache.get('856338454237413396').send('there was a playlist reading error: ' + args[1]);
           return message.channel.send('there was a link reading issue');
         }
+      } else {
+        if (num > server.queue.length) num = server.queue.length;
+        server.queue.splice(num, 0, args[1]);
       }
-      if (num > server.queue.length) num = server.queue.length;
-      server.queue.splice(num, 0, args[1]);
       message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
       break;
     case 'q':
@@ -1244,7 +1258,7 @@ async function runCommandCases (message) {
         message.channel.send('new startup message is set');
       } else {
         message.channel.send('current start up message:' + (startUpMessage ? `\n\`${startUpMessage}\`` : ' ') +
-          '\nuse \`gzsm clear\` to clear the startup message');
+          '\ntype **gzsm clear** to clear the startup message');
       }
       break;
     case 'gzs':
@@ -1370,9 +1384,6 @@ bot.on('message', async (message) => {
  * @returns {boolean} True if the bot was able to verify the link
  */
 function verifyUrl (url) {
-  if (!url.includes('.')) {
-    return false;
-  }
   return (url.includes('spotify.com') ? (spdl.validateURL(url) && !url.includes('/playlist/') && !url.includes('/album'))
     : (ytdl.validateURL(url) && !ytpl.validateID(url)));
 }
@@ -2712,7 +2723,7 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
         if (skipTimes === 1 && server.queue.length > 0) {
           skipCounter++;
         }
-        skipSong(message, voiceChannel, (sendSkipMsg ? skipCounter === 1 : false), server);
+        skipLink(message, voiceChannel, (sendSkipMsg ? skipCounter === 1 : false), server);
         if (skipCounter > 1) {
           message.channel.send('*skipped ' + skipCounter + ' times*');
         }
@@ -2720,10 +2731,10 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
         message.channel.send('*invalid skip amount (must be between 1 - 1000)*');
       }
     } catch (e) {
-      skipSong(message, voiceChannel, true, server);
+      skipLink(message, voiceChannel, true, server);
     }
   } else {
-    skipSong(message, voiceChannel, true, server);
+    skipLink(message, voiceChannel, true, server);
   }
 }
 
@@ -2775,13 +2786,11 @@ function getHelpList (prefixString, numOfPages) {
   let page1 =
     '--------------  **Music Commands** --------------\n\`' +
     prefixString +
-    'play [link] \` Play YouTube/Spotify link *[p]* \n\`' +
-    prefixString +
     'play [word] \` Search YouTube and play *[p]* \n\`' +
     prefixString +
-    'playnow [link/word] \` Plays now, overrides queue *[pn]*\n\`' +
+    'play [link] \` Play YouTube/Spotify link *[p]* \n\`' +
     prefixString +
-    'what \` What\'s playing *[now]*\n\`' +
+    'playnow [word/link] \` Plays now, overrides queue *[pn]*\n\`' +
     prefixString +
     'pause \` Pause *[pa]*\n\`' +
     prefixString +
@@ -2793,16 +2802,14 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'end \` Stops playing and ends session  *[e]*\n\`' +
     prefixString +
+    'now \` See now playing *[np]*\n\`' +
+    prefixString +
     'loop \` Loops songs on finish *[l]*\n\`' +
     prefixString +
     'queue \` Displays the queue *[q]*\n' +
     '\n-----------  **Advanced Music Commands**  -----------\n\`' +
     prefixString +
     'lyrics \` Get lyrics of what\'s currently playing\n\`' +
-    prefixString +
-    'insert [link] [num] \` Insert a link into a position within the queue\n\`' +
-    prefixString +
-    'remove [num] \` Remove a link from the queue\n\`' +
     prefixString +
     'dj \` Enable DJ mode, requires members to vote skip tracks\n\`' +
     prefixString +
@@ -2835,7 +2842,11 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'guess \` Random roll for the number of people in the voice channel \n\`' +
     prefixString +
-    'changeprefix [new prefix] \` Changes the prefix for all commands \n' +
+    'changeprefix [new prefix] \` Changes the prefix for all commands \n\`' +
+    prefixString +
+    'insert [link] [num] \` Insert a link into a position within the queue\n\`' +
+    prefixString +
+    'remove [num] \` Remove a link from within the queue\n' +
     '\n**Or just say congrats to a friend. I will chime in too! :) **';
   const helpListEmbed = new MessageEmbed();
   helpListEmbed.setTitle('Help List *[with aliases]*');
@@ -3359,9 +3370,9 @@ bot.on('voiceStateUpdate', update => {
         server.followUpMessage = undefined;
       }
       if (bot.voice.connections.size < 1) {
-        whatspMap = new Map();
-        dispatcherMap = new Map();
-        dispatcherMapStatus = new Map();
+        whatspMap.clear();
+        dispatcherMap.clear();
+        dispatcherMapStatus.clear();
       }
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
     });
@@ -3438,7 +3449,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       console.log(e);
       message.channel.send('error: could not get link metadata <' + urlOrg + '>');
       whatspMap[voiceChannel.id] = '';
-      return skipSong(message, voiceChannel, true, server, true);
+      return skipLink(message, voiceChannel, true, server, true);
     }
     let artists = '';
     if (infos.artists) {
@@ -3576,7 +3587,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
             '***error code 404:*** *this video may contain a restriction preventing it from being played.*'
             + (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
           server.numSinceLastEmbed++;
-          skipSong(message, voiceChannel, true, server, true);
+          skipLink(message, voiceChannel, true, server, true);
         } else {
           console.log('status code 404 error');
           connection.disconnect();
@@ -3596,8 +3607,8 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
         message.channel.send('*this video contains a restriction preventing it from being played*');
         server.numSinceLastEmbed++;
         server.skipTimes = 1;
-        skipSong(message, voiceChannel, true, server, true);
-      } else skipSong(message, voiceChannel, false, server, true);
+        skipLink(message, voiceChannel, true, server, true);
+      } else skipLink(message, voiceChannel, false, server, true);
       return;
     }
     console.log('error in playSongToVC');
@@ -3619,7 +3630,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     // search the db to find possible broken keys
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, urlOrg);
     whatspMap[voiceChannel.id] = '';
-    skipSong(message, voiceChannel, true, server, true);
+    skipLink(message, voiceChannel, true, server, true);
     bot.channels.cache.get('856338454237413396').send('there was a playback error within playSongToVC').then(() => {
       bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1910));
     });
@@ -3658,7 +3669,7 @@ function searchForBrokenLinkWithinDB (message, whatToPlayS) {
 }
 
 /**
- * Rewinds the song
+ * Rewinds the link
  * @param message The message that triggered the bot
  * @param mgid The message guild id
  * @param voiceChannel The active voice channel
@@ -4003,7 +4014,7 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, shee
 let startUpMessage = '';
 // What's playing, uses voice channel id
 let whatspMap = new Map();
-// The song stream, uses voice channel id
+// The video stream, uses voice channel id
 let dispatcherMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
 let dispatcherMapStatus = new Map();
