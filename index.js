@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.14.5';
-const buildNo = '05140502'; // major, minor, patch, build
+const version = '5.14.6';
+const buildNo = '05140602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2344,8 +2344,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 collector.stop();
                 return generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
               } else msg.delete();
-            }).catch((e) => {
-            console.log(e);
+            }).catch(() => {
             message.channel.send('*cancelled*');
             msg.delete();
           });
@@ -2940,97 +2939,96 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       }
     }
   }
-  if (playNow || server.queue.length < 2) {
-    if (!playlistMsg) await message.react('📃');
+  if ((playNow || server.queue.length < 2) && !playlistMsg) {
+    await message.react('📃');
     let collector;
     if (server.searchReactionTimeout) clearTimeout(server.searchReactionTimeout);
     server.searchReactionTimeout = setTimeout(() => {
-      if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
       if (collector) collector.stop();
-      server.searchReactionTimeout = undefined;
-    }, 22000);
-    if (!playlistMsg) {
-      const filter = (reaction, user) => {
-        if (message.member.voice.channel) {
-          for (const mem of message.member.voice.channel.members) {
-            if (user.id === mem[1].id) {
-              return user.id !== bot.user.id && ['📃'].includes(reaction.emoji.name);
-            }
-          }
-        }
-        return false;
-      };
-      collector = message.createReactionCollector(filter, {time: 100000});
-      let res;
-      let notActive = true;
-      collector.on('collect', async (reaction, reactionCollector) => {
-        clearTimeout(server.searchReactionTimeout);
-        server.searchReactionTimeout = setTimeout(() => {
-          if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
-          collector.stop();
-          server.searchReactionTimeout = undefined;
-        }, 60000);
-        if (!playlistMsg) {
-          res = searchResult.items.slice(indexToLookup + 1, 6).map(x => {
-            if (x.type === 'video') return x.title;
-            else return '';
-          });
-          for (let i = 0; i < res.length; i++) {
-            if (res[i] === '') {
-              res.splice(i, 1);
-              i--;
-            }
-          }
-          let finalString = '**- Pick a different video -**\n';
-          let i = 0;
-          res.forEach(x => {
-            i++;
-            return finalString += i + '. ' + x + '\n';
-          });
-          playlistMsg = await message.channel.send(finalString);
-        }
-        if (notActive) {
-          notActive = false;
-          message.channel.send('***What would you like me to play? (1-' + (res.length) + ')*** *[or type \'q\' to quit]*').then(msg => {
-            const filter = m => {
-              return (m.author.id !== bot.user.id && reactionCollector.id === m.author.id);
-            };
-            message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-              .then(messages => {
-                let playNum = parseInt(messages.first().content && messages.first().content.trim());
-                if (playNum) {
-                  if (playNum < 1 || playNum > res.length) {
-                    message.channel.send('*invalid number*');
-                  } else {
-                    server.queueHistory.push(server.queue.shift());
-                    runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
-                  }
-                }
-                clearTimeout(server.searchReactionTimeout);
-                server.searchReactionTimeout = setTimeout(() => {
-                  if (playlistMsg) playlistMsg.delete().then(() => {playlistMsg = undefined;});
-                  collector.stop();
-                  server.searchReactionTimeout = undefined;
-                }, 22000);
-                msg.delete();
-                notActive = true;
-              }).catch(() => {
-              msg.delete();
-              notActive = true;
-            });
-          });
-        }
-      });
-      collector.on('end', () => {
+      else {
+        if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
         message.reactions.removeAll();
-      });
-    }
-  } else {
-    if (playlistMsg) {
-      setTimeout(() => {
-        playlistMsg.delete().then(() => {playlistMsg = undefined;});
-      }, 7000);
-    }
+        server.searchReactionTimeout = undefined;
+      }
+    }, 22000);
+    const filter = (reaction, user) => {
+      if (message.member.voice.channel) {
+        for (const mem of message.member.voice.channel.members) {
+          if (user.id === mem[1].id) {
+            return user.id !== bot.user.id && ['📃'].includes(reaction.emoji.name);
+          }
+        }
+      }
+      return false;
+    };
+    collector = message.createReactionCollector(filter, {time: 100000, dispose: true});
+    let res;
+    let notActive = true;
+    let reactionCollector2;
+    let msg2;
+    collector.on('collect', async (reaction, reactionCollector) => {
+      clearTimeout(server.searchReactionTimeout);
+      server.searchReactionTimeout = setTimeout(() => {collector.stop();}, 60000);
+      if (!playlistMsg) {
+        res = searchResult.items.slice(indexToLookup + 1, 6).map(x => {
+          if (x.type === 'video') return x.title;
+          else return '';
+        });
+        for (let i = 0; i < res.length; i++) {
+          if (res[i] === '') {
+            res.splice(i, 1);
+            i--;
+          }
+        }
+        let finalString = '**- Pick a different video -**\n';
+        let i = 0;
+        res.forEach(x => {
+          i++;
+          return finalString += i + '. ' + x + '\n';
+        });
+        playlistMsg = await message.channel.send(finalString);
+      }
+      if (notActive) {
+        notActive = false;
+        message.channel.send('***What would you like me to play? (1-' + (res.length) + ')*** *[or type \'q\' to quit]*').then(msg => {
+          reactionCollector2 = reactionCollector;
+          msg2 = msg;
+          const filter = m => {
+            return (m.author.id !== bot.user.id && reactionCollector.id === m.author.id);
+          };
+          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+            .then(messages => {
+              let playNum = parseInt(messages.first().content && messages.first().content.trim());
+              if (playNum) {
+                if (playNum < 1 || playNum > res.length) {
+                  message.channel.send('*invalid number*');
+                } else {
+                  server.queueHistory.push(server.queue.shift());
+                  runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
+                }
+              }
+              clearTimeout(server.searchReactionTimeout);
+              server.searchReactionTimeout = setTimeout(() => {collector.stop();}, 22000);
+              if (msg.deletable) msg.delete();
+              notActive = true;
+            }).catch(() => {
+            if (msg.deletable) msg.delete();
+            notActive = true;
+          });
+        });
+      }
+    });
+    collector.on('end', () => {
+      if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
+      message.reactions.removeAll();
+      server.searchReactionTimeout = undefined;
+    });
+    collector.on('remove', (reaction, user) => {
+      if (!notActive && reactionCollector2.id === user.id) {
+        if (msg2.deletable) msg2.delete();
+        notActive = true;
+      }
+    });
   }
 }
 
@@ -3543,9 +3541,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     if (!server.silence) {
       await sendLinkAsEmbed(message, urlOrg, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
     }
+    dispatcher.resume();
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
-    dispatcher.resume();
     dispatcher.once('finish', () => {
       if (urlOrg !== whatspMap[voiceChannel.id]) {
         console.log('There was a mismatch -------------------');
@@ -3805,8 +3803,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
   const generateNewEmbed = async () => {
     server.numSinceLastEmbed = 0;
     if (server.currentEmbed) {
-      if (!forceEmbed) {
-        if (server.currentEmbed && server.currentEmbed.deletable) server.currentEmbed.delete();
+      if (!forceEmbed && server.currentEmbed.deletable) {
+        server.currentEmbed.delete();
       } else if (server.currentEmbed.reactions) {
         server.collector.stop();
       }
@@ -3935,7 +3933,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
     }
   });
   collector.on('end', () => {
-    if (sentMsg.reactions) sentMsg.reactions.removeAll().then();
+    if (sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then();
   });
 }
 
