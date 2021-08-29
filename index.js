@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.14.7';
-const buildNo = '05140702'; // major, minor, patch, build
+const version = '5.14.8';
+const buildNo = '05140802'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -2068,7 +2068,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
   }
   return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
     + ' keys list. Put a desired name followed by a link. *(ex:\` ' + servers[message.guild.id].prefix + prefixString +
-    'add [key] [link]\`)*');
+    args[0].substr(prefixString ? 2 : 1).toLowerCase() + ' [key] [link]\`)*');
 }
 
 /**
@@ -3003,7 +3003,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
           reactionCollector2 = reactionCollector;
           msg2 = msg;
           const filter = m => {
-            return (m.author.id !== bot.user.id && reactionCollector.id === m.author.id);
+            return (m.author.id !== bot.user.id && reactionCollector.id === m.author.id && reactionCollector2);
           };
           message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
             .then(messages => {
@@ -3034,6 +3034,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     });
     collector.on('remove', (reaction, user) => {
       if (!notActive && reactionCollector2.id === user.id) {
+        reactionCollector2 = false;
         if (msg2.deletable) msg2.delete();
         notActive = true;
       }
