@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.14.6';
-const buildNo = '05140602'; // major, minor, patch, build
+const version = '5.14.7';
+const buildNo = '05140702'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -184,11 +184,11 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   try {
     // places the currently playing into the queue history if played long enough
     const dsp = dispatcherMap[voiceChannel.id];
-    if (server.queue[0] && server.queue[0] === whatspMap[voiceChannel.id] &&
-    dsp && dsp.streamTime && server.queue[0].includes('spotify.com') ? dsp.streamTime > 90000 : dsp.streamTime > 150000) {
+    if (server.queue[0] && dsp && dsp.streamTime &&
+    server.queue[0].includes('spotify.com') ? dsp.streamTime > Math.min(90000, dsp.streamTime / 2) : dsp.streamTime > Math.min(150000, dsp.streamTime / 2)) {
       server.queueHistory.push(server.queue.shift());
     }
-  } catch (e) {}
+  } catch (e) {console.log('dsp error:', e);}
   let pNums = 0;
   if (args[1].includes('spotify.com')) {
     await addPlaylistToQueue(message, mgid, pNums, args[1], true, true);
@@ -2537,10 +2537,10 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             let dsp = dispatcherMap[voiceChannel.id];
             try {
               if (server.queue[0] && dsp && dsp.streamTime &&
-              server.queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000) {
+              server.queue[0].includes('spotify.com') ? dsp.streamTime > Math.min(90000, dsp.streamTime / 2) : dsp.streamTime > Math.min(150000, dsp.streamTime / 2)) {
                 server.queueHistory.push(server.queue.shift());
               }
-            } catch (e) {console.log(e);}
+            } catch (e) {console.log('dsp error', e);}
             if (verifyPlaylist(tempUrl)) {
               await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
             } else {
@@ -2576,10 +2576,10 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           const dsp = dispatcherMap[voiceChannel.id];
           try {
             if (server.queue[0] && dsp && dsp.streamTime &&
-              (server.queue[0].includes('spotify.com') ? dsp.streamTime > 75000 : dsp.streamTime > 140000)) {
+              (server.queue[0].includes('spotify.com') ? dsp.streamTime > Math.min(90000, dsp.streamTime / 2) : dsp.streamTime > Math.min(90000, dsp.streamTime / 2))) {
               server.queueHistory.push(server.queue.shift());
             }
-          } catch (e) {console.log(e);}
+          } catch (e) {console.log('dsp error', e);}
           if (verifyPlaylist(tempUrl)) {
             await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
           } else {
@@ -2914,6 +2914,15 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
   }
   if (!ytLink) return message.channel.send('could not find video');
   if (playNow) {
+    try {
+      const dsp = dispatcherMap[message.member.voice.channel.id];
+      if (server.queue[0] &&
+      dsp && dsp.streamTime && server.queue[0].includes('spotify.com') ? dsp.streamTime > Math.min(90000, dsp.streamTime / 2) : dsp.streamTime > Math.min(150000, dsp.streamTime / 2)) {
+        server.queueHistory.push(server.queue.shift());
+      }
+    } catch (e) {
+      console.log('dsp error:', e);
+    }
     server.queue.unshift(ytLink);
     try {
       await playSongToVC(message, ytLink, message.member.voice.channel, server);
