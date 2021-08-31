@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.14.9';
-const buildNo = '05140902'; // major, minor, patch, build
+const version = '5.15.0';
+const buildNo = '05150002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -416,7 +416,13 @@ function initializeServer (mgid) {
     // the server's prefix
     prefix: undefined,
     // the timeout for the YT search results
-    searchReactionTimeout: undefined
+    searchReactionTimeout: undefined,
+    // the timer for the active DJ
+    djTimer: {
+      timer: false,
+      startTime: false,
+      duration: 1800000
+    }
   };
 }
 
@@ -532,6 +538,8 @@ async function runCommandCases (message) {
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   // console.log(args); // see recent bot commands within console for testing
   const statement = args[0].substr(1).toLowerCase();
+  let num = commandsMap.get(statement);
+  commandsMap.set(statement, (num ? ++num : 1));
   if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
     if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
       return;
@@ -1048,7 +1056,7 @@ async function runCommandCases (message) {
           server.voteRewindMembersId = [];
           server.votePlayPauseMembersId = [];
           server.lockQueue = false;
-          resignMsg += ' DJ mode is disabled.';
+          resignMsg += ' DJ mode disabled.';
         }
         message.channel.send(resignMsg);
       } else {
@@ -1227,6 +1235,7 @@ async function runCommandCases (message) {
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n' + prefixString + 'gzsm [message] - set a startup message on voice channel join' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
+          '\n' + prefixString + 'gzc - view commands stats' +
           '\n\n**calibrate any bots**' +
           '\n=gzl - return the bot\'s ping and latency' +
           '\n=gzk - start/kill a process' +
@@ -1237,6 +1246,23 @@ async function runCommandCases (message) {
         )
         .setFooter('version: ' + version);
       message.channel.send(devCEmbed);
+      break;
+    case 'gzc':
+      let commandsMapEmbed = new MessageEmbed();
+      let commandsMapString = '';
+      let commandsMapArray = [];
+      let CMAInt = 0;
+      commandsMap.forEach((value, key) => {
+        commandsMapArray[CMAInt] = [];
+        commandsMapArray[CMAInt][0] = key;
+        commandsMapArray[CMAInt++][1] = value;
+      });
+      commandsMapArray.sort((a, b) => b[1] - a[1]);
+      commandsMapArray.forEach((val) => {
+        commandsMapString += val[1] + ' - ' + val[0] + '\n';
+      });
+      commandsMapEmbed.setTitle('Commands Usage - Stats').setDescription(commandsMapString);
+      message.channel.send(commandsMapEmbed);
       break;
     case 'gzq':
       if (bot.voice.connections.size > 0 && args[1] !== 'force')
@@ -1829,6 +1855,49 @@ function runDictatorCommand (message, mgid, prefixString, server) {
 }
 
 /**
+ * Get the time left for a timer.
+ * @param duration The duration of the timer
+ * @param startTime The Date.now() representing when the timer began
+ * @returns {string} A string representing a formatted duration of how much time is left
+ */
+function getTimeLeft (duration, startTime) {
+  return formatDuration(Math.abs(Date.now() - startTime - duration));
+}
+
+/**
+ * Creates the DJ timer.
+ * @param message The message for channel info
+ * @param server The server info
+ * @param duration The duration of the timer
+ */
+function createDJTimer (message, server, duration) {
+  clearDJTimer(server);
+  server.djTimer.timer = setTimeout(() => {
+    server.voteAdmin.pop();
+    let resignMsg = '*Time\'s up: ' + (message.member.nickname ? message.member.nickname : message.member.user.username) +
+      ' is no longer the DJ.*';
+    if (server.voteAdmin.length < 1) {
+      server.voteSkipMembersId = [];
+      server.voteRewindMembersId = [];
+      server.votePlayPauseMembersId = [];
+      server.lockQueue = false;
+      resignMsg += '\n***DJ mode disabled.***';
+    }
+    message.channel.send(resignMsg);
+    server.djTimer.timer = false;
+  }, duration);
+  server.djTimer.startTime = Date.now();
+  server.djTimer.duration = duration;
+}
+
+function clearDJTimer (server) {
+  if (server.djTimer.timer) {
+    clearTimeout(server.djTimer.timer);
+    server.djTimer.timer = false;
+  }
+}
+
+/**
  * Handles the validation and provision of DJ permissions to members within a server.
  * @param message The message metadata
  * @param server The server playback metadata
@@ -1843,29 +1912,37 @@ function runDJCommand (message, server) {
   if (server.voteAdmin.length < 1) {
     server.voteAdmin.push(message.member);
     const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
-    message.channel.send('***DJ mode has been enabled for this session (DJ: ' + dj + ')***');
+    message.channel.send('***DJ mode has been enabled for this session (DJ: ' + dj + ')*** *[30 min]*');
+    createDJTimer(message, server, 1800000);
   } else {
     let ix = 0;
+    let newMemAdded = false;
     for (let x of server.voteAdmin) {
       if (!vcMembersId.includes(x.id)) {
         let oldMem = server.voteAdmin[ix];
         oldMem = (oldMem.nickname ? oldMem.nickname : oldMem.user.username);
-        let newMem = message.member;
-        server.voteAdmin[ix] = message.member;
-        newMem = (newMem.nickname ? newMem.nickname : newMem.user.username);
-        message.channel.send('*DJ ' + oldMem + ' is missing.* ***' + newMem + ' is now the new DJ.***');
+        if (!newMemAdded) {
+          let newMem = message.member;
+          server.voteAdmin[ix] = newMem;
+          newMem = (newMem.nickname ? newMem.nickname : newMem.user.username);
+          message.channel.send('*DJ ' + oldMem + ' is missing.* ***' + newMem + ' is now the new DJ.***');
+          createDJTimer(message, server, 1800000);
+          newMemAdded = true;
+        } else {
+          message.channel.send('*DJ ' + oldMem + ' is also missing and has forfeit being DJ*');
+        }
       }
       ix++;
     }
     const currentAdmin = server.voteAdmin[0];
     message.channel.send('***' + (currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
-      'the DJ.*** *Use a skip, rewind, play, or pause command to vote for that action.*');
+      'the DJ.*** *(' + getTimeLeft(server.djTimer.duration, server.djTimer.startTime).split(' ')[0] + ' remaining)*');
   }
   const msgEmbed = new MessageEmbed();
   msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
     '\`forcerewind\`- force rewind a track [fr]\n' +
     '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
-    '\`lock-queue\` - Toggle to prevent the queue from being added to\n' +
+    '\`lock-queue\` - Prevent the queue from being added to [toggle]\n' +
     '\`resign\` - forfeit DJ permissions')
     .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
       'The DJ can override voting by using the force commands above.');
@@ -4019,6 +4096,7 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, shee
   }
 }
 
+let commandsMap = new Map();
 // A message for users on first VC join
 let startUpMessage = '';
 // What's playing, uses voice channel id
