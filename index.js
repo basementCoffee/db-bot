@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.15.0';
-const buildNo = '05150002'; // major, minor, patch, build
+const version = '5.15.1';
+const buildNo = '05150102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -422,7 +422,9 @@ function initializeServer (mgid) {
       timer: false,
       startTime: false,
       duration: 1800000
-    }
+    },
+    // the last time a DJ tip was sent to a group
+    djMessageDate: false
   };
 }
 
@@ -1236,8 +1238,8 @@ async function runCommandCases (message) {
           '\n' + prefixString + 'gzsm [message] - set a startup message on voice channel join' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n' + prefixString + 'gzc - view commands stats' +
-          '\n\n**calibrate any bots**' +
-          '\n=gzl - return the bot\'s ping and latency' +
+          '\n\n**calibrate multiple/other bots**' +
+          '\n=gzl - return all bot\'s ping and latency' +
           '\n=gzk - start/kill a process' +
           '\n=gzd [process #] - toggle dev mode' +
           '\n\n**other commands**' +
@@ -1873,15 +1875,20 @@ function getTimeLeft (duration, startTime) {
 function createDJTimer (message, server, duration) {
   clearDJTimer(server);
   server.djTimer.timer = setTimeout(() => {
+    let mem = server.voteAdmin[0];
+    let resignMsg = '';
+    if (message.guild.voice.channel.members.map(x => x.id).includes(mem.id)) {
+      resignMsg = '*Time\'s up: ' + (mem.nickname ? mem.nickname : mem.user.username) + ' is no longer the DJ.*\n';
+    } else {
+      resignMsg = '*No DJ detected.*\n';
+    }
     server.voteAdmin.pop();
-    let resignMsg = '*Time\'s up: ' + (message.member.nickname ? message.member.nickname : message.member.user.username) +
-      ' is no longer the DJ.*';
     if (server.voteAdmin.length < 1) {
       server.voteSkipMembersId = [];
       server.voteRewindMembersId = [];
       server.votePlayPauseMembersId = [];
       server.lockQueue = false;
-      resignMsg += '\n***DJ mode disabled.***';
+      resignMsg += '***DJ mode disabled.***';
     }
     message.channel.send(resignMsg);
     server.djTimer.timer = false;
@@ -3460,6 +3467,7 @@ bot.on('voiceStateUpdate', update => {
         dispatcherMap.clear();
         dispatcherMapStatus.clear();
       }
+      clearDJTimer(server);
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
     });
   } else if (update.channel) {
@@ -3595,6 +3603,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       else if (eMsg.includes('VOICE_JOIN_CHANNEL')) message.channel.send('*permissions error: cannot join voice channel*');
       else message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
       throw 'cannot join voice channel';
+    }
+    if (voiceChannel.members.size > 3 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
+      message.channel.send('Try the \'dj\' command to become a DJ.');
+      server.djMessageDate = Date.now();
     }
     if (startUpMessage.length > 1 && !server.startUpMessage) {
       server.startUpMessage = true;
