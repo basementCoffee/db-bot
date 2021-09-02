@@ -28,7 +28,7 @@ const parser = new xml2js.Parser();
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
 const version = '5.15.1';
-const buildNo = '05150102'; // major, minor, patch, build
+const buildNo = '05150103'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -540,12 +540,13 @@ async function runCommandCases (message) {
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   // console.log(args); // see recent bot commands within console for testing
   const statement = args[0].substr(1).toLowerCase();
-  let num = commandsMap.get(statement);
-  commandsMap.set(statement, (num ? ++num : 1));
   if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
     if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
       return;
     }
+  } else {
+    let num = commandsMap.get(statement);
+    commandsMap.set(statement, (num ? ++num : 1));
   }
   if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
   switch (statement) {
