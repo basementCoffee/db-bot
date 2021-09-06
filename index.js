@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.0';
-const buildNo = '05160002'; // major, minor, patch, build
+const version = '5.16.1';
+const buildNo = '05160102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1380,6 +1380,7 @@ bot.once('ready', () => {
     mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
+    // bot logs - startup
     bot.channels.cache.get('827195452507160627').send('starting up: ' + process.pid);
     checkToSeeActive();
   }
@@ -1387,11 +1388,10 @@ bot.once('ready', () => {
 const setOfBotsOn = new Set();
 // calibrate on startup
 bot.on('message', async (message) => {
-  if (devMode) return;
+  if (devMode || message.channel.id !== '827195452507160627') return;
   // ~db-bot-process (standard)[15] | -on [3 or 0] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
   // turn off active bots -- activates on '~db-bot-process'
-  if (message.content.substr(0, 15) === '~db-bot-process' &&
-    message.member.id === '730350452268597300' && !devMode) {
+  if (message.content.substr(0, 15) === '~db-bot-process') {
     // if seeing bots that are on
     if (message.content.substr(15, 3) === '-on') {
       const activeUsers = message.content.substr(18, 1);
@@ -1559,7 +1559,7 @@ bot.on('message', async (message) => {
               vcSize = bot.voice.connections.size;
               updateMessage();
             }
-          }, 7000);
+          }, 6500);
 
           collector.on('collect', (reaction, user) => {
             if (reaction.emoji.name === '⚙️') {
@@ -1645,6 +1645,11 @@ bot.on('message', async (message) => {
         message.channel.send('People are using the bot. This operation is currently not supported.');
       else message.channel.send("restarting the bot... (may only shutdown)").then(() =>
         setTimeout(() => {process.exit();}, 2000));
+    } else if (zmsg === 'z') {
+      const zargs = message.content.split(' ');
+      if (message.author.bot && zargs[1] !== process.pid.toString()) {
+        checkToSeeActive();
+      }
     }
   }
   if (message.author.bot || isInactive || (devMode && message.author.id !== '443150640823271436' &&
@@ -1866,6 +1871,32 @@ function runDictatorCommand (message, mgid, prefixString, server) {
     .setDescription('\`resign\` - forfeit being dictator')
     .setFooter('The dictator has control over all music commands for the session. Enjoy!');
   message.channel.send(dicEmbed);
+}
+
+process
+  .on('SIGTERM', shutdown('SIGTERM'))
+  .on('SIGINT', shutdown('SIGINT'))
+  .on('uncaughtException', shutdown('uncaughtException'));
+
+function shutdown (type) {
+  return (err) => {
+    console.log('shutting down...');
+    bot.channels.cache.get('827195452507160627').send('shutting down: ' + process.pid + ' (' + type + ')');
+    if (bot.voice.connections.size > 0) {
+      bot.channels.cache.get('827195452507160627').send('=gzz ' + process.pid);
+      bot.voice.connections.forEach(x => {
+        let currentEmbed = servers[x.channel.guild.id].currentEmbed;
+        try {
+          if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');
+          else x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)');
+        } catch (e) {
+          x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)');
+        }
+        x.disconnect();
+      });
+    }
+    setTimeout(() => process.exit(0), 4000);
+  };
 }
 
 /**
