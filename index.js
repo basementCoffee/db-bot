@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.1';
-const buildNo = '05160102'; // major, minor, patch, build
+const version = '5.16.2';
+const buildNo = '05160202'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1451,6 +1451,7 @@ function checkToSeeActive () {
 
 /**
  * Checks the status of ytdl-core-discord and exits the active process if the test link is unplayable.
+ * @param message The message metadata to send a response to the appropriate channel
  */
 function checkStatusOfYtdl (message) {
   bot.channels.cache.get('833458014124113991').join().then(async (connection) => {
@@ -1500,6 +1501,14 @@ function responseHandler () {
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, 3000);
+  } else {
+    if (process.pid === 4) {
+      let d = new Date();
+      if (d.getHours() === 5 && d.getMinutes() > 0 && d.getMinutes() < 20 && bot.uptime > 3600000
+        && bot.voice.connections.size < 1) {
+        return process.exit();
+      }
+    }
   }
 }
 
@@ -1878,8 +1887,12 @@ process
   .on('SIGINT', shutdown('SIGINT'))
   .on('uncaughtException', shutdown('uncaughtException'));
 
+let shutdown = false;
+
 function shutdown (type) {
+  if (shutdown) return;
   return (err) => {
+    shutdown = true;
     console.log('shutting down...');
     bot.channels.cache.get('827195452507160627').send('shutting down: ' + process.pid + ' (' + type + ')');
     if (bot.voice.connections.size > 0) {
