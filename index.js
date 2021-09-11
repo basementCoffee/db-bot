@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.5';
-const buildNo = '05160502'; // major, minor, patch, build
+const version = '5.16.6';
+const buildNo = '05160602'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1271,8 +1271,7 @@ async function runCommandCases (message) {
       if (devMode) return;
       if (bot.voice.connections.size > 0 && args[1] !== 'force')
         message.channel.send('People are using the bot. Use this command again with \'force\' to restart the bot');
-      else message.channel.send("restarting the bot... (may only shutdown)").then(() =>
-        setTimeout(() => {shutdown('user');}));
+      else message.channel.send("restarting the bot... (may only shutdown)").then(() => shutdown('user'));
       break;
     case 'gzid':
       message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', y: ' + message.member.id);
