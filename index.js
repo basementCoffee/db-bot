@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.6';
-const buildNo = '05160602'; // major, minor, patch, build
+const version = '5.16.7';
+const buildNo = '05160702'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -843,7 +843,7 @@ async function runCommandCases (message) {
           };
           let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
           num = messages.first().content.trim();
-          if (num === 'q') {
+          if (num.toLowerCase() === 'q') {
             return message.channel.send('*cancelled*');
           } else {
             num = parseInt(num);
@@ -1828,7 +1828,7 @@ function sendMessageToUser (message, userID, reactionUserID) {
             message.channel.send('Message sent to ' + user.username + '.');
             message.react('✅').then();
           });
-        } else if (messages.first().content.trim() === 'q') {
+        } else if (messages.first().content.trim().toLowerCase() === 'q') {
           message.channel.send('No message sent.');
         }
         msg.delete();
@@ -2389,7 +2389,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
           message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
             .then(messages => {
               link = messages.first().content.trim();
-              if (link === 'q') {
+              if (link.toLowerCase() === 'q') {
                 return;
               }
               if (link) {
@@ -2402,7 +2402,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                   message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
                     .then(async messages => {
                       position = messages.first().content.trim();
-                      if (position === 'q') {
+                      if (position.toLowerCase() === 'q') {
                         return;
                       }
                       if (position) {
@@ -2452,14 +2452,14 @@ function runQueueCommand (message, mgid, noErrorMsg) {
         if (server.voteAdmin.length > 0 && server.voteAdmin.filter(x => x.id === reactionCollector.id).length === 0)
           return message.channel.send('only a dj can remove from the queue');
         if (serverQueue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
-        message.channel.send('What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'cancel\']').then(msg => {
+        message.channel.send('What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'q\']').then(msg => {
           const filter = m => {
             return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
           };
           message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
             .then(async messages => {
               let num = messages.first().content.trim();
-              if (num === 'cancel') {
+              if (num.toLowerCase() === 'q') {
                 return message.channel.send('*cancelled*');
               }
               num = parseInt(num);
@@ -3705,13 +3705,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       quality: '140',
       volume: false
     });
-    dispatcher.pause();
     dispatcherMap[voiceChannel.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
     if (!server.silence) {
       await sendLinkAsEmbed(message, urlOrg, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
     }
-    dispatcher.resume();
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
     dispatcher.once('finish', () => {
