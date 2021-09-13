@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.7';
-const buildNo = '05160702'; // major, minor, patch, build
+const version = '5.16.8';
+const buildNo = '05160802'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1457,8 +1457,6 @@ function checkStatusOfYtdl (message) {
     try {
       connection.play(await ytdl('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {}), {
         type: 'opus',
-        filter: 'audio',
-        quality: '140',
         volume: false
       });
       setTimeout(() => {
@@ -3701,8 +3699,6 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
   try {
     dispatcher = connection.play(await ytdl(urlAlt, {}), {
       type: 'opus',
-      filter: 'audioonly',
-      quality: '140',
       volume: false
     });
     dispatcherMap[voiceChannel.id] = dispatcher;
