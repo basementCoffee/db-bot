@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.8';
-const buildNo = '05160802'; // major, minor, patch, build
+const version = '5.16.9';
+const buildNo = '05160902'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -3697,9 +3697,12 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
   }
   let dispatcher;
   try {
-    dispatcher = connection.play(await ytdl(urlAlt, {}), {
+    dispatcher = connection.play(await ytdl(urlAlt, {
+      filter: format => ['251']
+    }).catch((e) => console.log('stream error', e)), {
       type: 'opus',
-      volume: false
+      volume: false,
+      highWaterMark: 1 << 25
     });
     dispatcherMap[voiceChannel.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
@@ -3708,6 +3711,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     }
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
+    dispatcher.on('error', (e) => {
+      skipLink(message, voiceChannel, false, server, false);
+    });
     dispatcher.once('finish', () => {
       if (urlOrg !== whatspMap[voiceChannel.id]) {
         console.log('There was a mismatch -------------------');
