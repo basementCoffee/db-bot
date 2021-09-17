@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.14';
-const buildNo = '051601402'; // major, minor, patch, build
+const version = '5.16.15';
+const buildNo = '051601502'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1396,15 +1396,17 @@ bot.on('message', async (message) => {
   if (message.content.substr(0, 15) === '~db-bot-process') {
     // if seeing bots that are on
     if (message.content.substr(15, 3) === '-on') {
-      const activeUsers = message.content.substr(18, 1);
       const oBuildNo = message.content.substr(19, 8);
-      // if the other bot's version number is less than this bot's then turn the other bot off
-      if (parseInt(oBuildNo) >= buildNo || activeUsers === '1') {
+      // compare versions || check if actively being used (if so: keep on)
+      if (parseInt(oBuildNo) >= parseInt(buildNo) || message.content.substr(18, 1) === '1') {
         setOfBotsOn.add(oBuildNo);
       }
     } else if (message.content.substr(15, 4) === '-off') {
-      const oProcess = message.content.substr(29).trim();
-      if (oProcess !== process.pid.toString()) isInactive = true;
+      // compare process IDs
+      if (message.content.substr(29).trim() !== process.pid.toString()) {
+        isInactive = true;
+        console.log('*-sidelined-*');
+      }
     }
   }
 });
