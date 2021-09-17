@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.10';
-const buildNo = '051601002'; // major, minor, patch, build
+const version = '5.16.11';
+const buildNo = '051601102'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1488,19 +1488,23 @@ function responseHandler () {
     console.log('-active-');
     bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
       process.pid.toString());
+    bot.channels.cache.get('827195452507160627').send('~db-bot-process-on' +
+      (bot.voice.connections.size > 0 ? '1' : '0') + buildNo + 'ver' + process.pid);
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
-      setTimeout(() => {
-        if (!isInactive) checkStatusOfYtdl();
-      }, 10000);
-    }, 3000);
+      else {
+        setTimeout(() => {
+          if (!isInactive) checkStatusOfYtdl();
+        }, 10000);
+      }
+    }, ((Math.floor(Math.random() * 14) + 3) * 1000)); // 3 - 17 seconds
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
       process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
-    }, 3000);
+    }, ((Math.floor(Math.random() * 5) + 1) * 1000)); // 1 - 6 seconds
   } else {
     if (process.pid === 4) {
       let d = new Date();
