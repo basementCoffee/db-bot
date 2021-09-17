@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.12';
-const buildNo = '051601202'; // major, minor, patch, build
+const version = '5.16.13';
+const buildNo = '051601302'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1487,9 +1487,7 @@ function responseHandler () {
     devMode = false;
     console.log('-active-');
     bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
-      process.pid.toString());
-    bot.channels.cache.get('827195452507160627').send('~db-bot-process-on' +
-      (bot.voice.connections.size > 0 ? '1' : '0') + buildNo + 'ver' + process.pid);
+      process.pid.toString() + 's<1');
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
       else {
@@ -1501,7 +1499,7 @@ function responseHandler () {
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
-      process.pid.toString());
+      process.pid.toString() + ' s>1');
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 2) * 1000)); // 2 - 7 seconds
