@@ -1487,7 +1487,7 @@ function responseHandler () {
     devMode = false;
     console.log('-active-');
     bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
-      process.pid.toString() + 's<1');
+      process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
       else {
@@ -1499,7 +1499,7 @@ function responseHandler () {
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
-      process.pid.toString() + ' s>1');
+      process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 2) * 1000)); // 2 - 7 seconds
