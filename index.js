@@ -27,8 +27,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.9';
-const buildNo = '05160902'; // major, minor, patch, build
+const version = '5.16.10';
+const buildNo = '051601002'; // major, minor, patch, build
 let isInactive = !devMode; // default true - (see: bot.on('ready'))
 let servers = {};
 // the max size of the queue
@@ -1271,7 +1271,10 @@ async function runCommandCases (message) {
       if (devMode) return;
       if (bot.voice.connections.size > 0 && args[1] !== 'force')
         message.channel.send('People are using the bot. Use this command again with \'force\' to restart the bot');
-      else message.channel.send("restarting the bot... (may only shutdown)").then(() => shutdown('user'));
+      else message.channel.send("restarting the bot... (may only shutdown)").then(() => {
+        shutdown('user');
+        setTimeout(() => process.exit(), 5000);
+      });
       break;
     case 'gzid':
       message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', y: ' + message.member.id);
@@ -1461,13 +1464,13 @@ function checkStatusOfYtdl (message) {
       });
       setTimeout(() => {
         connection.disconnect();
-        if (message) message.channel.send('*db bot does not appear to have any issues*');
+        if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
       }, 6000);
     } catch (e) {
       await bot.channels.cache.get('827195452507160627').send('=gzk');
-      await bot.channels.cache.get('856338454237413396').send('ytdl status was unhealthy, shutting off bot');
+      await bot.channels.cache.get('856338454237413396').send('ytdl status is unhealthy, shutting off bot');
       connection.disconnect();
-      setTimeout(() => process.exit(0), 1000);
+      setTimeout(() => process.exit(0), 2000);
     }
   });
 }
@@ -1516,6 +1519,7 @@ bot.on('message', async (message) => {
       message.member.id === '443150640823271436' ||
       message.member.id === '268554823283113985')) {
     const zmsg = message.content.substr(3, 1);
+    // =gzk
     if (zmsg === 'k') {
       if (message.member.id === '730350452268597300') {
         if (!isInactive && !devMode) {
@@ -1619,6 +1623,7 @@ bot.on('message', async (message) => {
         }
       }
       return;
+      // =gzd
     } else if (zmsg === 'd') {
       const zargs = message.content.split(' ');
       let activeStatus = 'active';
@@ -1638,9 +1643,11 @@ bot.on('message', async (message) => {
         servers[message.guild.id].prefix = '=';
         return message.channel.send('*devmode is on* ' + process.pid.toString());
       }
+      // =gzl
     } else if (zmsg === 'l') {
       return message.channel.send(process.pid.toString() +
         `: Latency is ${Date.now() - message.createdTimestamp}ms.\nNetwork latency is ${Math.round(bot.ws.ping)}ms`);
+      // =gzq
     } else if (zmsg === 'q') {
       const zargs = message.content.split(' ');
       if (zargs[1] !== process.pid.toString()) {
@@ -1882,7 +1889,10 @@ function runDictatorCommand (message, mgid, prefixString, server) {
 process
   .on('SIGTERM', shutdown('SIGTERM'))
   .on('SIGINT', shutdown('SIGINT'))
-  .on('uncaughtException', shutdown('uncaughtException'));
+  .on('uncaughtException', (e) => {
+    console.log('uncaughtException: ', e);
+    return shutdown('uncaughtException');
+  });
 
 function shutdown (type) {
   return () => {
@@ -1901,7 +1911,7 @@ function shutdown (type) {
         x.disconnect();
       });
     }
-    setTimeout(() => process.exit(0), 4000);
+    setTimeout(() => process.exit(), 4000);
   };
 }
 
@@ -3712,6 +3722,8 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
     dispatcher.on('error', (e) => {
+      bot.channels.cache.get('856338454237413396').send('dispatcher error: <' + urlAlt + '>');
+      console.log('dispatcher error: ', e);
       skipLink(message, voiceChannel, false, server, false);
     });
     dispatcher.once('finish', () => {
