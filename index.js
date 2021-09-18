@@ -3,6 +3,7 @@ require('dotenv').config();
 const {MessageEmbed, Client} = require('discord.js');
 const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./database');
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
+const version = require('./package.json').version;
 
 // initialization
 const bot = new Client();
@@ -27,9 +28,8 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const version = '5.16.15';
-const buildNo = '051601502'; // major, minor, patch, build
-let isInactive = !devMode; // default true - (see: bot.on('ready'))
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
+let isInactive = !devMode;
 let servers = {};
 // the max size of the queue
 const maxQueueSize = 500;
@@ -1405,7 +1405,7 @@ bot.on('message', async (message) => {
       // compare process IDs
       if (message.content.substr(29).trim() !== process.pid.toString()) {
         isInactive = true;
-        console.log('*-sidelined-*');
+        console.log('-sidelined-');
       }
     }
   }
@@ -2969,9 +2969,9 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     "keys \` See all of the server's keys *[k]*\n\`" +
     prefixString +
-    'd [key] \` Play a song from the server keys [k] \n\`' +
+    'k [key] \` Play a song from the server keys \n\`' +
     prefixString +
-    'dnow [key] \` Play immediately, overrides queue [dn] \n\`' +
+    'know [key] \` Play immediately, overrides queue *[kn]* \n\`' +
     prefixString +
     'add [key] [url] \` Add a song to the server keys  *[a]*\n\`' +
     prefixString +
@@ -3439,7 +3439,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
         }
         const embedKeysMessage = new MessageEmbed();
         embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
-          .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
+          .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "k [key]' to play)\n");
         return embedKeysMessage;
       };
       const server = servers[message.guild.id];
@@ -3455,18 +3455,18 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
             let descriptionSuffix;
             if (dbName === "server's keys") {
               nameToSend = 'the server';
-              descriptionSuffix = 'The server keys are keys that any person in a server can play. ' +
-                '\nEach server has it\'s own server keys and can be used by any member in the server.';
+              descriptionSuffix = 'Each server has it\'s own server keys. ' +
+                '\nThey can be used by any member in the server.';
             } else {
               nameToSend = 'your personal';
-              descriptionSuffix = 'Your personal keys are keys that only you can play. \nThey work in any server ' +
-                'with the db bot.';
+              descriptionSuffix = 'Your personal keys are keys that only you can play. ' +
+                '\nThey work for you in any server with the db bot.';
             }
             const embed = new MessageEmbed()
               .setTitle('How to add/delete keys from ' + nameToSend + ' list')
               .setDescription('Add a song by putting a word followed by a link -> \` ' +
                 prefixString + cmdType + 'a [key] [link]\`\n' +
-                'Delete a song by putting the name you want to delete -> \` ' +
+                'Delete a song by putting the name you wish to delete -> \` ' +
                 prefixString + cmdType + 'del [key]\`')
               .setFooter(descriptionSuffix);
             message.channel.send(embed);
