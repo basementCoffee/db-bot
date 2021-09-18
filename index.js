@@ -83,7 +83,7 @@ function skipLink (message, voiceChannel, playMessageToChannel, server, noHistor
     // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
       // get rid of previous dispatch
-      playSongToVC(message, server.queue[0], voiceChannel, server);
+      playLinkToVC(message, server.queue[0], voiceChannel, server);
     } else {
       runStopPlayingCommand(message.guild.id, voiceChannel, true, server, message, message.member);
     }
@@ -199,7 +199,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     server.queue.unshift(args[1]);
   }
   message.channel.send('*playing now*');
-  playSongToVC(message, server.queue[0], voiceChannel, server).then();
+  playLinkToVC(message, server.queue[0], voiceChannel, server).then();
 }
 
 /**
@@ -336,7 +336,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   // if queue was empty then play
   if (queueWasEmpty) {
-    playSongToVC(message, server.queue[0], message.member.voice.channel, server);
+    playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
   }
@@ -359,9 +359,9 @@ async function runRestartCommand (message, mgid, keyword, server) {
   }
   if (server.queueHistory.length > 0) {
     server.queue.unshift(server.queueHistory.pop());
-    await playSongToVC(message, server.queue[0], message.member.voice.channel, server);
+    await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else if (server.queue[0]) {
-    await playSongToVC(message, server.queue[0], message.member.voice.channel, server);
+    await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else {
     message.channel.send('there is nothing to ' + keyword);
   }
@@ -527,7 +527,7 @@ async function runCommandCases (message) {
           if (item !== -1)
             server.queueHistory.splice(item, 1);
         }, 20000);
-        return playSongToVC(message, congratsLink, vc, servers[mgid]).then(() => {
+        return playLinkToVC(message, congratsLink, vc, servers[mgid]).then(() => {
           setTimeout(() => servers[mgid].silence = false, 400);
           let item = server.queueHistory.indexOf(congratsLink);
           if (item !== -1)
@@ -1403,10 +1403,10 @@ bot.on('message', async (message) => {
       }
     } else if (message.content.substr(15, 4) === '-off') {
       // compare process IDs
-      if (message.content.substr(29).trim() !== process.pid.toString()) {
+      if (message.content.substr(28).trim() !== process.pid.toString()) {
         isInactive = true;
         console.log('-sidelined-');
-      }
+      } else isInactive = false;
     }
   }
 });
@@ -1492,11 +1492,7 @@ function responseHandler () {
       process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
-      else {
-        setTimeout(() => {
-          if (!isInactive) checkStatusOfYtdl();
-        }, 10000);
-      }
+      else checkStatusOfYtdl();
     }, ((Math.floor(Math.random() * 18) + 9) * 1000)); // 9 - 27 seconds
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
@@ -1504,7 +1500,7 @@ function responseHandler () {
       process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
-    }, ((Math.floor(Math.random() * 5) + 2) * 1000)); // 2 - 7 seconds
+    }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
   } else {
     if (process.pid === 4) {
       let d = new Date();
@@ -2433,7 +2429,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                           }
                         }
                         if (num > server.queue.length) num = server.queue.length;
-                        if (num === 0) playSongToVC(message, link, message.member.voice.channel, server);
+                        if (num === 0) playLinkToVC(message, link, message.member.voice.channel, server);
                         else {
                           server.queue.splice(num, 0, link);
                           serverQueue.splice(num, 0, link);
@@ -2670,7 +2666,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         message.channel.send(unFoundString);
       }
       if (playRightNow) {
-        return playSongToVC(message, server.queue[0], voiceChannel, server);
+        return playLinkToVC(message, server.queue[0], voiceChannel, server);
       } else message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
     } else {
       tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
@@ -2693,7 +2689,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             } else {
               server.queue.unshift(tempUrl);
             }
-            playSongToVC(message, server.queue[0], voiceChannel, server);
+            playLinkToVC(message, server.queue[0], voiceChannel, server);
             message.channel.send('*playing now*');
             return true;
           } else {
@@ -2732,7 +2728,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           } else {
             server.queue.unshift(tempUrl);
           }
-          playSongToVC(message, server.queue[0], voiceChannel, server);
+          playLinkToVC(message, server.queue[0], voiceChannel, server);
           message.channel.send('*playing now*');
           return true;
         } else {
@@ -2748,7 +2744,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     }
     // if queue was empty then play
     if (queueWasEmpty && server.queue.length > 0) {
-      playSongToVC(message, server.queue[0], voiceChannel, server);
+      playLinkToVC(message, server.queue[0], voiceChannel, server);
     }
   });
   return true;
@@ -3072,7 +3068,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     }
     server.queue.unshift(ytLink);
     try {
-      await playSongToVC(message, ytLink, message.member.voice.channel, server);
+      await playLinkToVC(message, ytLink, message.member.voice.channel, server);
     } catch (e) {
       return;
     }
@@ -3080,7 +3076,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     server.queue.push(ytLink);
     if (server.queue.length === 1) {
       try {
-        await playSongToVC(message, ytLink, message.member.voice.channel, server);
+        await playLinkToVC(message, ytLink, message.member.voice.channel, server);
       } catch (e) {
         return;
       }
@@ -3369,7 +3365,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   if (queueWasEmpty && (server.queue.length <= (numOfTimes + 1) || addAll)) {
     // remove the filler string
     server.queue.shift();
-    playSongToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
+    playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
       if (sentMsg && sentMsg.deletable) sentMsg.delete();
     });
   } else {
@@ -3588,8 +3584,7 @@ process.on('error', (e) => {
  * @param server The server playback metadata
  * @param avoidReplay Optional - Bool to not replay the song after initial replay
  */
-async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidReplay) {
-  const mgid = message.guild.id;
+async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidReplay) {
   if (!whatToPlay) {
     whatToPlay = server.queue[0];
     if (!whatToPlay && server.queue[1]) {
@@ -3611,19 +3606,17 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.votePlayPauseMembersId = [];
     server.lockQueue = false;
   }
-  servers[mgid].infos = false;
-  // the display url
-  let urlOrg = whatToPlay;
+  servers[message.guild.id].infos = false;
   // the alternative url to play
   let urlAlt = whatToPlay;
   let infos;
-  if (urlOrg.includes('spotify.com')) {
+  if (whatToPlay.includes('spotify.com')) {
     let itemIndex = 0;
     try {
-      infos = await getData(urlOrg);
+      infos = await getData(whatToPlay);
     } catch (e) {
       console.log(e);
-      message.channel.send('error: could not get link metadata <' + urlOrg + '>');
+      message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
       whatspMap[voiceChannel.id] = '';
       return skipLink(message, voiceChannel, true, server, true);
     }
@@ -3671,7 +3664,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     }
     if (search.items[itemIndex]) urlAlt = search.items[itemIndex].url;
     else {
-      message.channel.send('could not find <' + urlOrg + '>');
+      message.channel.send('could not find <' + whatToPlay + '>');
       runSkipCommand(message, voiceChannel, server, 1, true, true, message.member);
     }
   }
@@ -3697,10 +3690,10 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.connection = connection;
     connection.voice.setSelfDeaf(true).then();
   }
-  whatspMap[voiceChannel.id] = urlOrg;
+  whatspMap[voiceChannel.id] = whatToPlay;
   // remove previous embed buttons
   if (server.numSinceLastEmbed > 4 && server.currentEmbed &&
-    (!server.loop || whatspMap[voiceChannel.id] !== urlOrg)) {
+    (!server.loop || whatspMap[voiceChannel.id] !== whatToPlay)) {
     server.numSinceLastEmbed = 0;
     server.currentEmbed.delete();
     server.currentEmbed = false;
@@ -3721,7 +3714,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     dispatcherMap[voiceChannel.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
     if (!server.silence) {
-      await sendLinkAsEmbed(message, urlOrg, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
+      await sendLinkAsEmbed(message, whatToPlay, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
     }
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
@@ -3731,9 +3724,9 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       skipLink(message, voiceChannel, false, server, false);
     });
     dispatcher.once('finish', () => {
-      if (urlOrg !== whatspMap[voiceChannel.id]) {
+      if (whatToPlay !== whatspMap[voiceChannel.id]) {
         console.log('There was a mismatch -------------------');
-        console.log('old url: ' + urlOrg);
+        console.log('old url: ' + whatToPlay);
         console.log('current url: ' + whatspMap[voiceChannel.id]);
         try {
           bot.channels.cache.get('856338454237413396').send('there was a mismatch with playback');
@@ -3744,11 +3737,11 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       if (voiceChannel.members.size < 2) {
         connection.disconnect();
       } else if (server.loop) {
-        playSongToVC(message, urlOrg, voiceChannel, server, false);
+        playLinkToVC(message, whatToPlay, voiceChannel, server, false);
       } else {
         server.queueHistory.push(server.queue.shift());
         if (server.queue.length > 0) {
-          playSongToVC(message, server.queue[0], voiceChannel, server, false);
+          playLinkToVC(message, server.queue[0], voiceChannel, server, false);
         } else {
           server.collector.stop();
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), 1800000);
@@ -3763,7 +3756,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
   } catch (e) {
     let errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!avoidReplay) playSongToVC(message, whatToPlay, voiceChannel, server, true);
+      if (!avoidReplay) playLinkToVC(message, whatToPlay, voiceChannel, server, true);
       else {
         server.skipTimes++;
         if (server.skipTimes < 3) {
@@ -3795,7 +3788,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       } else skipLink(message, voiceChannel, false, server, true);
       return;
     }
-    console.log('error in playSongToVC');
+    console.log('error in playLinkToVC');
     console.log(e);
     const numberOfPrevSkips = server.skipTimes;
     if (numberOfPrevSkips < 1) {
@@ -3809,13 +3802,13 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
       server.skipTimes++;
     }
     // Error catching - fault with the link?
-    message.channel.send('Could not play <' + urlOrg + '>' +
+    message.channel.send('Could not play <' + whatToPlay + '>' +
       ((server.skipTimes === 1) ? '\nIf the link is not broken, please try again.' : ''));
     // search the db to find possible broken keys
-    if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, urlOrg);
+    if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, whatToPlay);
     whatspMap[voiceChannel.id] = '';
     skipLink(message, voiceChannel, true, server, true);
-    bot.channels.cache.get('856338454237413396').send('there was a playback error within playSongToVC').then(() => {
+    bot.channels.cache.get('856338454237413396').send('there was a playback error within playLinkToVC').then(() => {
       bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1910));
     });
     return;
@@ -3824,7 +3817,7 @@ async function playSongToVC (message, whatToPlay, voiceChannel, server, avoidRep
     setTimeout(() => {
       if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
         dispatcher.streamTime < 1) {
-        playSongToVC(message, whatToPlay, voiceChannel, server, true);
+        playLinkToVC(message, whatToPlay, voiceChannel, server, true);
       }
     }, 1500);
   }
@@ -3893,7 +3886,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
   let rwIncrementor = 0;
   while (server.queueHistory.length > 0 && rwIncrementor < rewindTimes) {
     if (server.queue.length > (maxQueueSize + 99)) {
-      playSongToVC(message, server.queue[0], voiceChannel, server);
+      playLinkToVC(message, server.queue[0], voiceChannel, server);
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
     song = false;
@@ -3908,9 +3901,9 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
     if (ignoreSingleRewind) {} else {
       message.channel.send('*rewound' + (rewindTimes === 1 ? '*' : ` ${rwIncrementor} times*`));
     }
-    playSongToVC(message, song, voiceChannel, server);
+    playLinkToVC(message, song, voiceChannel, server);
   } else if (server.queue[0]) {
-    playSongToVC(message, server.queue[0], voiceChannel, server);
+    playLinkToVC(message, server.queue[0], voiceChannel, server);
     message.channel.send('*replaying first song*');
   } else {
     message.channel.send('cannot find previous song');
