@@ -3706,8 +3706,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
   try {
     dispatcher = connection.play(await ytdl(urlAlt, {}).catch((e) => console.log('stream error', e)), {
       type: 'opus',
-      quality: 'highestaudio',
-      highWaterMark: 1 << 25
+      quality: 'highestaudio'
     });
     dispatcherMap[voiceChannel.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
