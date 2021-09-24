@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "5.17.2",
+  "version": "5.17.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -13,6 +13,7 @@
     "discord.js": "^12.5.3",
     "dotenv": "^10.0.0",
     "ffmpeg": "^0.0.4",
+    "ffmpeg-static": "^4.4.0",
     "genius-lyrics": "^4.2.9",
     "googleapis": "^87.0.0",
     "node-gyp": "^8.2.0",
