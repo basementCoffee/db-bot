@@ -3705,7 +3705,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
   let dispatcher;
   try {
     dispatcher = connection.play(await ytdl(urlAlt, {
-      filter: format => ['251']
+      filter: () => ['251']
     }).catch((e) => console.log('stream error', e)), {
       type: 'opus',
       volume: false,
