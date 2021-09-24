@@ -157,7 +157,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   }
   if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can play perform this action');
-  if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
+  if (server.lockQueue && server.voteAdmin.filter().length === 0)
     return message.channel.send('the queue is locked: only the dj can play and add links');
   if (!args[1]) {
     return message.channel.send('What should I play now? Put a link or some words.');
@@ -809,7 +809,7 @@ async function runCommandCases (message) {
       if (!message.member.voice.channel) return message.channel.send('you must be in a voice channel to remove items from the queue');
       if (server.dictator && message.member !== server.dictator)
         return message.channel.send('only the dictator can remove');
-      if (server.voteAdmin.length > 0 && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
+      if (server.voteAdmin.length > 0 && server.voteAdmin.filter().length === 0)
         return message.channel.send('only a dj can remove');
       if (server.queue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
       let rNum = parseInt(args[1]);
@@ -827,7 +827,7 @@ async function runCommandCases (message) {
       if (!message.member.voice.channel) return message.channel.send('must be in a voice channel');
       if (server.dictator && message.member !== server.dictator)
         return message.channel.send('only the dictator can insert');
-      if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
+      if (server.lockQueue && server.voteAdmin.filter().length === 0)
         return message.channel.send('the queue is locked: only the dj can insert');
       if (server.queue.length > maxQueueSize) return message.channel.send('*max queue size has been reached*');
       if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
@@ -1031,7 +1031,7 @@ async function runCommandCases (message) {
       }
       break;
     case 'lock-queue':
-      if (server.voteAdmin.filter(x => x.id === message.member.id).length > 0) {
+      if (server.voteAdmin.filter().length > 0) {
         if (server.lockQueue) message.channel.send('***the queue has been unlocked:*** *any user can add to it*');
         else message.channel.send('***the queue has been locked:*** *only the dj can add to it*');
         server.lockQueue = !server.lockQueue;
@@ -1780,7 +1780,7 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
     dispatcherMap[actionUser.voice.channel.id]) {
     if (server.dictator && actionUser !== server.dictator)
       return message.channel.send('only the dictator can play');
-    if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
+    if (server.lockQueue && server.voteAdmin.filter().length === 0)
       return message.channel.send('the queue is locked: only the dj can play and add songs');
     let cmdResponse = '*playing*';
     if (server.voteAdmin.length > 0) {
@@ -2385,7 +2385,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       } else if (reaction.emoji.name === '📥') {
         if (server.dictator && reactionCollector.id !== server.dictator.id)
           return message.channel.send('only the dictator can insert');
-        if (server.lockQueue && server.voteAdmin.filter(x => x.id === reactionCollector.id).length === 0)
+        if (server.lockQueue && server.voteAdmin.filter().length === 0)
           return message.channel.send('the queue is locked: only the dj can insert');
         if (serverQueue.length > maxQueueSize) return message.channel.send('*max queue size has been reached*');
         let link;
@@ -2457,7 +2457,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       } else if (reaction.emoji.name === '📤') {
         if (server.dictator && reactionCollector.id !== server.dictator.id)
           return message.channel.send('only the dictator can remove from the queue');
-        if (server.voteAdmin.length > 0 && server.voteAdmin.filter(x => x.id === reactionCollector.id).length === 0)
+        if (server.voteAdmin.length > 0 && server.voteAdmin.filter().length === 0)
           return message.channel.send('only a dj can remove from the queue');
         if (serverQueue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
         message.channel.send('What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'q\']').then(msg => {
@@ -3704,9 +3704,12 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
   }
   let dispatcher;
   try {
-    dispatcher = connection.play(await ytdl(urlAlt, {}).catch((e) => console.log('stream error', e)), {
+    dispatcher = connection.play(await ytdl(urlAlt, {
+      filter: () => ['251']
+    }).catch((e) => console.log('stream error', e)), {
       type: 'opus',
-      quality: 'highestaudio'
+      volume: false,
+      highWaterMark: 1 << 25
     });
     dispatcherMap[voiceChannel.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
