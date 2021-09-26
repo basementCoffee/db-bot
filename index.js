@@ -160,7 +160,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
     return message.channel.send('the queue is locked: only the dj can play and add links');
   if (!args[1]) {
-    return message.channel.send('What should I play now? Put a link or some words.');
+    return message.channel.send('What should I play now? Put a link or some words after the command.');
   }
   // in case of force disconnect
   if (!botInVC(message)) {
@@ -293,7 +293,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   if (!args[1]) {
     if (runPlayCommand(message, message.member, server, true)) return;
-    return message.channel.send('What should I play? Put a link or some words.');
+    return message.channel.send('What should I play? Put a link or some words after the command.');
   }
   if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can perform this action');
@@ -507,6 +507,7 @@ async function runCommandCases (message) {
       } else {
         name = '';
       }
+      commandsMap.set('congrats', (commandsMap.get('congrats') || 0) + 1);
       const randomEmojis = ['🥲', '😉', '😇', '😗', '😅', '🥳', '😄'];
       const randENum = Math.floor(Math.random() * randomEmojis.length);
       const oneInThree = Math.floor(Math.random() * 3);
@@ -545,8 +546,7 @@ async function runCommandCases (message) {
       return;
     }
   } else {
-    let num = commandsMap.get(statement);
-    commandsMap.set(statement, (num ? ++num : 1));
+    commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
   }
   if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
   switch (statement) {
@@ -755,6 +755,13 @@ async function runCommandCases (message) {
         }
       });
       break;
+    case 'ticket':
+      if (args[1]) {
+        args[0] = '';
+        dmHandler(message, args.join(''));
+        message.channel.send('Your message has been sent');
+      } else return message.channel.send('*input a message after the command to submit a request/issue*');
+      break;
     // !? is the command for what's playing?
     case 'current':
     case '?':
@@ -769,6 +776,8 @@ async function runCommandCases (message) {
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
       break;
     case 'm?':
+    case 'mnow':
+    case 'mwhat':
       await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
       break;
     case 'gurl':
@@ -906,8 +915,8 @@ async function runCommandCases (message) {
           await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
             await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
             server.prefix = args[2];
-            message.channel.send('Prefix successfully changed to ' + args[2]);
-            prefixString = '\\' + args[2];
+            message.channel.send(`Prefix successfully changed to ${args[2]}`);
+            prefixString = ('\\' + args[2]).substr(-1, 1);
             sentPrefixMsg.delete();
             let name = 'db bot';
             if (message.guild.me.nickname) {
@@ -924,7 +933,8 @@ async function runCommandCases (message) {
               }
             }
 
-            if (!message.guild.me.nickname || (message.guild.me.nickname.substr(0, 1) !== '[' && message.guild.me.nickname.substr(2, 1) !== ']')) {
+            if (!message.guild.me.nickname || (message.guild.me.nickname.substr(0, 1) !== '['
+              && message.guild.me.nickname.substr(2, 1) !== ']')) {
               message.channel.send('----------------------\nWould you like me to update my name to reflect this? (yes or no)\nFrom **' +
                 (message.guild.me.nickname || 'db bot') + '**  -->  **[' + prefixString + '] ' + name + '**').then(() => {
                 const filter = m => message.author.id === m.author.id;
@@ -1223,7 +1233,6 @@ async function runCommandCases (message) {
       break;
     // print out the version number
     case 'version':
-    case 'v':
       const vEmbed = new MessageEmbed();
       vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
       message.channel.send(vEmbed);
@@ -1256,9 +1265,7 @@ async function runCommandCases (message) {
       let commandsMapArray = [];
       let CMAInt = 0;
       commandsMap.forEach((value, key) => {
-        commandsMapArray[CMAInt] = [];
-        commandsMapArray[CMAInt][0] = key;
-        commandsMapArray[CMAInt++][1] = value;
+        commandsMapArray[CMAInt++] = [key, value];
       });
       commandsMapArray.sort((a, b) => b[1] - a[1]);
       commandsMapArray.forEach((val) => {
@@ -1398,7 +1405,7 @@ bot.on('message', async (message) => {
     if (message.content.substr(15, 3) === '-on') {
       const oBuildNo = message.content.substr(19, 8);
       // compare versions || check if actively being used (if so: keep on)
-      if (parseInt(oBuildNo) >= parseInt(buildNo) || message.content.substr(18, 1) === '1') {
+      if (parseInt(oBuildNo) >= parseInt(buildNo) || message.content.substr(18, 1) !== '0') {
         setOfBotsOn.add(oBuildNo);
       }
     } else if (message.content.substr(15, 4) === '-off') {
@@ -1523,7 +1530,7 @@ bot.on('message', async (message) => {
     if (zmsg === 'k') {
       if (message.member.id === '730350452268597300') {
         if (!isInactive && !devMode) {
-          message.channel.send('~db-bot-process-on' + (bot.voice.connections.size > 0 ? '1' : '0') + buildNo + 'ver' + process.pid);
+          return message.channel.send(`~db-bot-process-on${Math.min(bot.voice.connections.size, 9)}${buildNo}ver${process.pid}`);
         }
         return;
       }
@@ -1567,9 +1574,10 @@ bot.on('message', async (message) => {
           let statusInterval = setInterval(() => {
             if (bot.voice.connections.size !== vcSize) {
               vcSize = bot.voice.connections.size;
-              updateMessage();
+              if (sentMsg.deletable) updateMessage();
+              else clearInterval(statusInterval);
             }
-          }, 6500);
+          }, 4500);
 
           collector.on('collect', (reaction, user) => {
             if (reaction.emoji.name === '⚙️') {
@@ -1593,18 +1601,22 @@ bot.on('message', async (message) => {
               isInactive = !isInactive;
               console.log((isInactive ? '-sidelined-' : '-active-'));
               if (!isInactive) setTimeout(() => {if (!isInactive) checkStatusOfYtdl();}, 10000);
-              updateMessage();
-              reaction.users.remove(user.id);
+              if (sentMsg.deletable) {
+                updateMessage();
+                reaction.users.remove(user.id);
+              }
             } else if (reaction.emoji.name === devR) {
               devMode = !devMode;
               isInactive = true;
-              updateMessage();
+              if (sentMsg.deletable) updateMessage();
             }
           });
           collector.once('end', () => {
             clearInterval(statusInterval);
-            if (sentMsg.reactions) sentMsg.reactions.removeAll();
-            updateMessage();
+            if (sentMsg.deletable) {
+              if (sentMsg.reactions) sentMsg.reactions.removeAll();
+              updateMessage();
+            }
           });
         });
       } else if (zargs[1] === 'all') {
@@ -1671,38 +1683,50 @@ bot.on('message', async (message) => {
     return;
   }
   if (message.channel.type === 'dm') {
-    const messageContent = message.content.toLowerCase().trim() + ' ';
-    if (messageContent.length < 7 && messageContent.includes('help ')) {
-      return message.author.send(getHelpList('.', 1)[0]);
-    } else if (messageContent.length < 9 && messageContent.includes('invite ')) {
-      return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
-    }
-    const mb = '📤';
-    bot.channels.cache.get('870800306655592489')
-      .send('------------------------------------------\n' +
-        '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
-        message.content + '\n------------------------------------------').then(msg => {
-      msg.react(mb);
-      const filter = (reaction, user) => {
-        return user.id !== bot.user.id;
-      };
-
-      const collector = msg.createReactionCollector(filter, {time: 86400000});
-
-      collector.on('collect', (reaction, user) => {
-        if (reaction.emoji.name === mb) {
-          sendMessageToUser(msg, message.author.id, user.id);
-          reaction.users.remove(user);
-        }
-      });
-      collector.once('end', () => {
-        msg.reactions.cache.get(mb).remove();
-      });
-    });
+    dmHandler(message, message.content);
   } else {
     return runCommandCases(message);
   }
 });
+
+/**
+ * Handles message requests.
+ * @param message The message metadata.
+ * @param messageContent {string} The content of the message.
+ * @returns {*}
+ */
+function dmHandler (message, messageContent) {
+  // the message content - formatted in lower case
+  let mc = messageContent.toLowerCase().trim() + ' ';
+  if (mc.length < 9) {
+    if (mc.length < 7 && mc.includes('help '))
+      return message.author.send(getHelpList('.', 1)[0]);
+    else if (mc.includes('invite '))
+      return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
+  }
+  const mb = '📤';
+  bot.channels.cache.get('870800306655592489')
+    .send('------------------------------------------\n' +
+      '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
+      messageContent + '\n------------------------------------------').then(msg => {
+    msg.react(mb).then();
+    const filter = (reaction, user) => {
+      return user.id !== bot.user.id;
+    };
+
+    const collector = msg.createReactionCollector(filter, {time: 86400000});
+
+    collector.on('collect', (reaction, user) => {
+      if (reaction.emoji.name === mb) {
+        sendMessageToUser(msg, message.author.id, user.id);
+        reaction.users.remove(user).then();
+      }
+    });
+    collector.once('end', () => {
+      msg.reactions.cache.get(mb).remove().then();
+    });
+  });
+}
 
 /**
  * Verifies if a member is a vote admin (DJ moderator) or has the same permissions as a vote admin.
@@ -1816,7 +1840,7 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
 /**
  * Prompts the text channel for a response to forward to the given user.
  * @param message The original message that activates the bot.
- * @param userID The ID of the user to forward the message to.
+ * @param userID The ID of the user to send the reply to.
  * @param reactionUserID Optional - The ID of a user who can reply to the prompt besides the message author
  */
 function sendMessageToUser (message, userID, reactionUserID) {
@@ -2973,7 +2997,7 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'delete [key] \` Deletes a song from the server keys  *[del]*\n\`' +
     prefixString +
-    'rand [# times] \` Play a random song from server keys  *[r]*\n\`' +
+    'shuffle [# times] \` Play a random song from server keys  *[r]*\n\`' +
     prefixString +
     'search [key] \` Search keys  *[s]*\n\`' +
     prefixString +
@@ -2988,7 +3012,9 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'insert [link] [num] \` Insert a link into a position within the queue\n\`' +
     prefixString +
-    'remove [num] \` Remove a link from within the queue\n' +
+    'remove [num] \` Remove a link from within the queue\n\`' +
+    prefixString +
+    'ticket [message] \` report an issue / request a new feature \n' +
     '\n**Or just say congrats to a friend. I will chime in too! :) **';
   const helpListEmbed = new MessageEmbed();
   helpListEmbed.setTitle('Help List *[with aliases]*');
@@ -3475,6 +3501,8 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
             if (!botInVC(message)) {
               server.queue = [];
               server.queueHistory = [];
+            } else if (server.queue.length >= maxQueueSize) {
+              return message.channel.send('*max queue size has been reached*');
             }
             for (const mem of voiceChannel.members) {
               if (reactionCollector.id === mem[1].id) {
@@ -3484,7 +3512,6 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
                   } else {
                     message.channel.send('*randomizing...*');
                   }
-
                   if (reactionCollector.id === user.id) {
                     addRandomToQueue(message, -1, xdb.congratsDatabase, server, false);
                     return;
@@ -3679,7 +3706,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
       else message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
       throw 'cannot join voice channel';
     }
-    if (voiceChannel.members.size > 3 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
+    if (voiceChannel.members.size > 6 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
       message.channel.send('Try the \'dj\' command to become a DJ.');
       server.djMessageDate = Date.now();
     }
