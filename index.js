@@ -28,7 +28,7 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '03';
 let isInactive = !devMode;
 let servers = {};
 // the max size of the queue
