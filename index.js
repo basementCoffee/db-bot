@@ -814,6 +814,18 @@ async function runCommandCases (message) {
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
+    case 'recc':
+    case 'recommend':
+      if (message.member.id !== '443150640823271436' && message.member.id !== '268554823283113985') return;
+      if (!botInVC(message) || !server.queue[0]) return;
+      try {
+        let recUser = await bot.users.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
+        await recUser.send(`${recUser.username} has a recommendation for you`);
+        await recUser.send((await createEmbed(server.queue[0])).embed);
+      } catch (e) {
+        console.log(e);
+      }
+      break;
     case 'murl':
     case 'mlink':
       if (!args[1]) {
@@ -1265,7 +1277,7 @@ async function runCommandCases (message) {
           '\n=gzk - start/kill a process' +
           '\n=gzd [process #] - toggle dev mode' +
           '\n\n**other commands**' +
-          '\n' + prefixString + 'gzid - user, bot, and guild id' +
+          '\n' + prefixString + 'gzid - guild, bot, and member id' +
           '\ndevadd - access the database'
         )
         .setFooter('version: ' + version);
@@ -1296,7 +1308,7 @@ async function runCommandCases (message) {
       });
       break;
     case 'gzid':
-      message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', y: ' + message.member.id);
+      message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', m: ' + message.member.id);
       break;
     case 'gzsm':
       if (args[1]) {
@@ -3988,36 +4000,10 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     server.numSinceLastEmbed += 10;
   }
   server.currentEmbedLink = url;
-  let embed;
-  let timeMS = 0;
+  let embed = await createEmbed(url, infos);
+  let timeMS = embed.timeMS;
+  embed = embed.embed;
   let showButtons = true;
-  if (url.toString().includes('spotify.com')) {
-    if (!infos) infos = await getData(url);
-    let artists = '';
-    infos.artists.forEach(x => artists ? artists += ', ' + x.name : artists += x.name);
-    embed = new MessageEmbed()
-      .setTitle(`${infos.name}`)
-      .setURL(infos.external_urls.spotify)
-      .setColor('#1DB954')
-      .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, artists, true)
-      .addField('Duration', formatDuration(infos.duration_ms), true)
-      .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
-    timeMS = parseInt(infos.duration_ms);
-    // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
-  } else {
-    if (!infos) infos = await ytdl.getInfo(url);
-    let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
-    timeMS = parseInt(duration);
-    if (duration === 'NaNm NaNs') {
-      duration = 'N/A';
-    }
-    embed = new MessageEmbed()
-      .setTitle(`${infos.videoDetails.title}`)
-      .setURL(infos.videoDetails.video_url)
-      .setColor('#c40d00')
-      .addField('Duration', duration, true)
-      .setThumbnail(infos.videoDetails.thumbnails[0].url);
-  }
   server.infos = infos;
   if (botInVC(message)) {
     embed.addField('Queue', (server.queue.length > 0 ? ' 1 / ' + server.queue.length : 'empty'), true);
@@ -4056,6 +4042,48 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
       await generateNewEmbed();
     }
   }
+}
+
+/**
+ * Return an object containing the embed and time based on the data provided
+ * @param url The url to create the embed for
+ * @param infos Optional - the info metadata to use
+ * @returns {Promise<{embed: module:"discord.js".MessageEmbed, timeMS: number}>}
+ */
+async function createEmbed (url, infos) {
+  let timeMS;
+  let embed;
+  if (url.toString().includes('spotify.com')) {
+    if (!infos) infos = await getData(url);
+    let artists = '';
+    infos.artists.forEach(x => artists ? artists += ', ' + x.name : artists += x.name);
+    embed = new MessageEmbed()
+      .setTitle(`${infos.name}`)
+      .setURL(infos.external_urls.spotify)
+      .setColor('#1DB954')
+      .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, artists, true)
+      .addField('Duration', formatDuration(infos.duration_ms), true)
+      .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
+    timeMS = parseInt(infos.duration_ms);
+    // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
+  } else {
+    if (!infos) infos = await ytdl.getInfo(url);
+    let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
+    timeMS = parseInt(duration);
+    if (duration === 'NaNm NaNs') {
+      duration = 'N/A';
+    }
+    embed = new MessageEmbed()
+      .setTitle(`${infos.videoDetails.title}`)
+      .setURL(infos.videoDetails.video_url)
+      .setColor('#c40d00')
+      .addField('Duration', duration, true)
+      .setThumbnail(infos.videoDetails.thumbnails[0].url);
+  }
+  return {
+    embed,
+    timeMS
+  };
 }
 
 /**
