@@ -645,6 +645,12 @@ async function runCommandCases (message) {
     case 'r':
       runRandomToQueue(args[1], message, mgid, server);
       break;
+    case 'rn':
+    case 'randnow':
+    case 'shufflen':
+    case 'shufflenow':
+      runRandomToQueue(args[1], message, mgid, server, true);
+      break;
     // test purposes - random command
     case 'gshuffle':
     case 'grand':
@@ -656,6 +662,12 @@ async function runCommandCases (message) {
     case 'mrand':
     case 'mr':
       runRandomToQueue(args[1], message, 'p' + message.member.id, server);
+      break;
+    case 'mrn':
+    case 'mrandnow':
+    case 'mshufflen':
+    case 'mshufflenow':
+      runRandomToQueue(args[1], message, 'p' + message.member.id, server, true);
       break;
     // .keys is server keys
     case 'k':
@@ -1662,10 +1674,7 @@ bot.on('message', async (message) => {
       // =gzq
     } else if (zmsg === 'q') {
       const zargs = message.content.split(' ');
-      if (zargs[1] !== process.pid.toString()) {
-        if (!isInactive) message.channel.send('put a process id to quit a specific process');
-        return;
-      }
+      if (zargs[1] !== process.pid.toString()) return;
       if (bot.voice.connections.size > 0)
         message.channel.send('People are using the bot. This operation is currently not supported.');
       else message.channel.send("restarting the bot... (may only shutdown)").then(() =>
@@ -3237,8 +3246,9 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
  * @param message The message that triggered the bot
  * @param sheetName The name of the sheet to reference
  * @param server The server playback metadata
+ * @param addToFront Optional - true if to add to the front
  */
-function runRandomToQueue (num, message, sheetName, server) {
+function runRandomToQueue (num, message, sheetName, server, addToFront = false) {
   if (!message.member.voice.channel) {
     return message.channel.send('must be in a voice channel to play random');
   }
@@ -3248,6 +3258,8 @@ function runRandomToQueue (num, message, sheetName, server) {
   let isPlaylist;
   // holds the string
   const numCpy = num;
+  // convert addToFront into a number for addRandomToQueue
+  if (addToFront) addToFront = 1;
   try {
     num = parseInt(num);
     if (num < 1) return message.channel.send('*invalid number*');
@@ -3265,19 +3277,19 @@ function runRandomToQueue (num, message, sheetName, server) {
   if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
-  if (numCpy && numCpy.toString().includes('.')) return addRandomToQueue(message, numCpy, undefined, server, true);
+  if (numCpy && numCpy.toString().includes('.')) return addRandomToQueue(message, numCpy, undefined, server, true, addToFront);
   gsrun('A', 'B', sheetName).then((xdb) => {
     if (isPlaylist) {
-      addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true);
+      addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true, addToFront);
     } else {
       try {
         if (num && num > maxQueueSize) {
           message.channel.send('*max limit for random is ' + maxQueueSize + '*');
           num = maxQueueSize;
         }
-        addRandomToQueue(message, num, xdb.congratsDatabase, server);
+        addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront);
       } catch (e) {
-        addRandomToQueue(message, 1, xdb.congratsDatabase, server);
+        addRandomToQueue(message, 1, xdb.congratsDatabase, server, false, addToFront);
       }
     }
   });
@@ -3290,8 +3302,9 @@ function runRandomToQueue (num, message, sheetName, server) {
  * @param {Map} cdb The database to reference
  * @param server The server playback metadata
  * @param isPlaylist Optional - True if to randomize just a playlist
+ * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
  */
-async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
+async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, addToFront = 0) {
   let playlistKey;
   if (isPlaylist) {
     playlistKey = numOfTimes; // playlist name would come from numOfTimes
@@ -3319,16 +3332,16 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
   // mutate numberOfTimes to not exceed maxQueueSize
   if (numOfTimes + serverQueueLength > maxQueueSize) {
     numOfTimes = maxQueueSize - serverQueueLength;
-    addAll = false; // no longer want to add all
     if (numOfTimes === 0) {
       return message.channel.send('*max queue size has been reached*');
     }
+    addAll = false; // no longer want to add all
   }
   let rn;
   const queueWasEmpty = server.queue.length < 1;
   // place a filler string in the queue to show that it will no longer be empty
   // in case of another function call at the same time
-  if (queueWasEmpty) server.queue[0] = 'filler link';
+  if (queueWasEmpty && !addToFront) server.queue[0] = 'filler link';
   try {
     for (let i = 0; i < numOfTimes;) {
       let tempArray = [];
@@ -3341,7 +3354,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
         if (tempArray[randomNumber].includes('.')) url = tempArray[randomNumber];
         else url = cdb.get(tempArray[randomNumber]);
         let playlist;
-        // if it is a playlist
+        // if it is a playlist, un-package the playlist
         if (verifyPlaylist(url)) {
           try {
             let isSpotify = url.toLowerCase().includes('spotify');
@@ -3365,10 +3378,14 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
             console.log(e);
           }
         } else if (url) {
-          // it is not a playlist
-          server.queue.push(url);
+          // add url to queue
+          if (addToFront) {
+            server.queue.splice(addToFront - 1, 0, url);
+            addToFront++;
+          } else server.queue.push(url);
           i++;
         }
+        // remove added item from tempArray
         tempArray.splice(randomNumber, 1);
       }
       if (addAll) {
@@ -3376,7 +3393,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
         break;
       } // break as all items have been added
     }
-    // rKeyArrayFinal should have list of randoms here
+    // here - queue should have all the items
   } catch (e) {
     console.log('error in random: ');
     console.log(e);
@@ -3388,7 +3405,11 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist) {
     }
     server.queue.push(cdb.get(rKeyArray[rn]));
   }
-  if (queueWasEmpty && (server.queue.length <= (numOfTimes + 1) || addAll)) {
+  if (addToFront) {
+    playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
+      if (sentMsg && sentMsg.deletable) sentMsg.delete();
+    });
+  } else if (queueWasEmpty && (server.queue.length <= (numOfTimes + 1) || addAll)) {
     // remove the filler string
     server.queue.shift();
     playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
@@ -3413,7 +3434,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
   gsrun('A', 'B', sheetname).then((xdb) => {
     let keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
     let keyArraySorted = keyArrayUnsorted.map(x => x).sort();
-    let sortByRecents = false;
+    let sortByRecents = true;
     let dbName = '';
     let keyArray = keyArraySorted;
     if (keyArray.length < 1) {
@@ -3520,11 +3541,9 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
                       addRandomToQueue(message, -1, xdb2.congratsDatabase, server, false);
                     });
                   }
-                  // runRandomToQueue(-1, message, 'p' + reactionCollector.id, servers[message.guild.id]);
                 } else {
                   message.channel.send('*randomizing from the server keys...*');
                   addRandomToQueue(message, -1, xdb.congratsDatabase, server, false);
-                  // runRandomToQueue(-1, message, sheetname, servers[message.guild.id]);
                 }
                 return;
               }
@@ -3835,6 +3854,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, whatToPlay);
     whatspMap[voiceChannel.id] = '';
     skipLink(message, voiceChannel, true, server, true);
+    if (devMode) return;
     bot.channels.cache.get('856338454237413396').send('there was a playback error within playLinkToVC').then(() => {
       bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1910));
     });
