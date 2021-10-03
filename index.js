@@ -28,7 +28,7 @@ const parser = new xml2js.Parser();
 
 // UPDATE HERE - Before Git Push
 let devMode = false; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '03';
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
 let isInactive = !devMode;
 let servers = {};
 // the max size of the queue
@@ -820,8 +820,9 @@ async function runCommandCases (message) {
       if (!botInVC(message) || !server.queue[0]) return;
       try {
         let recUser = await bot.users.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
-        await recUser.send(`${recUser.username} has a recommendation for you`);
+        await recUser.send(`${message.member.user.username} has a recommendation for you`);
         await recUser.send((await createEmbed(server.queue[0])).embed);
+        message.channel.send(`*recommendation sent to ${recUser.username}*`);
       } catch (e) {
         console.log(e);
       }
