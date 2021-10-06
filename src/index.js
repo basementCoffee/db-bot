@@ -3752,12 +3752,16 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
     dispatcher.on('error', (e) => {
+      if (dispatcher.streamTime < 1000 && !avoidReplay) {
+        playLinkToVC(message, whatToPlay, voiceChannel, server, true);
+      } else {
+        skipLink(message, voiceChannel, false, server, false);
+      }
       bot.channels.cache.get('856338454237413396').send(
         (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
         timestamp: ${formatDuration(dispatcher.streamTime)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]}`)
       );
       console.log('dispatcher error: ', e);
-      skipLink(message, voiceChannel, false, server, false);
     });
     dispatcher.once('finish', () => {
       if (whatToPlay !== whatspMap[voiceChannel.id]) {
