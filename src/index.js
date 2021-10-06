@@ -792,7 +792,12 @@ async function runCommandCases (message) {
     case 'reccommend':
     case 'recommend':
       args[0] = '';
-      sendRecommendation(message, (args[1] ? args.join(' ').trim() : ''), server.queue).then();
+      let rUrl = server.queue[0];
+      if (verifyUrl(args[1])) {
+        rUrl = args[1];
+        args[1] = '';
+      }
+      sendRecommendation(message, args.join(' ').trim(), rUrl).then();
       break;
     case 'murl':
     case 'mlink':
@@ -1794,8 +1799,6 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
     dispatcherMap[actionUser.voice.channel.id]) {
     if (server.dictator && actionUser !== server.dictator)
       return message.channel.send('only the dictator can play');
-    if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
-      return message.channel.send('the queue is locked: only the dj can play and add songs');
     let cmdResponse = '*playing*';
     if (server.voteAdmin.length > 0) {
       if (force) server.votePlayPauseMembersId = [];
@@ -2629,7 +2632,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         if (tempUrl) {
           // push to queue
           if (verifyPlaylist(tempUrl)) {
-            dbAddedToQueue += await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), false);
+            dbAddedToQueue += await addPlaylistToQueue(message, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
           } else if (playRightNow) {
             if (first) {
               server.queue.unshift(tempUrl);

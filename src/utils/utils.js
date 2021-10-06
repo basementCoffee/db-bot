@@ -78,17 +78,17 @@ async function createEmbed (url, infos) {
 /**
  * Send a recommendation to a user. EXPERIMENTAL.
  * @param message The message metadata.
- * @param content
- * @param queue The server queue.
+ * @param content Optional - text to add to the recommendation.
+ * @param url The url to recommend.
  * @returns {Promise<void>}
  */
-async function sendRecommendation (message, content, queue) {
+async function sendRecommendation (message, content, url) {
   if (message.member.id !== '443150640823271436' && message.member.id !== '268554823283113985') return;
-  if (!botInVC(message) || !queue[0]) return;
+  if ((!botInVC(message) || !url)) return;
   try {
     let recUser = await bot.users.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
     await recUser.send(`${message.member.user.username} has a recommendation for you${(content ? `:\n *${content}*` : '')}`);
-    await recUser.send((await createEmbed(queue[0])).embed);
+    await recUser.send((await createEmbed(url)).embed);
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
   } catch (e) {
     console.log(e);
