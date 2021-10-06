@@ -1,9 +1,10 @@
 'use strict';
 require('dotenv').config();
 const {MessageEmbed, Client} = require('discord.js');
-const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./database');
+const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./utils/database');
+const {formatDuration, createEmbed, sendRecommendation, initUtils, botInVC} = require('./utils/utils');
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
-const version = require('./package.json').version;
+const version = require('../package.json').version;
 
 // initialization
 const bot = new Client();
@@ -36,26 +37,6 @@ const maxQueueSize = 500;
 process.setMaxListeners(0);
 
 /**
- * Given a duration in ms, it returns a formatted string separating
- * the hours, minutes, and seconds.
- * @param duration a duration in milliseconds
- * @returns {string} a formatted string duration
- */
-function formatDuration (duration) {
-  const seconds = duration / 1000;
-  const min = (seconds / 60);
-  const hours = Math.floor(min / 60);
-  const days = Math.floor(hours / 24);
-  if (days > 0) {
-    return `${days}d ${Math.floor(hours % 24)}h`;
-  }
-  if (hours > 0) {
-    return `${hours}h ${Math.floor(min % 60)}m`;
-  }
-  return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
-}
-
-/**
  * Determines whether the message contains a form of congratulations
  * @param word The text to compare
  * @returns {*} true if congrats is detected
@@ -83,7 +64,7 @@ function skipLink (message, voiceChannel, playMessageToChannel, server, noHistor
     // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
       // get rid of previous dispatch
-      playLinkToVC(message, server.queue[0], voiceChannel, server);
+      playLinkToVC(message, server.queue[0], voiceChannel, server).then();
     } else {
       runStopPlayingCommand(message.guild.id, voiceChannel, true, server, message, message.member);
     }
@@ -200,15 +181,6 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   }
   message.channel.send('*playing now*');
   playLinkToVC(message, server.queue[0], voiceChannel, server).then();
-}
-
-/**
- * Returns whether the bot is in a voice channel within the guild.
- * @param message The message that triggered the bot.
- * @returns {Boolean} True if the bot is in a voice channel.
- */
-function botInVC (message) {
-  return message.guild.voice && message.guild.voice.channel;
 }
 
 /**
@@ -336,7 +308,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   // if queue was empty then play
   if (queueWasEmpty) {
-    playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
+    playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then();
   } else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
   }
@@ -553,33 +525,33 @@ async function runCommandCases (message) {
     // the normal play command
     case 'play':
     case 'p':
-      runPlayLinkCommand(message, args, mgid, server, undefined);
+      runPlayLinkCommand(message, args, mgid, server, undefined).then();
       break;
     case 'mplay':
     case 'mp':
-      runPlayLinkCommand(message, args, mgid, server, 'p' + message.member.id);
+      runPlayLinkCommand(message, args, mgid, server, 'p' + message.member.id).then();
       break;
     // test purposes - play command
     case 'gplay':
     case 'gp':
-      runPlayLinkCommand(message, args, mgid, server, 'entries');
+      runPlayLinkCommand(message, args, mgid, server, 'entries').then();
       break;
     // test purposes - play now command
     case 'gpnow':
     case 'gpn':
-      runPlayNowCommand(message, args, mgid, server, 'entries');
+      runPlayNowCommand(message, args, mgid, server, 'entries').then();
       break;
     // the play now command
     case 'pnow':
     case 'playnow':
     case 'pn':
-      runPlayNowCommand(message, args, mgid, server, undefined);
+      runPlayNowCommand(message, args, mgid, server, undefined).then();
       break;
     // the personal play now command
     case 'mplaynow':
     case 'mpnow':
     case 'mpn':
-      runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id);
+      runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id).then();
       break;
     // stop session commands
     case 'quit':
@@ -626,7 +598,7 @@ async function runCommandCases (message) {
     case 'kn':
     case 'dnow':
     case 'dn':
-      runPlayNowCommand(message, args, mgid, server, mgid);
+      runPlayNowCommand(message, args, mgid, server, mgid).then();
       break;
     // .md is retrieves and plays from the keys list
     case 'md':
@@ -637,7 +609,7 @@ async function runCommandCases (message) {
     case 'mknow':
     case 'mdnow':
     case 'mdn':
-      runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id);
+      runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id).then();
       break;
     // .r is a random that works with the normal queue
     case 'shuffle':
@@ -674,20 +646,20 @@ async function runCommandCases (message) {
     case 'key':
     case 'keys':
       if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false, server);
-      else runKeysCommand(message, prefixString, mgid, '', '', '');
+      else runKeysCommand(message, prefixString, mgid, '', '', '').then();
       break;
     // .mkeys is personal keys
     case 'mk':
     case 'mkey':
     case 'mkeys':
       if (args[1]) runDatabasePlayCommand(args, message, 'p' + message.member.id, false, false, server);
-      else runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '');
+      else runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '').then();
       break;
     // test purposes - return keys
     case 'gk':
     case 'gkey':
     case 'gkeys':
-      runKeysCommand(message, prefixString, 'entries', 'g', '', '');
+      runKeysCommand(message, prefixString, 'entries', 'g', '', '').then();
       break;
     // .search is the search
     case 'search':
@@ -814,18 +786,13 @@ async function runCommandCases (message) {
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
+    case 'rec':
     case 'recc':
+    case 'reccomend':
+    case 'reccommend':
     case 'recommend':
-      if (message.member.id !== '443150640823271436' && message.member.id !== '268554823283113985') return;
-      if (!botInVC(message) || !server.queue[0]) return;
-      try {
-        let recUser = await bot.users.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
-        await recUser.send(`${message.member.user.username} has a recommendation for you`);
-        await recUser.send((await createEmbed(server.queue[0])).embed);
-        message.channel.send(`*recommendation sent to ${recUser.username}*`);
-      } catch (e) {
-        console.log(e);
-      }
+      args[0] = '';
+      sendRecommendation(message, (args[1] ? args.join(' ').trim() : ''), server.queue).then();
       break;
     case 'murl':
     case 'mlink':
@@ -1400,7 +1367,7 @@ async function runCommandCases (message) {
 
 bot.on('guildCreate', guild => {
   if (isInactive || devMode) return;
-  guild.systemChannel.send("Type '.help' to see my commands.");
+  guild.systemChannel.send("Type '.help' to see my commands.").then();
 });
 
 bot.once('ready', () => {
@@ -1652,7 +1619,7 @@ bot.on('message', async (message) => {
         while (zargs[i]) {
           if (zargs[i].replace(/,/g, '') === process.pid.toString()) {
             isInactive = !isInactive;
-            message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*'));
+            message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*')).then();
             console.log((isInactive ? '-sidelined-' : '-active-'));
             return;
           }
@@ -1689,7 +1656,7 @@ bot.on('message', async (message) => {
       const zargs = message.content.split(' ');
       if (zargs[1] !== process.pid.toString()) return;
       if (bot.voice.connections.size > 0)
-        message.channel.send('People are using the bot. This operation is currently not supported.');
+        message.channel.send('People are using the bot. This operation is currently not supported.').then();
       else message.channel.send("restarting the bot... (may only shutdown)").then(() =>
         setTimeout(() => {process.exit();}, 2000));
     } else if (zmsg === 'z') {
@@ -1698,6 +1665,7 @@ bot.on('message', async (message) => {
         checkToSeeActive();
       }
     }
+    return;
   }
   if (message.author.bot || isInactive || (devMode && message.author.id !== '443150640823271436' &&
     message.author.id !== '268554823283113985' && message.author.id !== '799524729173442620' &&
@@ -1950,9 +1918,9 @@ function shutdown (type) {
         let currentEmbed = servers[x.channel.guild.id].currentEmbed;
         try {
           if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');
-          else x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)');
+          else x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
         } catch (e) {
-          x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)');
+          x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
         }
         x.disconnect();
       });
@@ -2475,7 +2443,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                           }
                         }
                         if (num > server.queue.length) num = server.queue.length;
-                        if (num === 0) playLinkToVC(message, link, message.member.voice.channel, server);
+                        if (num === 0) playLinkToVC(message, link, message.member.voice.channel, server).then();
                         else {
                           server.queue.splice(num, 0, link);
                           serverQueue.splice(num, 0, link);
@@ -2586,7 +2554,7 @@ function getYoutubeSubtitles (message, url) {
                 finalString = finalString.length > 1910 ? finalString.substr(0, 1910) + '...' : finalString;
                 message.channel.send('Could not find lyrics. Video captions are available.').then(sentMsg => {
                   const mb = '📄';
-                  sentMsg.react(mb);
+                  sentMsg.react(mb).then();
 
                   const filter = (reaction, user) => {
                     return user.id !== bot.user.id && [mb].includes(reaction.emoji.name);
@@ -2735,7 +2703,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             } else {
               server.queue.unshift(tempUrl);
             }
-            playLinkToVC(message, server.queue[0], voiceChannel, server);
+            playLinkToVC(message, server.queue[0], voiceChannel, server).then();
             message.channel.send('*playing now*');
             return true;
           } else {
@@ -2774,7 +2742,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           } else {
             server.queue.unshift(tempUrl);
           }
-          playLinkToVC(message, server.queue[0], voiceChannel, server);
+          playLinkToVC(message, server.queue[0], voiceChannel, server).then();
           message.channel.send('*playing now*');
           return true;
         } else {
@@ -2790,7 +2758,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     }
     // if queue was empty then play
     if (queueWasEmpty && server.queue.length > 0) {
-      playLinkToVC(message, server.queue[0], voiceChannel, server);
+      playLinkToVC(message, server.queue[0], voiceChannel, server).then();
     }
   });
   return true;
@@ -3290,19 +3258,19 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
   if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
-  if (numCpy && numCpy.toString().includes('.')) return addRandomToQueue(message, numCpy, undefined, server, true, addToFront);
+  if (numCpy && numCpy.toString().includes('.')) return addRandomToQueue(message, numCpy, undefined, server, true, addToFront).then();
   gsrun('A', 'B', sheetName).then((xdb) => {
     if (isPlaylist) {
-      addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true, addToFront);
+      addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true, addToFront).then();
     } else {
       try {
         if (num && num > maxQueueSize) {
           message.channel.send('*max limit for random is ' + maxQueueSize + '*');
           num = maxQueueSize;
         }
-        addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront);
+        addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront).then();
       } catch (e) {
-        addRandomToQueue(message, 1, xdb.congratsDatabase, server, false, addToFront);
+        addRandomToQueue(message, 1, xdb.congratsDatabase, server, false, addToFront).then();
       }
     }
   });
@@ -3778,7 +3746,10 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
     dispatcher.on('error', (e) => {
-      bot.channels.cache.get('856338454237413396').send('dispatcher error: <' + urlAlt + '>');
+      bot.channels.cache.get('856338454237413396').send(
+        (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
+        timestamp: ${formatDuration(dispatcher.streamTime)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]}`)
+      );
       console.log('dispatcher error: ', e);
       skipLink(message, voiceChannel, false, server, false);
     });
@@ -3815,7 +3786,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
   } catch (e) {
     let errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!avoidReplay) playLinkToVC(message, whatToPlay, voiceChannel, server, true);
+      if (!avoidReplay) playLinkToVC(message, whatToPlay, voiceChannel, server, true).then();
       else {
         server.skipTimes++;
         if (server.skipTimes < 3) {
@@ -3946,7 +3917,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
   let rwIncrementor = 0;
   while (server.queueHistory.length > 0 && rwIncrementor < rewindTimes) {
     if (server.queue.length > (maxQueueSize + 99)) {
-      playLinkToVC(message, server.queue[0], voiceChannel, server);
+      playLinkToVC(message, server.queue[0], voiceChannel, server).then();
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
     song = false;
@@ -3961,9 +3932,9 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
     if (ignoreSingleRewind) {} else {
       message.channel.send('*rewound' + (rewindTimes === 1 ? '*' : ` ${rwIncrementor} times*`));
     }
-    playLinkToVC(message, song, voiceChannel, server);
+    playLinkToVC(message, song, voiceChannel, server).then();
   } else if (server.queue[0]) {
-    playLinkToVC(message, server.queue[0], voiceChannel, server);
+    playLinkToVC(message, server.queue[0], voiceChannel, server).then();
     message.channel.send('*replaying first song*');
   } else {
     message.channel.send('cannot find previous song');
@@ -4046,48 +4017,6 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
 }
 
 /**
- * Return an object containing the embed and time based on the data provided
- * @param url The url to create the embed for
- * @param infos Optional - the info metadata to use
- * @returns {Promise<{embed: module:"discord.js".MessageEmbed, timeMS: number}>}
- */
-async function createEmbed (url, infos) {
-  let timeMS;
-  let embed;
-  if (url.toString().includes('spotify.com')) {
-    if (!infos) infos = await getData(url);
-    let artists = '';
-    infos.artists.forEach(x => artists ? artists += ', ' + x.name : artists += x.name);
-    embed = new MessageEmbed()
-      .setTitle(`${infos.name}`)
-      .setURL(infos.external_urls.spotify)
-      .setColor('#1DB954')
-      .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, artists, true)
-      .addField('Duration', formatDuration(infos.duration_ms), true)
-      .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
-    timeMS = parseInt(infos.duration_ms);
-    // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
-  } else {
-    if (!infos) infos = await ytdl.getInfo(url);
-    let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
-    timeMS = parseInt(duration);
-    if (duration === 'NaNm NaNs') {
-      duration = 'N/A';
-    }
-    embed = new MessageEmbed()
-      .setTitle(`${infos.videoDetails.title}`)
-      .setURL(infos.videoDetails.video_url)
-      .setColor('#c40d00')
-      .addField('Duration', duration, true)
-      .setThumbnail(infos.videoDetails.thumbnails[0].url);
-  }
-  return {
-    embed,
-    timeMS
-  };
-}
-
-/**
  * Generates the playback reactions and handles the collection of the reactions.
  * @param sentMsg The message that the bot sent
  * @param server The server metadata
@@ -4130,7 +4059,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
       return;
     }
     if (reaction.emoji.name === '⏩') {
-      reaction.users.remove(reactionCollector.id);
+      reaction.users.remove(reactionCollector.id).then();
       runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice.channel.members.get(reactionCollector.id));
       if (server.followUpMessage) {
         server.followUpMessage.delete();
@@ -4149,7 +4078,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
             '\`*').then(msg => {server.followUpMessage = msg;});
         }
       }
-      reaction.users.remove(reactionCollector.id);
+      reaction.users.remove(reactionCollector.id).then();
     } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
       let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
       runPlayCommand(sentMsg, tempUser, server, true, false, true);
@@ -4163,9 +4092,9 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
             '\`*').then(msg => {server.followUpMessage = msg;});
         }
       }
-      reaction.users.remove(reactionCollector.id);
+      reaction.users.remove(reactionCollector.id).then();
     } else if (reaction.emoji.name === '⏪') {
-      reaction.users.remove(reactionCollector.id);
+      reaction.users.remove(reactionCollector.id).then();
       runRewindCommand(sentMsg, mgid, voiceChannel, undefined, true, false, sentMsg.member.voice.channel.members.get(reactionCollector.id), server);
       if (server.followUpMessage) {
         server.followUpMessage.delete();
@@ -4180,10 +4109,10 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         server.followUpMessage = undefined;
       }
     } else if (reaction.emoji.name === '🔑') {
-      runKeysCommand(sentMsg, server.prefix, mgid, '', voiceChannel, '');
+      runKeysCommand(sentMsg, server.prefix, mgid, '', voiceChannel, '').then();
       server.numSinceLastEmbed += 5;
     } else if (reaction.emoji.name === '🔐') {
-      runKeysCommand(sentMsg, server.prefix, 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector);
+      runKeysCommand(sentMsg, server.prefix, 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector).then();
       server.numSinceLastEmbed += 5;
     }
   });
@@ -4226,7 +4155,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     }
     dispatcherMap[voiceChannel.id] = false;
     if (whatspMap[voiceChannel.id] !== 'https://www.youtube.com/watch?v=oyFQVZ2h0V8')
-      sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, server, server.infos);
+      sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, server, server.infos).then();
   }
   if (server.queue[0]) server.queueHistory.push(server.queue.shift());
 }
@@ -4274,6 +4203,7 @@ let dispatcherMap = new Map();
 let dispatcherMapStatus = new Map();
 // login to discord
 (async () => {
+  initUtils(bot);
   await bot.login(token);
 })();
 

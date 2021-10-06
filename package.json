@@ -1,8 +1,8 @@
 {
   "name": "discordbotz",
-  "version": "5.19.2",
+  "version": "5.19.3",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "semistandard && node my-normal-tests-littered-with-semicolons.js"
   },
