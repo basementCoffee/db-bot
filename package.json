@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "5.19.5",
+  "version": "5.19.6",
   "description": "",
   "main": "src/index.js",
   "scripts": {

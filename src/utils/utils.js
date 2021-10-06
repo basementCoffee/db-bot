@@ -84,7 +84,7 @@ async function createEmbed (url, infos) {
  */
 async function sendRecommendation (message, content, url) {
   if (message.member.id !== '443150640823271436' && message.member.id !== '268554823283113985') return;
-  if ((!botInVC(message) || !url)) return;
+  if (!url) return;
   try {
     let recUser = await bot.users.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
     await recUser.send(`${message.member.user.username} has a recommendation for you${(content ? `:\n *${content}*` : '')}`);
