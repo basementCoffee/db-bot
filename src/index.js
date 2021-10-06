@@ -793,9 +793,12 @@ async function runCommandCases (message) {
     case 'recommend':
       args[0] = '';
       let rUrl = server.queue[0];
-      if (verifyUrl(args[1])) {
+      if (args[1] && verifyUrl(args[1])) {
         rUrl = args[1];
         args[1] = '';
+      } else if (args.length > 2 && verifyUrl(args[args.length - 1])) {
+        rUrl = args[args.length - 1];
+        args[args.length - 1] = '';
       }
       sendRecommendation(message, args.join(' ').trim(), rUrl).then();
       break;
