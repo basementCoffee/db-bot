@@ -86,7 +86,7 @@ async function sendRecommendation (message, content, queue) {
   if (message.member.id !== '443150640823271436' && message.member.id !== '268554823283113985') return;
   if (!botInVC(message) || !queue[0]) return;
   try {
-    let recUser = await bot.users.fetch((message.member.id === '443150640823271436' ? '443150640823271436' : '443150640823271436'));
+    let recUser = await bot.users.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
     await recUser.send(`${message.member.user.username} has a recommendation for you${(content ? `:\n *${content}*` : '')}`);
     await recUser.send((await createEmbed(queue[0])).embed);
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
