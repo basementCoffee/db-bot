@@ -43,7 +43,7 @@ process.setMaxListeners(0);
  */
 function contentContainCongrats (word) {
   return (word.includes('grats') || word.includes('gratz') ||
-    word.includes('ongratulations'));
+    word.includes('ongratulations') || word.includes('omedetou'));
 }
 
 /**
@@ -150,6 +150,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   } else if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
+  if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member, true)) return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (server.followUpMessage) {
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
@@ -276,6 +277,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   } else if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
+  if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member, true)) return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (!ytdl.validateURL(args[1]) && !spdl.validateURL(args[1]) && !verifyPlaylist(args[1])) {
     if (sheetName) {
       return runDatabasePlayCommand(args, message, sheetName, false, false, server);
@@ -488,7 +490,7 @@ async function runCommandCases (message) {
       message.channel.send('Congratulations' + (name ? (' ' + name) : '') +
         ((message.member.voice && message.member.voice.channel) ?
           '!' : text));
-      const congratsLink = 'https://www.youtube.com/watch?v=oyFQVZ2h0V8';
+      const congratsLink = (message.content.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
       if (server.queue[0] !== congratsLink) server.queue.unshift(congratsLink);
       else return;
       if (message.member.voice && message.member.voice.channel) {
@@ -1007,6 +1009,7 @@ async function runCommandCases (message) {
       runDJCommand(message, server);
       break;
     case 'fs' :
+    case 'fsk' :
     case 'forcesk':
     case 'forceskip' :
       if (hasDJPermissions(message, message.member, true)) {
@@ -1734,7 +1737,7 @@ function dmHandler (message, messageContent) {
  * @returns {boolean} Returns true if the member has DJ permissions.
  */
 function hasDJPermissions (message, member, printErrMsg) {
-  if (!servers[message.guild.id].voteAdmin || servers[message.guild.id].voteAdmin.includes(member)) {
+  if (servers[message.guild.id].voteAdmin.length < 1 || servers[message.guild.id].voteAdmin.filter(x => x.id === message.member.id).length > 0) {
     return true;
   } else if (printErrMsg) {
     message.channel.send('*you do not have the necessary permissions to perform this action*');
@@ -2187,6 +2190,7 @@ function runLyricsCommand (message, mgid, args, server) {
  * @returns {*}
  */
 function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString) {
+  if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member, true)) return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (args[1]) {
     if (args[2]) {
       if (args[2].substr(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
@@ -3239,6 +3243,7 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
   if (!message.member.voice.channel) {
     return message.channel.send('must be in a voice channel to play random');
   }
+  if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member, true)) return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (server.dictator && message.member !== server.dictator)
     return message.channel.send('only the dictator can randomize to queue');
   if (!num) num = 1;
@@ -3292,6 +3297,7 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
  * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
  */
 async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, addToFront = 0) {
+  if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member, true)) return message.channel.send('the queue is locked: only the DJ can add to the queue');
   let playlistKey;
   if (isPlaylist) {
     playlistKey = numOfTimes; // playlist name would come from numOfTimes
@@ -3512,6 +3518,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
             } else if (server.queue.length >= maxQueueSize) {
               return message.channel.send('*max queue size has been reached*');
             }
+            if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, reactionCollector, true)) return message.channel.send('the queue is locked: only the DJ can add to the queue');
             for (const mem of voiceChannel.members) {
               if (reactionCollector.id === mem[1].id) {
                 if (sheetname.includes('p')) {
