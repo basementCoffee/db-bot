@@ -3753,7 +3753,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     dispatcherMapStatus[voiceChannel.id] = false;
     dispatcher.on('error', (e) => {
       if (dispatcher.streamTime < 1000 && !avoidReplay) {
-        playLinkToVC(message, whatToPlay, voiceChannel, server, true);
+        return playLinkToVC(message, whatToPlay, voiceChannel, server, true);
       } else {
         skipLink(message, voiceChannel, false, server, false);
       }
