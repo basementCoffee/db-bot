@@ -1479,6 +1479,7 @@ function checkStatusOfYtdl (message) {
         if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
       }, 6000);
     } catch (e) {
+      console.log(e);
       await bot.channels.cache.get('827195452507160627').send('=gzk');
       await bot.channels.cache.get('856338454237413396').send('ytdl status is unhealthy, shutting off bot');
       connection.disconnect();
