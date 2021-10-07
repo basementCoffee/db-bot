@@ -167,7 +167,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     // places the currently playing into the queue history if played long enough
     const dsp = dispatcherMap[voiceChannel.id];
     if (server.queue[0] && dsp && dsp.streamTime &&
-    server.queue[0].includes('spotify.com') ? dsp.streamTime > Math.min(90000, dsp.streamTime / 2) : dsp.streamTime > Math.min(150000, dsp.streamTime / 2)) {
+    server.queue[0].includes('spotify.com') ? (dsp.streamTime > Math.min(90000, (dsp.streamTime / 2))) : (dsp.streamTime > Math.min(150000, (dsp.streamTime / 2)))) {
       server.queueHistory.push(server.queue.shift());
     }
   } catch (e) {console.log('dsp error:', e);}
@@ -2989,9 +2989,9 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     "keys \` See all of the server's keys *[k]*\n\`" +
     prefixString +
-    'k [key] \` Play a song from the server keys \n\`' +
+    'd [key] \` Play a song from the server keys \n\`' +
     prefixString +
-    'know [key] \` Play immediately, overrides queue *[kn]* \n\`' +
+    'dnow [key] \` Play immediately, overrides queue *[kn]* \n\`' +
     prefixString +
     'add [key] [url] \` Add a song to the server keys  *[a]*\n\`' +
     prefixString +
@@ -3261,6 +3261,7 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
   if (!num) {
     isPlaylist = true;
   }
+  server.numSinceLastEmbed++;
   // in case of force disconnect
   if (!botInVC(message)) {
     server.queue = [];
@@ -3475,7 +3476,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
         }
         const embedKeysMessage = new MessageEmbed();
         embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
-          .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "k [key]' to play)\n");
+          .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
         return embedKeysMessage;
       };
       const server = servers[message.guild.id];
