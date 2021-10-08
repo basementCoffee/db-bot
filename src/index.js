@@ -41,8 +41,7 @@ process.setMaxListeners(0);
  * @returns {*} true if congrats is detected
  */
 function contentContainCongrats (word) {
-  return (word.includes('grats') || word.includes('gratz') ||
-    word.includes('ongratulations') || word.includes('omedetou'));
+  return (word.includes('grats') || word.includes('ongratulations') || word.includes('omedetou'));
 }
 
 /**
@@ -466,7 +465,7 @@ async function runCommandCases (message) {
         return -1;
       };
       let name;
-      if (findIndexOfWord('grats') !== -1 || findIndexOfWord('gratz') !== -1 || findIndexOfWord('congratulations') !== -1) {
+      if (findIndexOfWord('grats') !== -1 || findIndexOfWord('congratulations') !== -1) {
         name = args[parseInt(indexOfWord) + 1];
         let excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
         if (excludedWords.includes(name)) name = '';
@@ -1380,14 +1379,16 @@ bot.once('ready', () => {
   if (devMode) {
     console.log('-devmode enabled-');
   } else {
+    checkStatusOfYtdl();
     isInactive = true;
     bot.user.setActivity('music | .help', {type: 'PLAYING'}).then();
     mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup
-    bot.channels.cache.get('827195452507160627').send('starting up: ' + process.pid);
-    checkToSeeActive();
+    bot.channels.cache.get('827195452507160627').send('starting up: ' + process.pid).then(() => {
+      checkToSeeActive();
+    });
   }
 });
 const setOfBotsOn = new Set();
@@ -1463,9 +1464,12 @@ function checkToSeeActive () {
 function checkStatusOfYtdl (message) {
   bot.channels.cache.get('833458014124113991').join().then(async (connection) => {
     try {
-      connection.play(await ytdl('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {}), {
+      connection.play(await ytdl('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {
+        filter: () => ['251']
+      }), {
         type: 'opus',
-        volume: false
+        volume: false,
+        highWaterMark: 1 << 25
       });
       setTimeout(() => {
         connection.disconnect();
