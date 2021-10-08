@@ -1461,7 +1461,7 @@ function checkToSeeActive () {
 function checkStatusOfYtdl (message) {
   bot.channels.cache.get('833458014124113991').join().then(async (connection) => {
     try {
-      connection.play(await ytdl('https://www.youtube.com/watch?v=dQw4w9WgXcQ', {
+      connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
         filter: () => ['251']
       }), {
         type: 'opus',
