@@ -30,7 +30,11 @@ function formatDuration (duration) {
  * @returns {Boolean} True if the bot is in a voice channel.
  */
 function botInVC (message) {
-  return message.guild.voice && message.guild.voice.channel;
+  try {
+    return message.guild.voice && message.guild.voice.channel;
+  } catch (e) {
+    return false;
+  }
 }
 
 /**
@@ -96,6 +100,17 @@ async function sendRecommendation (message, content, url) {
 }
 
 /**
+ * Adjusts the queue for play now.
+ * @param dsp The dispatcher to reference.
+ * @param server The server to use.
+ */
+function adjustQueueForPlayNow (dsp, server) {
+  if (server.queue[0] && dsp && dsp.streamTime && (dsp.streamTime > 21000)) {
+    server.queueHistory.push(server.queue.shift());
+  }
+}
+
+/**
  * Initializes global variables for utils
  * @param b The Discord bot instancec.
  */
@@ -103,4 +118,4 @@ function initUtils (b) {
   bot = b;
 }
 
-module.exports = {formatDuration, createEmbed, sendRecommendation, initUtils, botInVC};
+module.exports = {formatDuration, createEmbed, sendRecommendation, initUtils, botInVC, adjustQueueForPlayNow};
