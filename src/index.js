@@ -1273,10 +1273,7 @@ async function runCommandCases (message) {
       if (devMode) return;
       if (bot.voice.connections.size > 0 && args[1] !== 'force')
         message.channel.send('People are using the bot. Use this command again with \'force\' to restart the bot');
-      else message.channel.send("restarting the bot... (may only shutdown)").then(() => {
-        shutdown('user');
-        setTimeout(() => process.exit(), 5000);
-      });
+      else message.channel.send("restarting the bot... (may only shutdown)").then(() => {shutdown('USER')();});
       break;
     case 'gzid':
       message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', m: ' + message.member.id);
@@ -1480,7 +1477,8 @@ function checkStatusOfYtdl (message) {
       await bot.channels.cache.get('827195452507160627').send('=gzk');
       await bot.channels.cache.get('856338454237413396').send('ytdl status is unhealthy, shutting off bot');
       connection.disconnect();
-      setTimeout(() => process.exit(0), 2000);
+      if (isInactive) setTimeout(() => process.exit(0), 2000);
+      else shutdown('YTDL-POOR')();
     }
   });
 }
@@ -3765,7 +3763,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     if (server.currentEmbedChannelId !== message.channel.id) {
       server.currentEmbedChannelId = message.channel.id;
       server.numSinceLastEmbed += 10;
-    } else if (server.numSinceLastEmbed > 0) server.numSinceLastEmbed--;
+    }
     embed.addField('Queue', (server.queue.length > 0 ? ' 1 / ' + server.queue.length : 'empty'), true);
   } else {
     server.currentEmbedChannelId = '0';
