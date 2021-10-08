@@ -1,10 +1,13 @@
 {
   "name": "discordbotz",
-  "version": "5.19.14",
+  "version": "5.19.15",
   "description": "",
   "main": "src/index.js",
   "scripts": {
     "test": "semistandard && node my-normal-tests-littered-with-semicolons.js"
+  },
+  "engines": {
+    "node": ">=16.10.0"
   },
   "author": "",
   "license": "ISC",
