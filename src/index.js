@@ -3425,10 +3425,11 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     try {
       infos = await getData(whatToPlay);
     } catch (e) {
+      if (!avoidReplay) return playLinkToVC(message, whatToPlay, voiceChannel, server, true);
       console.log(e);
       message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
       whatspMap[voiceChannel.id] = '';
-      return skipLink(message, voiceChannel, true, server, true);
+      return skipLink(message, voiceChannel, false, server, true);
     }
     let artists = '';
     if (infos.artists) {
@@ -3529,11 +3530,9 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.skipTimes = 0;
     dispatcherMapStatus[voiceChannel.id] = false;
     dispatcher.on('error', (e) => {
-      if (dispatcher.streamTime < 1000 && !avoidReplay) {
+      if (dispatcher.streamTime < 1000 && !avoidReplay)
         return playLinkToVC(message, whatToPlay, voiceChannel, server, true);
-      } else {
-        skipLink(message, voiceChannel, false, server, false);
-      }
+      skipLink(message, voiceChannel, false, server, false);
       bot.channels.cache.get('856338454237413396').send(
         (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
         timestamp: ${formatDuration(dispatcher.streamTime)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]}`)
