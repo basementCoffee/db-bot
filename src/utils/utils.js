@@ -1,6 +1,8 @@
 const {getData} = require('spotify-url-info');
 const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
+const spdl = require('spdl-core');
+const ytpl = require('ytpl');
 
 let bot;
 
@@ -84,18 +86,44 @@ async function createEmbed (url, infos) {
  * @param message The message metadata.
  * @param content Optional - text to add to the recommendation.
  * @param url The url to recommend.
+ * @param uManager bot.users
  * @returns {Promise<void>}
  */
-async function sendRecommendation (message, content, url) {
+async function sendRecommendation (message, content, url, uManager) {
   if (message.member.id !== '443150640823271436' && message.member.id !== '268554823283113985') return;
   if (!url) return;
   try {
-    let recUser = await bot.users.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
+    let recUser = await uManager.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
     await recUser.send(`${message.member.user.username} has a recommendation for you${(content ? `:\n *${content}*` : '')}`);
     await recUser.send((await createEmbed(url)).embed);
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
   } catch (e) {
     console.log(e);
+  }
+}
+
+/**
+ * Returns whether a given URL is valid. Returns false if given a playlist.
+ * @param url The url to verify.
+ * @returns {boolean} True if given a playable URL.
+ */
+function verifyUrl (url) {
+  // noinspection JSUnresolvedFunction
+  return (url.includes('spotify.com') ? spdl.validateURL(url) : ytdl.validateURL(url)) && !verifyPlaylist(url);
+}
+
+/**
+ * Returns true if the given url is a valid Spotify or YouTube playlist link.
+ * @param url The url to verify
+ * @returns {Boolean} True if given a valid playlist URL.
+ */
+function verifyPlaylist (url) {
+  try {
+    url = url.toLowerCase();
+    return (url.includes('spotify.com') ? (url.includes('/playlist') || url.includes('/album')) :
+      (url.includes('/playlist?list=') || (ytpl.validateID(url) && !url.includes('&index='))));
+  } catch (e) {
+    return false;
   }
 }
 
@@ -110,12 +138,6 @@ function adjustQueueForPlayNow (dsp, server) {
   }
 }
 
-/**
- * Initializes global variables for utils
- * @param b The Discord bot instancec.
- */
-function initUtils (b) {
-  bot = b;
-}
-
-module.exports = {formatDuration, createEmbed, sendRecommendation, initUtils, botInVC, adjustQueueForPlayNow};
+module.exports = {
+  formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist
+};

@@ -1,17 +1,14 @@
 const ytdl = require('ytdl-core-discord');
 const {botInVC} = require('../utils/utils');
 const {getData} = require('spotify-url-info');
-
+const botID = '730350452268597300';
 // imports for YouTube captions
 const https = require('https');
 const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
-
 // Genius imports
 const Genius = require("genius-lyrics");
 const GeniusClient = new Genius.Client();
-
-let botID = '730350452268597300';
 
 /**
  * Returns lyrics for what is currently playing in a server.
@@ -118,32 +115,11 @@ function runLyricsCommand (message, mgid, args, server) {
         }
       }
     }
-    const sendSongLyrics = async (searchTerm) => {
-      try {
-        const searches = await GeniusClient.songs.search(searchTerm);
-        const firstSong = searches[0];
-        message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
-          sentMsg.react('📄').then();
-          const lyrics = await firstSong.lyrics();
-          const filter = (reaction, user) => {
-            return user.id !== botID && ['📄'].includes(reaction.emoji.name);
-          };
 
-          const collector = sentMsg.createReactionCollector(filter, {time: 600000});
-          collector.once('collect', () => {
-            // send the lyrics text on reaction click
-            message.channel.send((lyrics.length > 1910 ? lyrics.substr(0, 1910) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
-          });
-        });
-        return true;
-      } catch (e) {
-        return false;
-      }
-    };
-    if (searchTermRemix ? (!await sendSongLyrics(searchTermRemix)
-        && !await sendSongLyrics(searchTermRemix.replace(' remix', ''))
-        && !await sendSongLyrics(searchTerm)) :
-      !await sendSongLyrics(searchTerm)) {
+    if (searchTermRemix ? (!await sendSongLyrics(message, searchTermRemix, server)
+        && !await sendSongLyrics(message, searchTermRemix.replace(' remix', ''), server)
+        && !await sendSongLyrics(message, searchTerm, server)) :
+      !await sendSongLyrics(message, searchTerm, server)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
         getYoutubeSubtitles(message, lUrl, server);
       } else {
@@ -156,6 +132,34 @@ function runLyricsCommand (message, mgid, args, server) {
 }
 
 /**
+ * Sends song lyrics based on the search term.
+ * @param message The message metadata.
+ * @param searchTerm The search term to look for.
+ * @param server The server.
+ * @returns {Promise<Boolean>} The status of if the song lyrics were found and sent.
+ */
+async function sendSongLyrics (message, searchTerm, server) {
+  try {
+    const firstSong = (await GeniusClient.songs.search(searchTerm))[0];
+    await message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
+      sentMsg.react('📄').then();
+      const lyrics = await firstSong.lyrics();
+      const filter = (reaction, user) => {
+        return user.id !== botID && ['📄'].includes(reaction.emoji.name);
+      };
+      const collector = sentMsg.createReactionCollector(filter, {time: 600000});
+      collector.once('collect', () => {
+        // send the lyrics text on reaction click
+        message.channel.send((lyrics.length > 1910 ? lyrics.substr(0, 1910) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
+      });
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
  * Gets the captions/subtitles from youtube using ytdl-core and then sends the captions to the
  * respective text channel.
  * @param message The message that triggered the bot.
@@ -163,7 +167,6 @@ function runLyricsCommand (message, mgid, args, server) {
  * @param server The server to update.
  */
 function getYoutubeSubtitles (message, url, server) {
-
   ytdl.getInfo(url).then(info => {
     try {
       const player_resp = info.player_response;
