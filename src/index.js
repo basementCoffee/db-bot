@@ -1459,28 +1459,31 @@ function checkToSeeActive () {
  * @param message The message metadata to send a response to the appropriate channel
  */
 function checkStatusOfYtdl (message) {
-  bot.channels.cache.get('833458014124113991').join().then(async (connection) => {
-    try {
-      connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
-        filter: () => ['251']
-      }), {
-        type: 'opus',
-        volume: false,
-        highWaterMark: 1 << 25
-      });
+  bot.channels.fetch('833458014124113991').then(channel =>
+    channel.join().then(async (connection) => {
+      await new Promise(res => setTimeout(res, 1000));
+      try {
+        connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
+          filter: () => ['251']
+        }), {
+          type: 'opus',
+          volume: false,
+          highWaterMark: 1 << 25
+        });
+      } catch (e) {
+        console.log(e);
+        await bot.channels.cache.get('856338454237413396').send('ytdl status is unhealthy, shutting off bot');
+        connection.disconnect();
+        if (isInactive) setTimeout(() => process.exit(0), 2000);
+        else shutdown('YTDL-POOR')();
+        return;
+      }
       setTimeout(() => {
         connection.disconnect();
         if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
       }, 6000);
-    } catch (e) {
-      console.log(e);
-      await bot.channels.cache.get('827195452507160627').send('=gzk');
-      await bot.channels.cache.get('856338454237413396').send('ytdl status is unhealthy, shutting off bot');
-      connection.disconnect();
-      if (isInactive) setTimeout(() => process.exit(0), 2000);
-      else shutdown('YTDL-POOR')();
-    }
-  });
+    })
+  );
 }
 
 /**
@@ -1498,7 +1501,6 @@ function responseHandler () {
       process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
-      else checkStatusOfYtdl();
     }, ((Math.floor(Math.random() * 18) + 9) * 1000)); // 9 - 27 seconds
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
@@ -1599,7 +1601,6 @@ bot.on('message', async (message) => {
               }
               isInactive = !isInactive;
               console.log((isInactive ? '-sidelined-' : '-active-'));
-              if (!isInactive) setTimeout(() => {if (!isInactive) checkStatusOfYtdl();}, 10000);
               if (sentMsg.deletable) {
                 updateMessage();
                 reaction.users.remove(user.id);
@@ -3074,7 +3075,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     else return message.channel.send('argument must be a positive number or a key-name that is a playlist');
   }
   let sentMsg;
-  if (numOfTimes > 100) sentMsg = await message.channel.send('generating random from your keys...');
+  if (numOfTimes > 50) sentMsg = await message.channel.send('generating random from your keys...');
   else if (isPlaylist && numOfTimes === 2) sentMsg = await message.channel.send('randomizing your playlist...');
   let rKeyArray;
   if (!isPlaylist) {
