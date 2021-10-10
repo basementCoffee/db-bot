@@ -254,7 +254,7 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
  * @param link The link to lookup. Defaults to server
  * @returns {Boolean} If the request was a valid link.
  */
-function runlookupLink (message, sheetName, link) {
+function runLookupLink (message, sheetName, link) {
   if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
   gsrun("A", "B", sheetName).then(xdb => {
     for (let [key, value] of xdb.congratsDatabase) {
@@ -811,54 +811,7 @@ async function runCommandCases (message) {
       break;
     case 'input':
     case 'insert':
-      if (!message.member.voice.channel) return message.channel.send('must be in a voice channel');
-      if (server.dictator && message.member.id !== server.dictator.id)
-        return message.channel.send('only the dictator can insert');
-      if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
-        return message.channel.send('the queue is locked: only the dj can insert');
-      if (server.queue.length > maxQueueSize) return message.channel.send('*max queue size has been reached*');
-      if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
-      if (!args[1]) return message.channel.send('put a link followed by the position in the queue \`(i.e. insert [link] [num])\`');
-      if (!verifyUrl(args[1]) && !verifyPlaylist(args[1])) return message.channel.send('invalid url');
-      let num = parseInt(args[2]);
-      if (!num) {
-        if (server.queue.length === 1) num = 1;
-        else {
-          let sentMsg = await message.channel.send('What position would you like to insert? (1-' + server.queue.length + ') [or type \'q\' to quit]');
-          const filter = m => {
-            return (message.author.id === m.author.id);
-          };
-          let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
-          num = messages.first().content.trim();
-          if (num.toLowerCase() === 'q') {
-            return message.channel.send('*cancelled*');
-          } else {
-            num = parseInt(num);
-          }
-          if (!num) return message.channel.send('*cancelled*');
-        }
-      }
-      if (num < 1) {
-        if (num === 0) return message.channel.send('0 changes what\'s actively playing, use the \'playnow\' command instead.');
-        else return message.channel.send('position must be a positive number');
-      }
-      if (num > server.queue.length) num = server.queue.length;
-      let pNums = 0;
-      if (verifyPlaylist(args[1])) {
-        if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
-          await addPlaylistToQueue(message, mgid, 0, args[1], true, false, num);
-        } else if (ytpl.validateID(args[1])) {
-          await addPlaylistToQueue(message, mgid, 0, args[1], false, false, num);
-        } else {
-          // noinspection JSUnresolvedFunction
-          bot.channels.cache.get('856338454237413396').send('there was a playlist reading error: ' + args[1]);
-          return message.channel.send('there was a link reading issue');
-        }
-      } else {
-        if (num > server.queue.length) num = server.queue.length;
-        server.queue.splice(num, 0, args[1]);
-      }
-      message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
+      runInsertCommand(message, mgid, args[1], args[2], server).then();
       break;
     case 'q':
       runQueueCommand(message, mgid, true);
@@ -1375,6 +1328,77 @@ bot.on('message', async (message) => {
     }
   }
 });
+
+/**
+ * Inserts a term into position into the queue. Accepts a valid link or key.
+ * @param message The message metadata.
+ * @param mgid The message guild id.
+ * @param term The word/link to add to the queue.
+ * @param position The position to place in the queue.
+ * @param server The server to use.
+ * @returns {Promise<void|*>}
+ */
+async function runInsertCommand (message, mgid, term, position, server) {
+  const args = ['', term, position];
+  if (!message.member.voice.channel) return message.channel.send('must be in a voice channel');
+  if (server.dictator && message.member.id !== server.dictator.id)
+    return message.channel.send('only the dictator can insert');
+  if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
+    return message.channel.send('the queue is locked: only the dj can insert');
+  if (server.queue.length > maxQueueSize) return message.channel.send('*max queue size has been reached*');
+  if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
+  if (!args[1]) return message.channel.send('put a link followed by the position in the queue \`(i.e. insert [link] [num])\`');
+  if (args[2] && isNaN(args[2])) return message.channel.send('second argument must be a number');
+  if (!verifyUrl(args[1]) && !verifyPlaylist(args[1])) {
+    let xdb = await gsrun('A', 'B', mgid);
+    let link = xdb.referenceDatabase.get(args[1].toUpperCase());
+    if (!link) {
+      xdb = await gsrun('A', 'B', `p${message.member.id}`);
+      link = xdb.referenceDatabase.get(args[1].toUpperCase());
+    }
+    if (!link) return console.log('could not find the provided key in any keys list');
+    else args[1] = link;
+  }
+  let num = parseInt(args[2]);
+  if (!num) {
+    if (server.queue.length === 1) num = 1;
+    else {
+      let sentMsg = await message.channel.send('What position would you like to insert? (1-' + server.queue.length + ') [or type \'q\' to quit]');
+      const filter = m => {
+        return (message.author.id === m.author.id);
+      };
+      let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+      num = messages.first().content.trim();
+      if (num.toLowerCase() === 'q') {
+        return message.channel.send('*cancelled*');
+      } else {
+        num = parseInt(num);
+      }
+      if (!num) return message.channel.send('*cancelled*');
+    }
+  }
+  if (num < 1) {
+    if (num === 0) return message.channel.send('0 changes what\'s actively playing, use the \'playnow\' command instead.');
+    else return message.channel.send('position must be a positive number');
+  }
+  if (num > server.queue.length) num = server.queue.length;
+  let pNums = 0;
+  if (verifyPlaylist(args[1])) {
+    if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
+      await addPlaylistToQueue(message, mgid, 0, args[1], true, false, num);
+    } else if (ytpl.validateID(args[1])) {
+      await addPlaylistToQueue(message, mgid, 0, args[1], false, false, num);
+    } else {
+      // noinspection JSUnresolvedFunction
+      bot.channels.cache.get('856338454237413396').send('there was a playlist reading error: ' + args[1]);
+      return message.channel.send('there was a link reading issue');
+    }
+  } else {
+    if (num > server.queue.length) num = server.queue.length;
+    server.queue.splice(num, 0, args[1]);
+  }
+  message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
+}
 
 /**
  * Sends a message to a shared channel to see all active processes, responds accordingly using responseHandler.
@@ -2309,7 +2333,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
 function runUniversalSearchCommand (message, sheetName, providedString) {
   if (!providedString) return message.channel.send('must provide a link or word');
   // returns true if the item provided was a link
-  if (runlookupLink(message, sheetName, providedString)) return;
+  if (runLookupLink(message, sheetName, providedString)) return;
   gsrun('A', 'B', sheetName).then(async (xdb) => {
     const ss = runSearchCommand(providedString, xdb).ss;
     if (ss && ss.length > 0) {
@@ -3328,7 +3352,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     }
     // Error catching - fault with the link?
     message.channel.send('Could not play <' + whatToPlay + '>' +
-      ((server.skipTimes === 1) ? '\nIf the link is not broken, please try again.' : ''));
+      ((server.skipTimes === 1) ? '\nIf the link is not broken or restricted, please try again.' : ''));
     // search the db to find possible broken keys
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, whatToPlay);
     whatspMap[voiceChannel.id] = '';
@@ -3665,21 +3689,18 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
  * @param {*} message the message that activated the bot
  * @param {*} voiceChannel The active voice channel
  * @param keyName Optional - A key to search for to retrieve a link
- * @param {*} sheetname Required if dbKey is given - provides the name of the sheet reference.
+ * @param {*} sheetName Required if dbKey is given - provides the name of the sheet reference.
  * @param sheetLetter Required if dbKey is given - a letter enum representing the type of sheet being referenced
  * (server or personal)
  */
-async function runWhatsPCommand (message, voiceChannel, keyName, sheetname, sheetLetter) {
-  if (keyName && sheetname) {
-    gsrun('A', 'B', sheetname).then((xdb) => {
-      let dbType = "the server's";
-      if (sheetLetter === 'm') {
-        dbType = 'your';
-      }
-      if (xdb.referenceDatabase.get(keyName.toUpperCase())) {
-        return message.channel.send(xdb.referenceDatabase.get(keyName.toUpperCase()));
+async function runWhatsPCommand (message, voiceChannel, keyName, sheetName, sheetLetter) {
+  if (keyName && sheetName) {
+    gsrun('A', 'B', sheetName).then((xdb) => {
+      let link = xdb.referenceDatabase.get(keyName.toUpperCase());
+      if (link) {
+        return message.channel.send(link);
       } else {
-        message.channel.send("Could not find '" + keyName + "' in " + dbType + ' database.');
+        message.channel.send(`Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} database.`);
         return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], servers[message.guild.id].infos, true);
       }
     });
