@@ -33,7 +33,7 @@ const gsapi = google.sheets({
  * @param numOfRuns Optional - The number of times this function has run recursively, default is 0
  * @returns {Promise<{congratsDatabase: Map<any, any>, line: [], referenceDatabase: Map<any, any>}|*>}
  */
-const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns) => {
+const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
   nameOfSheet = nameOfSheet.toString();
   const spreadsheetSizeObjects = {
     spreadsheetId: stoken,
@@ -41,7 +41,6 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns) => {
   };
   let dataSizeFromSheets;
   let dsInt;
-  if (!numOfRuns) numOfRuns = 0;
   if (numOfRuns > 2) return;
   try {
     dataSizeFromSheets = await gsapi.spreadsheets.values.get(

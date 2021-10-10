@@ -5,7 +5,9 @@ const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./utils/dat
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist
 } = require('./utils/utils');
-const {hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer} = require('./playback/dj');
+const {
+  hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
+} = require('./playback/dj');
 const {runLyricsCommand} = require('./playback/lyrics');
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 const version = require('../package.json').version;
@@ -162,6 +164,9 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   // places the currently playing into the queue history if played long enough
   adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
   let pNums = 0;
+  if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
+    args[1] = args[1].substr(1, args[1].length - 2);
+  }
   if (args[1].includes('spotify.com')) {
     await addPlaylistToQueue(message, mgid, pNums, args[1], true, true);
   } else if (ytpl.validateID(args[1])) {
@@ -243,6 +248,27 @@ async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify,
 }
 
 /**
+ * Looks for an exact match of a link within a given database.
+ * @param message The message metadata.
+ * @param sheetName The sheet name to use for the lookup.
+ * @param link The link to lookup. Defaults to server
+ * @returns {Boolean} If the request was a valid link.
+ */
+function runlookupLink (message, sheetName, link) {
+  if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
+  gsrun("A", "B", sheetName).then(xdb => {
+    for (let [key, value] of xdb.congratsDatabase) {
+      if (value === link) {
+        message.channel.send(`Found it! key name is: **${key}**`);
+        return true;
+      }
+    }
+    message.channel.send(`could not find within ${(sheetName[0] === 'p') ? 'your personal' : 'the server'} keys`);
+  });
+  return true;
+}
+
+/**
  * Runs the commands and checks to play a link
  * @param message The message that triggered the bot
  * @param args An array of given play parameters, should be links or keywords
@@ -269,6 +295,9 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
+  if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
+    args[1] = args[1].substr(1, args[1].length - 2);
+  }
   // noinspection JSUnresolvedFunction
   if (!(verifyUrl(args[1]) || verifyPlaylist(args[1]))) {
     if (sheetName) {
@@ -283,7 +312,6 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   let pNums = 0;
   if (args[1].includes('spotify.com')) {
-    console.log('ran');
     pNums = await addPlaylistToQueue(message, mgid, pNums, args[1], true);
   } else if (ytpl.validateID(args[1])) {
     pNums = await addPlaylistToQueue(message, mgid, pNums, args[1], false);
@@ -524,7 +552,7 @@ async function runCommandCases (message) {
       break;
     case 'mplay':
     case 'mp':
-      runPlayLinkCommand(message, args, mgid, server, 'p' + message.member.id).then();
+      runPlayLinkCommand(message, args, mgid, server, `p${message.member.id}`).then();
       break;
     // test purposes - play command
     case 'gplay':
@@ -546,7 +574,7 @@ async function runCommandCases (message) {
     case 'mplaynow':
     case 'mpnow':
     case 'mpn':
-      runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id).then();
+      runPlayNowCommand(message, args, mgid, server, `p${message.member.id}`).then();
       break;
     // stop session commands
     case 'quit':
@@ -597,14 +625,14 @@ async function runCommandCases (message) {
       break;
     // .md is retrieves and plays from the keys list
     case 'md':
-      runDatabasePlayCommand(args, message, 'p' + message.member.id, false, true, server);
+      runDatabasePlayCommand(args, message, `p${message.member.id}`, false, true, server);
       break;
     // .mdnow retrieves and plays from the keys list immediately
     case 'mkn':
     case 'mknow':
     case 'mdnow':
     case 'mdn':
-      runPlayNowCommand(message, args, mgid, server, 'p' + message.member.id).then();
+      runPlayNowCommand(message, args, mgid, server, `p${message.member.id}`).then();
       break;
     // .r is a random that works with the normal queue
     case 'shuffle':
@@ -628,13 +656,13 @@ async function runCommandCases (message) {
     case 'mshuffle':
     case 'mrand':
     case 'mr':
-      runRandomToQueue(args[1], message, 'p' + message.member.id, server);
+      runRandomToQueue(args[1], message, `p${message.member.id}`, server);
       break;
     case 'mrn':
     case 'mrandnow':
     case 'mshufflen':
     case 'mshufflenow':
-      runRandomToQueue(args[1], message, 'p' + message.member.id, server, true);
+      runRandomToQueue(args[1], message, `p${message.member.id}`, server, true);
       break;
     // .keys is server keys
     case 'k':
@@ -647,8 +675,8 @@ async function runCommandCases (message) {
     case 'mk':
     case 'mkey':
     case 'mkeys':
-      if (args[1]) runDatabasePlayCommand(args, message, 'p' + message.member.id, false, false, server);
-      else runKeysCommand(message, prefixString, 'p' + message.member.id, 'm', '', '').then();
+      if (args[1]) runDatabasePlayCommand(args, message, `p${message.member.id}`, false, false, server);
+      else runKeysCommand(message, prefixString, `p${message.member.id}`, 'm', '', '').then();
       break;
     // test purposes - return keys
     case 'gk':
@@ -657,20 +685,23 @@ async function runCommandCases (message) {
       runKeysCommand(message, prefixString, 'entries', 'g', '', '').then();
       break;
     // .search is the search
+    case 'lookup':
     case 'search':
-      if (!args[1]) {
-        return message.channel.send('No argument was given.');
-      }
-      runUniversalSearchCommand(message, mgid, args[1]);
+      runUniversalSearchCommand(message, mgid, (args[1] ? args[1] : server.currentEmbedLink));
       break;
-    // .s prints out the db size or searches
-    case 's':
-      if (!args[1]) {
-        return gsrun('A', 'B', mgid).then((xdb) =>
-          message.channel.send('Server list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
-        );
-      }
-      runUniversalSearchCommand(message, mgid, args[1]);
+    // .m is the personal search command
+    case 'ml':
+    case 'ms':
+      if (botInVC(message) || args[0])
+        runUniversalSearchCommand(message, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
+      break;
+    case 'mlookup':
+    case 'msearch':
+      runUniversalSearchCommand(message, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
+      break;
+    case 'glookup':
+    case 'gsearch':
+      runUniversalSearchCommand(message, `entries`, (args[1] ? args[1] : server.currentEmbedLink));
       break;
     case 'size':
       if (!args[1]) {
@@ -681,58 +712,10 @@ async function runCommandCases (message) {
       break;
     case 'msize':
       if (!args[1]) {
-        return gsrun('A', 'B', 'p' + message.member.id).then((xdb) =>
+        return gsrun('A', 'B', `p${message.member.id}`).then((xdb) =>
           message.channel.send('Personal list size: ' + (xdb.dsInt - 1))
         );
       }
-      break;
-    // .m is the personal search command
-    case 'msearch':
-      if (!args[1]) {
-        return message.channel.send('No argument was given.');
-      }
-      gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
-        const ss = runSearchCommand(args[1], xdb).ss;
-        if (ss && ss.length > 0) {
-          message.channel.send('Keys found: ' + ss);
-        } else {
-          message.channel.send('Could not find any keys in your list that start with the given letters.');
-        }
-      });
-      break;
-    case 'ms':
-      if (!args[1]) {
-        return gsrun('A', 'B', 'p' + message.member.id).then((xdb) =>
-          message.channel.send('Personal list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
-        );
-      }
-      gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
-        const ss = runSearchCommand(args[1], xdb).ss;
-        if (ss && ss.length > 0) {
-          message.channel.send('Keys found: ' + ss);
-        } else {
-          message.channel.send(
-            'Could not find any keys in your list that start with the given letters.'
-          );
-        }
-      });
-      break;
-    case 'gs':
-      if (!args[1]) {
-        return gsrun('A', 'B', 'p' + message.member.id).then((xdb) =>
-          message.channel.send('Global list size: ' + Array.from(xdb.congratsDatabase.keys()).length)
-        );
-      }
-      gsrun('A', 'B', 'entries').then((xdb) => {
-        const ss = runSearchCommand(args[1], xdb).ss;
-        if (ss && ss.length > 0) {
-          message.channel.send('Keys found: ' + ss);
-        } else {
-          message.channel.send(
-            'Could not find any keys that start with the given letters.'
-          );
-        }
-      });
       break;
     case 'ticket':
       if (args[1]) {
@@ -757,7 +740,7 @@ async function runCommandCases (message) {
     case 'm?':
     case 'mnow':
     case 'mwhat':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], `p${message.member.id}`, 'm');
       break;
     case 'gurl':
     case 'glink':
@@ -806,7 +789,7 @@ async function runCommandCases (message) {
           return message.channel.send('*add a key to get it\'s ' + statement.substr(1) + ' \`(i.e. ' + statement + ' [key])\`*');
         }
       }
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'p' + message.member.id, 'm');
+      await runWhatsPCommand(message, message.member.voice.channel, args[1], `p${message.member.id}`, 'm');
       break;
     case 'rm':
     case 'remove':
@@ -1047,31 +1030,7 @@ async function runCommandCases (message) {
       }
       break;
     case 'resign':
-      if (!server.voteAdmin.length && !server.dictator) {
-        message.channel.send('There is no DJ or dictator right now');
-      } else if (server.dictator) {
-        if (message.member.id === server.dictator.id) {
-          server.dictator = false;
-          message.channel.send((message.member.nickname ? message.member.nickname : message.member.user.username) +
-            ' has resigned from being the dictator!');
-        } else {
-          message.channel.send('Only the dictator can resign');
-        }
-      } else if (server.voteAdmin[0] === message.member) {
-        server.voteAdmin.pop();
-        let resignMsg = (message.member.nickname ? message.member.nickname : message.member.user.username) +
-          ' has resigned from being DJ.';
-        if (server.voteAdmin.length < 1) {
-          server.voteSkipMembersId = [];
-          server.voteRewindMembersId = [];
-          server.votePlayPauseMembersId = [];
-          server.lockQueue = false;
-          resignMsg += ' DJ mode disabled.';
-        }
-        message.channel.send(resignMsg);
-      } else {
-        message.channel.send('Only the DJ can resign');
-      }
+      runResignCommand(message, server);
       break;
     // !pa
     case 'pa':
@@ -1132,7 +1091,7 @@ async function runCommandCases (message) {
     // .ma is personal add
     case 'ma':
     case 'madd':
-      runAddCommandWrapper(message, args, 'p' + message.member.id, true, 'm', server);
+      runAddCommandWrapper(message, args, `p${message.member.id}`, true, 'm', server);
       break;
     // .del deletes database entries
     case 'del':
@@ -1151,7 +1110,7 @@ async function runCommandCases (message) {
     case 'mdel':
     case 'mremove':
     case 'mdelete':
-      runDeleteItemCommand(message, args[1], 'p' + message.member.id, true).catch((e) => console.log(e));
+      runDeleteItemCommand(message, args[1], `p${message.member.id}`, true).catch((e) => console.log(e));
       break;
     case 'prev':
     case 'previous':
@@ -2233,7 +2192,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           // check personal db if applicable
           if (sheetName.substr(0, 1) !== 'p') {
             if (!otherSheet) {
-              await gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
+              await gsrun('A', 'B', `p${message.member.id}`).then((xdb) => {
                 otherSheet = xdb.referenceDatabase;
               });
             }
@@ -2301,7 +2260,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             message.channel.send("Could not find '" + args[1] + "' in database.");
             return true;
           } else {
-            runDatabasePlayCommand(args, message, 'p' + message.member.id, playRightNow, false, server);
+            runDatabasePlayCommand(args, message, `p${message.member.id}`, playRightNow, false, server);
             return true;
           }
         } else if (ss && ss.length > 0) {
@@ -2343,12 +2302,15 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
 
 /**
  * A search command that searches both the server and personal database for the string.
- * @param message The message that triggered the bot
- * @param mgid The guild id
+ * @param message The message that triggered the bot.
+ * @param sheetName The guild id.
  * @param providedString The string to search for
  */
-function runUniversalSearchCommand (message, mgid, providedString) {
-  gsrun('A', 'B', mgid).then(async (xdb) => {
+function runUniversalSearchCommand (message, sheetName, providedString) {
+  if (!providedString) return message.channel.send('must provide a link or word');
+  // returns true if the item provided was a link
+  if (runlookupLink(message, sheetName, providedString)) return;
+  gsrun('A', 'B', sheetName).then(async (xdb) => {
     const ss = runSearchCommand(providedString, xdb).ss;
     if (ss && ss.length > 0) {
       message.channel.send('Server keys found: ' + ss);
@@ -2357,13 +2319,13 @@ function runUniversalSearchCommand (message, mgid, providedString) {
     } else {
       message.channel.send('Did not find any server keys that contain \'' + providedString + '\'');
     }
+    if (sheetName[0] === 'p') return;
     message.channel.send('*Would you like to search your list too? (yes or no)*').then(() => {
       const filter = m => message.author.id === m.author.id;
-
       message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
         .then(async messages => {
           if (messages.first().content.toLowerCase() === 'y' || messages.first().content.toLowerCase() === 'yes') {
-            gsrun('A', 'B', 'p' + message.member.id).then(async (xdb) => {
+            gsrun('A', 'B', `p${message.member.id}`).then(async (xdb) => {
               const ss = runSearchCommand(providedString, xdb).ss;
               if (ss && ss.length > 0) {
                 message.channel.send('Personal keys found: ' + ss);
@@ -3054,7 +3016,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
                     addRandomToQueue(message, -1, xdb.congratsDatabase, server, false);
                     return;
                   } else {
-                    gsrun('A', 'B', 'p' + reactionCollector.id).then((xdb2) => {
+                    gsrun('A', 'B', `p${reactionCollector.id}`).then((xdb2) => {
                       addRandomToQueue(message, -1, xdb2.congratsDatabase, server, false);
                     });
                   }
@@ -3370,10 +3332,10 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     // search the db to find possible broken keys
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, whatToPlay);
     whatspMap[voiceChannel.id] = '';
-    skipLink(message, voiceChannel, true, server, true);
+    skipLink(message, voiceChannel, false, server, true);
     if (devMode) return;
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get('856338454237413396').send('there was a playback error within playLinkToVC').then(() => {
+    bot.channels.cache.get('856338454237413396').send(`there was a playback error within playLinkToVC: ${whatToPlay}`).then(() => {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1910));
     });
@@ -3402,7 +3364,7 @@ function searchForBrokenLinkWithinDB (message, whatToPlayS) {
       }
     });
   });
-  gsrun('A', 'B', 'p' + message.member.id).then((xdb) => {
+  gsrun('A', 'B', `p${message.member.id}`).then((xdb) => {
     xdb.congratsDatabase.forEach((value, key) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within your personal db: ' + key + '*');
@@ -3650,7 +3612,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
       runKeysCommand(sentMsg, server.prefix, mgid, '', voiceChannel, '').then();
       server.numSinceLastEmbed += 5;
     } else if (reaction.emoji.name === '🔐') {
-      runKeysCommand(sentMsg, server.prefix, 'p' + reactionCollector.id, 'm', voiceChannel, reactionCollector).then();
+      runKeysCommand(sentMsg, server.prefix, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
       server.numSinceLastEmbed += 5;
     }
   });

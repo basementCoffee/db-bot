@@ -201,4 +201,37 @@ function hasDJPermissions (message, memberID, printErrMsg, voteAdminList) {
   return false;
 }
 
-module.exports = {runDictatorCommand, runDJCommand, voteSystem, hasDJPermissions, clearDJTimer};
+/**
+ * Resigns the active DJ. Uses message.member.
+ * @param message The message metadata.
+ * @param server The server.
+ */
+function runResignCommand (message, server) {
+  if (!server.voteAdmin.length && !server.dictator) {
+    message.channel.send('There is no DJ or dictator right now');
+  } else if (server.dictator) {
+    if (message.member.id === server.dictator.id) {
+      server.dictator = false;
+      message.channel.send((message.member.nickname ? message.member.nickname : message.member.user.username) +
+        ' has resigned from being the dictator!');
+    } else {
+      message.channel.send('Only the dictator can resign');
+    }
+  } else if (server.voteAdmin.includes(message.member)) {
+    server.voteAdmin.splice(server.voteAdmin.findIndex((val) => val.id === message.member.id), 1);
+    let resignMsg = (message.member.nickname ? message.member.nickname : message.member.user.username) +
+      ' has resigned from being DJ.';
+    if (server.voteAdmin.length < 1) {
+      server.voteSkipMembersId = [];
+      server.voteRewindMembersId = [];
+      server.votePlayPauseMembersId = [];
+      server.lockQueue = false;
+      resignMsg += ' DJ mode disabled.';
+    }
+    message.channel.send(resignMsg);
+  } else {
+    message.channel.send('Only the DJ can resign');
+  }
+}
+
+module.exports = {runDictatorCommand, runDJCommand, voteSystem, hasDJPermissions, clearDJTimer, runResignCommand};
