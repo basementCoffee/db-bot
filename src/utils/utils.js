@@ -121,7 +121,7 @@ function verifyPlaylist (url) {
   try {
     url = url.toLowerCase();
     return (url.includes('spotify.com') ? (url.includes('/playlist') || url.includes('/album')) :
-      (url.includes('/playlist?list=') || (ytpl.validateID(url) && !url.includes('&index='))));
+      ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')));
   } catch (e) {
     return false;
   }
