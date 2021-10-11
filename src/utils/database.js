@@ -74,13 +74,16 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
   const keyArray = [];
   for (let i = 0; i < dsInt; i++) {
     // the array of rows (has two columns)
-    line = arrayOfSpreadsheetValues[i];
-    if (!line) continue;
-    keyT = line[0];
-    keyArray.push(keyT);
-    valueT = line[1];
-    congratsDatabase.set(keyT, valueT);
-    referenceDatabase.set(keyT.toUpperCase(), valueT);
+    try {
+      line = arrayOfSpreadsheetValues[i];
+      if (line && line[0]) {
+        keyT = line[0];
+        keyArray.push(keyT);
+        valueT = line[1];
+        congratsDatabase.set(keyT, valueT);
+        referenceDatabase.set(keyT.toUpperCase(), valueT);
+      }
+    } catch (e) {}
   }
   return {
     // the keys - case sensitive
