@@ -2463,7 +2463,7 @@ function getHelpList (prefixString, numOfPages) {
   let page1 =
     '--------------  **Music Commands** --------------\n\`' +
     prefixString +
-    'play [word] \` Search YouTube and play *[p]* \n\`' +
+    'play [word] \` Searches YouTube and plays *[p]* \n\`' +
     prefixString +
     'play [link] \` Play YouTube/Spotify link *[p]* \n\`' +
     prefixString +
@@ -2488,9 +2488,11 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'lyrics \` Get lyrics of what\'s currently playing\n\`' +
     prefixString +
-    'dj \` Enable DJ mode, requires members to vote skip tracks\n\`' +
+    'shuffle [link] \` Shuffle a playlist before playing\n\`' +
     prefixString +
-    'dictator \` Enable dictator mode, one member controls all music commands\n\`' +
+    'dj \` DJ mode, requires members to vote skip tracks\n\`' +
+    prefixString +
+    'dictator \` Dictator mode, one member controls all music commands\n\`' +
     prefixString +
     'verbose \` Keep all song embeds during a session\n\`' +
     prefixString +
@@ -2813,9 +2815,9 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     // playlist name is passed from numOfTimes argument
     if (cdb) playlistUrl = cdb.get(numOfTimes);
     else playlistUrl = numOfTimes;
-    if (verifyPlaylist(playlistUrl)) numOfTimes = 2;
-    else return message.channel.send('argument must be a positive number or a key-name that is a playlist');
-    sentMsg = await message.channel.send('randomizing your playlist...');
+    if (!playlistUrl) return message.channel.send(`*could not find **${numOfTimes}** in the keys list*`);
+    numOfTimes = 1;
+    if (verifyPlaylist(playlistUrl)) sentMsg = await message.channel.send('randomizing your playlist...');
   } else {
     valArray = Array.from(cdb.values());
     if (valArray.length < 1) {
