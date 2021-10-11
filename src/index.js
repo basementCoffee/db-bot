@@ -2804,24 +2804,28 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
 async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, addToFront = 0) {
   if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  let playlistKey;
-  if (isPlaylist) {
-    playlistKey = numOfTimes; // playlist name would come from numOfTimes
-    if (verifyPlaylist((cdb ? cdb.get(playlistKey) : playlistKey))) numOfTimes = 2;
-    else return message.channel.send('argument must be a positive number or a key-name that is a playlist');
-  }
+  // the playlist url
+  let playlistUrl;
   let sentMsg;
-  if (numOfTimes > 50) sentMsg = await message.channel.send('generating random from your keys...');
-  else if (isPlaylist && numOfTimes === 2) sentMsg = await message.channel.send('randomizing your playlist...');
-  let rKeyArray;
-  if (!isPlaylist) {
-    rKeyArray = Array.from(cdb.keys());
-    if (rKeyArray.length < 1 || (rKeyArray.length === 1 && rKeyArray[0].length < 1)) {
+  let valArray;
+  if (isPlaylist) {
+    // if given a cdb then it is a key-name, else it is a url
+    // playlist name is passed from numOfTimes argument
+    if (cdb) playlistUrl = cdb.get(numOfTimes);
+    else playlistUrl = numOfTimes;
+    if (verifyPlaylist(playlistUrl)) numOfTimes = 2;
+    else return message.channel.send('argument must be a positive number or a key-name that is a playlist');
+    sentMsg = await message.channel.send('randomizing your playlist...');
+  } else {
+    valArray = Array.from(cdb.values());
+    if (valArray.length < 1) {
       let pf = server.prefix;
       return message.channel.send('Your music list is empty *(Try  `' + pf + 'a` or `' + pf
         + 'ma` to add to a keys list)*');
     }
+    if (numOfTimes > 50) sentMsg = await message.channel.send('generating random from your keys...');
   }
+  // boolean to add all from cdb, if numOfTimes is negative
   let addAll = false;
   if (numOfTimes < 0) {
     addAll = true;
@@ -2831,39 +2835,32 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
   // mutate numberOfTimes to not exceed maxQueueSize
   if (numOfTimes + serverQueueLength > maxQueueSize) {
     numOfTimes = maxQueueSize - serverQueueLength;
-    if (numOfTimes === 0) {
-      return message.channel.send('*max queue size has been reached*');
-    }
+    if (numOfTimes < 1) return message.channel.send('*max queue size has been reached*');
     addAll = false; // no longer want to add all
   }
-  let rn;
   const queueWasEmpty = server.queue.length < 1;
   // place a filler string in the queue to show that it will no longer be empty
   // in case of another function call at the same time
   if (queueWasEmpty && !addToFront) server.queue[0] = 'filler link';
   try {
+    let tempArray;
     for (let i = 0; i < numOfTimes;) {
-      let tempArray = [];
-      if (isPlaylist) tempArray.push((cdb ? cdb.get(playlistKey) : playlistKey));
-      else tempArray = [...rKeyArray];
+      tempArray = [];
+      if (isPlaylist) tempArray.push(playlistUrl);
+      else tempArray = [...valArray];
       // continues until numOfTimes is 0 or the tempArray is completed
+      let url;
+      let playlist;
       while (tempArray.length > 0 && (i < numOfTimes || addAll)) {
         const randomNumber = Math.floor(Math.random() * tempArray.length);
-        let url;
-        if (tempArray[randomNumber].includes('.')) url = tempArray[randomNumber];
-        else url = cdb.get(tempArray[randomNumber]);
-        let playlist;
+        url = tempArray[randomNumber];
         // if it is a playlist, un-package the playlist
         if (verifyPlaylist(url)) {
           try {
             let isSpotify = url.toLowerCase().includes('spotify');
             // add all the songs from the playlist to the tempArray
-            if (isSpotify) {
-              playlist = await getTracks(url);
-            } else {
-              playlist = await ytpl(await ytpl.getPlaylistID(url), {pages: 1});
-              playlist = playlist.items;
-            }
+            if (isSpotify) playlist = await getTracks(url);
+            else playlist = (await ytpl(url, {pages: 1})).items;
             let itemCounter = 0;
             for (let j of playlist) {
               url = isSpotify ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
@@ -2873,6 +2870,14 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
               }
             }
             if (isPlaylist) numOfTimes = itemCounter;
+            else if (addAll) {
+              // reduce numOfTimes if greater than maxQueueSize
+              numOfTimes += itemCounter - 1;
+              if ((serverQueueLength + numOfTimes) > maxQueueSize) {
+                numOfTimes = Math.abs(maxQueueSize - serverQueueLength);
+                addAll = false;
+              }
+            }
           } catch (e) {
             console.log(e);
           }
@@ -2887,22 +2892,18 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
         // remove added item from tempArray
         tempArray.splice(randomNumber, 1);
       }
-      if (addAll) {
-        numOfTimes = i;
-        break;
-      } // break as all items have been added
     }
     // here - queue should have all the items
   } catch (e) {
     console.log('error in random: ');
     console.log(e);
     if (isPlaylist) return;
-    rn = Math.floor(Math.random() * rKeyArray.length);
-    if (verifyPlaylist(rKeyArray[rn])) {
+    let rn = Math.floor(Math.random() * valArray.length);
+    if (verifyPlaylist(valArray[rn])) {
       if (sentMsg && sentMsg.deletable) sentMsg.delete();
       return message.channel.send('There was an error.');
     }
-    server.queue.push(cdb.get(rKeyArray[rn]));
+    server.queue.push(valArray[rn]);
   }
   if (addToFront) {
     playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
@@ -3746,13 +3747,15 @@ function shutdown (type) {
       const servers = getServers();
       if (Object.keys(servers).length > 0) {
         bot.voice.connections.forEach(x => {
-          let currentEmbed = servers[x.channel.guild.id].currentEmbed;
+          let server = servers[x.channel.guild.id];
+          let currentEmbed = server.currentEmbed;
           try {
             if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');
             else x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
           } catch (e) {
             x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
           }
+          if (server.collector) server.collector.stop();
           x.disconnect();
         });
       }
