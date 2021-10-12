@@ -4,8 +4,6 @@ const ytdl = require('ytdl-core-discord');
 const spdl = require('spdl-core');
 const ytpl = require('ytpl');
 
-let bot;
-
 /**
  * Given a duration in ms, it returns a formatted string separating
  * the hours, minutes, and seconds.
@@ -60,7 +58,6 @@ async function createEmbed (url, infos) {
       .addField('Duration', formatDuration(infos.duration_ms), true)
       .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
     timeMS = parseInt(infos.duration_ms);
-    // .addField('Preview', `[Click here](${infos.preview_url})`, true) // adds a preview
   } else {
     if (!infos) infos = await ytdl.getInfo(url);
     let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
@@ -135,7 +132,6 @@ function resetSession (server) {
   server.queue = [];
   server.queueHistory = [];
   server.loop = false;
-  server.autoplay = false;
 }
 
 /**

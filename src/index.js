@@ -27,9 +27,9 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - before release
 let devMode = false; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '03';
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
 let isInactive = !devMode;
-let servers = {};
+const servers = {};
 // the max size of the queue
 const maxQueueSize = 500;
 process.setMaxListeners(0);
@@ -55,13 +55,19 @@ function contentContainCongrats (word) {
 function skipLink (message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
   if (server.queue.length > 0) {
+    let link;
     if (noHistory) server.queue.shift();
-    else server.queueHistory.push(server.queue.shift());
+    else {
+      link = server.queue[0];
+      server.queueHistory.push(server.queue.shift());
+    }
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
-      // get rid of previous dispatch
       playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+    } else if (server.autoplay && link) {
+      runAutoplayCommand(message, server, voiceChannel, server.altUrl,
+        (server.currentEmbedLink === server.altUrl ? server.infos : undefined)).then();
     } else {
       runStopPlayingCommand(message.guild.id, voiceChannel, true, server, message, message.member);
     }
@@ -121,6 +127,21 @@ async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChann
 }
 
 /**
+ * Sets seamless listening on voice channel error. Seamless listening allows the
+ * bot to temporarily save a wanted command until voice channel join.
+ * @param server The server.
+ * @param fName The name of the function to play.
+ * @param args The function parameters.
+ * @param message Optional - A message to delete.
+ */
+function setSeamless (server, fName, args, message) {
+  server.seamless.function = fName;
+  server.seamless.args = args;
+  server.seamless.message = message;
+  setTimeout(() => server.seamless.function = undefined, 9000);
+}
+
+/**
  * Runs the play now command.
  * @param message the message that triggered the bot
  * @param args the message split into an array
@@ -131,7 +152,11 @@ async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChann
 async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   const voiceChannel = message.member.voice.channel;
   if (!voiceChannel) {
-    return message.channel.send('must be in a voice channel to play');
+    const sentMsg = await message.channel.send('must be in a voice channel to play');
+    if (!botInVC(message) && args[1]) {
+      setSeamless(server, runPlayNowCommand, [message, args, mgid, server, sheetName], sentMsg);
+    }
+    return;
   }
   if (server.dictator && message.member.id !== server.dictator.id)
     return message.channel.send('only the dictator can play perform this action');
@@ -188,7 +213,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
  * @param isSpotify If the playlist is a spotify playlist
  * @param addToFront Optional - true if to add to the front of the queue
  * @param position Optional - the position of the queue to add the item to
- * @returns {Promise<void>} The number of items added to the queue
+ * @returns {Promise<Number>} The number of items added to the queue
  */
 async function addPlaylistToQueue (message, mgid, pNums, playlistUrl, isSpotify, addToFront, position) {
   let playlist;
@@ -278,7 +303,11 @@ function runLookupLink (message, sheetName, link) {
  */
 async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   if (!message.member.voice.channel) {
-    return message.channel.send("must be in a voice channel to play");
+    const sentMsg = await message.channel.send('must be in a voice channel to play');
+    if (!botInVC(message) && args[1]) {
+      setSeamless(server, runPlayLinkCommand, [message, args, mgid, server, sheetName], sentMsg);
+    }
+    return;
   }
   if (!args[1]) {
     if (runPlayCommand(message, message.member, server, true)) return;
@@ -383,6 +412,8 @@ function initializeServer (mgid) {
     followUpMessage: undefined,
     // the active link of what is playing
     currentEmbedLink: undefined,
+    // the alternative link of what is playing
+    altUrl: undefined,
     // the current embed message
     currentEmbed: undefined,
     // the number of items sent since embed generation
@@ -409,6 +440,15 @@ function initializeServer (mgid) {
     leaveVCTimeout: false,
     // the number of consecutive playback errors
     skipTimes: 0,
+    // hold a ready-to-go function in case of vc join
+    seamless: {
+      // the name of the type of function
+      function: undefined,
+      // args for the function
+      args: undefined,
+      // optional message to delete
+      message: undefined
+    },
     // the server's prefix
     prefix: undefined,
     // the timeout for the YT search results
@@ -584,8 +624,11 @@ async function runCommandCases (message) {
     case 'e':
       runStopPlayingCommand(mgid, message.member.voice.channel, false, server, message, message.member);
       break;
+    case 'autop':
     case 'autoplay':
+    case 'smartp':
     case 'smartplay':
+      if (!botInVC(message)) return message.channel.send('must be playing something to use smartplay');
       if (server.autoplay) {
         server.autoplay = false;
         message.channel.send('*smartplay turned off*');
@@ -595,9 +638,7 @@ async function runCommandCases (message) {
       }
       break;
     case 'loop':
-      if (!botInVC(message)) {
-        return message.channel.send('must be actively playing to loop');
-      }
+      if (!botInVC(message)) return message.channel.send('must be actively playing to loop');
       if (server.loop) {
         server.loop = false;
         message.channel.send('*looping disabled*');
@@ -646,13 +687,15 @@ async function runCommandCases (message) {
       runPlayNowCommand(message, args, mgid, server, `p${message.member.id}`).then();
       break;
     // .r is a random that works with the normal queue
-    case 'shuffle':
+    case 'random':
     case 'rand':
     case 'r':
+    case 'shuffle':
       runRandomToQueue(args[1], message, mgid, server);
       break;
     case 'rn':
     case 'randnow':
+    case 'randomnow':
     case 'shufflen':
     case 'shufflenow':
       runRandomToQueue(args[1], message, mgid, server, true);
@@ -1180,9 +1223,9 @@ async function runCommandCases (message) {
       message.channel.send(devCEmbed);
       break;
     case 'gzc':
-      let commandsMapEmbed = new MessageEmbed();
+      const commandsMapEmbed = new MessageEmbed();
       let commandsMapString = '';
-      let commandsMapArray = [];
+      const commandsMapArray = [];
       let CMAInt = 0;
       commandsMap.forEach((value, key) => {
         commandsMapArray[CMAInt++] = [key, value];
@@ -1250,7 +1293,7 @@ async function runCommandCases (message) {
       } else if (args[1] === 'listu') {
         let gx = '';
         let tgx;
-        let tempSet = new Set();
+        const tempSet = new Set();
         bot.voice.connections.forEach(x => {
           tgx = '';
           tempSet.clear();
@@ -1374,7 +1417,7 @@ async function runInsertCommand (message, mgid, term, position, server) {
   if (!num) {
     if (server.queue.length === 1) num = 1;
     else {
-      let sentMsg = await message.channel.send('What position would you like to insert? (1-' + server.queue.length + ') [or type \'q\' to quit]');
+      const sentMsg = await message.channel.send('What position would you like to insert? (1-' + server.queue.length + ') [or type \'q\' to quit]');
       const filter = m => {
         return (message.author.id === m.author.id);
       };
@@ -1396,9 +1439,9 @@ async function runInsertCommand (message, mgid, term, position, server) {
   let pNums = 0;
   if (verifyPlaylist(args[1])) {
     if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
-      await addPlaylistToQueue(message, mgid, 0, args[1], true, false, num);
+      pNums = await addPlaylistToQueue(message, mgid, 0, args[1], true, false, num);
     } else if (ytpl.validateID(args[1])) {
-      await addPlaylistToQueue(message, mgid, 0, args[1], false, false, num);
+      pNums = await addPlaylistToQueue(message, mgid, 0, args[1], false, false, num);
     } else {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get('856338454237413396').send('there was a playlist reading error: ' + args[1]);
@@ -1429,6 +1472,7 @@ function checkToSeeActive () {
  * @param message The message metadata to send a response to the appropriate channel
  */
 function checkStatusOfYtdl (message) {
+  // noinspection JSUnresolvedFunction
   bot.channels.fetch('833458014124113991').then(channel =>
     channel.join().then(async (connection) => {
       await new Promise(res => setTimeout(res, 1000));
@@ -1465,7 +1509,7 @@ function checkStatusOfYtdl (message) {
 function responseHandler () {
   resHandlerTimeout = false;
   if (setOfBotsOn.size < 1 && isInactive) {
-    servers = {};
+    for (let server in servers) delete servers[server];
     isInactive = false;
     devMode = false;
     console.log('-active-');
@@ -1485,7 +1529,7 @@ function responseHandler () {
     }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
   } else {
     if (process.pid === 4) {
-      let d = new Date();
+      const d = new Date();
       if (d.getHours() === 5 && d.getMinutes() > 0 && d.getMinutes() < 20 && bot.uptime > 3600000
         && bot.voice.connections.size < 1) {
         return process.exit();
@@ -2181,7 +2225,13 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   const voiceChannel = message.member.voice.channel;
   const mgid = message.guild.id;
   if (!voiceChannel) {
-    message.channel.send('must be in a voice channel to play keys');
+    (async () => {
+      const sentMsg = await message.channel.send('must be in a voice channel to play');
+      if (!botInVC(message)) {
+        setSeamless(server, runDatabasePlayCommand, [args, message, sheetName, playRightNow, printErrorMsg, server],
+          sentMsg);
+      }
+    })();
     return true;
   }
   // in case of force disconnect
@@ -2470,7 +2520,7 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
  * @param numOfPages the number of embeds to generate
  */
 function getHelpList (prefixString, numOfPages) {
-  let page1 =
+  const page1 =
     '--------------  **Music Commands** --------------\n\`' +
     prefixString +
     'play [word] \` Searches YouTube and plays *[p]* \n\`' +
@@ -2509,7 +2559,7 @@ function getHelpList (prefixString, numOfPages) {
     'verbose \` Keep all song embeds during a session\n\`' +
     prefixString +
     'silence \` Silence/hide now playing embeds \n';
-  let page2 =
+  const page2 =
     '-----------  **Server Keys**  -----------\n\`' +
     prefixString +
     "keys \` See all of the server's keys *[k]*\n\`" +
@@ -2543,7 +2593,7 @@ function getHelpList (prefixString, numOfPages) {
     '\n**Or just say congrats to a friend. I will chime in too! :) **';
   const helpListEmbed = new MessageEmbed();
   helpListEmbed.setTitle('Help List *[with aliases]*');
-  let arrayOfPages = [];
+  const arrayOfPages = [];
   if (numOfPages > 1) {
     const helpListEmbed2 = new MessageEmbed();
     helpListEmbed
@@ -2739,6 +2789,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       server.searchReactionTimeout = undefined;
     });
     collector.on('remove', (reaction, user) => {
+      if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
       if (!notActive && reactionCollector2.id === user.id) {
         reactionCollector2 = false;
         if (msg2.deletable) msg2.delete();
@@ -2758,7 +2809,11 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
  */
 function runRandomToQueue (num, message, sheetName, server, addToFront = false) {
   if (!message.member.voice.channel) {
-    return message.channel.send('must be in a voice channel to play random');
+    (async () => {
+      const sentMsg = await message.channel.send('must be in a voice channel to play random');
+      if (!botInVC(message)) setSeamless(server, runRandomToQueue, [num, message, sheetName, server, addToFront], sentMsg);
+    })();
+    return;
   }
   if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
@@ -2781,13 +2836,12 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
   }
   server.numSinceLastEmbed++;
   // in case of force disconnect
-  if (!botInVC(message)) {
-    resetSession(server);
-  }
+  if (!botInVC(message)) resetSession(server);
   if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
-  if (numCpy && numCpy.toString().includes('.')) return addRandomToQueue(message, numCpy, undefined, server, true, addToFront).then();
+  if (numCpy && numCpy.toString().includes('.'))
+    return addRandomToQueue(message, numCpy, undefined, server, true, addToFront).then();
   gsrun('A', 'B', sheetName).then((xdb) => {
     if (isPlaylist) {
       addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true, addToFront).then();
@@ -2858,8 +2912,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
   try {
     let tempArray;
     for (let i = 0; i < numOfTimes;) {
-      tempArray = [];
-      if (isPlaylist) tempArray.push(playlistUrl);
+      if (isPlaylist) tempArray = [playlistUrl];
       else tempArray = [...valArray];
       // continues until numOfTimes is 0 or the tempArray is completed
       let url;
@@ -2947,7 +3000,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
   gsrun('A', 'B', sheetname).then((xdb) => {
     let keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
     let keyArraySorted = keyArrayUnsorted.map(x => x).sort();
-    let sortByRecents = true;
+    let sortByRecent = true;
     let dbName = '';
     let keyArray = keyArraySorted;
     if (keyArray.length < 1) {
@@ -2999,7 +3052,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
         return embedKeysMessage;
       };
       const server = servers[message.guild.id];
-      message.channel.send(generateKeysEmbed(sortByRecents)).then(async sentMsg => {
+      message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {
         sentMsg.react('❔').then(() => sentMsg.react('🔀').then(sentMsg.react('🔄')));
         const filter = (reaction, user) => {
           return user.id !== bot.user.id && ['❔', '🔄', '🔀'].includes(reaction.emoji.name);
@@ -3066,8 +3119,8 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
             }
             return message.channel.send('must be in a voice channel to shuffle play');
           } else if (reaction.emoji.name === '🔄') {
-            sortByRecents = !sortByRecents;
-            sentMsg.edit(generateKeysEmbed(sortByRecents));
+            sortByRecent = !sortByRecent;
+            sentMsg.edit(generateKeysEmbed(sortByRecent));
             reaction.users.remove(reactionCollector.id);
           }
         });
@@ -3093,6 +3146,7 @@ bot.on('voiceStateUpdate', update => {
       server.lockQueue = false;
       server.dictator = false;
       server.infos = false;
+      server.autoplay = false;
       server.currentEmbedLink = false;
       if (server.currentEmbed && server.currentEmbed.reactions) {
         server.collector.stop();
@@ -3125,19 +3179,29 @@ bot.on('voiceStateUpdate', update => {
         }
       }, leaveVCInt);
     }
+  } else if (update.member.id !== bot.user.id) {
+    const server = servers[update.guild.id];
+    if (server) {
+      if (server.seamless.function) {
+        server.seamless.function(...server.seamless.args);
+        if (server.seamless.message && server.seamless.message.deletable) {
+          server.seamless.message.delete();
+          server.seamless.message = undefined;
+        }
+      }
+    }
   }
-
 });
 
 /**
  *  The play function. Plays a given link to the voice channel.
  * @param {*} message the message that triggered the bot
  * @param {string} whatToPlay the link of the song to play
- * @param voiceChannel the voice channel to play the song in
+ * @param vc The voice channel to play the song in
  * @param server The server playback metadata
  * @param avoidReplay Optional - Bool to not replay the song after initial replay
  */
-async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidReplay) {
+async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
   if (!whatToPlay) {
     whatToPlay = server.queue[0];
     if (!whatToPlay && server.queue[1]) {
@@ -3145,13 +3209,13 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
       whatToPlay = server.queue[0];
     } else return;
   }
-  if (!voiceChannel) {
-    voiceChannel = message.member.voice.channel;
-    if (!voiceChannel) return;
+  if (!vc) {
+    vc = message.member.voice.channel;
+    if (!vc) return;
   }
   if (isInactive) {
     message.channel.send('*db bot has been updated*');
-    return runStopPlayingCommand(message.guild.id, voiceChannel, false, server);
+    return runStopPlayingCommand(message.guild.id, vc, false, server);
   }
   if (server.voteAdmin.length > 0) {
     server.voteSkipMembersId = [];
@@ -3167,11 +3231,11 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     try {
       infos = await getData(whatToPlay);
     } catch (e) {
-      if (!avoidReplay) return playLinkToVC(message, whatToPlay, voiceChannel, server, true);
+      if (!avoidReplay) return playLinkToVC(message, whatToPlay, vc, server, true);
       console.log(e);
       message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
-      whatspMap[voiceChannel.id] = '';
-      return skipLink(message, voiceChannel, false, server, true);
+      whatspMap[vc.id] = '';
+      return skipLink(message, vc, false, server, true);
     }
     let artists = '';
     if (infos.artists) {
@@ -3217,14 +3281,15 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     }
     if (search.items[itemIndex]) urlAlt = search.items[itemIndex].url;
     else {
-      message.channel.send('could not find <' + whatToPlay + '>');
-      runSkipCommand(message, voiceChannel, server, 1, true, true, message.member);
+      message.channel.send(`could not find <${whatToPlay}>`);
+      runSkipCommand(message, vc, server, 1, true, true, message.member);
+      return;
     }
   }
   let connection = server.connection;
-  if (!botInVC(message) || !connection || (connection.channel.id !== voiceChannel.id)) {
+  if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
     try {
-      connection = await voiceChannel.join();
+      connection = await vc.join();
     } catch (e) {
       const eMsg = e.toString();
       if (eMsg.includes('it is full')) message.channel.send('*cannot join voice channel, it is full*');
@@ -3232,7 +3297,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
       else message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
       throw 'cannot join voice channel';
     }
-    if (voiceChannel.members.size > 6 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
+    if (vc.members.size > 6 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
       message.channel.send('Try the \'dj\' command to become a DJ.');
       server.djMessageDate = Date.now();
     }
@@ -3243,10 +3308,10 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     server.connection = connection;
     connection.voice.setSelfDeaf(true).then();
   }
-  whatspMap[voiceChannel.id] = whatToPlay;
+  whatspMap[vc.id] = whatToPlay;
   // remove previous embed buttons
   if (server.numSinceLastEmbed > 4 && server.currentEmbed &&
-    (!server.loop || whatspMap[voiceChannel.id] !== whatToPlay)) {
+    (!server.loop || whatspMap[vc.id] !== whatToPlay)) {
     server.numSinceLastEmbed = 0;
     server.currentEmbed.delete();
     server.currentEmbed = false;
@@ -3265,17 +3330,22 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
       volume: false,
       highWaterMark: 1 << 25
     });
-    dispatcherMap[voiceChannel.id] = dispatcher;
+    dispatcherMap[vc.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
-    if (!(server.silence || avoidReplay)) {
-      await sendLinkAsEmbed(message, whatToPlay, voiceChannel, server, infos).then(() => dispatcher.setVolume(0.5));
+    if (server.silence) {
+      server.currentEmbedLink = whatToPlay;
+      server.currentEmbed = undefined;
+      server.infos = infos;
+    } else if (!avoidReplay) {
+      await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
     }
+    server.altUrl = urlAlt;
     server.skipTimes = 0;
-    dispatcherMapStatus[voiceChannel.id] = false;
+    dispatcherMapStatus[vc.id] = false;
     dispatcher.on('error', (e) => {
       if (dispatcher.streamTime < 1000 && !avoidReplay)
-        return playLinkToVC(message, whatToPlay, voiceChannel, server, true);
-      skipLink(message, voiceChannel, false, server, false);
+        return playLinkToVC(message, whatToPlay, vc, server, true);
+      skipLink(message, vc, false, server, false);
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get('856338454237413396').send(
         (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
@@ -3284,10 +3354,8 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
       console.log('dispatcher error: ', e);
     });
     dispatcher.once('finish', () => {
-      if (whatToPlay !== whatspMap[voiceChannel.id]) {
-        console.log('There was a mismatch -------------------');
-        console.log('old url: ' + whatToPlay);
-        console.log('current url: ' + whatspMap[voiceChannel.id]);
+      if (whatToPlay !== whatspMap[vc.id]) {
+        console.log(`There was a mismatch -----------------\n old url: ${whatToPlay}\n current url: ${whatspMap[vc.id]}`);
         try {
           // noinspection JSUnresolvedFunction
           bot.channels.cache.get('856338454237413396').send('there was a mismatch with playback');
@@ -3295,32 +3363,20 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
           console.log(e);
         }
       }
-      if (voiceChannel.members.size < 2) {
+      if (vc.members.size < 2) {
         connection.disconnect();
       } else if (server.loop) {
-        playLinkToVC(message, whatToPlay, voiceChannel, server, false);
+        playLinkToVC(message, whatToPlay, vc, server, false);
       } else {
         server.queueHistory.push(server.queue.shift());
         if (server.queue.length > 0) {
-          playLinkToVC(message, server.queue[0], voiceChannel, server, false);
+          playLinkToVC(message, server.queue[0], vc, server, false);
         } else if (server.autoplay) {
-          (async () => {
-            try {
-              let id;
-              if (infos) id = infos.related_videos[0].id;
-              else id = (await ytdl.getInfo(whatToPlay)).related_videos[0].id;
-              server.queue.push(`https://youtube.com/watch?v=${id}`);
-              playLinkToVC(message, `https://youtube.com/watch?v=${id}`, voiceChannel, server).then();
-            } catch (e) {
-              message.channel.send('*could not find a video to play*');
-              server.collector.stop();
-              dispatcherMap[voiceChannel.id] = false;
-            }
-          })();
+          runAutoplayCommand(message, server, vc, urlAlt, (whatToPlay === urlAlt ? infos : undefined));
         } else {
           server.collector.stop();
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), 1800000);
-          dispatcherMap[voiceChannel.id] = false;
+          dispatcherMap[vc.id] = false;
         }
       }
       if (server && server.followUpMessage) {
@@ -3329,9 +3385,9 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
       }
     });
   } catch (e) {
-    let errorMsg = e.toString().substr(0, 100);
+    const errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!avoidReplay) playLinkToVC(message, whatToPlay, voiceChannel, server, true).then();
+      if (!avoidReplay) playLinkToVC(message, whatToPlay, vc, server, true).then();
       else {
         server.skipTimes++;
         if (server.skipTimes < 3) {
@@ -3339,7 +3395,7 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
             '***error code 404:*** *this video may contain a restriction preventing it from being played.*'
             + (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
           server.numSinceLastEmbed++;
-          skipLink(message, voiceChannel, true, server, true);
+          skipLink(message, vc, true, server, true);
         } else {
           console.log('status code 404 error');
           connection.disconnect();
@@ -3360,11 +3416,11 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
         message.channel.send('*this video contains a restriction preventing it from being played*');
         server.numSinceLastEmbed++;
         server.skipTimes = 1;
-        skipLink(message, voiceChannel, true, server, true);
-      } else skipLink(message, voiceChannel, false, server, true);
+        skipLink(message, vc, true, server, true);
+      } else skipLink(message, vc, false, server, true);
       return;
     }
-    if (!avoidReplay) return playLinkToVC(message, whatToPlay, voiceChannel, server, true);
+    if (!avoidReplay) return playLinkToVC(message, whatToPlay, vc, server, true);
     console.log('error in playLinkToVC: ', whatToPlay);
     console.log(e);
     const numberOfPrevSkips = server.skipTimes;
@@ -3383,8 +3439,8 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
       ((server.skipTimes === 1) ? '\nIf the link is not broken or restricted, please try again.' : ''));
     // search the db to find possible broken keys
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, whatToPlay);
-    whatspMap[voiceChannel.id] = '';
-    skipLink(message, voiceChannel, false, server, true);
+    whatspMap[vc.id] = '';
+    skipLink(message, vc, false, server, true);
     if (devMode) return;
     // noinspection JSUnresolvedFunction
     bot.channels.cache.get('856338454237413396').send(`there was a playback error within playLinkToVC: ${whatToPlay}`).then(() => {
@@ -3397,9 +3453,32 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
     setTimeout(() => {
       if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
         dispatcher.streamTime < 1) {
-        playLinkToVC(message, whatToPlay, voiceChannel, server, true);
+        playLinkToVC(message, whatToPlay, vc, server, true);
       }
     }, 2000);
+  }
+}
+
+/**
+ * Autoplay to the next recommendation.
+ * @param message The message metadata.
+ * @param server The server.
+ * @param vc The voice channel to be played in.
+ * @param whatToPlay The prev YT link.
+ * @param infos Optional - The infos of the prev YT link.
+ * @returns {Promise<void>}
+ */
+async function runAutoplayCommand (message, server, vc, whatToPlay, infos) {
+  try {
+    let id;
+    if (infos) id = infos.related_videos[0].id;
+    else id = (await ytdl.getInfo(whatToPlay)).related_videos[0].id;
+    server.queue.push(`https://youtube.com/watch?v=${id}`);
+    playLinkToVC(message, `https://youtube.com/watch?v=${id}`, vc, server).then();
+  } catch (e) {
+    message.channel.send('*could not find a video to play*');
+    server.collector.stop();
+    dispatcherMap[vc.id] = false;
   }
 }
 
@@ -3515,7 +3594,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
   }
   server.currentEmbedLink = url;
   let embed = await createEmbed(url, infos);
-  let timeMS = embed.timeMS;
+  const timeMS = embed.timeMS;
   embed = embed.embed;
   let showButtons = true;
   server.infos = infos;
@@ -3536,7 +3615,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
   if (url === whatspMap[voiceChannel.id]) {
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed) {
       try {
-        let sentMsg = await server.currentEmbed.edit(embed);
+        const sentMsg = await server.currentEmbed.edit(embed);
         if (sentMsg.reactions.cache.size < 1 && showButtons && dispatcherMap[voiceChannel.id])
           generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
         return;
@@ -3566,7 +3645,7 @@ async function sendEmbedUpdate (message, server, forceEmbed, embed) {
       server.collector.stop();
     }
   }
-  let sentMsg = await message.channel.send(embed);
+  const sentMsg = await message.channel.send(embed);
   server.currentEmbed = sentMsg;
   return sentMsg;
 }
@@ -3680,7 +3759,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
- * @param server The server plagback metadata
+ * @param server The server playback metadata
  * @param message Optional - The message metadata, used in the case of verifying a dj or dictator
  * @param actionUser Optional - The member requesting to stop playing, used in the case of verifying a dj or dictator
  */
@@ -3799,15 +3878,15 @@ let mainActiveTimer = false;
 let resHandlerTimeout = false;
 // number of active processes
 const setOfBotsOn = new Set();
-let commandsMap = new Map();
+const commandsMap = new Map();
 // A message for users on first VC join
 let startUpMessage = '';
 // What's playing, uses voice channel id
-let whatspMap = new Map();
+const whatspMap = new Map();
 // The video stream, uses voice channel id
-let dispatcherMap = new Map();
+const dispatcherMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
-let dispatcherMapStatus = new Map();
+const dispatcherMapStatus = new Map();
 // login to discord
 (async () => {
   await bot.login(token);
