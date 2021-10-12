@@ -27,7 +27,7 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - before release
 let devMode = false; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '03';
 let isInactive = !devMode;
 let servers = {};
 // the max size of the queue
@@ -2495,6 +2495,8 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'queue \` Displays the queue *[q]*\n' +
     '\n-----------  **Advanced Music Commands**  -----------\n\`' +
+    prefixString +
+    'smartplay \` Autoplay when there is nothing next to play\n\`' +
     prefixString +
     'lyrics \` Get lyrics of what\'s currently playing\n\`' +
     prefixString +

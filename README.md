@@ -46,6 +46,7 @@ These keys are tied to the user and not the server.
 *`ex: mkeys`*
 
 ### Other
+- `smartplay` - adds a new link when there is nothing next to play
 - `dj` - enables dj mode, users must vote to advance, play, pause, and rewind tracks
 - `dictator` - enables dictator mode, dictator controls all playback commands
 - `verbose` - saves each link's embed in the active text channel
