@@ -3,7 +3,8 @@ require('dotenv').config();
 const {MessageEmbed, Client} = require('discord.js');
 const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./utils/database');
 const {
-  formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist
+  formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
+  resetSession
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -141,8 +142,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   }
   // in case of force disconnect
   if (!botInVC(message)) {
-    server.queue = [];
-    server.queueHistory = [];
+    resetSession(server);
   } else if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
@@ -288,8 +288,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
     return message.channel.send('only the dictator can perform this action');
   // in case of force disconnect
   if (!botInVC(message)) {
-    server.queue = [];
-    server.queueHistory = [];
+    resetSession(server);
   } else if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
@@ -372,6 +371,8 @@ function initializeServer (mgid) {
     queue: [],
     // newest items are pushed
     queueHistory: [],
+    // continue playing after queue end
+    autoplay: false,
     // boolean status of looping
     loop: false,
     // the collector for the current embed message
@@ -582,6 +583,16 @@ async function runCommandCases (message) {
     case 'end':
     case 'e':
       runStopPlayingCommand(mgid, message.member.voice.channel, false, server, message, message.member);
+      break;
+    case 'autoplay':
+    case 'smartplay':
+      if (server.autoplay) {
+        server.autoplay = false;
+        message.channel.send('*smartplay turned off*');
+      } else {
+        server.autoplay = true;
+        message.channel.send('*smartplay turned on*');
+      }
       break;
     case 'loop':
       if (!botInVC(message)) {
@@ -2175,8 +2186,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   }
   // in case of force disconnect
   if (!botInVC(message)) {
-    server.queue = [];
-    server.queueHistory = [];
+    resetSession(server);
   } else if (server.queue.length >= maxQueueSize) {
     message.channel.send('*max queue size has been reached*');
     return true;
@@ -2770,8 +2780,7 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
   server.numSinceLastEmbed++;
   // in case of force disconnect
   if (!botInVC(message)) {
-    server.queue = [];
-    server.queueHistory = [];
+    resetSession(server);
   }
   if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
@@ -3022,8 +3031,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
             }
             // in case of force disconnect
             if (!botInVC(message)) {
-              server.queue = [];
-              server.queueHistory = [];
+              resetSession(server);
             } else if (server.queue.length >= maxQueueSize) {
               return message.channel.send('*max queue size has been reached*');
             }
@@ -3293,6 +3301,20 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
         server.queueHistory.push(server.queue.shift());
         if (server.queue.length > 0) {
           playLinkToVC(message, server.queue[0], voiceChannel, server, false);
+        } else if (server.autoplay) {
+          (async () => {
+            try {
+              let id;
+              if (infos) id = infos.related_videos[0].id;
+              else id = (await ytdl.getInfo(whatToPlay)).related_videos[0].id;
+              server.queue.push(`https://youtube.com/watch?v=${id}`);
+              playLinkToVC(message, `https://youtube.com/watch?v=${id}`, voiceChannel, server).then();
+            } catch (e) {
+              message.channel.send('*could not find a video to play*');
+              server.collector.stop();
+              dispatcherMap[voiceChannel.id] = false;
+            }
+          })();
         } else {
           server.collector.stop();
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), 1800000);
@@ -3340,7 +3362,8 @@ async function playLinkToVC (message, whatToPlay, voiceChannel, server, avoidRep
       } else skipLink(message, voiceChannel, false, server, true);
       return;
     }
-    console.log('error in playLinkToVC');
+    if (!avoidReplay) return playLinkToVC(message, whatToPlay, voiceChannel, server, true);
+    console.log('error in playLinkToVC: ', whatToPlay);
     console.log(e);
     const numberOfPrevSkips = server.skipTimes;
     if (numberOfPrevSkips < 1) {
@@ -3499,7 +3522,9 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
       server.currentEmbedChannelId = message.channel.id;
       server.numSinceLastEmbed += 10;
     }
-    embed.addField('Queue', (server.queue.length > 0 ? ' 1 / ' + server.queue.length : 'empty'), true);
+    if (server.queue.length > 1) embed.addField('Queue', `1 / ${server.queue.length}`, true);
+    else if (server.queue.length > 0) embed.addField('Queue', (server.autoplay ? 'smartplay' : '1 / 1'), true);
+    else embed.addField('Queue', 'empty', true);
   } else {
     server.currentEmbedChannelId = '0';
     server.numSinceLastEmbed = 0;

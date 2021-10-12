@@ -128,6 +128,17 @@ function verifyPlaylist (url) {
 }
 
 /**
+ * Resets server playback to default args.
+ * @param server The server to reset.
+ */
+function resetSession (server) {
+  server.queue = [];
+  server.queueHistory = [];
+  server.loop = false;
+  server.autoplay = false;
+}
+
+/**
  * Adjusts the queue for play now.
  * @param dsp The dispatcher to reference.
  * @param server The server to use.
@@ -139,5 +150,6 @@ function adjustQueueForPlayNow (dsp, server) {
 }
 
 module.exports = {
-  formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist
+  formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
+  resetSession: resetSession
 };
