@@ -2991,13 +2991,13 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
  * Grabs all of the keys/names from the database
  * @param {*} message The message trigger
  * @param prefixString The character of the prefix
- * @param {*} sheetname The name of the sheet to retrieve
+ * @param {*} sheetName The name of the sheet to retrieve
  * @param cmdType the prefix to call the keys being displayed
  * @param voiceChannel optional, a specific voice channel to use besides the message's
  * @param user Optional - user name, overrides the message owner's name
  */
-async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceChannel, user) {
-  gsrun('A', 'B', sheetname).then((xdb) => {
+async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceChannel, user) {
+  gsrun('A', 'B', sheetName).then((xdb) => {
     let keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
     let keyArraySorted = keyArrayUnsorted.map(x => x).sort();
     let sortByRecent = true;
@@ -3096,7 +3096,7 @@ async function runKeysCommand (message, prefixString, sheetname, cmdType, voiceC
               return message.channel.send('only the dictator can perform this action');
             for (const mem of voiceChannel.members) {
               if (reactionCollector.id === mem[1].id) {
-                if (sheetname.includes('p')) {
+                if (sheetName.includes('p')) {
                   if (reactionCollector.username) {
                     message.channel.send('*randomizing from ' + reactionCollector.username + "'s keys...*");
                   } else {
@@ -3199,9 +3199,9 @@ bot.on('voiceStateUpdate', update => {
  * @param {string} whatToPlay the link of the song to play
  * @param vc The voice channel to play the song in
  * @param server The server playback metadata
- * @param avoidReplay Optional - Bool to not replay the song after initial replay
+ * @param retries {number} Optional - Integer representing the number of retries
  */
-async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
+async function playLinkToVC (message, whatToPlay, vc, server, retries = 0) {
   if (!whatToPlay) {
     whatToPlay = server.queue[0];
     if (!whatToPlay && server.queue[1]) {
@@ -3231,7 +3231,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
     try {
       infos = await getData(whatToPlay);
     } catch (e) {
-      if (!avoidReplay) return playLinkToVC(message, whatToPlay, vc, server, true);
+      if (!retries) return playLinkToVC(message, whatToPlay, vc, server, retries++);
       console.log(e);
       message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
       whatspMap[vc.id] = '';
@@ -3336,15 +3336,19 @@ async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
       server.currentEmbedLink = whatToPlay;
       server.currentEmbed = undefined;
       server.infos = infos;
-    } else if (!avoidReplay) {
+    } else if (!retries) {
       await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
     }
     server.altUrl = urlAlt;
     server.skipTimes = 0;
     dispatcherMapStatus[vc.id] = false;
-    dispatcher.on('error', (e) => {
-      if (dispatcher.streamTime < 1000 && !avoidReplay)
-        return playLinkToVC(message, whatToPlay, vc, server, true);
+    dispatcher.on('error', async (e) => {
+      if (dispatcher.streamTime < 1000 && retries < 4) {
+        if (retries === 3) await new Promise(res => setTimeout(res, 500));
+        playLinkToVC(message, whatToPlay, vc, server, retries++).then();
+        console.log('ran', whatToPlay);
+        return;
+      }
       skipLink(message, vc, false, server, false);
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get('856338454237413396').send(
@@ -3366,11 +3370,11 @@ async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
       if (vc.members.size < 2) {
         connection.disconnect();
       } else if (server.loop) {
-        playLinkToVC(message, whatToPlay, vc, server, false);
+        playLinkToVC(message, whatToPlay, vc, server);
       } else {
         server.queueHistory.push(server.queue.shift());
         if (server.queue.length > 0) {
-          playLinkToVC(message, server.queue[0], vc, server, false);
+          playLinkToVC(message, server.queue[0], vc, server);
         } else if (server.autoplay) {
           runAutoplayCommand(message, server, vc, urlAlt, (whatToPlay === urlAlt ? infos : undefined));
         } else {
@@ -3387,10 +3391,10 @@ async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
   } catch (e) {
     const errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!avoidReplay) playLinkToVC(message, whatToPlay, vc, server, true).then();
+      if (!retries) playLinkToVC(message, whatToPlay, vc, server, retries++).then();
       else {
         server.skipTimes++;
-        if (server.skipTimes < 3) {
+        if (server.skipTimes < 4) {
           message.channel.send(
             '***error code 404:*** *this video may contain a restriction preventing it from being played.*'
             + (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
@@ -3415,18 +3419,15 @@ async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
       if (server.skipTimes === 0) {
         message.channel.send('*this video contains a restriction preventing it from being played*');
         server.numSinceLastEmbed++;
-        server.skipTimes = 1;
+        server.skipTimes++;
         skipLink(message, vc, true, server, true);
       } else skipLink(message, vc, false, server, true);
       return;
     }
-    if (!avoidReplay) return playLinkToVC(message, whatToPlay, vc, server, true);
+    if (!retries) return playLinkToVC(message, whatToPlay, vc, server, retries++);
     console.log('error in playLinkToVC: ', whatToPlay);
     console.log(e);
-    const numberOfPrevSkips = server.skipTimes;
-    if (numberOfPrevSkips < 1) {
-      server.skipTimes++;
-    } else if (numberOfPrevSkips > 3) {
+    if (server.skipTimes > 3) {
       connection.disconnect();
       message.channel.send('***db bot is facing some issues, may restart***');
       checkStatusOfYtdl(message);
@@ -3449,18 +3450,18 @@ async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
     });
     return;
   }
-  if (!avoidReplay) {
+  if (!retries) {
     setTimeout(() => {
       if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
         dispatcher.streamTime < 1) {
-        playLinkToVC(message, whatToPlay, vc, server, true);
+        playLinkToVC(message, whatToPlay, vc, server, retries++);
       }
     }, 2000);
   }
 }
 
 /**
- * Autoplay to the next recommendation.
+ * Autoplay to the next recommendation. Assumes that the queue is empty.
  * @param message The message metadata.
  * @param server The server.
  * @param vc The voice channel to be played in.
@@ -3470,15 +3471,39 @@ async function playLinkToVC (message, whatToPlay, vc, server, avoidReplay) {
  */
 async function runAutoplayCommand (message, server, vc, whatToPlay, infos) {
   try {
+    const links = [await getRecLink(whatToPlay, infos, 0)];
+    if (server.queueHistory.length > 1 && server.queueHistory[server.queueHistory.length - 2] === links[0]) {
+      links.push(await getRecLink(whatToPlay, infos, 1));
+    }
+    while (links.length) {
+      const link = links.pop();
+      if (link) {
+        server.queue.push(link);
+        playLinkToVC(message, link, vc, server).then();
+        return;
+      }
+    }
+  } catch (e) {}
+  message.channel.send('*could not find a video to play*');
+  server.collector.stop();
+  dispatcherMap[vc.id] = false;
+}
+
+/**
+ * Gets the recommended link from infos depending on the given link and index.
+ * @param whatToPlay The link to find recommendations for.
+ * @param infos The infos of whatToPlay.
+ * @param index The index of the recommendation to get.
+ * @return {Promise<string|undefined>} A new link if successful.
+ */
+async function getRecLink (whatToPlay, infos, index = 0) {
+  try {
     let id;
-    if (infos) id = infos.related_videos[0].id;
-    else id = (await ytdl.getInfo(whatToPlay)).related_videos[0].id;
-    server.queue.push(`https://youtube.com/watch?v=${id}`);
-    playLinkToVC(message, `https://youtube.com/watch?v=${id}`, vc, server).then();
+    if (infos) id = infos.related_videos[index].id;
+    else id = (await ytdl.getInfo(whatToPlay)).related_videos[index].id;
+    return `https://www.youtube.com/watch?v=${id}`;
   } catch (e) {
-    message.channel.send('*could not find a video to play*');
-    server.collector.stop();
-    dispatcherMap[vc.id] = false;
+    return undefined;
   }
 }
 
