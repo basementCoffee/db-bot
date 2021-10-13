@@ -3195,13 +3195,14 @@ bot.on('voiceStateUpdate', update => {
 
 /**
  *  The play function. Plays a given link to the voice channel.
- * @param {*} message the message that triggered the bot
- * @param {string} whatToPlay the link of the song to play
- * @param vc The voice channel to play the song in
- * @param server The server playback metadata
- * @param retries {number} Optional - Integer representing the number of retries
+ * @param {*} message The message that triggered the bot.
+ * @param {string} whatToPlay The link of the song to play.
+ * @param vc The voice channel to play the song in.
+ * @param server The server playback metadata.
+ * @param retries {number} Optional - Integer representing the number of retries.
+ * @param infos Optional - The link infos.
  */
-async function playLinkToVC (message, whatToPlay, vc, server, retries = 0) {
+async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos) {
   if (!whatToPlay) {
     whatToPlay = server.queue[0];
     if (!whatToPlay && server.queue[1]) {
@@ -3225,7 +3226,6 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0) {
   servers[message.guild.id].infos = false;
   // the alternative url to play
   let urlAlt = whatToPlay;
-  let infos;
   if (whatToPlay.includes('spotify.com')) {
     let itemIndex = 0;
     try {
@@ -3345,7 +3345,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0) {
     dispatcher.on('error', async (e) => {
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
-        playLinkToVC(message, whatToPlay, vc, server, retries++).then();
+        playLinkToVC(message, whatToPlay, vc, server, retries++, server.infos).then();
         console.log('ran', whatToPlay);
         return;
       }
@@ -3376,7 +3376,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0) {
         if (server.queue.length > 0) {
           playLinkToVC(message, server.queue[0], vc, server);
         } else if (server.autoplay) {
-          runAutoplayCommand(message, server, vc, urlAlt, (whatToPlay === urlAlt ? infos : undefined));
+          runAutoplayCommand(message, server, vc, urlAlt, (whatToPlay === urlAlt ? server.infos : undefined));
         } else {
           server.collector.stop();
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), 1800000);
@@ -3619,10 +3619,10 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
   }
   server.currentEmbedLink = url;
   let embed = await createEmbed(url, infos);
+  server.infos = embed.infos;
   const timeMS = embed.timeMS;
   embed = embed.embed;
   let showButtons = true;
-  server.infos = infos;
   if (botInVC(message)) {
     if (server.currentEmbedChannelId !== message.channel.id) {
       server.currentEmbedChannelId = message.channel.id;

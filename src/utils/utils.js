@@ -38,10 +38,10 @@ function botInVC (message) {
 }
 
 /**
- * Return an object containing the embed and time based on the data provided
- * @param url The url to create the embed for
- * @param infos Optional - the info metadata to use
- * @returns {Promise<{embed: module:"discord.js".MessageEmbed, timeMS: number}>}
+ * Return an object containing the embed and time based on the data provided.
+ * @param url {string} The url to create the embed for.
+ * @param infos Optional - the info metadata to use.
+ * @return {Promise<{embed: module:"discord.js".MessageEmbed, infos: {formats}, timeMS: number}>}
  */
 async function createEmbed (url, infos) {
   let timeMS;
@@ -74,7 +74,8 @@ async function createEmbed (url, infos) {
   }
   return {
     embed,
-    timeMS
+    timeMS,
+    infos
   };
 }
 

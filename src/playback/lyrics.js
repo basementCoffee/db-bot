@@ -34,7 +34,7 @@ function runLyricsCommand (message, mgid, args, server) {
       searchTerm = args.join(' ').trim();
     } else {
       if (lUrl.toLowerCase().includes('spotify')) {
-        const infos = await getData(lUrl);
+        const infos = (server.infos ? server.infos : await getData(lUrl));
         songName = infos.name.toLowerCase();
         let songNameSubIndex = songName.search('[-]');
         if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
@@ -66,7 +66,7 @@ function runLyricsCommand (message, mgid, args, server) {
           }
         }
       } else {
-        const infos = await ytdl.getInfo(lUrl);
+        const infos = (server.infos ? server.infos : await ytdl.getInfo(lUrl));
         if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
           // use video metadata
           searchTerm = songName = infos.videoDetails.media.song;
@@ -115,19 +115,17 @@ function runLyricsCommand (message, mgid, args, server) {
         }
       }
     }
-
-    if (searchTermRemix ? (!await sendSongLyrics(message, searchTermRemix, server)
-        && !await sendSongLyrics(message, searchTermRemix.replace(' remix', ''), server)
-        && !await sendSongLyrics(message, searchTerm, server)) :
-      !await sendSongLyrics(message, searchTerm, server)) {
+    if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, server)
+        && !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), server)
+        && !await sendSongLyrics(sentMsg, searchTerm, server)) :
+      !await sendSongLyrics(sentMsg, searchTerm, server)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
-        getYoutubeSubtitles(message, lUrl, server);
+        getYoutubeSubtitles(sentMsg, lUrl, server);
       } else {
-        message.channel.send('no results found');
+        sentMsg.edit('no results found');
         server.numSinceLastEmbed--;
       }
     }
-    sentMsg.delete();
   });
 }
 
@@ -141,8 +139,8 @@ function runLyricsCommand (message, mgid, args, server) {
 async function sendSongLyrics (message, searchTerm, server) {
   try {
     const firstSong = (await GeniusClient.songs.search(searchTerm))[0];
-    await message.channel.send('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
-      sentMsg.react('📄').then();
+    await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
+      await sentMsg.react('📄');
       const lyrics = await firstSong.lyrics();
       const filter = (reaction, user) => {
         return user.id !== botID && ['📄'].includes(reaction.emoji.name);
@@ -155,6 +153,7 @@ async function sendSongLyrics (message, searchTerm, server) {
     });
     return true;
   } catch (e) {
+    // GeniusClient.songs.search throws an error if the song is not found
     return false;
   }
 }
@@ -198,7 +197,7 @@ function getYoutubeSubtitles (message, url, server) {
                 }
                 finalString = finalString.replace(/&#39;/g, '\'');
                 finalString = finalString.length > 1910 ? finalString.substr(0, 1910) + '...' : finalString;
-                message.channel.send('Could not find lyrics. Video captions are available.').then(sentMsg => {
+                message.edit('Could not find lyrics. Video captions are available.').then(sentMsg => {
                   const mb = '📄';
                   sentMsg.react(mb).then();
 
@@ -209,8 +208,7 @@ function getYoutubeSubtitles (message, url, server) {
                   const collector = sentMsg.createReactionCollector(filter, {time: 600000});
 
                   collector.once('collect', () => {
-                    message.channel.send('***Captions from YouTube***');
-                    message.channel.send(finalString).then(server.numSinceLastEmbed += 10);
+                    message.edit(`***Captions from YouTube***\n${finalString}`).then(server.numSinceLastEmbed += 10);
                   });
                 });
               }
@@ -219,7 +217,7 @@ function getYoutubeSubtitles (message, url, server) {
         }
       });
     } catch (e) {
-      message.channel.send('no results found');
+      message.edit('no results found');
       server.numSinceLastEmbed -= 2;
     }
   });
