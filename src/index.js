@@ -362,6 +362,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
     playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then();
   } else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
+    await activeEmbedUpdate(server);
   }
 }
 
@@ -618,6 +619,7 @@ async function runCommandCases (message) {
       runPlayNowCommand(message, args, mgid, server, `p${message.member.id}`).then();
       break;
     // stop session commands
+    case 'disconnect':
     case 'quit':
     case 'leave':
     case 'end':
@@ -739,6 +741,7 @@ async function runCommandCases (message) {
       runKeysCommand(message, prefixString, 'entries', 'g', '', '').then();
       break;
     // .search is the search
+    case 'find':
     case 'lookup':
     case 'search':
       runUniversalSearchCommand(message, mgid, (args[1] ? args[1] : server.currentEmbedLink));
@@ -749,10 +752,12 @@ async function runCommandCases (message) {
       if (botInVC(message) || args[0])
         runUniversalSearchCommand(message, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
       break;
+    case 'mfind':
     case 'mlookup':
     case 'msearch':
       runUniversalSearchCommand(message, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
       break;
+    case 'gfind':
     case 'glookup':
     case 'gsearch':
       runUniversalSearchCommand(message, `entries`, (args[1] ? args[1] : server.currentEmbedLink));
@@ -1148,8 +1153,8 @@ async function runCommandCases (message) {
       message.channel.send('The queue has been scrubbed clean');
       if (currentSong) {
         server.queue[0] = currentSong;
-        message.channel.send('queue size: 1');
-        await runWhatsPCommand(message, message.member.voice.channel, undefined);
+        await message.channel.send('queue size: 1');
+        await sendLinkAsEmbed(message, server.currentEmbedLink, message.member.voice.channel, server, server.infos);
       } else {
         server.currentEmbedLink = false;
         whatspMap[message.member.voice.channel.id] = false;
@@ -1451,7 +1456,8 @@ async function runInsertCommand (message, mgid, term, position, server) {
     if (num > server.queue.length) num = server.queue.length;
     server.queue.splice(num, 0, args[1]);
   }
-  message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
+  await message.channel.send(`inserted ${(pNums > 1 ? (pNums + 'links') : 'link')} into position ${num}`);
+  await activeEmbedUpdate(server);
 }
 
 /**
@@ -1936,8 +1942,8 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
       if (linkZ.substring(linkZ.length - 1) === ',') {
         linkZ = linkZ.substring(0, linkZ.length - 1);
       }
-      if (args[z].includes('.')) {
-        message.channel.send("did not add '" + args[z] + "', names cannot include '.'");
+      if (args[z].includes('.') || args[z].includes(',')) {
+        message.channel.send("did not add '" + args[z] + "', names cannot include '.' or ','");
         songsAddedInt--;
       } else {
         let alreadyExists = false;
@@ -2313,13 +2319,16 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
       }
       if (playRightNow) {
         return playLinkToVC(message, server.queue[0], voiceChannel, server);
-      } else message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
+      } else {
+        message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
+        await activeEmbedUpdate(server);
+      }
     } else {
       tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
       if (!tempUrl) {
         const sObj = runSearchCommand(args[1], xdb);
         const ss = sObj.ss;
-        if (sObj.ssi === 1 && ss && ss.length > 0 && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
+        if (sObj.ssi === 1 && ss && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
           message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
           tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
           if (playRightNow) { // push to queue and play
@@ -2374,7 +2383,10 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           }
         }
       }
-      if (!queueWasEmpty) message.channel.send('*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*');
+      if (!queueWasEmpty) {
+        message.channel.send('*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*');
+        await activeEmbedUpdate(server);
+      }
     }
     // if queue was empty then play
     if (queueWasEmpty && server.queue.length > 0) {
@@ -2395,9 +2407,11 @@ function runUniversalSearchCommand (message, sheetName, providedString) {
   // returns true if the item provided was a link
   if (runLookupLink(message, sheetName, providedString)) return;
   gsrun('A', 'B', sheetName).then(async (xdb) => {
-    const ss = runSearchCommand(providedString, xdb).ss;
-    if (ss && ss.length > 0) {
-      message.channel.send('Server keys found: ' + ss);
+    const so = runSearchCommand(providedString, xdb);
+    if (so) {
+      let link;
+      if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
+      message.channel.send(`Server keys found: ${so.ss} ` + (link ? `\n${link}` : ''));
     } else if (providedString.length < 2) {
       message.channel.send('Did not find any server keys that start with the given letter.');
     } else {
@@ -2410,9 +2424,11 @@ function runUniversalSearchCommand (message, sheetName, providedString) {
         .then(async messages => {
           if (messages.first().content.toLowerCase() === 'y' || messages.first().content.toLowerCase() === 'yes') {
             gsrun('A', 'B', `p${message.member.id}`).then(async (xdb) => {
-              const ss = runSearchCommand(providedString, xdb).ss;
-              if (ss && ss.length > 0) {
-                message.channel.send('Personal keys found: ' + ss);
+              const so = runSearchCommand(providedString, xdb);
+              if (so) {
+                let link = '';
+                if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
+                message.channel.send(`Personal keys found: ${so.ss} ` + (link ? `\n${link}` : ''));
               } else if (providedString.length < 2) {
                 message.channel.send('Did not find any keys in your list that start with the given letter.');
               } else {
@@ -2442,14 +2458,10 @@ function runSearchCommand (keyName, xdb) {
     if (keyName.toUpperCase() === searchKey.substr(0, keyNameLen).toUpperCase() ||
       (keyNameLen > 1 && searchKey.toUpperCase().includes(keyName.toUpperCase()))) {
       ssi++;
-      if (!ss) {
-        ss = searchKey;
-      } else {
-        ss += ', ' + searchKey;
-      }
+      ss += `${searchKey}, `;
     }
   }
-
+  if (ssi) ss = ss.substring(0, ss.length - 2);
   return {
     // the search string
     ss: ss,
@@ -2677,10 +2689,12 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       const foundTitle = searchResult.items[indexToLookup].title;
       let sentMsg;
       if (foundTitle.charCodeAt(0) < 120) {
-        sentMsg = await message.channel.send('*added **' + foundTitle + '** to queue*');
+        sentMsg = await message.channel.send('*added **' + foundTitle.replace(/\*/g, '') + '** to queue*');
+        await activeEmbedUpdate(server);
       } else {
         let infos = await ytdl.getInfo(ytLink);
-        sentMsg = await message.channel.send('*added **' + infos.videoDetails.title + '** to queue*');
+        sentMsg = await message.channel.send('*added **' + infos.videoDetails.title.replace(/\*/g, '') + '** to queue*');
+        await activeEmbedUpdate(server);
       }
       sentMsg.react('❌').then();
       const filter = (reaction, user) => {
@@ -2886,7 +2900,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
   } else {
     valArray = Array.from(cdb.values());
     if (valArray.length < 1) {
-      let pf = server.prefix;
+      const pf = server.prefix;
       return message.channel.send('Your music list is empty *(Try  `' + pf + 'a` or `' + pf
         + 'ma` to add to a keys list)*');
     }
@@ -2916,36 +2930,20 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
       else tempArray = [...valArray];
       // continues until numOfTimes is 0 or the tempArray is completed
       let url;
-      let playlist;
       while (tempArray.length > 0 && (i < numOfTimes || addAll)) {
         const randomNumber = Math.floor(Math.random() * tempArray.length);
         url = tempArray[randomNumber];
         // if it is a playlist, un-package the playlist
         if (verifyPlaylist(url)) {
-          try {
-            let isSpotify = url.toLowerCase().includes('spotify');
-            // add all the songs from the playlist to the tempArray
-            if (isSpotify) playlist = await getTracks(url);
-            else playlist = (await ytpl(url, {pages: 1})).items;
-            let itemCounter = 0;
-            for (let j of playlist) {
-              url = isSpotify ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
-              if (url) {
-                tempArray.push(url);
-                itemCounter++;
-              }
-            }
-            if (isPlaylist) numOfTimes = itemCounter;
-            else if (addAll) {
+          // the number of items added to tempArray
+          const addedItems = await getPlaylistItems(url, tempArray);
+          if (isPlaylist) numOfTimes = addedItems;
+          else if (addAll) {
+            if ((serverQueueLength + numOfTimes) > maxQueueSize) {
               // reduce numOfTimes if greater than maxQueueSize
-              numOfTimes += itemCounter - 1;
-              if ((serverQueueLength + numOfTimes) > maxQueueSize) {
-                numOfTimes = Math.abs(maxQueueSize - serverQueueLength);
-                addAll = false;
-              }
-            }
-          } catch (e) {
-            console.log(e);
+              numOfTimes = Math.abs(maxQueueSize - serverQueueLength);
+              addAll = false;
+            } else numOfTimes += addedItems - 1;
           }
         } else if (url) {
           // add url to queue
@@ -2961,10 +2959,9 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     }
     // here - queue should have all the items
   } catch (e) {
-    console.log('error in random: ');
-    console.log(e);
+    console.log('error in random: ', e);
     if (isPlaylist) return;
-    let rn = Math.floor(Math.random() * valArray.length);
+    const rn = Math.floor(Math.random() * valArray.length);
     if (verifyPlaylist(valArray[rn])) {
       if (sentMsg && sentMsg.deletable) sentMsg.delete();
       return message.channel.send('There was an error.');
@@ -2984,7 +2981,45 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
   } else {
     if (sentMsg && sentMsg.deletable) sentMsg.delete();
     message.channel.send('*added ' + numOfTimes + ' to queue*');
+    await activeEmbedUpdate(server);
   }
+}
+
+/**
+ * Un-package the playlist url and push it to the given array.
+ * @param url A Spotify or YouTube playlist link.
+ * @param tempArray The array to push to.
+ * @returns {Promise<number>} The number of items pushed to the array.
+ */
+async function getPlaylistItems (url, tempArray) {
+  let playlist;
+  let itemCounter = 0;
+  try {
+    let isSpotify = url.toLowerCase().includes('spotify');
+    // add all the songs from the playlist to the tempArray
+    if (isSpotify) {
+      playlist = await getTracks(url);
+      for (let j of playlist) {
+        url = j.external_urls.spotify;
+        if (url) {
+          tempArray.push(url);
+          itemCounter++;
+        }
+      }
+    } else {
+      playlist = (await ytpl(url, {pages: 1})).items;
+      for (let j of playlist) {
+        url = j.shortUrl ? j.shortUrl : j.url;
+        if (url) {
+          tempArray.push(url);
+          itemCounter++;
+        }
+      }
+    }
+  } catch (e) {
+    console.log(`Error in getPlaylistItems: ${url} : `, e);
+  }
+  return itemCounter;
 }
 
 /**
@@ -3292,6 +3327,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
     try {
       connection = await vc.join();
+      await new Promise(res => setTimeout(res, 100));
     } catch (e) {
       const eMsg = e.toString();
       if (eMsg.includes('it is full')) message.channel.send('*cannot join voice channel, it is full*');
@@ -3324,6 +3360,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   }
   let dispatcher;
   try {
+    let playbackTimeout;
     // noinspection JSCheckFunctionSignatures
     dispatcher = connection.play(await ytdl(urlAlt, {
       filter: () => ['251']
@@ -3346,9 +3383,9 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     dispatcherMapStatus[vc.id] = false;
     dispatcher.on('error', async (e) => {
       if (dispatcher.streamTime < 1000 && retries < 4) {
+        if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
         playLinkToVC(message, whatToPlay, vc, server, retries++, server.infos).then();
-        console.log('ran', whatToPlay);
         return;
       }
       skipLink(message, vc, false, server, false);
@@ -3390,6 +3427,13 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
         server.followUpMessage = undefined;
       }
     });
+    if (!retries) {
+      playbackTimeout = setTimeout(() => {
+        if (server.queue[0] === whatToPlay && botInVC(message) && dispatcher.streamTime < 1) {
+          playLinkToVC(message, whatToPlay, vc, server, retries++);
+        }
+      }, 2000);
+    }
   } catch (e) {
     const errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
@@ -3450,15 +3494,6 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get('856338454237413396').send(e.toString().substr(0, 1910));
     });
-    return;
-  }
-  if (!retries) {
-    setTimeout(() => {
-      if (server.queue[0] === whatToPlay && message.guild.voice && message.guild.voice.channel &&
-        dispatcher.streamTime < 1) {
-        playLinkToVC(message, whatToPlay, vc, server, retries++);
-      }
-    }, 2000);
   }
 }
 
@@ -3496,7 +3531,7 @@ async function runAutoplayCommand (message, server, vc, whatToPlay, infos) {
  * @param whatToPlay The link to find recommendations for.
  * @param infos The infos of whatToPlay.
  * @param index The index of the recommendation to get.
- * @return {Promise<string|undefined>} A new link if successful.
+ * @returns {Promise<string|undefined>} A new link if successful.
  */
 async function getRecLink (whatToPlay, infos, index = 0) {
   try {
@@ -3656,12 +3691,12 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
 }
 
 /**
- * Sends an updated embed to the channel.
+ * Sends a new message embed to the channel. Is a helper for sendLinkAsEmbed.
  * @param message The message.
  * @param server The server.
  * @param forceEmbed {Boolean} If to keep the old embed and send a new one.
  * @param embed The embed to send.
- * @returns {Promise<*>}
+ * @returns {Promise<Message>} The new message that was sent.
  */
 async function sendEmbedUpdate (message, server, forceEmbed, embed) {
   server.numSinceLastEmbed = 0;
@@ -3675,6 +3710,25 @@ async function sendEmbedUpdate (message, server, forceEmbed, embed) {
   const sentMsg = await message.channel.send(embed);
   server.currentEmbed = sentMsg;
   return sentMsg;
+}
+
+/**
+ * Sends an updated playback embed with the fields updated. Assumes that a session is ongoing.
+ * @param server The server.
+ * @returns {Promise<void>}
+ */
+async function activeEmbedUpdate (server) {
+  try {
+    let embed = await createEmbed(server.currentEmbedLink, server.infos);
+    server.infos = embed.infos;
+    embed = embed.embed;
+    if (server.queue.length > 1) embed.addField('Queue', `1 / ${server.queue.length}`, true);
+    else if (server.queue.length > 0) embed.addField('Queue', (server.autoplay ? 'smartplay' : '1 / 1'), true);
+    else embed.addField('Queue', 'empty', true);
+    if (server.currentEmbed) server.currentEmbed.edit(embed);
+  } catch (e) {
+    console.log(e);
+  }
 }
 
 /**
@@ -3833,10 +3887,16 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetName, shee
   if (keyName && sheetName) {
     gsrun('A', 'B', sheetName).then((xdb) => {
       let link = xdb.referenceDatabase.get(keyName.toUpperCase());
+      // update link value here
+      if (!link) {
+        let sObj = runSearchCommand(keyName, xdb);
+        if (sObj.ssi === 1 && sObj.ss)
+          link = `Assuming **${sObj.ss}**\n${xdb.referenceDatabase.get(sObj.ss.toUpperCase())}`;
+      }
       if (link) {
         return message.channel.send(link);
       } else {
-        message.channel.send(`Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} database.`);
+        message.channel.send(`Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`);
         return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], servers[message.guild.id].infos, true);
       }
     });
