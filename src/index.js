@@ -362,7 +362,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
     playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then();
   } else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
-    await activeEmbedUpdate(server);
+    await updateActiveEmbed(server);
   }
 }
 
@@ -638,6 +638,7 @@ async function runCommandCases (message) {
         server.autoplay = true;
         message.channel.send('*smartplay turned on*');
       }
+      updateActiveEmbed(server).then();
       break;
     case 'loop':
       if (!botInVC(message)) return message.channel.send('must be actively playing to loop');
@@ -1139,6 +1140,7 @@ async function runCommandCases (message) {
     case 'restart':
       runRestartCommand(message, mgid, 'restart', server);
       break;
+    case 'empty':
     case 'clear' :
       if (!message.member.voice.channel) return message.channel.send('must be in a voice channel to clear');
       if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member))
@@ -1457,7 +1459,7 @@ async function runInsertCommand (message, mgid, term, position, server) {
     server.queue.splice(num, 0, args[1]);
   }
   await message.channel.send(`inserted ${(pNums > 1 ? (pNums + 'links') : 'link')} into position ${num}`);
-  await activeEmbedUpdate(server);
+  await updateActiveEmbed(server);
 }
 
 /**
@@ -2148,6 +2150,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                           serverQueue.splice(num, 0, link);
                         }
                         message.channel.send('inserted ' + (pNums > 1 ? (pNums + 'links') : 'link') + ' into position ' + num);
+                        if (server.currentEmbedLink) updateActiveEmbed(server).then();
                         let pageNum;
                         if (num === 11) pageNum = 0;
                         else pageNum = Math.floor((num - 1) / 10);
@@ -2192,6 +2195,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 server.queue.splice(num, 1);
                 serverQueue.splice(num, 1);
                 message.channel.send('removed item from queue');
+                if (server.currentEmbedLink) updateActiveEmbed(server).then();
                 let pageNum;
                 if (num === 11) pageNum = 0;
                 else pageNum = Math.floor((num - 1) / 10);
@@ -2321,7 +2325,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         return playLinkToVC(message, server.queue[0], voiceChannel, server);
       } else {
         message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
-        await activeEmbedUpdate(server);
+        await updateActiveEmbed(server);
       }
     } else {
       tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
@@ -2385,7 +2389,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
       }
       if (!queueWasEmpty) {
         message.channel.send('*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*');
-        await activeEmbedUpdate(server);
+        await updateActiveEmbed(server);
       }
     }
     // if queue was empty then play
@@ -2690,11 +2694,11 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       let sentMsg;
       if (foundTitle.charCodeAt(0) < 120) {
         sentMsg = await message.channel.send('*added **' + foundTitle.replace(/\*/g, '') + '** to queue*');
-        await activeEmbedUpdate(server);
+        await updateActiveEmbed(server);
       } else {
         let infos = await ytdl.getInfo(ytLink);
         sentMsg = await message.channel.send('*added **' + infos.videoDetails.title.replace(/\*/g, '') + '** to queue*');
-        await activeEmbedUpdate(server);
+        await updateActiveEmbed(server);
       }
       sentMsg.react('❌').then();
       const filter = (reaction, user) => {
@@ -2711,6 +2715,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
           }
         }
         if (!collector.ended) collector.stop();
+        updateActiveEmbed(server);
       });
       collector.on('end', () => {
         if (sentMsg.reactions && sentMsg.deletable) sentMsg.reactions.removeAll();
@@ -2981,7 +2986,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
   } else {
     if (sentMsg && sentMsg.deletable) sentMsg.delete();
     message.channel.send('*added ' + numOfTimes + ' to queue*');
-    await activeEmbedUpdate(server);
+    await updateActiveEmbed(server);
   }
 }
 
@@ -3177,9 +3182,9 @@ bot.on('voiceStateUpdate', update => {
  * @param update
  */
 function updateVoiceState (update) {
-  // if the bot is the one leaving
   const server = servers[update.guild.id];
   if (!server) return;
+  // if the bot is the one leaving
   if (update.member.id === bot.user.id && !update.connection) {
     sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, server.infos, false).then(() => {
       server.numSinceLastEmbed = 0;
@@ -3213,7 +3218,7 @@ function updateVoiceState (update) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
       if (dispatcherMap[update.channel.id]) leaveVCInt = 420000;
-      // if timeout exists then clear
+      // clear if timeout exists, set new timeout
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
         server.leaveVCTimeout = false;
@@ -3717,7 +3722,7 @@ async function sendEmbedUpdate (message, server, forceEmbed, embed) {
  * @param server The server.
  * @returns {Promise<void>}
  */
-async function activeEmbedUpdate (server) {
+async function updateActiveEmbed (server) {
   try {
     let embed = await createEmbed(server.currentEmbedLink, server.infos);
     server.infos = embed.infos;
