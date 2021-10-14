@@ -27,7 +27,7 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - before release
 let devMode = false; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '03';
 let isInactive = !devMode;
 const servers = {};
 // the max size of the queue
@@ -3134,9 +3134,18 @@ async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceC
 
 bot.on('voiceStateUpdate', update => {
   if (isInactive) return;
+  updateVoiceState(update);
+});
+
+/**
+ * Updates the bots voice state depending on the update occurring.
+ * @param update
+ */
+function updateVoiceState (update) {
   // if the bot is the one leaving
-  if (update.member.id === bot.user.id && !update.connection && servers[update.guild.id]) {
-    const server = servers[update.guild.id];
+  const server = servers[update.guild.id];
+  if (!server) return;
+  if (update.member.id === bot.user.id && !update.connection) {
     sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, server.infos, false).then(() => {
       server.numSinceLastEmbed = 0;
       server.silence = false;
@@ -3164,9 +3173,8 @@ bot.on('voiceStateUpdate', update => {
       clearDJTimer(server);
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
     });
-  } else if (update.channel) {
-    const server = servers[update.guild.id];
-    if (server) {
+  } else if (botInVC(update)) {
+    if (update.channel && update.channel.members.size < 2) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
       if (dispatcherMap[update.channel.id]) leaveVCInt = 420000;
@@ -3179,19 +3187,13 @@ bot.on('voiceStateUpdate', update => {
         }
       }, leaveVCInt);
     }
-  } else if (update.member.id !== bot.user.id) {
-    const server = servers[update.guild.id];
-    if (server) {
-      if (server.seamless.function) {
-        server.seamless.function(...server.seamless.args);
-        if (server.seamless.message && server.seamless.message.deletable) {
-          server.seamless.message.delete();
-          server.seamless.message = undefined;
-        }
-      }
-    }
+  } else if (server.seamless.function && update.member.id !== bot.user.id) {
+    server.seamless.function(...server.seamless.args);
+    server.seamless.function = undefined;
+    server.seamless.message.delete();
+    server.seamless.message = undefined;
   }
-});
+}
 
 /**
  *  The play function. Plays a given link to the voice channel.
