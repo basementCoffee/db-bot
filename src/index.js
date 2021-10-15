@@ -626,8 +626,8 @@ async function runCommandCases (message) {
     case 'e':
       runStopPlayingCommand(mgid, message.member.voice.channel, false, server, message, message.member);
       break;
-    case 'autop':
     case 'autoplay':
+    case 'sp':
     case 'smartp':
     case 'smartplay':
       if (!botInVC(message)) return message.channel.send('must be playing something to use smartplay');
@@ -640,14 +640,18 @@ async function runCommandCases (message) {
       }
       updateActiveEmbed(server).then();
       break;
+    case 'l':
     case 'loop':
-      if (!botInVC(message)) return message.channel.send('must be actively playing to loop');
+      if (!server.currentEmbedLink) {
+        if (args[0].length > 1) await message.channel.send('must be actively playing to loop');
+        return;
+      }
       if (server.loop) {
         server.loop = false;
-        message.channel.send('*looping disabled*');
+        await message.channel.send('*looping disabled*');
       } else {
         server.loop = true;
-        message.channel.send('*looping enabled*');
+        await message.channel.send('*looping enabled (occurs on finish)*');
       }
       break;
     case 'lyric':
@@ -1189,16 +1193,6 @@ async function runCommandCases (message) {
       message.channel.send('*song notifications enabled*');
       if (dispatcherMap[message.member.voice.channel.id]) {
         sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, server).then();
-      }
-      break;
-    case 'l':
-      if (!botInVC(message)) return;
-      if (server.loop) {
-        server.loop = false;
-        message.channel.send('*looping disabled*');
-      } else {
-        server.loop = true;
-        message.channel.send('*looping enabled*');
       }
       break;
     // print out the version number
@@ -3642,14 +3636,14 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  * @returns {Promise<void>}
  */
 async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, forceEmbed) {
-  if (!message) return;
+  if (!message || !url) return;
   if (!voiceChannel) {
     voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return;
   }
   if (server.verbose) forceEmbed = true;
-  if (!url || (server.loop && server.currentEmbedLink === url && !forceEmbed &&
-    server.currentEmbed.reactions)) {
+  if (server.loop && server.currentEmbedLink === url && !forceEmbed && botInVC(message)
+    && server.currentEmbed.reactions) {
     return;
   }
   server.currentEmbedLink = url;
@@ -3663,9 +3657,7 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
       server.currentEmbedChannelId = message.channel.id;
       server.numSinceLastEmbed += 10;
     }
-    if (server.queue.length > 1) embed.addField('Queue', `1 / ${server.queue.length}`, true);
-    else if (server.queue.length > 0) embed.addField('Queue', (server.autoplay ? 'smartplay' : '1 / 1'), true);
-    else embed.addField('Queue', 'empty', true);
+    embed.addField('Queue', getQueueContent(server), true);
   } else {
     server.currentEmbedChannelId = '0';
     server.numSinceLastEmbed = 0;
@@ -3717,16 +3709,27 @@ async function sendEmbedUpdate (message, server, forceEmbed, embed) {
  */
 async function updateActiveEmbed (server) {
   try {
+    if (!server.currentEmbed) return;
     let embed = await createEmbed(server.currentEmbedLink, server.infos);
     server.infos = embed.infos;
     embed = embed.embed;
-    if (server.queue.length > 1) embed.addField('Queue', `1 / ${server.queue.length}`, true);
-    else if (server.queue.length > 0) embed.addField('Queue', (server.autoplay ? 'smartplay' : '1 / 1'), true);
-    else embed.addField('Queue', 'empty', true);
-    if (server.currentEmbed) server.currentEmbed.edit(embed);
+    embed.addField('Queue', getQueueContent(server), true);
+    server.currentEmbed.edit(embed);
   } catch (e) {
     console.log(e);
   }
+}
+
+/**
+ * Returns the queue display status.
+ * @param server The server.
+ */
+function getQueueContent (server) {
+  let content;
+  if (server.queue.length > 1) content = `1 / ${server.queue.length}`;
+  else if (server.queue.length > 0) content = (server.autoplay ? 'smartplay' : '1 / 1');
+  else content = 'empty';
+  return content;
 }
 
 /**

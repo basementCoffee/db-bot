@@ -92,8 +92,11 @@ async function sendRecommendation (message, content, url, uManager) {
   if (!url) return;
   try {
     let recUser = await uManager.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
-    await recUser.send(`${message.member.user.username} has a recommendation for you${(content ? `:\n *${content}*` : '')}`);
-    await recUser.send((await createEmbed(url)).embed);
+    content = content.trim();
+    await recUser.send({
+      content: `**${message.member.user.username}** has a recommendation for you${(content ? `:\n *${content}*` : '')}`,
+      embed: (await createEmbed(url)).embed
+    });
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
   } catch (e) {
     console.log(e);
