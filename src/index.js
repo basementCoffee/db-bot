@@ -97,7 +97,7 @@ async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChann
           i += 1;
           couldNotFindKey = false;
           await gsUpdateOverwrite(-1, -1, sheetName, xdb.dsInt);
-          await deleteRows(message, sheetName, i);
+          await deleteRows(sheetName, i);
           if (sendMsgToChannel) {
             message.channel.send('deleted \'' + itemToCheck + '\' from ' +
               (sheetName.substr(0, 1) === 'p' ? 'your' : 'the server\'s') + ' keys');
@@ -436,7 +436,7 @@ function initializeServer (mgid) {
     lockQueue: false,
     // The member that is the acting dictator
     dictator: false,
-    // If a start up message has been sent
+    // If a start-up message has been sent
     startUpMessage: false,
     // the timeout IDs for the bot to leave a VC
     leaveVCTimeout: false,
@@ -467,16 +467,38 @@ function initializeServer (mgid) {
 }
 
 /**
- * The execution for all of the bot commands
+ * Gets the server prefix from the database and updates the server.prefix field.
+ * If there is no prefix then the default is added to the database.
+ * @param server The server.
+ * @param mgid The guild id, used to get the prefix.
+ * @return {Promise<void>}
+ */
+async function updateServerPrefix (server, mgid) {
+  try {
+    let xdb = await gsrun('A', 'B', 'prefixes');
+    server.prefix = xdb.congratsDatabase.get(mgid);
+    if (!server.prefix) {
+      server.prefix = '.';
+      try {
+        gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', xdb.dsInt);
+      } catch (e) {console.log(e);}
+    }
+  } catch (e) {
+    console.log(e);
+    server.prefix = '.';
+    gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', 1);
+  }
+}
+
+/**
+ * The execution for all bot commands
  * @param message the message that triggered the bot
  * @returns {Promise<void>}
  */
 async function runCommandCases (message) {
   const mgid = message.guild.id;
   // the server guild playback data
-  if (!servers[mgid]) {
-    initializeServer(mgid);
-  }
+  if (!servers[mgid]) initializeServer(mgid);
   const server = servers[mgid];
   if (devMode) server.prefix = '=';
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
@@ -484,41 +506,21 @@ async function runCommandCases (message) {
   }
   let prefixString = server.prefix;
   if (!prefixString) {
-    try {
-      await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
-        const newPrefix = xdb.congratsDatabase.get(mgid);
-        if (!newPrefix) {
-          server.prefix = '.';
-          try {
-            gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', xdb.dsInt);
-          } catch (e) {console.log(e);}
-        } else {
-          server.prefix = newPrefix;
-        }
-      });
-    } catch (e) {
-      server.prefix = '.';
-      gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', 1);
-    }
+    await updateServerPrefix(server, mgid);
     prefixString = server.prefix;
   }
   const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
   const fwPrefix = firstWordBegin.substr(0, 1);
+  // for all non-commands
   if (fwPrefix !== prefixString) {
-    if (fwPrefix.toUpperCase() === fwPrefix.toLowerCase() && fwPrefix.charCodeAt(0) < 120 && !devMode) {
-      const fwCommand = firstWordBegin.substr(1, 13);
-      if (fwPrefix === '.' && (fwCommand === 'changeprefix ' || fwCommand === 'h ' || fwCommand === 'help ')) {
+    if (devMode) return;
+    if (fwPrefix === '.') {
+      if (firstWordBegin === '.changeprefix ' || firstWordBegin === '.h ' || firstWordBegin === '.help ') {
         return message.channel.send('Current prefix is: ' + prefixString);
       }
-      if (message.guild.me.nickname && message.guild.me.nickname.substr(0, 1) === '['
-        && message.guild.me.nickname.substr(2, 1) === ']') {
-        const falsePrefix = message.guild.me.nickname.substr(1, 1);
-        if (fwPrefix === falsePrefix && (fwCommand === 'changeprefix ' || fwCommand === 'h ' || fwCommand === 'help ')) {
-          return message.channel.send('Current prefix is: ' + prefixString);
-        }
-      }
     }
-    if (contentContainCongrats(message.content)) {
+    // scan the first word
+    if (contentContainCongrats(firstWordBegin)) {
       if (!botInVC(message)) {
         server.queue.length = 0;
         server.queueHistory.length = 0;
@@ -943,11 +945,11 @@ async function runCommandCases (message) {
                       await changeNamePrefix();
                       message.channel.send('name has been updated, prefix is: ' + prefixString);
                     } else {
-                      message.channel.send('name remains the same, prefix is: ' + prefixString);
+                      message.channel.send('ok, prefix is: ' + prefixString);
                     }
                   })
                   .catch(() => {
-                    message.channel.send('name remains the same, prefix is: ' + prefixString);
+                    message.channel.send('prefix is now: ' + prefixString);
                   });
               });
             } else if (message.guild.me.nickname.substr(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
@@ -1152,20 +1154,14 @@ async function runCommandCases (message) {
         return message.channel.send('only the DJ can clear the queue');
       if (server.dictator && server.dictator.id !== message.member.id)
         return message.channel.send('only the Dictator can clear the queue');
-      const currentSong =
-        (dispatcherMap[message.member.voice.channel.id] && message.guild.voice && message.guild.voice.channel)
-          ? server.queue[0] : undefined;
+      const currentSong = (botInVC(message)) ? server.queue[0] : undefined;
       server.queue.length = 0;
       server.queueHistory.length = 0;
-      message.channel.send('The queue has been scrubbed clean');
       if (currentSong) {
         server.queue[0] = currentSong;
-        await message.channel.send('queue size: 1');
         await sendLinkAsEmbed(message, server.currentEmbedLink, message.member.voice.channel, server, server.infos);
-      } else {
-        server.currentEmbedLink = false;
-        whatspMap[message.member.voice.channel.id] = false;
       }
+      message.channel.send('The queue has been scrubbed clean');
       break;
     case 'inv':
     case 'invite':
@@ -1335,6 +1331,20 @@ async function runCommandCases (message) {
       break;
   }
 }
+
+bot.on('guildDelete', guild => {
+  if (isInactive || devMode) return;
+  gsrun('A', 'B', 'prefixes').then(async (xdb) => {
+    for (let i = 0; i < xdb.line.length; i++) {
+      const itemToCheck = xdb.line[i];
+      if (itemToCheck === guild.id) {
+        i += 1;
+        await deleteRows('prefixes', i);
+        break;
+      }
+    }
+  });
+});
 
 bot.on('guildCreate', guild => {
   if (isInactive || devMode) return;
@@ -1509,10 +1519,15 @@ function checkStatusOfYtdl (message) {
  * Check to see if there was a response. If not then makes the current bot active.
  * @returns {boolean} if there was an initial response
  */
-function responseHandler () {
+async function responseHandler () {
   resHandlerTimeout = null;
   if (setOfBotsOn.size < 1 && isInactive) {
     for (let server in servers) delete servers[server];
+    let xdb = await gsrun('A', 'B', 'prefixes');
+    for (const [gid, pfx] of xdb.congratsDatabase) {
+      initializeServer(gid);
+      servers[gid].prefix = pfx;
+    }
     isInactive = false;
     devMode = false;
     console.log('-active-');
@@ -2407,7 +2422,7 @@ function runUniversalSearchCommand (message, sheetName, providedString) {
   if (runLookupLink(message, sheetName, providedString)) return;
   gsrun('A', 'B', sheetName).then(async (xdb) => {
     const so = runSearchCommand(providedString, xdb);
-    if (so) {
+    if (so.ssi) {
       let link;
       if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
       message.channel.send(`Server keys found: ${so.ss} ` + (link ? `\n${link}` : ''));
@@ -2424,7 +2439,7 @@ function runUniversalSearchCommand (message, sheetName, providedString) {
           if (messages.first().content.toLowerCase() === 'y' || messages.first().content.toLowerCase() === 'yes') {
             gsrun('A', 'B', `p${message.member.id}`).then(async (xdb) => {
               const so = runSearchCommand(providedString, xdb);
-              if (so) {
+              if (so.ssi) {
                 let link = '';
                 if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
                 message.channel.send(`Personal keys found: ${so.ss} ` + (link ? `\n${link}` : ''));
@@ -3162,25 +3177,27 @@ async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceC
 
 bot.on('voiceStateUpdate', update => {
   if (isInactive) return;
-  updateVoiceState(update);
+  updateVoiceState(update).then();
 });
 
 /**
  * Updates the bots voice state depending on the update occurring.
- * @param update
+ * @param update The voice-state update metadata.
  */
-function updateVoiceState (update) {
+async function updateVoiceState (update) {
   const server = servers[update.guild.id];
   if (!server) return;
-  // if the bot is the one leaving
-  if (update.member.id === bot.user.id && !update.connection) {
+  // if bot
+  if (update.member.id === bot.user.id) {
+    // if the bot joined then ignore
+    if (update.connection) return;
     // clear timers first
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = null;
     }
     clearDJTimer(server);
-    sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, server.infos, false).then(() => {
+    await sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, server.infos, false).then(() => {
       server.numSinceLastEmbed = 0;
       server.silence = false;
       server.verbose = false;
@@ -3219,7 +3236,7 @@ function updateVoiceState (update) {
         }
       }, leaveVCInt);
     }
-  } else if (server.seamless.function && update.member.id !== bot.user.id) {
+  } else if (server.seamless.function) {
     if (server.seamless.timeout) {
       clearTimeout(server.seamless.timeout);
       server.seamless.timeout = null;
@@ -3358,7 +3375,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     (!server.loop || whatspMap[vc.id] !== whatToPlay)) {
     server.numSinceLastEmbed = 0;
     server.currentEmbed.delete();
-    server.currentEmbed = false;
+    server.currentEmbed = null;
   }
   if (server.leaveVCTimeout) {
     clearTimeout(server.leaveVCTimeout);
@@ -3381,7 +3398,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       server.currentEmbedLink = whatToPlay;
       server.currentEmbed = undefined;
       server.infos = infos;
-    } else if (!(retries && server.currentEmbed)) {
+    } else if (!(retries && server.currentEmbedLink)) {
       await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
     }
     server.altUrl = urlAlt;

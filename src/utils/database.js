@@ -99,12 +99,11 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
 
 /**
  * Deletes the respective rows within the google sheets
- * @param message The message that triggered the command
  * @param sheetName The name of the sheet to edit
  * @param rowNumber The row to delete
  * @returns {Promise<void>}
  */
-const deleteRows = async (message, sheetName, rowNumber) => {
+const deleteRows = async (sheetName, rowNumber) => {
   let res;
   try {
     const request = {
@@ -141,9 +140,6 @@ const deleteRows = async (message, sheetName, rowNumber) => {
     function (err, response) {
       if (err) {
         console.log('deleteRows error:', err);
-      } else {
-        gsrun('A', 'B', message.guild.id).then(() => {
-        });
       }
       return response;
     }

@@ -8,3 +8,4 @@ _MacOS.npm-start.command
 .env
 .vscode
 .eslintrc.json
+test
