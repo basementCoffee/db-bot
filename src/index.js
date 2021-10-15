@@ -27,7 +27,7 @@ const {getTracks, getData} = require("spotify-url-info");
 
 // UPDATE HERE - before release
 let devMode = false; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '03';
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
 let isInactive = !devMode;
 const servers = {};
 // the max size of the queue
@@ -2826,7 +2826,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
  * @param server The server playback metadata
  * @param addToFront Optional - true if to add to the front
  */
-function runRandomToQueue (num, message, sheetName, server, addToFront = false) {
+function runRandomToQueue (num = 1, message, sheetName, server, addToFront = false) {
   if (!message.member.voice.channel) {
     (async () => {
       const sentMsg = await message.channel.send('must be in a voice channel to play random');
@@ -2838,12 +2838,10 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (server.dictator && message.member.id !== server.dictator.id)
     return message.channel.send('only the dictator can randomize to queue');
-  if (!num) num = 1;
   let isPlaylist;
   // holds the string
   const numCpy = num;
   // convert addToFront into a number for addRandomToQueue
-  if (addToFront) addToFront = 1;
   try {
     num = parseInt(num);
     if (num < 1) return message.channel.send('*invalid number*');
@@ -2856,24 +2854,21 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
   server.numSinceLastEmbed++;
   // in case of force disconnect
   if (!botInVC(message)) resetSession(server);
-  if (server.queue.length >= maxQueueSize) {
+  else if (server.queue.length >= maxQueueSize) {
     return message.channel.send('*max queue size has been reached*');
   }
-  if (numCpy && numCpy.toString().includes('.'))
-    return addRandomToQueue(message, numCpy, undefined, server, true, addToFront).then();
+  if (addToFront) addToFront = 1;
+  if (numCpy.toString().includes('.'))
+    return addRandomToQueue(message, numCpy, undefined, server, true, addToFront);
   gsrun('A', 'B', sheetName).then((xdb) => {
     if (isPlaylist) {
       addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true, addToFront).then();
     } else {
-      try {
-        if (num && num > maxQueueSize) {
-          message.channel.send('*max limit for random is ' + maxQueueSize + '*');
-          num = maxQueueSize;
-        }
-        addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront).then();
-      } catch (e) {
-        addRandomToQueue(message, 1, xdb.congratsDatabase, server, false, addToFront).then();
+      if (num && num > maxQueueSize) {
+        message.channel.send('*max limit for random is ' + maxQueueSize + '*');
+        num = maxQueueSize;
       }
+      addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront).then();
     }
   });
 }
@@ -2888,7 +2883,7 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
  * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
  */
 async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, addToFront = 0) {
-  if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
+  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
   // the playlist url
   let playlistUrl;
@@ -2901,7 +2896,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     else playlistUrl = numOfTimes;
     if (!playlistUrl) return message.channel.send(`*could not find **${numOfTimes}** in the keys list*`);
     numOfTimes = 1;
-    if (verifyPlaylist(playlistUrl)) sentMsg = await message.channel.send('randomizing your playlist...');
+    if (verifyPlaylist(playlistUrl)) sentMsg = message.channel.send('randomizing your playlist...');
   } else {
     valArray = Array.from(cdb.values());
     if (valArray.length < 1) {
@@ -2909,7 +2904,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
       return message.channel.send('Your music list is empty *(Try  `' + pf + 'a` or `' + pf
         + 'ma` to add to a keys list)*');
     }
-    if (numOfTimes > 50) sentMsg = await message.channel.send('generating random from your keys...');
+    if (numOfTimes > 50) sentMsg = message.channel.send('generating random from your keys...');
   }
   // boolean to add all from cdb, if numOfTimes is negative
   let addAll = false;
@@ -2967,27 +2962,25 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     console.log('error in random: ', e);
     if (isPlaylist) return;
     const rn = Math.floor(Math.random() * valArray.length);
+    sentMsg = await sentMsg;
+    if (sentMsg && sentMsg.deletable) sentMsg.delete();
     if (verifyPlaylist(valArray[rn])) {
-      if (sentMsg && sentMsg.deletable) sentMsg.delete();
       return message.channel.send('There was an error.');
     }
     server.queue.push(valArray[rn]);
   }
   if (addToFront) {
-    playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
-      if (sentMsg && sentMsg.deletable) sentMsg.delete();
-    });
+    await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else if (queueWasEmpty && (server.queue.length <= (numOfTimes + 1) || addAll)) {
     // remove the filler string
     server.queue.shift();
-    playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then(() => {
-      if (sentMsg && sentMsg.deletable) sentMsg.delete();
-    });
+    await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else {
-    if (sentMsg && sentMsg.deletable) sentMsg.delete();
     message.channel.send('*added ' + numOfTimes + ' to queue*');
     await updateActiveEmbed(server);
   }
+  sentMsg = await sentMsg;
+  if (sentMsg && sentMsg.deletable) sentMsg.delete();
 }
 
 /**
@@ -3003,7 +2996,7 @@ async function getPlaylistItems (url, tempArray) {
     let isSpotify = url.toLowerCase().includes('spotify');
     // add all the songs from the playlist to the tempArray
     if (isSpotify) {
-      playlist = await getTracks(url);
+      playlist = (await getTracks(url)).filter(track => track);
       for (let j of playlist) {
         url = j.external_urls.spotify;
         if (url) {
@@ -3022,7 +3015,7 @@ async function getPlaylistItems (url, tempArray) {
       }
     }
   } catch (e) {
-    console.log(`Error in getPlaylistItems: ${url} : `, e);
+    console.log(`Error in getPlaylistItems: ${url}\n`, e);
   }
   return itemCounter;
 }
