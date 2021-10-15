@@ -1481,9 +1481,9 @@ function checkToSeeActive () {
  */
 function checkStatusOfYtdl (message) {
   // noinspection JSUnresolvedFunction
-  bot.channels.fetch('833458014124113991').then(channel =>
+  bot.channels.fetch('839643770986561607').then(channel =>
     channel.join().then(async (connection) => {
-      await new Promise(res => setTimeout(res, 1000));
+      await new Promise(res => setTimeout(res, 500));
       try {
         // noinspection JSCheckFunctionSignatures
         connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
