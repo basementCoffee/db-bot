@@ -132,13 +132,14 @@ async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChann
  * @param server The server.
  * @param fName The name of the function to play.
  * @param args The function parameters.
- * @param message Optional - A message to delete.
+ * @param message A message to delete.
  */
 function setSeamless (server, fName, args, message) {
   server.seamless.function = fName;
   server.seamless.args = args;
   server.seamless.message = message;
-  setTimeout(() => server.seamless.function = undefined, 9000);
+  if (server.seamless.timeout) clearTimeout(server.seamless.timeout);
+  server.seamless.timeout = setTimeout(() => server.seamless.function = null, 9000);
 }
 
 /**
@@ -519,8 +520,8 @@ async function runCommandCases (message) {
     }
     if (contentContainCongrats(message.content)) {
       if (!botInVC(message)) {
-        server.queue = [];
-        server.queueHistory = [];
+        server.queue.length = 0;
+        server.queueHistory.length = 0;
         server.loop = false;
       }
       server.numSinceLastEmbed++;
@@ -1154,8 +1155,8 @@ async function runCommandCases (message) {
       const currentSong =
         (dispatcherMap[message.member.voice.channel.id] && message.guild.voice && message.guild.voice.channel)
           ? server.queue[0] : undefined;
-      server.queue = [];
-      server.queueHistory = [];
+      server.queue.length = 0;
+      server.queueHistory.length = 0;
       message.channel.send('The queue has been scrubbed clean');
       if (currentSong) {
         server.queue[0] = currentSong;
@@ -1509,7 +1510,7 @@ function checkStatusOfYtdl (message) {
  * @returns {boolean} if there was an initial response
  */
 function responseHandler () {
-  resHandlerTimeout = false;
+  resHandlerTimeout = null;
   if (setOfBotsOn.size < 1 && isInactive) {
     for (let server in servers) delete servers[server];
     isInactive = false;
@@ -2725,7 +2726,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       else {
         if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
         message.reactions.removeAll();
-        server.searchReactionTimeout = undefined;
+        server.searchReactionTimeout = null;
       }
     }, 22000);
     const filter = (reaction, user) => {
@@ -2799,7 +2800,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     collector.on('end', () => {
       if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
       message.reactions.removeAll();
-      server.searchReactionTimeout = undefined;
+      server.searchReactionTimeout = null;
     });
     collector.on('remove', (reaction, user) => {
       if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
@@ -3173,20 +3174,26 @@ function updateVoiceState (update) {
   if (!server) return;
   // if the bot is the one leaving
   if (update.member.id === bot.user.id && !update.connection) {
+    // clear timers first
+    if (server.leaveVCTimeout) {
+      clearTimeout(server.leaveVCTimeout);
+      server.leaveVCTimeout = null;
+    }
+    clearDJTimer(server);
     sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, server.infos, false).then(() => {
       server.numSinceLastEmbed = 0;
       server.silence = false;
       server.verbose = false;
       server.loop = false;
-      server.voteAdmin = [];
+      server.voteAdmin.length = 0;
       server.lockQueue = false;
-      server.dictator = false;
-      server.infos = false;
+      server.dictator = null;
+      server.infos = null;
       server.autoplay = false;
-      server.currentEmbedLink = false;
+      server.currentEmbedLink = null;
       if (server.currentEmbed && server.currentEmbed.reactions) {
         server.collector.stop();
-        server.currentEmbed = false;
+        server.currentEmbed = null;
       }
       if (server.followUpMessage) {
         server.followUpMessage.delete();
@@ -3197,8 +3204,6 @@ function updateVoiceState (update) {
         dispatcherMap.clear();
         dispatcherMapStatus.clear();
       }
-      clearDJTimer(server);
-      if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
     });
   } else if (botInVC(update)) {
     if (update.channel && update.channel.members.size < 2) {
@@ -3208,17 +3213,23 @@ function updateVoiceState (update) {
       // clear if timeout exists, set new timeout
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
-        server.leaveVCTimeout = false;
+        server.leaveVCTimeout = null;
         if (update.channel.members.size < 2) {
           update.channel.leave();
         }
       }, leaveVCInt);
     }
   } else if (server.seamless.function && update.member.id !== bot.user.id) {
-    server.seamless.function(...server.seamless.args);
-    server.seamless.function = undefined;
+    if (server.seamless.timeout) {
+      clearTimeout(server.seamless.timeout);
+      server.seamless.timeout = null;
+    }
+    try {
+      server.seamless.function(...server.seamless.args);
+    } catch (e) {}
+    server.seamless.function = null;
     server.seamless.message.delete();
-    server.seamless.message = undefined;
+    server.seamless.message = null;
   }
 }
 
@@ -3248,9 +3259,9 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     return runStopPlayingCommand(message.guild.id, vc, false, server);
   }
   if (server.voteAdmin.length > 0) {
-    server.voteSkipMembersId = [];
-    server.voteRewindMembersId = [];
-    server.votePlayPauseMembersId = [];
+    server.voteSkipMembersId.length = 0;
+    server.voteRewindMembersId.length = 0;
+    server.votePlayPauseMembersId.length = 0;
   }
   servers[message.guild.id].infos = false;
   // the alternative url to play
@@ -3319,13 +3330,16 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
     try {
       connection = await vc.join();
-      await new Promise(res => setTimeout(res, 100));
+      await new Promise(res => setTimeout(res, 110));
     } catch (e) {
       const eMsg = e.toString();
       if (eMsg.includes('it is full')) message.channel.send('*cannot join voice channel, it is full*');
       else if (eMsg.includes('VOICE_JOIN_CHANNEL')) message.channel.send('*permissions error: cannot join voice channel*');
-      else message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
-      throw 'cannot join voice channel';
+      else {
+        message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
+        console.log(e);
+      }
+      return;
     }
     if (vc.members.size > 6 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
       message.channel.send('Try the \'dj\' command to become a DJ.');
@@ -3348,7 +3362,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   }
   if (server.leaveVCTimeout) {
     clearTimeout(server.leaveVCTimeout);
-    server.leaveVCTimeout = false;
+    server.leaveVCTimeout = null;
   }
   let dispatcher;
   try {
@@ -3367,7 +3381,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       server.currentEmbedLink = whatToPlay;
       server.currentEmbed = undefined;
       server.infos = infos;
-    } else if (!retries) {
+    } else if (!(retries && server.currentEmbed)) {
       await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
     }
     server.altUrl = urlAlt;
@@ -3377,7 +3391,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
-        playLinkToVC(message, whatToPlay, vc, server, retries++, server.infos).then();
+        if (botInVC(message)) playLinkToVC(message, whatToPlay, vc, server, retries++, server.infos).then();
         return;
       }
       skipLink(message, vc, false, server, false);
@@ -3963,7 +3977,7 @@ function shutdown (type) {
 // active process timeout
 const mainTimerTimeout = 600000;
 let mainActiveTimer = false;
-let resHandlerTimeout = false;
+let resHandlerTimeout = null;
 // number of active processes
 const setOfBotsOn = new Set();
 const commandsMap = new Map();
