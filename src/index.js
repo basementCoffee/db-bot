@@ -3223,7 +3223,7 @@ async function updateVoiceState (update) {
       }
     });
   } else if (botInVC(update)) {
-    if (update.channel && update.channel.members.size < 2) {
+    if (update.channel && update.channel.members.filter(x => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
       if (dispatcherMap[update.channel.id]) leaveVCInt = 420000;
@@ -3231,7 +3231,7 @@ async function updateVoiceState (update) {
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
         server.leaveVCTimeout = null;
-        if (update.channel.members.size < 2) {
+        if (update.channel.members.filter(x => !x.user.bot).size < 1) {
           update.channel.leave();
         }
       }, leaveVCInt);
@@ -3396,9 +3396,9 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
       server.currentEmbedLink = whatToPlay;
-      server.currentEmbed = undefined;
+      server.currentEmbed = null;
       server.infos = infos;
-    } else if (!(retries && server.currentEmbedLink)) {
+    } else if (!(retries && server.currentEmbedLink === whatToPlay)) {
       await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
     }
     server.altUrl = urlAlt;
