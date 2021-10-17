@@ -1899,10 +1899,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       }
       if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
         return message.channel.send('You can only add links to the keys list. (Names cannot be more than one word)');
-      // in case the database has not been initialized
-      gsrun('A', 'B', sheetName).then(() => {
-        runAddCommand(args, message, sheetName, printMsgToChannel);
-      });
+      runAddCommand(args, message, sheetName, printMsgToChannel);
       return;
     } else if (message.member.voice.channel && server.currentEmbedLink) {
       args[2] = server.currentEmbedLink;
@@ -1918,9 +1915,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
         collector.once('collect', (reaction) => {
           sentMsg.delete();
           if (reaction.emoji.name === '✅') {
-            gsrun('A', 'B', sheetName).then(() => {
-              runAddCommand(args, message, sheetName, printMsgToChannel);
-            });
+            runAddCommand(args, message, sheetName, printMsgToChannel);
           } else {
             message.channel.send('*cancelled*');
           }
@@ -1949,6 +1944,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
 function runAddCommand (args, message, sheetName, printMsgToChannel) {
   let songsAddedInt = 0;
   let z = 1;
+  // check duplicates, and initialize sheet for new servers
   gsrun('A', 'B', sheetName).then(async (xdb) => {
     while (args[z] && args[z + 1]) {
       let linkZ = args[z + 1];
