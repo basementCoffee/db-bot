@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "5.24.1",
+  "version": "5.24.2",
   "description": "A discord playback bot with a UI.",
   "main": "src/index.js",
   "scripts": {
