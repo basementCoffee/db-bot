@@ -1361,7 +1361,7 @@ bot.once('ready', () => {
     checkStatusOfYtdl();
     isInactive = true;
     bot.user.setActivity('music | .help', {type: 'PLAYING'}).then();
-    mainActiveTimer = setInterval(checkToSeeActive, mainTimerTimeout);
+    checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup
@@ -1375,19 +1375,20 @@ bot.once('ready', () => {
 // calibrate on startup
 bot.on('message', async (message) => {
   if (devMode || message.channel.id !== '827195452507160627') return;
-  // ~db-bot-process (standard)[15] | -on [3 or 0] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
-  // turn off active bots -- activates on '~db-bot-process'
-  if (message.content.substr(0, 15) === '~db-bot-process') {
+  // ~db-process (standard)[11] | -on [3] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
+  // turn off active bots -- activates on '~db-process'
+  if (message.content.substr(0, 11) === '~db-process') {
     // if seeing bots that are on
-    if (message.content.substr(15, 3) === '-on') {
-      const oBuildNo = message.content.substr(19, 8);
+    if (message.content.substr(11, 3) === '-on') {
+      const oBuildNo = message.content.substr(15, 8);
       // compare versions || check if actively being used (if so: keep on)
-      if (parseInt(oBuildNo) >= parseInt(buildNo) || message.content.substr(18, 1) !== '0') {
+      if (parseInt(oBuildNo) >= parseInt(buildNo) || message.content.substr(14, 1) !== '0') {
         setOfBotsOn.add(oBuildNo);
       }
-    } else if (message.content.substr(15, 4) === '-off') {
+    } else if (message.content.substr(11, 4) === '-off') {
+      // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
       // compare process IDs
-      if (message.content.substr(28).trim() !== process.pid.toString()) {
+      if (message.content.substr(24).trim() !== process.pid.toString()) {
         isInactive = true;
         console.log('-sidelined-');
       } else isInactive = false;
@@ -1471,7 +1472,6 @@ async function runInsertCommand (message, mgid, term, position, server) {
  * Sends a message to a shared channel to see all active processes, responds accordingly using responseHandler.
  */
 function checkToSeeActive () {
-  if (devMode) return;
   setOfBotsOn.clear();
   // see if any bots are active
   // noinspection JSUnresolvedFunction
@@ -1532,7 +1532,7 @@ async function responseHandler () {
     devMode = false;
     console.log('-active-');
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
+    bot.channels.cache.get('827195452507160627').send('~db-process-off' + buildNo + '-' +
       process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
@@ -1540,18 +1540,14 @@ async function responseHandler () {
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get('827195452507160627').send('~db-bot-process-off' + buildNo + '-' +
+    bot.channels.cache.get('827195452507160627').send('~db-process-off' + buildNo + '-' +
       process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
-  } else {
-    if (process.pid === 4) {
-      const d = new Date();
-      if (d.getHours() === 5 && d.getMinutes() > 0 && d.getMinutes() < 20 && bot.uptime > 3600000
-        && bot.voice.connections.size < 1) {
-        return process.exit();
-      }
+  } else if (process.pid === 4) {
+    if ((new Date()).getHours() === 5 && bot.uptime > 3600000 && bot.voice.connections.size < 1) {
+      shutdown('HOUR(05)');
     }
   }
 }
@@ -1567,7 +1563,7 @@ bot.on('message', async (message) => {
     if (zmsg === 'k') {
       if (message.member.id === '730350452268597300') {
         if (!isInactive && !devMode) {
-          return message.channel.send(`~db-bot-process-on${Math.min(bot.voice.connections.size, 9)}${buildNo}ver${process.pid}`);
+          return message.channel.send(`~db-process-on${Math.min(bot.voice.connections.size, 9)}${buildNo}ver${process.pid}`);
         }
         return;
       }
@@ -1642,8 +1638,9 @@ bot.on('message', async (message) => {
                 reaction.users.remove(user.id);
               }
             } else if (reaction.emoji.name === devR) {
-              devMode = !devMode;
+              devMode = false;
               isInactive = true;
+              if (!checkActiveInterval) checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
               if (sentMsg.deletable) updateMessage();
             }
           });
@@ -1689,6 +1686,10 @@ bot.on('message', async (message) => {
       } else if (zargs[1] === process.pid.toString()) {
         devMode = true;
         servers[message.guild.id].prefix = '=';
+        if (checkActiveInterval) {
+          clearInterval(checkActiveInterval);
+          checkActiveInterval = null;
+        }
         return message.channel.send('*devmode is on* ' + process.pid.toString());
       }
       // =gzl
@@ -3967,7 +3968,7 @@ function shutdown (type) {
     console.log('shutting down...');
     isInactive = true;
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get('827195452507160627').send('shutting down: ' + process.pid + ' (' + type + ')');
+    bot.channels.cache.get('827195452507160627').send(`shutting down: '${process.pid}' (${type})`);
     if (bot.voice.connections.size > 0) {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get('827195452507160627').send('=gzz ' + process.pid);
@@ -3992,8 +3993,9 @@ function shutdown (type) {
 }
 
 // active process timeout
-const mainTimerTimeout = 600000;
-let mainActiveTimer = false;
+const checkActiveMS = 600000;
+// active process interval
+let checkActiveInterval = null;
 let resHandlerTimeout = null;
 // number of active processes
 const setOfBotsOn = new Set();
