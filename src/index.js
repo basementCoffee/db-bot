@@ -3259,7 +3259,7 @@ async function updateVoiceState (update) {
  * @param vc The voice channel to play the song in.
  * @param server The server playback metadata.
  * @param retries {number} Optional - Integer representing the number of retries.
- * @param infos Optional - The link infos.
+ * @param infos Optional - The embed infos.
  */
 async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos) {
   if (!whatToPlay) {
@@ -3282,19 +3282,22 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     server.voteRewindMembersId.length = 0;
     server.votePlayPauseMembersId.length = 0;
   }
-  servers[message.guild.id].infos = false;
+  server.infos = infos;
   // the alternative url to play
   let urlAlt = whatToPlay;
   if (whatToPlay.includes('spotify.com')) {
     let itemIndex = 0;
-    try {
-      infos = await getData(whatToPlay);
-    } catch (e) {
-      if (!retries) return playLinkToVC(message, whatToPlay, vc, server, retries++);
-      console.log(e);
-      message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
-      whatspMap[vc.id] = '';
-      return skipLink(message, vc, false, server, true);
+    if (!infos) {
+      try {
+        infos = await getData(whatToPlay);
+        server.infos = infos;
+      } catch (e) {
+        if (!retries) return playLinkToVC(message, whatToPlay, vc, server, ++retries);
+        console.log(e);
+        message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
+        whatspMap[vc.id] = '';
+        return skipLink(message, vc, false, server, true);
+      }
     }
     let artists = '';
     if (infos.artists) {
@@ -3399,7 +3402,6 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     if (server.silence) {
       server.currentEmbedLink = whatToPlay;
       server.currentEmbed = null;
-      server.infos = infos;
     } else if (!(retries && server.currentEmbedLink === whatToPlay)) {
       await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
     }
@@ -3410,7 +3412,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
-        if (botInVC(message)) playLinkToVC(message, whatToPlay, vc, server, retries++, server.infos).then();
+        if (botInVC(message)) playLinkToVC(message, whatToPlay, vc, server, ++retries, server.infos).then();
         return;
       }
       skipLink(message, vc, false, server, false);
@@ -3423,10 +3425,11 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     });
     dispatcher.once('finish', () => {
       if (whatToPlay !== whatspMap[vc.id]) {
-        console.log(`There was a mismatch -----------------\n old url: ${whatToPlay}\n current url: ${whatspMap[vc.id]}`);
+        const errString = `There was a mismatch -----------\n old url: ${whatToPlay}\n current url: ${whatspMap[vc.id]}`;
+        console.log(errString);
         try {
           // noinspection JSUnresolvedFunction
-          bot.channels.cache.get('856338454237413396').send('there was a mismatch with playback');
+          bot.channels.cache.get('856338454237413396').send(errString);
         } catch (e) {
           console.log(e);
         }
@@ -3455,14 +3458,14 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     if (!retries) {
       playbackTimeout = setTimeout(() => {
         if (server.queue[0] === whatToPlay && botInVC(message) && dispatcher.streamTime < 1) {
-          playLinkToVC(message, whatToPlay, vc, server, retries++);
+          playLinkToVC(message, whatToPlay, vc, server, ++retries);
         }
       }, 2000);
     }
   } catch (e) {
     const errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!retries) playLinkToVC(message, whatToPlay, vc, server, retries++).then();
+      if (!retries) playLinkToVC(message, whatToPlay, vc, server, ++retries).then();
       else {
         server.skipTimes++;
         if (server.skipTimes < 4) {
@@ -3495,7 +3498,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       } else skipLink(message, vc, false, server, true);
       return;
     }
-    if (!retries) return playLinkToVC(message, whatToPlay, vc, server, retries++);
+    if (!retries) return playLinkToVC(message, whatToPlay, vc, server, ++retries);
     console.log('error in playLinkToVC: ', whatToPlay);
     console.log(e);
     if (server.skipTimes > 3) {
