@@ -4,7 +4,7 @@ const {MessageEmbed, Client} = require('discord.js');
 const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./utils/database');
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession
+  resetSession, convertYTFormatToMS
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -475,7 +475,7 @@ function initializeServer (mgid) {
  */
 async function updateServerPrefix (server, mgid) {
   try {
-    let xdb = await gsrun('A', 'B', 'prefixes');
+    const xdb = await gsrun('A', 'B', 'prefixes');
     server.prefix = xdb.congratsDatabase.get(mgid);
     if (!server.prefix) {
       server.prefix = '.';
@@ -541,7 +541,7 @@ async function runCommandCases (message) {
       let name;
       if (findIndexOfWord('grats') !== -1 || findIndexOfWord('congratulations') !== -1) {
         name = args[parseInt(indexOfWord) + 1];
-        let excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
+        const excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
         if (excludedWords.includes(name)) name = '';
         if (name && name.length > 1) name = name.substr(0, 1).toUpperCase() + name.substr(1);
       } else {
@@ -564,13 +564,13 @@ async function runCommandCases (message) {
         setTimeout(() => {
           if (whatspMap[vc.id] === congratsLink && parseInt(dispatcherMap[vc.id].streamTime) > 18000)
             skipLink(message, vc, false, server, true);
-          let item = server.queueHistory.indexOf(congratsLink);
+          const item = server.queueHistory.indexOf(congratsLink);
           if (item !== -1)
             server.queueHistory.splice(item, 1);
         }, 20000);
         return playLinkToVC(message, congratsLink, vc, servers[mgid]).then(() => {
           setTimeout(() => servers[mgid].silence = false, 400);
-          let item = server.queueHistory.indexOf(congratsLink);
+          const item = server.queueHistory.indexOf(congratsLink);
           if (item !== -1)
             server.queueHistory.splice(item, 1);
         });
@@ -1517,13 +1517,12 @@ function checkStatusOfYtdl (message) {
 
 /**
  * Check to see if there was a response. If not then makes the current bot active.
- * @returns {boolean} if there was an initial response
  */
 async function responseHandler () {
   resHandlerTimeout = null;
   if (setOfBotsOn.size < 1 && isInactive) {
     for (let server in servers) delete servers[server];
-    let xdb = await gsrun('A', 'B', 'prefixes');
+    const xdb = await gsrun('A', 'B', 'prefixes');
     for (const [gid, pfx] of xdb.congratsDatabase) {
       initializeServer(gid);
       servers[gid].prefix = pfx;
@@ -1552,22 +1551,22 @@ async function responseHandler () {
   }
 }
 
-// parses message, provides a response
-bot.on('message', async (message) => {
-  if (message.content.substr(0, 3) === '=gz' &&
-    (message.member.id === '730350452268597300' ||
-      message.member.id === '443150640823271436' ||
-      message.member.id === '268554823283113985')) {
-    const zmsg = message.content.substr(3, 1);
-    // =gzk
-    if (zmsg === 'k') {
+/**
+ * Interpret developer process-related commands. Used for maintenance of multiple db bot instances.
+ * @param message The message metadata.
+ * @param zmsg The command letter.
+ */
+async function devProcessCommands (message, zmsg) {
+  const zargs = message.content.split(' ');
+  switch (zmsg) {
+    case 'k':
+      // =gzk
       if (message.member.id === '730350452268597300') {
         if (!isInactive && !devMode) {
           return message.channel.send(`~db-process-on${Math.min(bot.voice.connections.size, 9)}${buildNo}ver${process.pid}`);
         }
         return;
       }
-      const zargs = message.content.split(' ');
       if (!zargs[1]) {
         let dm;
         if (devMode) {
@@ -1603,10 +1602,14 @@ bot.on('message', async (message) => {
             }
           };
           const collector = sentMsg.createReactionCollector(filter, {time: 30000});
-          let vcSize = bot.voice.connections.size;
+          let prevVCSize = bot.voice.connections.size;
+          let prevStatus = isInactive;
+          let prevDevMode = devMode;
           let statusInterval = setInterval(() => {
-            if (bot.voice.connections.size !== vcSize) {
-              vcSize = bot.voice.connections.size;
+            if (!(bot.voice.connections.size === prevVCSize && prevStatus === isInactive && prevDevMode === devMode)) {
+              prevVCSize = bot.voice.connections.size;
+              prevDevMode = devMode;
+              prevStatus = isInactive;
               if (sentMsg.deletable) updateMessage();
               else clearInterval(statusInterval);
             }
@@ -1667,10 +1670,9 @@ bot.on('message', async (message) => {
           i++;
         }
       }
-      return;
+      break;
+    case 'd':
       // =gzd
-    } else if (zmsg === 'd') {
-      const zargs = message.content.split(' ');
       let activeStatus = 'active';
       if (isInactive) {
         activeStatus = 'inactive';
@@ -1681,36 +1683,51 @@ bot.on('message', async (message) => {
       }
       if (devMode && zargs[1] === process.pid.toString()) {
         devMode = false;
-        servers[message.guild.id].prefix = undefined;
+        isInactive = true;
+        servers[message.guild.id] = null;
         return message.channel.send('*devmode is off* ' + process.pid.toString());
       } else if (zargs[1] === process.pid.toString()) {
         devMode = true;
-        servers[message.guild.id].prefix = '=';
+        servers[message.guild.id] = null;
         if (checkActiveInterval) {
           clearInterval(checkActiveInterval);
           checkActiveInterval = null;
         }
         return message.channel.send('*devmode is on* ' + process.pid.toString());
       }
+      break;
+    case 'l':
       // =gzl
-    } else if (zmsg === 'l') {
-      return message.channel.send(process.pid.toString() +
+      message.channel.send(process.pid.toString() +
         `: Latency is ${Date.now() - message.createdTimestamp}ms.\nNetwork latency is ${Math.round(bot.ws.ping)}ms`);
+      break;
+    case 'q':
       // =gzq
-    } else if (zmsg === 'q') {
-      const zargs = message.content.split(' ');
       if (zargs[1] !== process.pid.toString()) return;
       if (bot.voice.connections.size > 0)
         message.channel.send('People are using the bot. This operation is currently not supported.').then();
       else message.channel.send("restarting the bot... (may only shutdown)").then(() =>
         setTimeout(() => {process.exit();}, 2000));
-    } else if (zmsg === 'z') {
-      const zargs = message.content.split(' ');
+      break;
+    case 'z':
+      // =gzz
       if (message.author.bot && zargs[1] !== process.pid.toString()) {
         checkToSeeActive();
       }
-    }
-    return;
+      break;
+    default:
+      if (devMode && !isInactive) return runCommandCases(message);
+      break;
+  }
+}
+
+// parses message, provides a response
+bot.on('message', (message) => {
+  if (message.content.substr(0, 3) === '=gz' &&
+    (message.member.id === '730350452268597300' ||
+      message.member.id === '443150640823271436' ||
+      message.member.id === '268554823283113985')) {
+    return devProcessCommands(message, message.content.substr(3, 1));
   }
   if (message.author.bot || isInactive || (devMode && message.author.id !== '443150640823271436' &&
     message.author.id !== '268554823283113985' && message.author.id !== '799524729173442620' &&
@@ -1718,7 +1735,7 @@ bot.on('message', async (message) => {
     return;
   }
   if (message.channel.type === 'dm') {
-    dmHandler(message, message.content);
+    return dmHandler(message, message.content);
   } else {
     return runCommandCases(message);
   }
@@ -2019,11 +2036,9 @@ function runQueueCommand (message, mgid, noErrorMsg) {
   async function getTitle (url, cutoff) {
     try {
       if (url.includes('spotify')) {
-        const infos = await getData(url);
-        title = infos.name;
+        title = (await getData(url)).name;
       } else {
-        const infos = await ytdl.getInfo(url);
-        title = infos.videoDetails.title;
+        title = (await ytdl.getInfo(url)).videoDetails.title;
       }
     } catch (e) {
       title = 'broken_url';
@@ -2615,16 +2630,16 @@ function getHelpList (prefixString, numOfPages) {
     'ticket [message] \` report an issue / request a new feature \n' +
     '\n**Or just say congrats to a friend. I will chime in too! :) **';
   const helpListEmbed = new MessageEmbed();
-  helpListEmbed.setTitle('Help List *[with aliases]*');
+  helpListEmbed.setTitle('Help List  *[short-command]*');
   const arrayOfPages = [];
   if (numOfPages > 1) {
     const helpListEmbed2 = new MessageEmbed();
     helpListEmbed
-      .setTitle('Help List *[with aliases]*')
+      .setTitle('Help List  *[short-command]*')
       .setDescription(page1)
       .setFooter('(1/2)');
     helpListEmbed2
-      .setTitle('Help List *[with aliases]*')
+      .setTitle('Help List  *[short-command]*')
       .setDescription(page2)
       .setFooter('(2/2)');
     arrayOfPages.push(helpListEmbed);
@@ -2711,7 +2726,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       const filter = (reaction, user) => {
         return user.id === message.member.id;
       };
-      let collector = sentMsg.createReactionCollector(filter, {time: 10000, dispose: true});
+      const collector = sentMsg.createReactionCollector(filter, {time: 10000, dispose: true});
       collector.once('collect', () => {
         let newArr = server.queue.slice(Math.max(server.queue.length - 5, 0));
         for (let i = 4; i > -1; i--) {
@@ -3307,27 +3322,19 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     let search = await ytsr(infos.name + ' ' + artists, {pages: 1});
     let youtubeDuration;
     if (search.items[itemIndex]) {
-      const convertYTFormatToMS = (durationArray) => {
-        try {
-          if (durationArray) {
-            youtubeDuration = 0;
-            durationArray.reverse();
-            if (durationArray[1]) youtubeDuration += durationArray[1] * 60000;
-            if (durationArray[2]) youtubeDuration += durationArray[1] * 3600000;
-            youtubeDuration += durationArray[0] * 1000;
-          }
-        } catch (e) {
-          youtubeDuration = 0;
-        }
-        return youtubeDuration;
-      };
       if (search.items[itemIndex].duration) {
         youtubeDuration = convertYTFormatToMS(search.items[itemIndex].duration.split(':'));
+      } else if (verifyUrl(search.items[itemIndex].url)) {
+        const ytdlInfos = await ytdl.getInfo(search.items[itemIndex].url);
+        youtubeDuration = ytdlInfos.formats[itemIndex].approxDurationMs || 0;
       } else {
-        const ytdlInfos = await ytdl.getInfo(search.items[itemIndex].firstVideo.shortURL);
-        youtubeDuration = parseInt(formatDuration(ytdlInfos.formats[itemIndex].approxDurationMs));
+        server.infos = null;
+        skipLink(message, vc, false, server, true);
+        await message.channel.send(`link not playable: <${search.items[itemIndex].url}>`);
+        await updateActiveEmbed(server);
+        return;
       }
-      let spotifyDuration = parseInt(infos.duration_ms);
+      const spotifyDuration = parseInt(infos.duration_ms);
       let itemIndex2 = itemIndex + 1;
       while (search.items[itemIndex2] && search.items[itemIndex2].type !== 'video' && itemIndex2 < 6) {
         itemIndex2++;
@@ -3344,7 +3351,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     if (search.items[itemIndex]) urlAlt = search.items[itemIndex].url;
     else {
       message.channel.send(`could not find <${whatToPlay}>`);
-      runSkipCommand(message, vc, server, 1, true, true, message.member);
+      runSkipCommand(message, vc, server, 1, false, true, message.member);
       return;
     }
   }

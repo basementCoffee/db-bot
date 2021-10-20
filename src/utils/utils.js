@@ -25,6 +25,25 @@ function formatDuration (duration) {
 }
 
 /**
+ * Given an array of durations with hours, minutes, seconds, return the duration.
+ * @param durationArray An array of durations.
+ * @returns {number} The duration in MS or 0 if there was an error.
+ */
+function convertYTFormatToMS (durationArray) {
+  try {
+    if (durationArray) {
+      let duration = 0;
+      durationArray.reverse();
+      if (durationArray[1]) duration += durationArray[1] * 60000;
+      if (durationArray[2]) duration += durationArray[1] * 3600000;
+      duration += durationArray[0] * 1000;
+      return duration;
+    }
+  } catch (e) {}
+  return 0;
+}
+
+/**
  * Returns whether the bot is in a voice channel within the guild.
  * @param message The message that triggered the bot.
  * @returns {Boolean} True if the bot is in a voice channel.
@@ -150,5 +169,5 @@ function adjustQueueForPlayNow (dsp, server) {
 
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession: resetSession
+  resetSession: resetSession, convertYTFormatToMS
 };

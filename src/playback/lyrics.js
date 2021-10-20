@@ -141,12 +141,12 @@ async function sendSongLyrics (message, searchTerm, server) {
     const firstSong = (await GeniusClient.songs.search(searchTerm))[0];
     await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
       await sentMsg.react('📄');
-      const lyrics = await firstSong.lyrics();
       const filter = (reaction, user) => {
         return user.id !== botID && ['📄'].includes(reaction.emoji.name);
       };
       const collector = sentMsg.createReactionCollector(filter, {time: 600000});
-      collector.once('collect', () => {
+      collector.once('collect', async () => {
+        const lyrics = await firstSong.lyrics();
         // send the lyrics text on reaction click
         message.channel.send((lyrics.length > 1910 ? lyrics.substr(0, 1910) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
       });
