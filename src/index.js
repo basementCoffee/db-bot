@@ -338,8 +338,8 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
       args[1] = args[1].substr(1, args[1].length - 2);
     }
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1])))
-      return playFromWord(message, args, sheetName, server, mgid, true);
-  } else return playFromWord(message, args, sheetName, server, mgid, true);
+      return playFromWord(message, args, sheetName, server, mgid, false);
+  } else return playFromWord(message, args, sheetName, server, mgid, false);
   let queueWasEmpty = false;
   if (server.queue.length < 1) {
     queueWasEmpty = true;
@@ -1497,7 +1497,8 @@ function checkStatusOfYtdl (message) {
       try {
         // noinspection JSCheckFunctionSignatures
         connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
-          filter: () => ['251']
+          filter: () => ['251'],
+          highWaterMark: 1 << 25
         }), {
           type: 'opus',
           volume: false,
