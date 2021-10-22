@@ -12,18 +12,13 @@ const {
 const {runLyricsCommand} = require('./playback/lyrics');
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 const version = require('../package.json').version;
-
-// initialization
-const bot = new Client();
-
-// YouTube packages
+const {getTracks, getData} = require("spotify-url-info");
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 
-// Spotify packages
-const spdl = require('spdl-core');
-const {getTracks, getData} = require("spotify-url-info");
+// initialization
+const bot = new Client();
 
 // UPDATE HERE - before release
 let devMode = false; // default false
@@ -143,6 +138,24 @@ function setSeamless (server, fName, args, message) {
 }
 
 /**
+ * Plays from a word. The word is provided from args[1].
+ * Uses the database if a sheetName is provided, else uses YouTube.
+ * @param message The message metadata.
+ * @param args The args pertaining the content.
+ * @param sheetName Optional - The sheet to reference.
+ * @param server The server data.
+ * @param mgid The guild id.
+ * @param playNow Whether to play now.
+ */
+function playFromWord (message, args, sheetName, server, mgid, playNow) {
+  if (sheetName) {
+    runDatabasePlayCommand(args, message, sheetName, playNow, false, server);
+  } else {
+    runYoutubeSearch(message, args, mgid, playNow, server).then();
+  }
+}
+
+/**
  * Runs the play now command.
  * @param message the message that triggered the bot
  * @param args the message split into an array
@@ -179,20 +192,16 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     server.followUpMessage = undefined;
   }
   server.numSinceLastEmbed += 3;
-  // noinspection JSUnresolvedFunction
-  if (!(verifyPlaylist(args[1]) || spdl.validateURL(args[1]) || ytdl.validateURL(args[1]))) {
-    if (sheetName) {
-      return runDatabasePlayCommand(args, message, sheetName, true, false, server);
-    } else {
-      return runYoutubeSearch(message, args, mgid, true, server);
+  if (args[1].includes('.')) {
+    if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
+      args[1] = args[1].substr(1, args[1].length - 2);
     }
-  }
+    if (!(verifyPlaylist(args[1]) || verifyUrl(args[1])))
+      return playFromWord(message, args, sheetName, server, mgid, true);
+  } else return playFromWord(message, args, sheetName, server, mgid, true);
   // places the currently playing into the queue history if played long enough
   adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
   let pNums = 0;
-  if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
-    args[1] = args[1].substr(1, args[1].length - 2);
-  }
   if (args[1].includes('spotify.com')) {
     await addPlaylistToQueue(message, mgid, pNums, args[1], true, true);
   } else if (ytpl.validateID(args[1])) {
@@ -324,17 +333,13 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
-    args[1] = args[1].substr(1, args[1].length - 2);
-  }
-  // noinspection JSUnresolvedFunction
-  if (!(verifyUrl(args[1]) || verifyPlaylist(args[1]))) {
-    if (sheetName) {
-      return runDatabasePlayCommand(args, message, sheetName, false, false, server);
-    } else {
-      return runYoutubeSearch(message, args, mgid, false, server);
+  if (args[1].includes('.')) {
+    if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
+      args[1] = args[1].substr(1, args[1].length - 2);
     }
-  }
+    if (!(verifyPlaylist(args[1]) || verifyUrl(args[1])))
+      return playFromWord(message, args, sheetName, server, mgid, true);
+  } else return playFromWord(message, args, sheetName, server, mgid, true);
   let queueWasEmpty = false;
   if (server.queue.length < 1) {
     queueWasEmpty = true;
