@@ -23,8 +23,8 @@ const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 
 // UPDATE HERE - before release
-let devMode = true; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
+let devMode = false; // default false
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '03';
 let isInactive = !devMode;
 
 process.setMaxListeners(0);
