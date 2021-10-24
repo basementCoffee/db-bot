@@ -3,6 +3,7 @@ const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const spdl = require('spdl-core');
 const ytpl = require('ytpl');
+const {servers} = require('./constants');
 
 /**
  * Given a duration in ms, it returns a formatted string separating
@@ -198,6 +199,35 @@ function adjustQueueForPlayNow (dsp, server) {
 }
 
 /**
+ * Searches a Map for the given key. Provides the keys that contain the given key.
+ * @param keyName the key to search for.
+ * @param xdb An object containing a Map called congratsDatabase.
+ * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values
+ */
+function runSearchCommand (keyName, xdb) {
+  const keyNameLen = keyName.length;
+  const keyArray = Array.from(xdb.congratsDatabase.keys());
+  let ss = '';
+  let ssi = 0;
+  let searchKey;
+  keyName = keyName.toUpperCase();
+  for (let ik = 0; ik < keyArray.length; ik++) {
+    searchKey = keyArray[ik].toUpperCase();
+    if (keyName === searchKey.substr(0, keyNameLen) || (keyNameLen > 1 && searchKey.includes(keyName))) {
+      ssi++;
+      ss += `${keyArray[ik]}, `;
+    }
+  }
+  if (ssi) ss = ss.substring(0, ss.length - 2);
+  return {
+    // the search string
+    ss: ss,
+    // the number of searches found
+    ssi: ssi
+  };
+}
+
+/**
  * Function to generate an array of embeds representing the help list.
  * @param {*} prefixString the prefix in string format
  * @param numOfPages the number of embeds to generate
@@ -298,6 +328,80 @@ function getHelpList (prefixString, numOfPages) {
 }
 
 /**
+ * Initializes the server with all the required params.
+ * @param mgid The message guild id.
+ */
+function initializeServer (mgid) {
+  return servers[mgid] = {
+    // now playing is the first element
+    queue: [],
+    // newest items are pushed
+    queueHistory: [],
+    // continue playing after queue end
+    autoplay: false,
+    // boolean status of looping
+    loop: false,
+    // the collector for the current embed message
+    collector: false,
+    // the metadata of the link
+    infos: false,
+    // the playback status message
+    followUpMessage: undefined,
+    // the active link of what is playing
+    currentEmbedLink: undefined,
+    // the alternative link of what is playing
+    altUrl: undefined,
+    // the current embed message
+    currentEmbed: undefined,
+    // the number of items sent since embed generation
+    numSinceLastEmbed: 0,
+    // the id of the channel for now-playing embeds
+    currentEmbedChannelId: undefined,
+    // boolean status of verbose mode - save embeds on true
+    verbose: false,
+    // A list of vote admins (members) in a server
+    voteAdmin: [],
+    // the ids of members who voted to skip
+    voteSkipMembersId: [],
+    // the ids of members who voted to rewind
+    voteRewindMembersId: [],
+    // the ids of members who voted to play/pause the link
+    votePlayPauseMembersId: [],
+    // locks the queue for dj mode
+    lockQueue: false,
+    // The member that is the acting dictator
+    dictator: false,
+    // If a start-up message has been sent
+    startUpMessage: false,
+    // the timeout IDs for the bot to leave a VC
+    leaveVCTimeout: false,
+    // the number of consecutive playback errors
+    skipTimes: 0,
+    // hold a ready-to-go function in case of vc join
+    seamless: {
+      // the name of the type of function
+      function: undefined,
+      // args for the function
+      args: undefined,
+      // optional message to delete
+      message: undefined
+    },
+    // the server's prefix
+    prefix: undefined,
+    // the timeout for the YT search results
+    searchReactionTimeout: undefined,
+    // the timer for the active DJ
+    djTimer: {
+      timer: false,
+      startTime: false,
+      duration: 1800000
+    },
+    // the last time a DJ tip was sent to a group
+    djMessageDate: false
+  };
+}
+
+/**
  * Sets seamless listening on voice channel error. Seamless listening allows the
  * bot to temporarily save a wanted command until voice channel join.
  * @param server The server.
@@ -315,5 +419,6 @@ function setSeamless (server, fName, args, message) {
 
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList
+  resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
+  initializeServer, runSearchCommand
 };

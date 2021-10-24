@@ -1,26 +1,30 @@
 'use strict';
 require('dotenv').config();
+const token = process.env.TOKEN.replace(/\\n/gm, '\n');
+const version = require('../package.json').version;
+const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
-const {gsrun, gsUpdateAdd, deleteRows, gsUpdateOverwrite} = require('./utils/database');
+const {getData} = require("spotify-url-info");
+const ytdl = require('ytdl-core-discord');
+const ytsr = require('ytsr');
+const ytpl = require('ytpl');
+const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
+const {
+  runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand
+} = require('./database/frontend');
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList
+  resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
+  runSearchCommand
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
 } = require('./playback/dj');
 const {runLyricsCommand} = require('./playback/lyrics');
-const {addPlaylistToQueue} = require('./playback/playlist');
-const token = process.env.TOKEN.replace(/\\n/gm, '\n');
-const version = require('../package.json').version;
-const {getTracks, getData} = require("spotify-url-info");
+const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 const {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus
 } = require('./utils/constants');
-const CH = require('../channel.json');
-const ytdl = require('ytdl-core-discord');
-const ytsr = require('ytsr');
-const ytpl = require('ytpl');
 
 // UPDATE HERE - before release
 let devMode = false; // default false
@@ -72,52 +76,6 @@ function skipLink (message, voiceChannel, playMessageToChannel, server, noHistor
   if (server.followUpMessage) {
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
-  }
-}
-
-/**
- * Deletes an item from the database.
- * @param message the message that triggered the bot
- * @param {string} keyName the key to delete
- * @param sheetName the name of the sheet to delete from
- * @param sendMsgToChannel whether to send a response to the channel when looking for track keys
- */
-async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChannel) {
-  if (keyName) {
-    await gsrun('A', 'B', sheetName).then(async (xdb) => {
-      let couldNotFindKey = true;
-      for (let i = 0; i < xdb.line.length; i++) {
-        const itemToCheck = xdb.line[i];
-        if (itemToCheck.toLowerCase() === keyName.toLowerCase()) {
-          i += 1;
-          couldNotFindKey = false;
-          await gsUpdateOverwrite(-1, -1, sheetName, xdb.dsInt);
-          await deleteRows(sheetName, i);
-          if (sendMsgToChannel) {
-            message.channel.send('deleted \'' + itemToCheck + '\' from ' +
-              (sheetName.substr(0, 1) === 'p' ? 'your' : 'the server\'s') + ' keys');
-          }
-        }
-      }
-      if (couldNotFindKey && sendMsgToChannel) {
-        await gsrun('A', 'B', sheetName).then(async (xdb) => {
-          const foundStrings = runSearchCommand(keyName, xdb).ss;
-          if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
-            message.channel.send("Could not find '" + keyName + "'.\n*Did you mean: " + foundStrings + '*');
-          } else {
-            let dbType = "the server's";
-            if (message.content.substr(1, 1).toLowerCase() === 'm') {
-              dbType = 'your';
-            }
-            message.channel.send("*could not find '" + keyName + "' in " + dbType + ' database*');
-          }
-        });
-      }
-    });
-  } else {
-    if (sendMsgToChannel) {
-      message.channel.send('This command deletes keys from the keys-list. You need to specify the key to delete. (i.e. delete [link])');
-    }
   }
 }
 
@@ -196,27 +154,6 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   }
   message.channel.send('*playing now*');
   playLinkToVC(message, server.queue[0], voiceChannel, server).then();
-}
-
-/**
- * Looks for an exact match of a link within a given database.
- * @param message The message metadata.
- * @param sheetName The sheet name to use for the lookup.
- * @param link The link to lookup. Defaults to server
- * @returns {Boolean} If the request was a valid link.
- */
-function runLookupLink (message, sheetName, link) {
-  if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
-  gsrun("A", "B", sheetName).then(xdb => {
-    for (let [key, value] of xdb.congratsDatabase) {
-      if (value === link) {
-        message.channel.send(`Found it! key name is: **${key}**`);
-        return true;
-      }
-    }
-    message.channel.send(`could not find within ${(sheetName[0] === 'p') ? 'your personal' : 'the server'} keys`);
-  });
-  return true;
 }
 
 /**
@@ -314,104 +251,6 @@ async function runRestartCommand (message, mgid, keyword, server) {
 }
 
 /**
- * Initializes the server with all the required params.
- * @param mgid The message guild id.
- */
-function initializeServer (mgid) {
-  return servers[mgid] = {
-    // now playing is the first element
-    queue: [],
-    // newest items are pushed
-    queueHistory: [],
-    // continue playing after queue end
-    autoplay: false,
-    // boolean status of looping
-    loop: false,
-    // the collector for the current embed message
-    collector: false,
-    // the metadata of the link
-    infos: false,
-    // the playback status message
-    followUpMessage: undefined,
-    // the active link of what is playing
-    currentEmbedLink: undefined,
-    // the alternative link of what is playing
-    altUrl: undefined,
-    // the current embed message
-    currentEmbed: undefined,
-    // the number of items sent since embed generation
-    numSinceLastEmbed: 0,
-    // the id of the channel for now-playing embeds
-    currentEmbedChannelId: undefined,
-    // boolean status of verbose mode - save embeds on true
-    verbose: false,
-    // A list of vote admins (members) in a server
-    voteAdmin: [],
-    // the ids of members who voted to skip
-    voteSkipMembersId: [],
-    // the ids of members who voted to rewind
-    voteRewindMembersId: [],
-    // the ids of members who voted to play/pause the link
-    votePlayPauseMembersId: [],
-    // locks the queue for dj mode
-    lockQueue: false,
-    // The member that is the acting dictator
-    dictator: false,
-    // If a start-up message has been sent
-    startUpMessage: false,
-    // the timeout IDs for the bot to leave a VC
-    leaveVCTimeout: false,
-    // the number of consecutive playback errors
-    skipTimes: 0,
-    // hold a ready-to-go function in case of vc join
-    seamless: {
-      // the name of the type of function
-      function: undefined,
-      // args for the function
-      args: undefined,
-      // optional message to delete
-      message: undefined
-    },
-    // the server's prefix
-    prefix: undefined,
-    // the timeout for the YT search results
-    searchReactionTimeout: undefined,
-    // the timer for the active DJ
-    djTimer: {
-      timer: false,
-      startTime: false,
-      duration: 1800000
-    },
-    // the last time a DJ tip was sent to a group
-    djMessageDate: false
-  };
-}
-
-/**
- * Gets the server prefix from the database and updates the server.prefix field.
- * If there is no prefix then the default is added to the database.
- * @param server The server.
- * @param mgid The guild id, used to get the prefix.
- * @return {Promise<void>}
- */
-async function updateServerPrefix (server, mgid) {
-  try {
-    const xdb = await gsrun('A', 'B', 'prefixes');
-    server.prefix = xdb.congratsDatabase.get(mgid);
-    if (!server.prefix) {
-      server.prefix = '.';
-      try {
-        gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', xdb.dsInt);
-      } catch (e) {console.log(e);}
-    }
-  } catch (e) {
-    console.log(e);
-    server.prefix = '.';
-    gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', 1);
-  }
-}
-
-/**
  * The execution for all bot commands
  * @param message the message that triggered the bot
  * @returns {Promise<void>}
@@ -421,7 +260,7 @@ async function runCommandCases (message) {
   // the server guild playback data
   if (!servers[mgid]) initializeServer(mgid);
   const server = servers[mgid];
-  if (devMode) server.prefix = '=';
+  if (devMode) server.prefix = '='; // devmode prefix
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed++;
   }
@@ -751,6 +590,9 @@ async function runCommandCases (message) {
         }
       }
       await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
+      break;
+    case 'ping':
+      message.channel.send(`Latency is ${Date.now() - message.createdTimestamp}ms.\nNetwork latency is ${Math.round(bot.ws.ping)}ms`);
       break;
     case 'rec':
     case 'recc':
@@ -1663,7 +1505,6 @@ bot.on('message', (message) => {
   }
 });
 
-// noinspection JSUnresolvedFunction
 /**
  * Handles message requests.
  * @param message The message metadata.
@@ -1871,70 +1712,6 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
   return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
     + ' keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + prefixString +
     args[0].substr(prefixString ? 2 : 1).toLowerCase() + ' [key] [link]\`)*');
-}
-
-/**
- * The command to add a song to a given database.
- * @param {*} args The command arguments
- * @param {*} message The message that triggered the command
- * @param {string} sheetName the name of the sheet to add to
- * @param printMsgToChannel whether to print response to channel
- */
-function runAddCommand (args, message, sheetName, printMsgToChannel) {
-  let songsAddedInt = 0;
-  let z = 1;
-  // check duplicates, and initialize sheet for new servers
-  gsrun('A', 'B', sheetName).then(async (xdb) => {
-    while (args[z] && args[z + 1]) {
-      let linkZ = args[z + 1];
-      if (linkZ.substring(linkZ.length - 1) === ',') {
-        linkZ = linkZ.substring(0, linkZ.length - 1);
-      }
-      if (args[z].includes('.') || args[z].includes(',')) {
-        message.channel.send("did not add '" + args[z] + "', names cannot include '.' or ','");
-        songsAddedInt--;
-      } else {
-        let alreadyExists = false;
-        if (printMsgToChannel) {
-          for (const x of xdb.congratsDatabase.keys()) {
-            if (x.toUpperCase() === args[z].toUpperCase()) {
-              message.channel.send("'" + x + "' is already in your list");
-              alreadyExists = true;
-              songsAddedInt--;
-              break;
-            }
-          }
-        }
-        if (!alreadyExists) {
-          await gsUpdateAdd(args[z], args[z + 1], 'A', 'B', sheetName, xdb.dsInt);
-        }
-      }
-      z = z + 2;
-      songsAddedInt += 1;
-    }
-    if (printMsgToChannel) {
-      const ps = servers[message.guild.id].prefix;
-      // the specific database user-access character
-      let databaseType = args[0].substr(1, 1).toLowerCase();
-      if (databaseType === 'a') {
-        databaseType = '';
-      }
-      if (songsAddedInt === 1) {
-        let typeString;
-        if (databaseType === 'm') {
-          typeString = 'your personal';
-        } else {
-          typeString = "the server's";
-        }
-        message.channel.send('*song added to ' + typeString + " keys list. (see '" + ps + databaseType + "keys')*");
-      } else if (songsAddedInt > 1) {
-        gsrun('A', 'B', sheetName).then((xdb) => {
-          gsUpdateOverwrite(-1, songsAddedInt, sheetName, xdb.dsInt);
-          message.channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + databaseType + "keys')*");
-        });
-      }
-    }
-  });
 }
 
 /**
@@ -2345,80 +2122,6 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
 }
 
 /**
- * A search command that searches both the server and personal database for the string.
- * @param message The message that triggered the bot.
- * @param sheetName The guild id.
- * @param providedString The string to search for
- */
-function runUniversalSearchCommand (message, sheetName, providedString) {
-  if (!providedString) return message.channel.send('must provide a link or word');
-  // returns true if the item provided was a link
-  if (runLookupLink(message, sheetName, providedString)) return;
-  gsrun('A', 'B', sheetName).then(async (xdb) => {
-    const so = runSearchCommand(providedString, xdb);
-    if (so.ssi) {
-      let link;
-      if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
-      message.channel.send(`Server keys found: ${so.ss} ` + (link ? `\n${link}` : ''));
-    } else if (providedString.length < 2) {
-      message.channel.send('Did not find any server keys that start with the given letter.');
-    } else {
-      message.channel.send('Did not find any server keys that contain \'' + providedString + '\'');
-    }
-    if (sheetName[0] === 'p') return;
-    message.channel.send('*Would you like to search your list too? (yes or no)*').then(() => {
-      const filter = m => message.author.id === m.author.id;
-      message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
-        .then(async messages => {
-          if (messages.first().content.toLowerCase() === 'y' || messages.first().content.toLowerCase() === 'yes') {
-            gsrun('A', 'B', `p${message.member.id}`).then(async (xdb) => {
-              const so = runSearchCommand(providedString, xdb);
-              if (so.ssi) {
-                let link = '';
-                if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
-                message.channel.send(`Personal keys found: ${so.ss} ` + (link ? `\n${link}` : ''));
-              } else if (providedString.length < 2) {
-                message.channel.send('Did not find any keys in your list that start with the given letter.');
-              } else {
-                message.channel.send('Did not find any keys in your list that contain \'' + providedString + '\'');
-              }
-            });
-          }
-        });
-    });
-  });
-}
-
-/**
- * Searches the database for the keys matching args[1].
- * @param keyName the keyName
- * @param xdb the object containing multiple DBs
- * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values
- */
-function runSearchCommand (keyName, xdb) {
-  const keyNameLen = keyName.length;
-  const keyArray2 = Array.from(xdb.congratsDatabase.keys());
-  let ss = '';
-  let ssi = 0;
-  let searchKey;
-  for (let ik = 0; ik < keyArray2.length; ik++) {
-    searchKey = keyArray2[ik];
-    if (keyName.toUpperCase() === searchKey.substr(0, keyNameLen).toUpperCase() ||
-      (keyNameLen > 1 && searchKey.toUpperCase().includes(keyName.toUpperCase()))) {
-      ssi++;
-      ss += `${searchKey}, `;
-    }
-  }
-  if (ssi) ss = ss.substring(0, ss.length - 2);
-  return {
-    // the search string
-    ss: ss,
-    // the number of searches found
-    ssi: ssi
-  };
-}
-
-/**
  * Function to skip songs once or multiple times.
  * Recommended if voice channel is not present.
  * @param message the message that triggered the bot
@@ -2825,43 +2528,6 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
   }
   sentMsg = await sentMsg;
   if (sentMsg && sentMsg.deletable) sentMsg.delete();
-}
-
-/**
- * Un-package the playlist url and push it to the given array.
- * @param url A Spotify or YouTube playlist link.
- * @param tempArray The array to push to.
- * @returns {Promise<number>} The number of items pushed to the array.
- */
-async function getPlaylistItems (url, tempArray) {
-  let playlist;
-  let itemCounter = 0;
-  try {
-    let isSpotify = url.toLowerCase().includes('spotify');
-    // add all the songs from the playlist to the tempArray
-    if (isSpotify) {
-      playlist = (await getTracks(url)).filter(track => track);
-      for (let j of playlist) {
-        url = j.external_urls.spotify;
-        if (url) {
-          tempArray.push(url);
-          itemCounter++;
-        }
-      }
-    } else {
-      playlist = (await ytpl(url, {pages: 1})).items;
-      for (let j of playlist) {
-        url = j.shortUrl ? j.shortUrl : j.url;
-        if (url) {
-          tempArray.push(url);
-          itemCounter++;
-        }
-      }
-    }
-  } catch (e) {
-    console.log(`Error in getPlaylistItems: ${url}\n`, e);
-  }
-  return itemCounter;
 }
 
 /**

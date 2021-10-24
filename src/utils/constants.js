@@ -1,6 +1,7 @@
 // the max size of the queue
 const {Client} = require('discord.js');
 const servers = {};
+// the db bot instance
 const bot = new Client();
 // max queue size
 const MAX_QUEUE_S = 500;

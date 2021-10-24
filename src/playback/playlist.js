@@ -70,4 +70,41 @@ async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, is
   return pNums;
 }
 
-module.exports = {addPlaylistToQueue};
+/**
+ * Un-package the playlist url and push it to the given array.
+ * @param url A Spotify or YouTube playlist link.
+ * @param tempArray The array to push to.
+ * @returns {Promise<number>} The number of items pushed to the array.
+ */
+async function getPlaylistItems (url, tempArray) {
+  let playlist;
+  let itemCounter = 0;
+  try {
+    let isSpotify = url.toLowerCase().includes('spotify');
+    // add all the songs from the playlist to the tempArray
+    if (isSpotify) {
+      playlist = (await getTracks(url)).filter(track => track);
+      for (let j of playlist) {
+        url = j.external_urls.spotify;
+        if (url) {
+          tempArray.push(url);
+          itemCounter++;
+        }
+      }
+    } else {
+      playlist = (await ytpl(url, {pages: 1})).items;
+      for (let j of playlist) {
+        url = j.shortUrl ? j.shortUrl : j.url;
+        if (url) {
+          tempArray.push(url);
+          itemCounter++;
+        }
+      }
+    }
+  } catch (e) {
+    console.log(`Error in getPlaylistItems: ${url}\n`, e);
+  }
+  return itemCounter;
+}
+
+module.exports = {addPlaylistToQueue, getPlaylistItems};
