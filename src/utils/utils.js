@@ -99,6 +99,36 @@ async function createEmbed (url, infos) {
 }
 
 /**
+ * Sends an updated playback embed with the fields updated. Assumes that a session is ongoing.
+ * @param server The server.
+ * @returns {Promise<void>}
+ */
+async function updateActiveEmbed (server) {
+  try {
+    if (!server.currentEmbed) return;
+    let embed = await createEmbed(server.currentEmbedLink, server.infos);
+    server.infos = embed.infos;
+    embed = embed.embed;
+    embed.addField('Queue', getQueueText(server), true);
+    server.currentEmbed.edit(embed);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+/**
+ * Returns the queue display status.
+ * @param server The server.
+ */
+function getQueueText (server) {
+  let content;
+  if (server.queue.length > 1) content = `1 / ${server.queue.length}`;
+  else if (server.queue.length > 0) content = (server.autoplay ? 'smartplay' : '1 / 1');
+  else content = 'empty';
+  return content;
+}
+
+/**
  * Send a recommendation to a user. EXPERIMENTAL.
  * @param message The message metadata.
  * @param content Optional - text to add to the recommendation.
@@ -157,7 +187,7 @@ function resetSession (server) {
 }
 
 /**
- * Adjusts the queue for play now.
+ * Adjusts the queue for play now depending on the stream time.
  * @param dsp The dispatcher to reference.
  * @param server The server to use.
  */
@@ -167,7 +197,123 @@ function adjustQueueForPlayNow (dsp, server) {
   }
 }
 
+/**
+ * Function to generate an array of embeds representing the help list.
+ * @param {*} prefixString the prefix in string format
+ * @param numOfPages the number of embeds to generate
+ */
+function getHelpList (prefixString, numOfPages) {
+  const page1 =
+    '--------------  **Music Commands** --------------\n\`' +
+    prefixString +
+    'play [word] \` Searches YouTube and plays *[p]* \n\`' +
+    prefixString +
+    'play [link] \` Play YouTube/Spotify link *[p]* \n\`' +
+    prefixString +
+    'playnow [word/link] \` Plays now, overrides queue *[pn]*\n\`' +
+    prefixString +
+    'pause \` Pause *[pa]*\n\`' +
+    prefixString +
+    'resume \` Resume if paused *[res]* \n\`' +
+    prefixString +
+    'skip [# times] \` Skip the current link *[sk]*\n\`' +
+    prefixString +
+    'rewind [# times] \` Rewind to play previous links *[rw]*\n\`' +
+    prefixString +
+    'end \` Stops playing and ends session  *[e]*\n\`' +
+    prefixString +
+    'now \` See now playing *[np]*\n\`' +
+    prefixString +
+    'loop \` Loops songs on finish *[l]*\n\`' +
+    prefixString +
+    'queue \` Displays the queue *[q]*\n' +
+    '\n-----------  **Advanced Music Commands**  -----------\n\`' +
+    prefixString +
+    'smartplay \` Autoplay when there is nothing next to play\n\`' +
+    prefixString +
+    'lyrics \` Get lyrics of what\'s currently playing\n\`' +
+    prefixString +
+    'shuffle [link] \` Shuffle a playlist before playing\n\`' +
+    prefixString +
+    'dj \` DJ mode, requires members to vote skip tracks\n\`' +
+    prefixString +
+    'dictator \` Dictator mode, one member controls all music commands\n\`' +
+    prefixString +
+    'verbose \` Keep all song embeds during a session\n\`' +
+    prefixString +
+    'silence \` Silence/hide now playing embeds \n';
+  const page2 =
+    '-----------  **Server Keys**  -----------\n\`' +
+    prefixString +
+    "keys \` See all of the server's keys *[k]*\n\`" +
+    prefixString +
+    'd [key] \` Play a song from the server keys \n\`' +
+    prefixString +
+    'dnow [key] \` Play immediately, overrides queue *[kn]* \n\`' +
+    prefixString +
+    'add [key] [url] \` Add a link to the server keys  *[a]*\n\`' +
+    prefixString +
+    'delete [key] \` Deletes a link from the server keys  *[del]*\n\`' +
+    prefixString +
+    'shuffle [# times] \` Play a random song from server keys  *[r]*\n\`' +
+    prefixString +
+    'search [key] \` Search keys  *[s]*\n\`' +
+    prefixString +
+    'link [key] \` Get the full link of a specific key  *[url]*\n' +
+    '\n-----------  **Personal Keys**  -----------\n' +
+    "*Prepend 'm' to each command above to access your personal keys list*\nex: \`" + prefixString + "mkeys \`\n" +
+    '\n--------------  **Other Commands**  -----------------\n\`' +
+    prefixString +
+    'guess \` Random roll for the number of people in the voice channel \n\`' +
+    prefixString +
+    'changeprefix [new prefix] \` Changes the prefix for all commands \n\`' +
+    prefixString +
+    'insert [link] [num] \` Insert a link into a position within the queue\n\`' +
+    prefixString +
+    'remove [num] \` Remove a link from a position in the queue\n\`' +
+    prefixString +
+    'ticket [message] \` report an issue / request a new feature \n' +
+    '\n**Or just say congrats to a friend. I will chime in too! :) **';
+  const helpListEmbed = new MessageEmbed();
+  helpListEmbed.setTitle('Help List  *[short-command]*');
+  const arrayOfPages = [];
+  if (numOfPages > 1) {
+    const helpListEmbed2 = new MessageEmbed();
+    helpListEmbed
+      .setTitle('Help List  *[short-command]*')
+      .setDescription(page1)
+      .setFooter('(1/2)');
+    helpListEmbed2
+      .setTitle('Help List  *[short-command]*')
+      .setDescription(page2)
+      .setFooter('(2/2)');
+    arrayOfPages.push(helpListEmbed);
+    arrayOfPages.push(helpListEmbed2);
+  } else {
+    helpListEmbed
+      .setDescription(page1 + '\n' + '\n' + page2);
+    arrayOfPages.push(helpListEmbed);
+  }
+  return arrayOfPages;
+}
+
+/**
+ * Sets seamless listening on voice channel error. Seamless listening allows the
+ * bot to temporarily save a wanted command until voice channel join.
+ * @param server The server.
+ * @param fName The name of the function to play.
+ * @param args The function parameters.
+ * @param message A message to delete.
+ */
+function setSeamless (server, fName, args, message) {
+  server.seamless.function = fName;
+  server.seamless.args = args;
+  server.seamless.message = message;
+  if (server.seamless.timeout) clearTimeout(server.seamless.timeout);
+  server.seamless.timeout = setTimeout(() => server.seamless.function = null, 9000);
+}
+
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession: resetSession, convertYTFormatToMS
+  resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList
 };

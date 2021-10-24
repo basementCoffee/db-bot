@@ -9,3 +9,4 @@ _MacOS.npm-start.command
 .vscode
 .eslintrc.json
 test
+.DS_Store
