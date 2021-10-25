@@ -3,6 +3,8 @@ const {Client} = require('discord.js');
 const servers = {};
 // the db bot instance
 const bot = new Client();
+// the id of the bot
+const botID = '730350452268597300';
 // max queue size
 const MAX_QUEUE_S = 500;
 // active process timeout
@@ -18,7 +20,7 @@ const dispatcherMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
 const dispatcherMapStatus = new Map();
 
-
 module.exports = {
-  MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus
+  MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
+  botID
 };

@@ -1,7 +1,7 @@
 const ytdl = require('ytdl-core-discord');
 const {botInVC} = require('../utils/utils');
 const {getData} = require('spotify-url-info');
-const botID = '730350452268597300';
+const {botID} = require('../utils/constants');
 // imports for YouTube captions
 const https = require('https');
 const xml2js = require('xml2js');

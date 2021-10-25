@@ -15,7 +15,7 @@ const {
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
-  runSearchCommand
+  runSearchCommand, runHelpCommand
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -23,12 +23,13 @@ const {
 const {runLyricsCommand} = require('./playback/lyrics');
 const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 const {
-  MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus
+  MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
+  botID
 } = require('./utils/constants');
 
 // UPDATE HERE - before release
 let devMode = false; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '03';
+const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
 let isInactive = !devMode;
 
 process.setMaxListeners(0);
@@ -274,10 +275,8 @@ async function runCommandCases (message) {
   // for all non-commands
   if (fwPrefix !== prefixString) {
     if (devMode) return;
-    if (fwPrefix === '.') {
-      if (firstWordBegin === '.changeprefix ' || firstWordBegin === '.h ' || firstWordBegin === '.help ') {
-        return message.channel.send('Current prefix is: ' + prefixString);
-      }
+    if (fwPrefix === '.' && firstWordBegin === '.db-bot ') {
+      return message.channel.send('Current prefix is: ' + prefixString);
     }
     // scan the first word
     if (contentContainCongrats(firstWordBegin)) {
@@ -350,6 +349,9 @@ async function runCommandCases (message) {
   }
   if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
   switch (statement) {
+    case 'db-bot':
+      runHelpCommand(message, server);
+      break;
     // the normal play command
     case 'play':
     case 'p':
@@ -725,32 +727,7 @@ async function runCommandCases (message) {
     // list commands for public commands
     case 'h':
     case 'help':
-      server.numSinceLastEmbed += 10;
-      let helpPages = getHelpList(prefixString, 2);
-      message.channel.send(helpPages[0]).then((sentMsg) => {
-        let currentHelp = 0;
-        const hr = '➡️';
-        sentMsg.react(hr);
-        const filter = (reaction, user) => {
-          return user.id !== bot.user.id;
-        };
-
-        const collector = sentMsg.createReactionCollector(filter, {time: 600000, dispose: true});
-        collector.on('collect', (reaction) => {
-          if (reaction.emoji.name === hr) {
-            sentMsg.edit(helpPages[(++currentHelp % 2)]);
-          }
-        });
-        collector.on('remove', (reaction) => {
-          if (reaction.emoji.name === hr) {
-            sentMsg.edit(helpPages[(++currentHelp % 2)]);
-            currentHelp -= 2;
-          }
-        });
-        collector.on('end', () => {
-          if (sentMsg.reactions) sentMsg.reactions.removeAll().then();
-        });
-      });
+      runHelpCommand(message, server);
       break;
     // !skip
     case 'next':
@@ -1005,7 +982,7 @@ async function runCommandCases (message) {
       else message.channel.send("restarting the bot... (may only shutdown)").then(() => {shutdown('USER')();});
       break;
     case 'gzid':
-      message.channel.send('g: ' + message.guild.id + ', b: ' + bot.user.id + ', m: ' + message.member.id);
+      message.channel.send('g: ' + message.guild.id + ', b: ' + +', m: ' + message.member.id);
       break;
     case 'gzsm':
       if (args[1]) {
@@ -1123,7 +1100,7 @@ bot.once('ready', () => {
   } else {
     checkStatusOfYtdl();
     isInactive = true;
-    bot.user.setActivity('music | .help', {type: 'PLAYING'}).then();
+    bot.user.setActivity('music | .db-bot', {type: 'PLAYING'}).then();
     checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
@@ -1348,7 +1325,7 @@ async function devProcessCommands (message, zmsg) {
           }
 
           const filter = (reaction, user) => {
-            return user.id !== bot.user.id && user.id === message.member.id &&
+            return user.id !== botID && user.id === message.member.id &&
               ['⚙️', devR].includes(reaction.emoji.name);
           };
           // updates the existing gzk message
@@ -1528,7 +1505,7 @@ function dmHandler (message, messageContent) {
       messageContent + '\n------------------------------------------').then(msg => {
     msg.react(mb).then();
     const filter = (reaction, user) => {
-      return user.id !== bot.user.id;
+      return user.id !== botID;
     };
 
     const collector = msg.createReactionCollector(filter, {time: 86400000});
@@ -1639,7 +1616,7 @@ function sendMessageToUser (message, userID, reactionUserID) {
   message.channel.send('What would you like me to send to ' + user.username +
     '? [type \'q\' to not send anything]').then(msg => {
     const filter = m => {
-      return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== bot.user.id);
+      return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== botID);
     };
     message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
       .then(messages => {
@@ -1688,7 +1665,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
         sentMsg.react('✅').then(() => sentMsg.react('❌'));
 
         const filter = (reaction, user) => {
-          return bot.user.id !== user.id && ['✅', '❌'].includes(reaction.emoji.name) && message.member.id === user.id;
+          return botID !== user.id && ['✅', '❌'].includes(reaction.emoji.name) && message.member.id === user.id;
         };
 
         const collector = sentMsg.createReactionCollector(filter, {time: 60000, dispose: true});
@@ -1800,7 +1777,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       if (message.member.voice.channel) {
         for (const mem of message.member.voice.channel.members) {
           if (user.id === mem[1].id) {
-            return user.id !== bot.user.id && ['➡️', '📥', '📤'].includes(reaction.emoji.name);
+            return user.id !== botID && ['➡️', '📥', '📤'].includes(reaction.emoji.name);
           }
         }
       }
@@ -1827,7 +1804,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
         let position;
         message.channel.send('What link would you like to insert [or type \'q\' to quit]').then(msg => {
           const filter = m => {
-            return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
+            return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
           message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
             .then(messages => {
@@ -1840,7 +1817,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 // second question
                 message.channel.send('What position in the queue would you like to insert this into [or type \'q\' to quit]').then(msg => {
                   const filter = m => {
-                    return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
+                    return (reactionCollector.id === m.author.id && m.author.id !== botID);
                   };
                   message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
                     .then(async messages => {
@@ -1899,7 +1876,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
         if (serverQueue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
         message.channel.send('What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'q\']').then(msg => {
           const filter = m => {
-            return (reactionCollector.id === m.author.id && m.author.id !== bot.user.id);
+            return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
           message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
             .then(async messages => {
@@ -2285,7 +2262,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       if (message.member.voice.channel) {
         for (const mem of message.member.voice.channel.members) {
           if (user.id === mem[1].id) {
-            return user.id !== bot.user.id && ['📃'].includes(reaction.emoji.name);
+            return user.id !== botID && ['📃'].includes(reaction.emoji.name);
           }
         }
       }
@@ -2324,7 +2301,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
           reactionCollector2 = reactionCollector;
           msg2 = msg;
           const filter = m => {
-            return (m.author.id !== bot.user.id && reactionCollector.id === m.author.id);
+            return (m.author.id !== botID && reactionCollector.id === m.author.id);
           };
           message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
             .then(messages => {
@@ -2598,7 +2575,7 @@ async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceC
       message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {
         sentMsg.react('❔').then(() => sentMsg.react('🔀').then(sentMsg.react('🔄')));
         const filter = (reaction, user) => {
-          return user.id !== bot.user.id && ['❔', '🔄', '🔀'].includes(reaction.emoji.name);
+          return user.id !== botID && ['❔', '🔄', '🔀'].includes(reaction.emoji.name);
         };
         const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
         keysButtonCollector.on('collect', (reaction, reactionCollector) => {
@@ -2688,7 +2665,7 @@ async function updateVoiceState (update) {
   const server = servers[update.guild.id];
   if (!server) return;
   // if bot
-  if (update.member.id === bot.user.id) {
+  if (update.member.id === botID) {
     // if the bot joined then ignore
     if (update.connection) return;
     // clear timers first
@@ -3261,7 +3238,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
   });
 
   const filter = (reaction, user) => {
-    if (voiceChannel && user.id !== bot.user.id) {
+    if (voiceChannel && user.id !== botID) {
       if (voiceChannel.members.has(user.id)) return ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐'].includes(reaction.emoji.name);
     }
     return false;
