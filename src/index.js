@@ -228,10 +228,10 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
 
 /**
  * Restarts the song playing and what was within an older session.
- * @param message The message that triggered the bot
- * @param mgid The message guild id
- * @param keyword Enum in string format, being either 'restart' or 'replay'
- * @param server The server playback metadata
+ * @param message The message that triggered the bot.
+ * @param mgid The message guild id.
+ * @param keyword Enum in string format, being either 'restart' or 'replay'.
+ * @param server The server playback metadata.
  * @returns {*}
  */
 async function runRestartCommand (message, mgid, keyword, server) {
@@ -241,10 +241,10 @@ async function runRestartCommand (message, mgid, keyword, server) {
   if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member)) {
     return message.channel.send('as of right now, only the DJ can restart tracks');
   }
-  if (server.queueHistory.length > 0) {
-    server.queue.unshift(server.queueHistory.pop());
+  if (server.queue[0]) {
     await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
-  } else if (server.queue[0]) {
+  } else if (server.queueHistory.length > 0) {
+    server.queue.unshift(server.queueHistory.pop());
     await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else {
     message.channel.send('there is nothing to ' + keyword);
@@ -275,7 +275,7 @@ async function runCommandCases (message) {
   // for all non-commands
   if (fwPrefix !== prefixString) {
     if (devMode) return;
-    if (fwPrefix === '.' && firstWordBegin === '.db-bot ') {
+    if (firstWordBegin === '.db-bot ') {
       return message.channel.send('Current prefix is: ' + prefixString);
     }
     // scan the first word
@@ -338,7 +338,6 @@ async function runCommandCases (message) {
     return;
   }
   const args = message.content.replace(/\s+/g, ' ').split(' ');
-  // console.log(args); // see recent bot commands within console for testing
   const statement = args[0].substr(1).toLowerCase();
   if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
     if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
@@ -594,7 +593,7 @@ async function runCommandCases (message) {
       await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
       break;
     case 'ping':
-      message.channel.send(`Latency is ${Date.now() - message.createdTimestamp}ms.\nNetwork latency is ${Math.round(bot.ws.ping)}ms`);
+      message.channel.send(`latency is ${Math.round(bot.ws.ping)}ms`);
       break;
     case 'rec':
     case 'recc':
