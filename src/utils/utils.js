@@ -228,6 +228,29 @@ function runSearchCommand (keyName, xdb) {
 }
 
 /**
+ * Gets the title of a link.
+ * @param url {string} The link to get the title.
+ * @param cutoff {number=} A number representing the cutoff value.
+ * @returns {Promise<string>} The title of the provided link.
+ */
+async function getTitle (url, cutoff) {
+  let title;
+  try {
+    if (url.includes('spotify')) {
+      title = (await getData(url)).name;
+    } else {
+      title = (await ytdl.getBasicInfo(url)).videoDetails.title;
+    }
+  } catch (e) {
+    title = 'broken_url';
+  }
+  if (cutoff && title.length > cutoff) {
+    title = title.substr(0, cutoff) + '...';
+  }
+  return title;
+}
+
+/**
  * Function to generate an array of embeds representing the help list.
  * @param {*} prefixString the prefix in string format
  * @param numOfPages the number of embeds to generate
@@ -454,5 +477,5 @@ function setSeamless (server, fName, args, message) {
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
-  initializeServer, runSearchCommand, runHelpCommand
+  initializeServer, runSearchCommand, runHelpCommand, getTitle
 };

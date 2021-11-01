@@ -15,7 +15,7 @@ const {
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
-  runSearchCommand, runHelpCommand
+  runSearchCommand, runHelpCommand, getTitle
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -1136,16 +1136,13 @@ bot.on('message', async (message) => {
 });
 
 /**
- * Inserts a term into position into the queue. Accepts a valid link or key.
- * @param message The message metadata.
- * @param mgid The message guild id.
- * @param term The word/link to add to the queue.
- * @param position The position to place in the queue.
- * @param server The server to use.
- * @returns {Promise<void|*>}
+ * Helper for runInsertCommand. Does some preliminary verification.
+ * @param message The message object.
+ * @param server The server.
+ * @param args {Array<string>} args[1] being the term, args[2] being the position.
+ * @returns {*} 1 if passed
  */
-async function runInsertCommand (message, mgid, term, position, server) {
-  const args = ['', term, position];
+function insertCommandVerification (message, server, args) {
   if (!message.member.voice.channel) return message.channel.send('must be in a voice channel');
   if (server.dictator && message.member.id !== server.dictator.id)
     return message.channel.send('only the dictator can insert');
@@ -1154,7 +1151,22 @@ async function runInsertCommand (message, mgid, term, position, server) {
   if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
   if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
   if (!args[1]) return message.channel.send('put a link followed by the position in the queue \`(i.e. insert [link] [num])\`');
-  if (args[2] && isNaN(args[2])) return message.channel.send('second argument must be a number');
+  if (args[2] && isNaN(parseInt(args[2]))) return message.channel.send('second argument must be a number');
+  return 1;
+}
+
+/**
+ * Inserts a term into position into the queue. Accepts a valid link or key.
+ * @param message The message metadata.
+ * @param mgid The message guild id.
+ * @param term The word/link to add to the queue.
+ * @param position The position to place in the queue.
+ * @param server The server to use.
+ * @returns {Promise<number>} The position to insert or a negative if failed.
+ */
+async function runInsertCommand (message, mgid, term, position, server) {
+  const args = ['', term, position];
+  if (insertCommandVerification(message, server, args) !== 1) return -1;
   if (!verifyUrl(args[1]) && !verifyPlaylist(args[1])) {
     let xdb = await gsrun('A', 'B', mgid);
     let link = xdb.referenceDatabase.get(args[1].toUpperCase());
@@ -1162,8 +1174,10 @@ async function runInsertCommand (message, mgid, term, position, server) {
       xdb = await gsrun('A', 'B', `p${message.member.id}`);
       link = xdb.referenceDatabase.get(args[1].toUpperCase());
     }
-    if (!link) return console.log('could not find the provided key in any keys list');
-    else args[1] = link;
+    if (!link) {
+      message.channel.send('could not find the provided key in any keys list');
+      return -1;
+    } else args[1] = link;
   }
   let num = parseInt(args[2]);
   if (!num) {
@@ -1176,16 +1190,21 @@ async function runInsertCommand (message, mgid, term, position, server) {
       let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
       num = messages.first().content.trim();
       if (num.toLowerCase() === 'q') {
-        return message.channel.send('*cancelled*');
+        message.channel.send('*cancelled*');
+        return -1;
       } else {
         num = parseInt(num);
       }
-      if (!num) return message.channel.send('*cancelled*');
+      if (!num) {
+        message.channel.send('*cancelled*');
+        return -1;
+      }
     }
   }
   if (num < 1) {
-    if (num === 0) return message.channel.send('0 changes what\'s actively playing, use the \'playnow\' command instead.');
-    else return message.channel.send('position must be a positive number');
+    if (num === 0) message.channel.send('0 changes what\'s actively playing, use the \'playnow\' command instead.');
+    else message.channel.send('position must be a positive number');
+    return -1;
   }
   if (num > server.queue.length) num = server.queue.length;
   let pNums = 0;
@@ -1197,7 +1216,8 @@ async function runInsertCommand (message, mgid, term, position, server) {
     } else {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get(CH.err).send('there was a playlist reading error: ' + args[1]);
-      return message.channel.send('there was a link reading issue');
+      message.channel.send('there was a link reading issue');
+      return -1;
     }
   } else {
     if (num > server.queue.length) num = server.queue.length;
@@ -1205,6 +1225,7 @@ async function runInsertCommand (message, mgid, term, position, server) {
   }
   await message.channel.send(`inserted ${(pNums > 1 ? (pNums + ' links') : 'link')} into position ${num}`);
   await updateActiveEmbed(server);
+  return num;
 }
 
 /**
@@ -1702,27 +1723,12 @@ function runQueueCommand (message, mgid, noErrorMsg) {
     if (noErrorMsg) return;
     return message.channel.send('There is no active queue right now');
   }
+  // a copy of the queue
   const serverQueue = servers[mgid].queue.map((x) => x);
   let qIterations = serverQueue.length;
   if (qIterations > 11) qIterations = 11;
-  let title;
   let authorName;
-
-  async function getTitle (url, cutoff) {
-    try {
-      if (url.includes('spotify')) {
-        title = (await getData(url)).name;
-      } else {
-        title = (await ytdl.getInfo(url)).videoDetails.title;
-      }
-    } catch (e) {
-      title = 'broken_url';
-    }
-    if (cutoff && title.length > cutoff) {
-      title = title.substr(0, cutoff) + '...';
-    }
-    return title;
-  }
+  const server = servers[mgid];
 
   async function generateQueue (startingIndex, notFirstRun, sentMsg, sentMsgArray) {
     let queueSB = '';
@@ -1740,12 +1746,11 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       .setAuthor('playing:  ' + authorName)
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
     let sizeConstraint = 0;
-    for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length); qi++) {
+    for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length && sizeConstraint < 10); qi++) {
       const title = (await getTitle(serverQueue[qi]));
       const url = serverQueue[qi];
       queueSB += qi + '. ' + `[${title}](${url})\n`;
       sizeConstraint++;
-      if (sizeConstraint > 9) break;
     }
     if (queueSB.length === 0) {
       queueSB = 'queue is empty';
@@ -1755,13 +1760,12 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       queueMsgEmbed.setFooter('embed displays 10 at a time');
     }
     if (msg) msg.delete();
-    if (sentMsg) {
+    if (sentMsg && sentMsg.deletable) {
       await sentMsg.edit(queueMsgEmbed);
     } else {
       sentMsg = await message.channel.send(queueMsgEmbed);
       sentMsgArray.push(sentMsg);
     }
-    let server = servers[message.guild.id];
     server.numSinceLastEmbed += 10;
     if (startingIndex + 11 < serverQueue.length) {
       sentMsg.react('➡️').then(() => {
@@ -1800,67 +1804,34 @@ function runQueueCommand (message, mgid, noErrorMsg) {
           return message.channel.send('the queue is locked: only the dj can insert');
         if (serverQueue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
         let link;
-        let position;
         message.channel.send('What link would you like to insert [or type \'q\' to quit]').then(msg => {
           const filter = m => {
             return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
           message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-            .then(messages => {
-              link = messages.first().content.trim();
+            .then(async (messages) => {
+              link = messages.first().content.split(' ')[0].trim();
               if (link.toLowerCase() === 'q') {
                 return;
               }
               if (link) {
-                if (!verifyUrl(link) && !verifyPlaylist(link)) return message.channel.send('*invalid url*');
-                // second question
-                message.channel.send('What position in the queue would you like to insert this into [or type \'q\' to quit]').then(msg => {
-                  const filter = m => {
-                    return (reactionCollector.id === m.author.id && m.author.id !== botID);
-                  };
-                  message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-                    .then(async messages => {
-                      position = messages.first().content.trim();
-                      if (position.toLowerCase() === 'q') {
-                        return;
-                      }
-                      if (position) {
-                        let num = parseInt(position);
-                        if (!num) return message.channel.send('*need number in the queue to insert (1-' + server.queue.length + ')*');
-                        if (num < 1) return message.channel.send('*position must be positive*');
-                        let pNums = 0;
-                        if (verifyPlaylist(link)) {
-                          if (link.includes('/playlist/') && link.includes('spotify.com')) {
-                            await addPlaylistToQueue(message, server, mgid, 0, link, true, false, position);
-                          } else if (ytpl.validateID(link)) {
-                            await addPlaylistToQueue(message, server, mgid, 0, link, false, false, position);
-                          } else {
-                            // noinspection JSUnresolvedFunction
-                            bot.channels.cache.get(CH.err).send('there was a playlist reading error: ' + link);
-                            return message.channel.send('there was a link reading issue');
-                          }
-                        }
-                        if (num > server.queue.length) num = server.queue.length;
-                        if (num === 0) playLinkToVC(message, link, message.member.voice.channel, server).then();
-                        else {
-                          server.queue.splice(num, 0, link);
-                          serverQueue.splice(num, 0, link);
-                        }
-                        message.channel.send('inserted ' + (pNums > 1 ? (pNums + ' links') : 'link') + ' into position ' + num);
-                        if (server.currentEmbedLink) updateActiveEmbed(server).then();
-                        let pageNum;
-                        if (num === 11) pageNum = 0;
-                        else pageNum = Math.floor((num - 1) / 10);
-                        qIterations = startingIndex + 11;
-                        clearTimeout(arrowReactionTimeout);
-                        collector.stop();
-                        return generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
-                      } else msg.delete();
-                    }).catch(() => {
-                    message.channel.send('*cancelled*');
-                    msg.delete();
-                  });
-                });
+                const num = await runInsertCommand(message, message.guild.id, link, '', server);
+                if (num < 0) {
+                  msg.delete();
+                  return;
+                }
+                serverQueue.splice(num, 0, link);
+                if (server.currentEmbedLink) updateActiveEmbed(server).then();
+                let pageNum;
+                if (num === 11) pageNum = 0;
+                else pageNum = Math.floor((num - 1) / 10);
+                qIterations = startingIndex + 11;
+                clearTimeout(arrowReactionTimeout);
+                collector.stop();
+                generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray).then();
+              } else {
+                message.channel.send('*cancelled*');
+                msg.delete();
               }
             }).catch(() => {
             message.channel.send('*cancelled*');
@@ -2862,7 +2833,8 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     let playbackTimeout;
     // noinspection JSCheckFunctionSignatures
     dispatcher = connection.play(await ytdl(urlAlt, {
-      filter: () => ['251']
+      filter: () => ['251'],
+      highWaterMark: 1 << 25
     }).catch((e) => console.log('stream error', e)), {
       type: 'opus',
       volume: false,
