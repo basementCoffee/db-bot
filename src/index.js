@@ -2195,7 +2195,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
         sentMsg = await message.channel.send('*added **' + foundTitle.replace(/\*/g, '') + '** to queue*');
         await updateActiveEmbed(server);
       } else {
-        let infos = await ytdl.getInfo(ytLink);
+        let infos = await ytdl.getBasicInfo(ytLink);
         sentMsg = await message.channel.send('*added **' + infos.videoDetails.title.replace(/\*/g, '') + '** to queue*');
         await updateActiveEmbed(server);
       }
@@ -2766,7 +2766,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       if (search.items[itemIndex].duration) {
         youtubeDuration = convertYTFormatToMS(search.items[itemIndex].duration.split(':'));
       } else if (verifyUrl(search.items[itemIndex].url)) {
-        const ytdlInfos = await ytdl.getInfo(search.items[itemIndex].url);
+        const ytdlInfos = await ytdl.getBasicInfo(search.items[itemIndex].url);
         youtubeDuration = ytdlInfos.formats[itemIndex].approxDurationMs || 0;
       } else {
         server.infos = null;
@@ -3014,7 +3014,7 @@ async function getRecLink (whatToPlay, infos, index = 0) {
   try {
     let id;
     if (infos) id = infos.related_videos[index].id;
-    else id = (await ytdl.getInfo(whatToPlay)).related_videos[index].id;
+    else id = (await ytdl.getBasicInfo(whatToPlay)).related_videos[index].id;
     return `https://www.youtube.com/watch?v=${id}`;
   } catch (e) {
     return undefined;

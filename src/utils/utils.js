@@ -79,7 +79,7 @@ async function createEmbed (url, infos) {
       .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
     timeMS = parseInt(infos.duration_ms);
   } else {
-    if (!infos) infos = await ytdl.getInfo(url);
+    if (!infos) infos = await ytdl.getBasicInfo(url);
     let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
     timeMS = parseInt(duration);
     if (duration === 'NaNm NaNs') {

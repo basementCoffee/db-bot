@@ -29,12 +29,13 @@ function runLyricsCommand (message, mgid, args, server) {
     let songName;
     let artistName;
     const lUrl = server.queue[0];
+    let infos;
     if (args[1]) {
       args[0] = '';
       searchTerm = args.join(' ').trim();
     } else {
       if (lUrl.toLowerCase().includes('spotify')) {
-        const infos = (server.infos ? server.infos : await getData(lUrl));
+        infos = (server.infos ? server.infos : await getData(lUrl));
         songName = infos.name.toLowerCase();
         let songNameSubIndex = songName.search('[-]');
         if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
@@ -66,7 +67,7 @@ function runLyricsCommand (message, mgid, args, server) {
           }
         }
       } else {
-        const infos = (server.infos ? server.infos : await ytdl.getInfo(lUrl));
+        infos = (server.infos ? server.infos : await ytdl.getBasicInfo(lUrl));
         if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
           // use video metadata
           searchTerm = songName = infos.videoDetails.media.song;
@@ -120,7 +121,7 @@ function runLyricsCommand (message, mgid, args, server) {
         && !await sendSongLyrics(sentMsg, searchTerm, server)) :
       !await sendSongLyrics(sentMsg, searchTerm, server)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
-        getYoutubeSubtitles(sentMsg, lUrl, server);
+        getYoutubeSubtitles(sentMsg, lUrl, server, infos);
       } else {
         sentMsg.edit('no results found');
         server.numSinceLastEmbed--;
@@ -164,63 +165,62 @@ async function sendSongLyrics (message, searchTerm, server) {
  * @param message The message that triggered the bot.
  * @param url The video url to get the subtitles.
  * @param server The server to update.
+ * @param infos The ytdl infos.
  */
-function getYoutubeSubtitles (message, url, server) {
-  ytdl.getInfo(url).then(info => {
-    try {
-      const player_resp = info.player_response;
-      const tracks = player_resp.captions.playerCaptionsTracklistRenderer.captionTracks;
-      let data = '';
-      https.get(tracks[0].baseUrl.toString(), function (res) {
-        if (res.statusCode >= 200 && res.statusCode < 400) {
-          res.on('data', function (data_) { data += data_.toString(); });
-          res.on('end', function () {
-            parser.parseString(data, function (err, result) {
-              if (err) {
-                console.log('ERROR in getYouTubeSubtitles');
-                return console.log(err);
-              } else {
-                let finalString = '';
-                let prevDuration = 0;
-                let newDuration;
-                for (let i of result.transcript.text) {
-                  if (i._.trim().substr(0, 1) === '[') {
-                    finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
-                      i._;
-                    prevDuration -= 5;
-                  } else {
-                    newDuration = parseInt(i.$.start);
-                    finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ')
-                      + i._;
-                    prevDuration = newDuration;
-                  }
+function getYoutubeSubtitles (message, url, server, infos) {
+  try {
+    const player_resp = infos.player_response;
+    const tracks = player_resp.captions.playerCaptionsTracklistRenderer.captionTracks;
+    let data = '';
+    https.get(tracks[0].baseUrl.toString(), function (res) {
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        res.on('data', function (data_) { data += data_.toString(); });
+        res.on('end', function () {
+          parser.parseString(data, function (err, result) {
+            if (err) {
+              console.log('ERROR in getYouTubeSubtitles');
+              return console.log(err);
+            } else {
+              let finalString = '';
+              let prevDuration = 0;
+              let newDuration;
+              for (let i of result.transcript.text) {
+                if (i._.trim().substr(0, 1) === '[') {
+                  finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
+                    i._;
+                  prevDuration -= 5;
+                } else {
+                  newDuration = parseInt(i.$.start);
+                  finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ')
+                    + i._;
+                  prevDuration = newDuration;
                 }
-                finalString = finalString.replace(/&#39;/g, '\'');
-                finalString = finalString.length > 1910 ? finalString.substr(0, 1910) + '...' : finalString;
-                message.edit('Could not find lyrics. Video captions are available.').then(sentMsg => {
-                  const mb = '📄';
-                  sentMsg.react(mb).then();
-
-                  const filter = (reaction, user) => {
-                    return user.id !== botID && [mb].includes(reaction.emoji.name);
-                  };
-
-                  const collector = sentMsg.createReactionCollector(filter, {time: 600000});
-
-                  collector.once('collect', () => {
-                    message.edit(`***Captions from YouTube***\n${finalString}`).then(server.numSinceLastEmbed += 10);
-                  });
-                });
               }
-            });
+              finalString = finalString.replace(/&#39;/g, '\'').trim();
+              finalString = finalString.length > 1910 ? finalString.substr(0, 1910) + '...' : finalString;
+              message.edit('Could not find lyrics. Video captions are available.').then(sentMsg => {
+                const mb = '📄';
+                sentMsg.react(mb).then();
+
+                const filter = (reaction, user) => {
+                  return user.id !== botID && [mb].includes(reaction.emoji.name);
+                };
+
+                const collector = sentMsg.createReactionCollector(filter, {time: 600000});
+
+                collector.once('collect', () => {
+                  message.edit(`***Captions from YouTube***\n${finalString}`).then(server.numSinceLastEmbed += 10);
+                });
+              });
+            }
           });
-        }
-      });
-    } catch (e) {
-      message.edit('no results found');
-      server.numSinceLastEmbed -= 2;
-    }
-  });
+        });
+      }
+    });
+  } catch (e) {
+    message.edit('no results found');
+    server.numSinceLastEmbed -= 2;
+  }
 }
 
 module.exports = {runLyricsCommand};
