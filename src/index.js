@@ -1252,7 +1252,7 @@ function checkStatusOfYtdl (message) {
       try {
         // noinspection JSCheckFunctionSignatures
         connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
-          quality: 'highestaudio',
+          filter: () => ['251'],
           highWaterMark: 1 << 25
         }), {
           type: 'opus',
@@ -1262,6 +1262,11 @@ function checkStatusOfYtdl (message) {
       } catch (e) {
         console.log(e);
         // noinspection JSUnresolvedFunction
+        if (message) {
+          const diagnosisStr = '*self-diagnosis complete: db bot will be restarting*';
+          if (message.deletable) message.edit(diagnosisStr);
+          else message.channel.send(diagnosisStr);
+        }
         await bot.channels.cache.get(CH.err).send('ytdl status is unhealthy, shutting off bot');
         connection.disconnect();
         if (isInactive) setTimeout(() => process.exit(0), 2000);
@@ -2746,7 +2751,8 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
         console.log(e);
         message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
         whatspMap[vc.id] = '';
-        return skipLink(message, vc, false, server, true);
+        skipLink(message, vc, false, server, true);
+        return;
       }
     }
     let artists = '';
@@ -2833,7 +2839,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     let playbackTimeout;
     // noinspection JSCheckFunctionSignatures
     dispatcher = connection.play(await ytdl(urlAlt, {
-      quality: 'highestaudio',
+      filter: (retries % 2 === 0 ? () => ['251'] : ''),
       highWaterMark: 1 << 25
     }).catch((e) => console.log('stream error', e)), {
       type: 'opus',
