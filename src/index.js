@@ -1252,7 +1252,7 @@ function checkStatusOfYtdl (message) {
       try {
         // noinspection JSCheckFunctionSignatures
         connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
-          filter: () => ['251'],
+          quality: 'highestaudio',
           highWaterMark: 1 << 25
         }), {
           type: 'opus',
@@ -2833,7 +2833,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     let playbackTimeout;
     // noinspection JSCheckFunctionSignatures
     dispatcher = connection.play(await ytdl(urlAlt, {
-      filter: () => ['251'],
+      quality: 'highestaudio',
       highWaterMark: 1 << 25
     }).catch((e) => console.log('stream error', e)), {
       type: 'opus',
@@ -2848,9 +2848,9 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     } else if (!(retries && server.currentEmbedLink === whatToPlay)) {
       await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
     }
+    dispatcherMapStatus[vc.id] = false;
     server.altUrl = urlAlt;
     server.skipTimes = 0;
-    dispatcherMapStatus[vc.id] = false;
     dispatcher.on('error', async (e) => {
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
