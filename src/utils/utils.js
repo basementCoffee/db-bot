@@ -4,6 +4,7 @@ const ytdl = require('ytdl-core-discord');
 const spdl = require('spdl-core');
 const ytpl = require('ytpl');
 const {servers, botID} = require('./constants');
+const scdl = require('soundcloud-downloader').default;
 
 /**
  * Given a duration in ms, it returns a formatted string separating
@@ -78,6 +79,20 @@ async function createEmbed (url, infos) {
       .addField('Duration', formatDuration(infos.duration_ms), true)
       .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
     timeMS = parseInt(infos.duration_ms);
+  } else if (url.includes('soundcloud.com')) {
+    if (!infos) infos = await scdl.getInfo(url);
+    const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
+    const title = ((infos.publisher_metadata && infos.publisher_metadata.album_title) ?
+      infos.publisher_metadata.album_title :
+      (infos.title.replace(/"/g, '') || 'SoundCloud'));
+    embed = new MessageEmbed()
+      .setTitle(title)
+      .setURL(url)
+      .setColor('#ee4900')
+      .addField(`Artist`, artist, true)
+      .addField('Duration', formatDuration(infos.duration || 0), true)
+      .setThumbnail(infos.artwork_url || (infos.user && infos.user.avatar_url ? infos.user.avatar_url : null));
+    timeMS = infos.duration || infos.full_duration || 'N/A';
   } else {
     if (!infos) infos = await ytdl.getBasicInfo(url);
     let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
@@ -159,22 +174,24 @@ async function sendRecommendation (message, content, url, uManager) {
  */
 function verifyUrl (url) {
   // noinspection JSUnresolvedFunction
-  return (url.includes('spotify.com') ? spdl.validateURL(url) : ytdl.validateURL(url)) && !verifyPlaylist(url);
+  return (url.includes('spotify.com') ? spdl.validateURL(url) :
+    (url.includes('soundcloud.com') ? scdl.isValidUrl(url) :
+      ytdl.validateURL(url)) && !verifyPlaylist(url));
 }
 
 /**
- * Returns true if the given url is a valid Spotify or YouTube playlist link.
- * @param url The url to verify
- * @returns {Boolean} True if given a valid playlist URL.
+ * Returns true if the given url is a valid playlist link.
+ * @param url The url to verify.
+ * @returns {string | boolean} Either 'sp', 'sc', 'yt' if a valid playlist or false if not a playlist.
  */
 function verifyPlaylist (url) {
   try {
     url = url.toLowerCase();
-    return (url.includes('spotify.com') ? (url.includes('/playlist') || url.includes('/album')) :
-      ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')));
-  } catch (e) {
-    return false;
-  }
+    if (url.includes('spotify.com') && (url.includes('/playlist') || url.includes('/album'))) return 'sp';
+    else if (url.includes('soundcloud.com') && scdl.isPlaylistURL(url)) return 'sc';
+    else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) return 'yt';
+  } catch (e) {}
+  return false;
 }
 
 /**
@@ -238,6 +255,8 @@ async function getTitle (url, cutoff) {
   try {
     if (url.includes('spotify')) {
       title = (await getData(url)).name;
+    } else if (url.includes('soundcloud')) {
+      title = (await scdl.getInfo(url)).title;
     } else {
       title = (await ytdl.getBasicInfo(url)).videoDetails.title;
     }
@@ -252,11 +271,13 @@ async function getTitle (url, cutoff) {
 
 /**
  * Function to generate an array of embeds representing the help list.
- * @param {*} prefixString the prefix in string format
- * @param numOfPages the number of embeds to generate
+ * @param {string} prefixString the prefix in string format
+ * @param numOfPages {number} the number of embeds to generate (between 1 and 2)
+ * @param version {string} the current version of the db bot
  */
-function getHelpList (prefixString, numOfPages) {
+function getHelpList (prefixString, numOfPages, version) {
   const page1 =
+    '[NEW] - ***added support for soundcloud*** *(Nov. 2021)*\n\n' +
     '--------------  **Music Commands** --------------\n\`' +
     prefixString +
     'play [word] \` Searches YouTube and plays *[p]* \n\`' +
@@ -288,13 +309,13 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'shuffle [link] \` Shuffle a playlist before playing\n\`' +
     prefixString +
-    'dj \` DJ mode, requires members to vote skip tracks\n\`' +
+    'dj \` DJ mode, members have to vote to skip tracks\n\`' +
     prefixString +
     'dictator \` Dictator mode, one member controls all music commands\n\`' +
     prefixString +
     'verbose \` Keep all song embeds during a session\n\`' +
     prefixString +
-    'silence \` Silence/hide now playing embeds \n';
+    'silence \` Silence/hide the now-playing embed \n';
   const page2 =
     '-----------  **Server Keys**  -----------\n\`' +
     prefixString +
@@ -310,7 +331,7 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'shuffle [# times] \` Play a random song from server keys  *[r]*\n\`' +
     prefixString +
-    'search [key] \` Search keys  *[s]*\n\`' +
+    'find [key / link] \` See if a link/key is in the keys-list *[s]*\n\`' +
     prefixString +
     'link [key] \` Get the full link of a specific key  *[url]*\n' +
     '\n-----------  **Personal Keys**  -----------\n' +
@@ -321,12 +342,12 @@ function getHelpList (prefixString, numOfPages) {
     prefixString +
     'changeprefix [new prefix] \` Changes the prefix for all commands \n\`' +
     prefixString +
-    'insert [link] [num] \` Insert a link into a position within the queue\n\`' +
+    'insert [link] \` Insert a link anywhere within the queue\n\`' +
     prefixString +
-    'remove [num] \` Remove a link from a position in the queue\n\`' +
+    'remove [num] \` Remove a link from the queue\n\`' +
     prefixString +
     'ticket [message] \` report an issue / request a new feature \n' +
-    '\n**Or just say congrats to a friend. I will chime in too! :) **';
+    `\n**Or just say congrats to a friend. I will chime in too! :) **\n*version ${version}*`;
   const helpListEmbed = new MessageEmbed();
   helpListEmbed.setTitle('Help List  *[short-command]*');
   const arrayOfPages = [];
@@ -354,10 +375,11 @@ function getHelpList (prefixString, numOfPages) {
  * Produces the help list and manages its reactions.
  * @param message The message instance.
  * @param server The server.
+ * @param version {string} The version.
  */
-function runHelpCommand (message, server) {
+function runHelpCommand (message, server, version) {
   server.numSinceLastEmbed += 10;
-  let helpPages = getHelpList(server.prefix, 2);
+  let helpPages = getHelpList(server.prefix, 2, version);
   message.channel.send(helpPages[0]).then((sentMsg) => {
     let currentHelp = 0;
     const hr = '➡️';

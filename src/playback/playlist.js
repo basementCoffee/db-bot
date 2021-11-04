@@ -3,26 +3,30 @@ const ytpl = require('ytpl');
 const {MAX_QUEUE_S} = require('../utils/constants');
 
 /**
- *
+ * Adds playlists to the queue.
  * @param message The message metadata
  * @param server The server.
  * @param mgid The message guild id
- * @param pNums The number of items added to queue
- * @param playlistUrl The url of the playlist
- * @param isSpotify If the playlist is a spotify playlist
- * @param addToFront Optional - true if to add to the front of the queue
- * @param position Optional - the position of the queue to add the item to
+ * @param pNums {number} The number of items added to queue
+ * @param playlistUrl {string} The url of the playlist
+ * @param linkType {string} Either 'sp' 'sc' or 'yt' depending on the type of link.
+ * @param addToFront {boolean=} Optional - true if to add to the front of the queue
+ * @param position {number=} Optional - the position of the queue to add the item to
  * @returns {Promise<Number>} The number of items added to the queue
  */
-async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, isSpotify, addToFront, position) {
+async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, linkType, addToFront, position) {
   let playlist;
   try {
-    if (isSpotify) {
-      //playlink
+    if (linkType === 'sp') {
       playlist = await getTracks(playlistUrl);
-    } else {
+    } else if (linkType === 'yt') {
       playlist = await ytpl(await ytpl.getPlaylistID(playlistUrl), {pages: 1});
       playlist = playlist.items;
+    } else if (linkType === 'sc') {
+      return message.channel.send('soundcloud playlists are not supported yet');
+    } else {
+      console.log(`Error: invalid linkType argument within addPlaylistToQueue`);
+      return 0;
     }
     let url;
     if (addToFront) {
@@ -32,7 +36,7 @@ async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, is
       while (lowestLengthIndex > -1) {
         item = playlist[lowestLengthIndex];
         lowestLengthIndex--;
-        url = isSpotify ? item.external_urls.spotify : (item.shortUrl ? item.shortUrl : item.url);
+        url = getUrl(item, linkType);
         if (itemsLeft > 0) {
           if (url) {
             server.queue.unshift(url);
@@ -47,7 +51,7 @@ async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, is
     } else {
       let itemsLeft = MAX_QUEUE_S - server.queue.length;
       for (let j of playlist) {
-        url = isSpotify ? j.external_urls.spotify : (j.shortUrl ? j.shortUrl : j.url);
+        url = getUrl(j, linkType);
         if (itemsLeft > 0) {
           if (url) {
             if (position && !(position > server.queue.length)) {
@@ -68,6 +72,24 @@ async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, is
     message.channel.send('there was an error');
   }
   return pNums;
+}
+
+/**
+ * Gets the url of the item from the infos.
+ * @param item The playlist item.
+ * @param type {string} Either 'sp' 'sc' or 'yt' depending on the source of the infos.
+ * @returns {string} The url.
+ */
+function getUrl (item, type) {
+  switch (type) {
+    case 'sp':
+      return item.external_urls.spotify;
+    case 'yt':
+      return item.shortUrl || item.url;
+    default:
+      console.log('Error: Incorrect type provided.');
+      throw 'Error: Incorrect type provided.';
+  }
 }
 
 /**

@@ -8,6 +8,7 @@ const {getData} = require("spotify-url-info");
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
+const scdl = require('soundcloud-downloader').default;
 const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
 const {
   runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand
@@ -35,9 +36,9 @@ let isInactive = !devMode;
 process.setMaxListeners(0);
 
 /**
- * Determines whether the message contains a form of congratulations
- * @param word The text to compare
- * @returns {*} true if congrats is detected
+ * Determines whether the message contains a form of congratulations.
+ * @param word {string} The text to compare.
+ * @returns {*} true if congrats is detected.
  */
 function contentContainCongrats (word) {
   return (word.includes('grats') || word.includes('ongratulations') || word.includes('omedetou'));
@@ -145,16 +146,26 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   // places the currently playing into the queue history if played long enough
   adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
   let pNums = 0;
+  // known to be a valid url
+  let infos;
   if (args[1].includes('spotify.com')) {
-    await addPlaylistToQueue(message, server, mgid, pNums, args[1], true, true);
+    await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sp', true);
   } else if (ytpl.validateID(args[1])) {
-    await addPlaylistToQueue(message, server, mgid, pNums, args[1], false, true);
+    await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt', true);
   } else {
+    if (args[1].includes('soundcloud')) {
+      if (scdl.isPlaylistURL(args[1])) return message.channel.send('support for soundcloud playlists is in the works');
+      try {
+        infos = await scdl.getInfo(args[1]);
+      } catch (e) {
+        return message.channel.send('invalid url');
+      }
+    }
     // push to queue
     server.queue.unshift(args[1]);
   }
   message.channel.send('*playing now*');
-  playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+  playLinkToVC(message, server.queue[0], voiceChannel, server, 0, infos).then();
 }
 
 /**
@@ -199,11 +210,21 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
     queueWasEmpty = true;
   }
   let pNums = 0;
+  let infos;
+  // known to be a valid url
   if (args[1].includes('spotify.com')) {
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], true);
+    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sc');
   } else if (ytpl.validateID(args[1])) {
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], false);
+    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt');
   } else {
+    if (args[1].includes('soundcloud')) {
+      if (scdl.isPlaylistURL(args[1])) return message.channel.send('support for soundcloud playlists is in the works');
+      try {
+        infos = await scdl.getInfo(args[1]);
+      } catch (e) {
+        return message.channel.send('invalid url');
+      }
+    }
     pNums = 1;
     while (args[pNums]) {
       let linkZ = args[pNums];
@@ -219,7 +240,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   // if queue was empty then play
   if (queueWasEmpty) {
-    playLinkToVC(message, server.queue[0], message.member.voice.channel, server).then();
+    playLinkToVC(message, server.queue[0], message.member.voice.channel, server, 0, infos).then();
   } else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
     await updateActiveEmbed(server);
@@ -349,7 +370,7 @@ async function runCommandCases (message) {
   if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
   switch (statement) {
     case 'db-bot':
-      runHelpCommand(message, server);
+      runHelpCommand(message, server, version);
       break;
     // the normal play command
     case 'play':
@@ -632,8 +653,9 @@ async function runCommandCases (message) {
       if (server.queue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
       let rNum = parseInt(args[1]);
       if (!rNum) {
-        if (server.queue.length === 1) rNum = 1;
-        else return message.channel.send('put a number in the queue to remove (1-' + (server.queue.length - 1) + ')');
+        if (server.queue.length === 2) rNum = 1;
+        else return message.channel.send((`Needed a position in the queue to remove (1-${(server.queue.length - 1)})` +
+          `\n***1** is next up in the queue, **${(server.queue.length - 1)}** is the last item in the queue \` Ex: ${prefixString}remove 2\`*`));
       }
       if (rNum >= server.queue.length) return message.channel.send('*that position is out of bounds, **' +
         (server.queue.length - 1) + '** is the last item in the queue.*');
@@ -726,7 +748,7 @@ async function runCommandCases (message) {
     // list commands for public commands
     case 'h':
     case 'help':
-      runHelpCommand(message, server);
+      runHelpCommand(message, server, version);
       break;
     // !skip
     case 'next':
@@ -1210,9 +1232,9 @@ async function runInsertCommand (message, mgid, term, position, server) {
   let pNums = 0;
   if (verifyPlaylist(args[1])) {
     if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
-      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], true, false, num);
+      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'sc', false, num);
     } else if (ytpl.validateID(args[1])) {
-      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], false, false, num);
+      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'yt', false, num);
     } else {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get(CH.err).send('there was a playlist reading error: ' + args[1]);
@@ -1518,7 +1540,7 @@ function dmHandler (message, messageContent) {
   let mc = messageContent.toLowerCase().trim() + ' ';
   if (mc.length < 9) {
     if (mc.length < 7 && mc.includes('help '))
-      return message.author.send(getHelpList('.', 1)[0]);
+      return message.author.send(getHelpList('.', 1, version)[0], version);
     else if (mc.includes('invite '))
       return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
   }
@@ -1943,8 +1965,9 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
         if (tempUrl) {
           // push to queue
-          if (verifyPlaylist(tempUrl)) {
-            dbAddedToQueue += await addPlaylistToQueue(message, server, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+          const playlistType = verifyPlaylist(tempUrl);
+          if (playlistType) {
+            dbAddedToQueue += await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
           } else if (playRightNow) {
             if (first) {
               server.queue.unshift(tempUrl);
@@ -1966,8 +1989,9 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
             if (tempUrl) {
               // push to queue
-              if (verifyPlaylist(tempUrl)) {
-                dbAddedToQueue += await addPlaylistToQueue(message, server, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+              const playlistType = verifyPlaylist(tempUrl);
+              if (playlistType) {
+                dbAddedToQueue += await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
               } else if (playRightNow) {
                 if (first) {
                   server.queue.unshift(tempUrl);
@@ -2008,10 +2032,11 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
         if (sObj.ssi === 1 && ss && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
           message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
           tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
+          const playlistType = verifyPlaylist(tempUrl);
           if (playRightNow) { // push to queue and play
             adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
-            if (verifyPlaylist(tempUrl)) {
-              await addPlaylistToQueue(message, server, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+            if (playlistType) {
+              await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
             } else {
               server.queue.unshift(tempUrl);
             }
@@ -2019,8 +2044,8 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             message.channel.send('*playing now*');
             return true;
           } else {
-            if (verifyPlaylist(tempUrl)) {
-              dbAddedToQueue = await addPlaylistToQueue(message, server, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+            if (playlistType) {
+              dbAddedToQueue = await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
             } else {
               server.queue.push(tempUrl);
             }
@@ -2041,10 +2066,11 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           return true;
         }
       } else { // did find in database
+        const playlistType = verifyPlaylist(tempUrl);
         if (playRightNow) { // push to queue and play
           adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
-          if (verifyPlaylist(tempUrl)) {
-            await addPlaylistToQueue(message, server, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+          if (playlistType) {
+            await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
           } else {
             server.queue.unshift(tempUrl);
           }
@@ -2053,8 +2079,8 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           return true;
         } else {
           // push to queue
-          if (verifyPlaylist(tempUrl)) {
-            await addPlaylistToQueue(message, server, mgid, 0, tempUrl, tempUrl.toLowerCase().includes('spotify.com'), playRightNow);
+          if (playlistType) {
+            await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
           } else {
             server.queue.push(tempUrl);
           }
@@ -2838,14 +2864,19 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   try {
     let playbackTimeout;
     // noinspection JSCheckFunctionSignatures
-    dispatcher = connection.play(await ytdl(urlAlt, {
-      filter: (retries % 2 === 0 ? () => ['251'] : ''),
-      highWaterMark: 1 << 25
-    }).catch((e) => console.log('stream error', e)), {
-      type: 'opus',
-      volume: false,
-      highWaterMark: 1 << 25
-    });
+    if (whatToPlay.includes('soundcloud.com')) {
+      const stream = await scdl.download(whatToPlay);
+      dispatcher = connection.play(stream);
+    } else {
+      dispatcher = connection.play(await ytdl(urlAlt, {
+        filter: (retries % 2 === 0 ? () => ['251'] : ''),
+        highWaterMark: 1 << 25
+      }).catch((e) => console.log('stream error', e)), {
+        type: 'opus',
+        volume: false,
+        highWaterMark: 1 << 25
+      });
+    }
     dispatcherMap[vc.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
@@ -2894,7 +2925,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
         } else if (server.autoplay) {
           runAutoplayCommand(message, server, vc, urlAlt, (whatToPlay === urlAlt ? server.infos : undefined));
         } else {
-          server.collector.stop();
+          if (server.collector) server.collector.stop();
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), 1800000);
           dispatcherMap[vc.id] = false;
         }
