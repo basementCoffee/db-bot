@@ -213,7 +213,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   let infos;
   // known to be a valid url
   if (args[1].includes('spotify.com')) {
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sc');
+    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sp');
   } else if (ytpl.validateID(args[1])) {
     pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt');
   } else {
@@ -1232,7 +1232,7 @@ async function runInsertCommand (message, mgid, term, position, server) {
   let pNums = 0;
   if (verifyPlaylist(args[1])) {
     if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
-      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'sc', false, num);
+      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'sp', false, num);
     } else if (ytpl.validateID(args[1])) {
       pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'yt', false, num);
     } else {
