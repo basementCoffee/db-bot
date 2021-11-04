@@ -16,7 +16,7 @@ const {
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
-  runSearchCommand, runHelpCommand, getTitle
+  runSearchCommand, runHelpCommand, getTitle, linkFormatter
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -25,7 +25,7 @@ const {runLyricsCommand} = require('./playback/lyrics');
 const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 const {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK
 } = require('./utils/constants');
 
 // UPDATE HERE - before release
@@ -148,12 +148,14 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   let pNums = 0;
   // known to be a valid url
   let infos;
-  if (args[1].includes('spotify.com')) {
+  if (args[1].includes(SPOTIFY_BASE_LINK)) {
+    args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
     await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sp', true);
   } else if (ytpl.validateID(args[1])) {
     await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt', true);
   } else {
     if (args[1].includes('soundcloud')) {
+      args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
       if (scdl.isPlaylistURL(args[1])) return message.channel.send('support for soundcloud playlists is in the works');
       try {
         infos = await scdl.getInfo(args[1]);
@@ -212,12 +214,14 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   let pNums = 0;
   let infos;
   // known to be a valid url
-  if (args[1].includes('spotify.com')) {
+  if (args[1].includes(SPOTIFY_BASE_LINK)) {
+    args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
     pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sp');
   } else if (ytpl.validateID(args[1])) {
     pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt');
   } else {
-    if (args[1].includes('soundcloud')) {
+    if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
+      args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
       if (scdl.isPlaylistURL(args[1])) return message.channel.send('support for soundcloud playlists is in the works');
       try {
         infos = await scdl.getInfo(args[1]);
@@ -1231,10 +1235,13 @@ async function runInsertCommand (message, mgid, term, position, server) {
   if (num > server.queue.length) num = server.queue.length;
   let pNums = 0;
   if (verifyPlaylist(args[1])) {
-    if (args[1].includes('/playlist/') && args[1].includes('spotify.com')) {
+    if (args[1].includes('/playlist/') && args[1].includes(SPOTIFY_BASE_LINK)) {
+      args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
       pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'sp', false, num);
     } else if (ytpl.validateID(args[1])) {
       pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'yt', false, num);
+    } else if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
+      message.channel.send('operation not supported with SoundCloud playlists yet');
     } else {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get(CH.err).send('there was a playlist reading error: ' + args[1]);
@@ -1703,6 +1710,8 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       }
       if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
         return message.channel.send('You can only add links to the keys list. (Names cannot be more than one word)');
+      if (args[2].includes(SPOTIFY_BASE_LINK)) args[2] = linkFormatter(args[2], SPOTIFY_BASE_LINK);
+      else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
       runAddCommand(args, message, sheetName, printMsgToChannel);
       return;
     } else if (message.member.voice.channel && server.currentEmbedLink) {
@@ -2766,7 +2775,8 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   server.infos = infos;
   // the alternative url to play
   let urlAlt = whatToPlay;
-  if (whatToPlay.includes('spotify.com')) {
+  if (whatToPlay.includes(SPOTIFY_BASE_LINK)) {
+    whatToPlay = linkFormatter(whatToPlay, SPOTIFY_BASE_LINK);
     let itemIndex = 0;
     if (!infos) {
       try {
@@ -2864,7 +2874,8 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   try {
     let playbackTimeout;
     // noinspection JSCheckFunctionSignatures
-    if (whatToPlay.includes('soundcloud.com')) {
+    if (whatToPlay.includes(SOUNDCLOUD_BASE_LINK)) {
+      whatToPlay = linkFormatter(whatToPlay, SOUNDCLOUD_BASE_LINK);
       const stream = await scdl.download(whatToPlay);
       dispatcher = connection.play(stream);
     } else {

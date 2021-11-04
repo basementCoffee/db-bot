@@ -19,8 +19,12 @@ const whatspMap = new Map();
 const dispatcherMap = new Map();
 // The status of a dispatcher, either true for paused or false for playing
 const dispatcherMapStatus = new Map();
+// open.spotify.com
+const SPOTIFY_BASE_LINK = 'open.spotify.com';
+// soundcloud.com
+const SOUNDCLOUD_BASE_LINK = 'soundcloud.com';
 
 module.exports = {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK
 };

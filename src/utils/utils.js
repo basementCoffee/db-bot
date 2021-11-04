@@ -3,7 +3,7 @@ const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const spdl = require('spdl-core');
 const ytpl = require('ytpl');
-const {servers, botID} = require('./constants');
+const {servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK} = require('./constants');
 const scdl = require('soundcloud-downloader').default;
 
 /**
@@ -67,7 +67,7 @@ function botInVC (message) {
 async function createEmbed (url, infos) {
   let timeMS;
   let embed;
-  if (url.toString().includes('spotify.com')) {
+  if (url.toString().includes(SPOTIFY_BASE_LINK)) {
     if (!infos) infos = await getData(url);
     let artists = '';
     infos.artists.forEach(x => artists ? artists += ', ' + x.name : artists += x.name);
@@ -79,7 +79,7 @@ async function createEmbed (url, infos) {
       .addField('Duration', formatDuration(infos.duration_ms), true)
       .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
     timeMS = parseInt(infos.duration_ms);
-  } else if (url.includes('soundcloud.com')) {
+  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (!infos) infos = await scdl.getInfo(url);
     const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
     const title = ((infos.publisher_metadata && infos.publisher_metadata.album_title) ?
@@ -174,9 +174,19 @@ async function sendRecommendation (message, content, url, uManager) {
  */
 function verifyUrl (url) {
   // noinspection JSUnresolvedFunction
-  return (url.includes('spotify.com') ? spdl.validateURL(url) :
-    (url.includes('soundcloud.com') ? scdl.isValidUrl(url) :
+  return (url.includes(SPOTIFY_BASE_LINK) ? spdl.validateURL(linkFormatter(url, SPOTIFY_BASE_LINK)) :
+    (url.includes(SOUNDCLOUD_BASE_LINK) ? scdl.isValidUrl(linkFormatter(url, SOUNDCLOUD_BASE_LINK)) :
       ytdl.validateURL(url)) && !verifyPlaylist(url));
+}
+
+/**
+ * Given a link, formats the link with https://[index of suffix to string end].
+ * @param url {string} The link to format.
+ * @param suffix {string}  The starting of the remainder of the link to always add after the prefix.
+ * @returns {string} The formatted URL.
+ */
+function linkFormatter (url, suffix) {
+  return `https://${url.substr(url.indexOf(suffix))}`;
 }
 
 /**
@@ -187,8 +197,9 @@ function verifyUrl (url) {
 function verifyPlaylist (url) {
   try {
     url = url.toLowerCase();
-    if (url.includes('spotify.com') && (url.includes('/playlist') || url.includes('/album'))) return 'sp';
-    else if (url.includes('soundcloud.com') && scdl.isPlaylistURL(url)) return 'sc';
+    if (url.includes(SPOTIFY_BASE_LINK)) {
+      if (url.includes('/playlist') || url.includes('/album')) return 'sp';
+    } else if (url.includes(SOUNDCLOUD_BASE_LINK) && scdl.isPlaylistURL(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) return 'sc';
     else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) return 'yt';
   } catch (e) {}
   return false;
@@ -499,5 +510,5 @@ function setSeamless (server, fName, args, message) {
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
-  initializeServer, runSearchCommand, runHelpCommand, getTitle
+  initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter
 };
