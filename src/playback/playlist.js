@@ -18,7 +18,7 @@ let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
  * @returns {Promise<Number>} The number of items added to the queue
  */
 async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, linkType, addToFront, position) {
-  const playlist = await getPlaylistArray(linkType);
+  const playlist = await getPlaylistArray(playlistUrl, linkType);
   try {
     let url;
     if (addToFront) {
@@ -69,7 +69,7 @@ async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, li
 /**
  * Gets the array of playlist items.
  * @param playlistUrl The playlist URL.
- * @param type Either 'sp', 'yt' or 'sc' regarding the type of URL.
+ * @param type {string} Either 'sp', 'yt' or 'sc' regarding the type of URL.
  * @returns {Promise<[]>} An Array of link metadata.
  */
 async function getPlaylistArray (playlistUrl, type) {
