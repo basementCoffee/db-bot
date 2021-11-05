@@ -83,7 +83,7 @@ async function createEmbed (url, infos) {
     if (!infos) infos = await scdl.getInfo(url);
     const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
     const title = ((infos.publisher_metadata && infos.publisher_metadata.album_title) ?
-      infos.publisher_metadata.album_title :
+      infos.publisher_metadata.release_title || infos.publisher_metadata.album_title :
       (infos.title.replace(/"/g, '') || 'SoundCloud'));
     embed = new MessageEmbed()
       .setTitle(title)

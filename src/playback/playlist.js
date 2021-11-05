@@ -1,6 +1,8 @@
 const {getTracks} = require('spotify-url-info');
 const ytpl = require('ytpl');
-const {MAX_QUEUE_S} = require('../utils/constants');
+const {MAX_QUEUE_S, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK} = require('../utils/constants');
+// should be completed before first query
+let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
 
 /**
  * Adds playlists to the queue.
@@ -15,19 +17,8 @@ const {MAX_QUEUE_S} = require('../utils/constants');
  * @returns {Promise<Number>} The number of items added to the queue
  */
 async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, linkType, addToFront, position) {
-  let playlist;
+  const playlist = await getPlaylistArray(linkType);
   try {
-    if (linkType === 'sp') {
-      playlist = await getTracks(playlistUrl);
-    } else if (linkType === 'yt') {
-      playlist = await ytpl(await ytpl.getPlaylistID(playlistUrl), {pages: 1});
-      playlist = playlist.items;
-    } else if (linkType === 'sc') {
-      return message.channel.send('soundcloud playlists are not supported yet');
-    } else {
-      console.log(`Error: invalid linkType argument within addPlaylistToQueue`);
-      return 0;
-    }
     let url;
     if (addToFront) {
       let itemsLeft = MAX_QUEUE_S - server.queue.length;
@@ -75,8 +66,29 @@ async function addPlaylistToQueue (message, server, mgid, pNums, playlistUrl, li
 }
 
 /**
+ * Gets the array of playlist items.
+ * @param playlistUrl The playlist URL.
+ * @param type Either 'sp', 'yt' or 'sc' regarding the type of URL.
+ * @returns {Promise<[]>} An Array of link metadata.
+ */
+async function getPlaylistArray (playlistUrl, type) {
+  switch (type) {
+    case 'sp':
+      // filter ensures that each element exists
+      return (await getTracks(playlistUrl)).filter(track => track);
+    case 'yt':
+      return (await ytpl(await ytpl.getPlaylistID(playlistUrl), {pages: 1}));
+    case 'sc':
+      return (await scpl.playlists.getPlaylist(playlistUrl)).tracks;
+    default:
+      console.log(`Error: invalid linkType argument within addPlaylistToQueue`);
+      throw `Error: Incorrect type provided, provided ${type}`;
+  }
+}
+
+/**
  * Gets the url of the item from the infos.
- * @param item The playlist item.
+ * @param item A single track's metadata.
  * @param type {string} Either 'sp' 'sc' or 'yt' depending on the source of the infos.
  * @returns {string} The url.
  */
@@ -86,11 +98,25 @@ function getUrl (item, type) {
       return item.external_urls.spotify;
     case 'yt':
       return item.shortUrl || item.url;
+    case 'sc':
+      return item.permalink_url;
     default:
-      console.log('Error: Incorrect type provided.');
-      throw 'Error: Incorrect type provided.';
+      const errString = `Error: Incorrect type provided, provided ${type}`;
+      console.log(errString);
+      throw errString;
   }
 }
+
+/**
+ * Returns 'sp' 'sc' or 'yt' depending on the source of the infos.
+ * @param url The url to get the type of.
+ * @returns {string} 'sp' 'sc' or 'yt'
+ */
+const getLinkType = (url) => {
+  if (url.includes(SPOTIFY_BASE_LINK)) return 'sp';
+  else if (url.includes(SOUNDCLOUD_BASE_LINK)) return 'sc';
+  return 'yt';
+};
 
 /**
  * Un-package the playlist url and push it to the given array.
@@ -99,28 +125,16 @@ function getUrl (item, type) {
  * @returns {Promise<number>} The number of items pushed to the array.
  */
 async function getPlaylistItems (url, tempArray) {
-  let playlist;
+  const linkType = getLinkType(url);
+  const playlist = await getPlaylistArray(url, linkType);
   let itemCounter = 0;
   try {
-    let isSpotify = url.toLowerCase().includes('spotify');
     // add all the songs from the playlist to the tempArray
-    if (isSpotify) {
-      playlist = (await getTracks(url)).filter(track => track);
-      for (let j of playlist) {
-        url = j.external_urls.spotify;
-        if (url) {
-          tempArray.push(url);
-          itemCounter++;
-        }
-      }
-    } else {
-      playlist = (await ytpl(url, {pages: 1})).items;
-      for (let j of playlist) {
-        url = j.shortUrl ? j.shortUrl : j.url;
-        if (url) {
-          tempArray.push(url);
-          itemCounter++;
-        }
+    for (let j of playlist) {
+      url = getUrl(j, linkType);
+      if (url) {
+        tempArray.push(url);
+        itemCounter++;
       }
     }
   } catch (e) {

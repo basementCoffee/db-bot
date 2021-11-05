@@ -147,27 +147,20 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
   let pNums = 0;
   // known to be a valid url
-  let infos;
   if (args[1].includes(SPOTIFY_BASE_LINK)) {
     args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
     await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sp', true);
   } else if (ytpl.validateID(args[1])) {
     await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt', true);
+  } else if (args[1].includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(args[1], SOUNDCLOUD_BASE_LINK))) {
+    args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
+    await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sc', true);
   } else {
-    if (args[1].includes('soundcloud')) {
-      args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-      if (scdl.isPlaylistURL(args[1])) return message.channel.send('support for soundcloud playlists is in the works');
-      try {
-        infos = await scdl.getInfo(args[1]);
-      } catch (e) {
-        return message.channel.send('invalid url');
-      }
-    }
     // push to queue
     server.queue.unshift(args[1]);
   }
   message.channel.send('*playing now*');
-  playLinkToVC(message, server.queue[0], voiceChannel, server, 0, infos).then();
+  playLinkToVC(message, server.queue[0], voiceChannel, server, 0).then();
 }
 
 /**
@@ -212,23 +205,16 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
     queueWasEmpty = true;
   }
   let pNums = 0;
-  let infos;
   // known to be a valid url
   if (args[1].includes(SPOTIFY_BASE_LINK)) {
     args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
     pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sp');
   } else if (ytpl.validateID(args[1])) {
     pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt');
+  } else if (args[1].includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(args[1], SOUNDCLOUD_BASE_LINK))) {
+    args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
+    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sc');
   } else {
-    if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
-      args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-      if (scdl.isPlaylistURL(args[1])) return message.channel.send('support for soundcloud playlists is in the works');
-      try {
-        infos = await scdl.getInfo(args[1]);
-      } catch (e) {
-        return message.channel.send('invalid url');
-      }
-    }
     pNums = 1;
     while (args[pNums]) {
       let linkZ = args[pNums];
@@ -244,7 +230,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   // if queue was empty then play
   if (queueWasEmpty) {
-    playLinkToVC(message, server.queue[0], message.member.voice.channel, server, 0, infos).then();
+    playLinkToVC(message, server.queue[0], message.member.voice.channel, server, 0).then();
   } else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
     await updateActiveEmbed(server);
@@ -1241,7 +1227,9 @@ async function runInsertCommand (message, mgid, term, position, server) {
     } else if (ytpl.validateID(args[1])) {
       pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'yt', false, num);
     } else if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
-      message.channel.send('operation not supported with SoundCloud playlists yet');
+      args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
+      pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sc', false, num);
+      console.log(pNums);
     } else {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get(CH.err).send('there was a playlist reading error: ' + args[1]);
@@ -2873,21 +2861,24 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   let dispatcher;
   try {
     let playbackTimeout;
+    let stream;
+    let streamType;
     // noinspection JSCheckFunctionSignatures
     if (whatToPlay.includes(SOUNDCLOUD_BASE_LINK)) {
       whatToPlay = linkFormatter(whatToPlay, SOUNDCLOUD_BASE_LINK);
-      const stream = await scdl.download(whatToPlay);
-      dispatcher = connection.play(stream);
+      stream = await scdl.download(whatToPlay);
     } else {
-      dispatcher = connection.play(await ytdl(urlAlt, {
+      stream = await ytdl(urlAlt, {
         filter: (retries % 2 === 0 ? () => ['251'] : ''),
         highWaterMark: 1 << 25
-      }).catch((e) => console.log('stream error', e)), {
-        type: 'opus',
-        volume: false,
-        highWaterMark: 1 << 25
       });
+      streamType = 'opus';
     }
+    dispatcher = connection.play(stream, {
+      type: streamType,
+      volume: false,
+      highWaterMark: 1 << 25
+    });
     dispatcherMap[vc.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
