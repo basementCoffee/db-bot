@@ -3,8 +3,9 @@ const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const spdl = require('spdl-core');
 const ytpl = require('ytpl');
-const {servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK} = require('./constants');
+const {servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType} = require('./constants');
 const scdl = require('soundcloud-downloader').default;
+const unpipe = require('unpipe');
 
 /**
  * Given a duration in ms, it returns a formatted string separating
@@ -82,9 +83,7 @@ async function createEmbed (url, infos) {
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (!infos) infos = await scdl.getInfo(url);
     const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
-    const title = ((infos.publisher_metadata && infos.publisher_metadata.album_title) ?
-      infos.publisher_metadata.release_title || infos.publisher_metadata.album_title :
-      (infos.title.replace(/"/g, '') || 'SoundCloud'));
+    const title = (infos.publisher_metadata ? (infos.publisher_metadata.release_title || infos.publisher_metadata.album_title) : '') || (infos.title.replace(/"/g, '') || 'SoundCloud');
     embed = new MessageEmbed()
       .setTitle(title)
       .setURL(url)
@@ -202,15 +201,20 @@ function linkFormatter (url, baseLink) {
 /**
  * Returns true if the given url is a valid playlist link.
  * @param url The url to verify.
- * @returns {string | boolean} Either 'sp', 'sc', 'yt' if a valid playlist or false if not a playlist.
+ * @returns {StreamType | boolean} A StreamType or false.
  */
 function verifyPlaylist (url) {
   try {
     url = url.toLowerCase();
     if (url.includes(SPOTIFY_BASE_LINK)) {
-      if (url.includes('/playlist') || url.includes('/album')) return 'sp';
-    } else if (url.includes(SOUNDCLOUD_BASE_LINK) && scdl.isPlaylistURL(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) return 'sc';
-    else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) return 'yt';
+      if (url.includes('/playlist') || url.includes('/album')) {
+        return StreamType.SPOTIFY;
+      }
+    } else if (url.includes(SOUNDCLOUD_BASE_LINK) && scdl.isPlaylistURL(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
+      return StreamType.SOUNDCLOUD;
+    } else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) {
+      return StreamType.YOUTUBE;
+    }
   } catch (e) {}
   return false;
 }
@@ -477,8 +481,13 @@ function initializeServer (mgid) {
     leaveVCTimeout: false,
     // the number of consecutive playback errors
     skipTimes: 0,
-    // the readable stream
-    stream: null,
+    // properties pertaining to the active stream
+    streamData: {
+      // the StreamType enum
+      type: null,
+      // the readable stream
+      stream: null
+    },
     // if a twitch notification was sent
     twitchNotif: {
       isSent: false,
@@ -509,6 +518,33 @@ function initializeServer (mgid) {
 }
 
 /**
+ * Ends the stream if a configuration for it is available.
+ * @param server The server in which to end the stream.
+ */
+function endStream (server) {
+  try {
+    if (server.streamData.type === StreamType.SOUNDCLOUD) {
+      if (!server.streamData.stream._readableState.closed) console.log(`not closed: ${server.streamData.stream._readableState.pipes.length}`);
+      if (server.streamData.stream._readableState.pipes.length > 0) {
+        for (let v of Object.keys(server.streamData.stream._readableState.pipes[0])) {
+          server.streamData.stream._readableState.pipes[v] = undefined;
+        }
+        server.streamData.stream._readableState.pipes.pop();
+        server.streamData.stream.end();
+        server.streamData.stream.destroy();
+      }
+    } else if (server.streamData.type === StreamType.TWITCH) {
+      server.streamData.stream.end();
+      unpipe(server.streamData.stream);
+    }
+  } catch (e) {
+    console.log('Error: attempt stream close - ', e);
+  }
+  server.streamData.stream = null;
+  server.streamData.type = null;
+}
+
+/**
  * Sets seamless listening on voice channel error. Seamless listening allows the
  * bot to temporarily save a wanted command until voice channel join.
  * @param server The server.
@@ -527,5 +563,5 @@ function setSeamless (server, fName, args, message) {
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
-  initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter
+  initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream
 };

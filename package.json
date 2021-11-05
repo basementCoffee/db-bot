@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "5.26.0",
+  "version": "5.26.1",
   "description": "A discord playback bot with a UI.",
   "main": "src/index.js",
   "scripts": {
@@ -23,11 +23,12 @@
     "m3u8stream": "^0.8.4",
     "node-gyp": "^8.3.0",
     "opusscript": "^0.0.8",
-    "soundcloud-downloader": "^1.0.0",
     "scdl-core": "^1.0.19",
+    "soundcloud-downloader": "^1.0.0",
     "spdl-core": "^2.0.2",
     "spotify-url-info": "^2.2.3",
     "twitch-m3u8": "^1.1.4",
+    "unpipe": "^1.0.0",
     "xml2js": "^0.4.23",
     "ytdl-core": "^4.9.1",
     "ytdl-core-discord": "^1.3.1",

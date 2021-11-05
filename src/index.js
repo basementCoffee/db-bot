@@ -18,7 +18,7 @@ const {
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
-  runSearchCommand, runHelpCommand, getTitle, linkFormatter
+  runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -27,11 +27,11 @@ const {runLyricsCommand} = require('./playback/lyrics');
 const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 const {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType
 } = require('./utils/constants');
 
 // UPDATE HERE - before release
-let devMode = false; // default false
+let devMode = true; // default false
 const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
 let isInactive = !devMode;
 
@@ -151,12 +151,12 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   // known to be a valid url
   if (args[1].includes(SPOTIFY_BASE_LINK)) {
     args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
-    await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sp', true);
+    await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SPOTIFY, true);
   } else if (ytpl.validateID(args[1])) {
-    await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt', true);
+    await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.YOUTUBE, true);
   } else if (args[1].includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(args[1], SOUNDCLOUD_BASE_LINK))) {
     args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-    await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sc', true);
+    await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SOUNDCLOUD, true);
   } else {
     // push to queue
     server.queue.unshift(args[1]);
@@ -210,12 +210,12 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   // known to be a valid url
   if (args[1].includes(SPOTIFY_BASE_LINK)) {
     args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sp');
+    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SPOTIFY);
   } else if (ytpl.validateID(args[1])) {
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'yt');
+    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.YOUTUBE);
   } else if (args[1].includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(args[1], SOUNDCLOUD_BASE_LINK))) {
     args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sc');
+    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SOUNDCLOUD);
   } else {
     pNums = 1;
     while (args[pNums]) {
@@ -405,7 +405,7 @@ async function runCommandCases (message) {
       runStopPlayingCommand(mgid, message.member.voice.channel, false, server, message, message.member);
       break;
     case 'autoplay':
-    case 'sp':
+    case StreamType.SPOTIFY:
     case 'smartp':
     case 'smartplay':
       if (!botInVC(message)) return message.channel.send('must be playing something to use smartplay');
@@ -1239,12 +1239,12 @@ async function runInsertCommand (message, mgid, term, position, server) {
   if (verifyPlaylist(args[1])) {
     if (args[1].includes('/playlist/') && args[1].includes(SPOTIFY_BASE_LINK)) {
       args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
-      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'sp', false, num);
+      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], StreamType.SPOTIFY, false, num);
     } else if (ytpl.validateID(args[1])) {
-      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], 'yt', false, num);
+      pNums = await addPlaylistToQueue(message, server, mgid, 0, args[1], StreamType.YOUTUBE, false, num);
     } else if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
       args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-      pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], 'sc', false, num);
+      pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SOUNDCLOUD, false, num);
       console.log(pNums);
     } else {
       // noinspection JSUnresolvedFunction
@@ -2689,6 +2689,8 @@ async function updateVoiceState (update) {
     }
     clearDJTimer(server);
     await sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, server.infos, false).then(() => {
+      // end the stream (if applicable)
+      if (server.streamData.stream) endStream(server);
       server.numSinceLastEmbed = 0;
       server.silence = false;
       server.verbose = false;
@@ -2875,37 +2877,24 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     clearTimeout(server.leaveVCTimeout);
     server.leaveVCTimeout = null;
   }
-  if (server.stream) {
-    try {
-      if (!server.stream._readableState.closed) console.log(`not closed: ${server.stream._readableState.pipes.length}`);
-      if (server.stream._readableState.pipes.length > 0) {
-        for (let v of Object.keys(server.stream._readableState.pipes[0])) {
-          server.stream._readableState.pipes[v] = undefined;
-        }
-        server.stream._readableState.pipes.pop();
-        await server.stream.end();
-        await server.stream.destroy();
-        if (whatToPlay !== whatspMap[vc.id]) return;
-      }
-    } catch (e) {
-      console.log('Error: attempt stream close - ', e);
-    }
-    server.stream = null;
-  }
+  if (server.streamData.stream) endStream(server);
+  if (whatToPlay !== whatspMap[vc.id]) return;
   let dispatcher;
   try {
     let playbackTimeout;
     let stream;
-    let streamType;
+    let encoderType;
     let streamHWM;
     // noinspection JSCheckFunctionSignatures
     if (whatToPlay.includes(SOUNDCLOUD_BASE_LINK)) {
-      commandsMap.set('SOUND_CLOUD', (commandsMap.get('SOUND_CLOUD') || 0) + 1);
+      commandsMap.set('SOUNDCLOUD', (commandsMap.get('SOUNDCLOUD') || 0) + 1);
       whatToPlay = linkFormatter(whatToPlay, SOUNDCLOUD_BASE_LINK);
+      // add formatted link to whatspMap
       whatspMap[vc.id] = whatToPlay;
       stream = await scdl.download(whatToPlay, {highWaterMark: 1 << 25});
       streamHWM = 1 << 25;
-      server.stream = stream;
+      server.streamData.stream = stream;
+      server.streamData.type = StreamType.SOUNDCLOUD;
     } else if (whatToPlay.includes(TWITCH_BASE_LINK)) {
       let twitchEncoded;
       try {
@@ -2923,6 +2912,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
         server.twitchNotif.isSent = true;
         // only send once every 3 hours
         if (!server.twitchNotif.isTimer) {
+          server.twitchNotif.isTimer = true;
           setTimeout(() => {
             server.twitchNotif.isSent = false;
             server.twitchNotif.isTimer = false;
@@ -2933,17 +2923,22 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
           if (msg.deletable) msg.delete();
         }, 11000);
       }
-      stream = await m3u8stream(twitchEncoded.url);
+      commandsMap.set('TWITCH', (commandsMap.get('TWITCH') || 0) + 1);
+      whatToPlay = linkFormatter(whatToPlay, TWITCH_BASE_LINK);
+      // add formatted link to whatspMap
+      whatspMap[vc.id] = whatToPlay;
+      server.streamData.stream = stream = await m3u8stream(twitchEncoded.url);
+      server.streamData.type = StreamType.TWITCH;
     } else {
       stream = await ytdl(urlAlt, {
         filter: (retries % 2 === 0 ? () => ['251'] : ''),
         highWaterMark: 1 << 25
       });
       streamHWM = 1 << 25;
-      streamType = 'opus';
+      encoderType = 'opus';
     }
     dispatcher = connection.play(stream, {
-      type: streamType,
+      type: encoderType,
       highWaterMark: streamHWM,
       volume: false
     });
@@ -2996,7 +2991,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
           runAutoplayCommand(message, server, vc, urlAlt, (whatToPlay === urlAlt ? server.infos : undefined));
         } else {
           if (server.collector) server.collector.stop();
-          server.leaveVCTimeout = setTimeout(() => connection.disconnect(), 1800000);
+          server.leaveVCTimeout = setTimeout(() => connection.disconnect(), LEAVE_VC_TIMEOUT);
           dispatcherMap[vc.id] = false;
         }
       }
