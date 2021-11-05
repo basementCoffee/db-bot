@@ -467,6 +467,8 @@ function initializeServer (mgid) {
     leaveVCTimeout: false,
     // the number of consecutive playback errors
     skipTimes: 0,
+    // the readable stream
+    stream: null,
     // hold a ready-to-go function in case of vc join
     seamless: {
       // the name of the type of function

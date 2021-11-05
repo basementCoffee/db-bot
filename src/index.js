@@ -8,7 +8,7 @@ const {getData} = require("spotify-url-info");
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
-const scdl = require('soundcloud-downloader').default;
+let scdl = require("scdl-core").SoundCloud.create().then(x => scdl = x);
 const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
 const {
   runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand
@@ -29,7 +29,7 @@ const {
 } = require('./utils/constants');
 
 // UPDATE HERE - before release
-let devMode = false; // default false
+let devMode = true; // default false
 const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
 let isInactive = !devMode;
 
@@ -135,7 +135,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
   }
-  server.numSinceLastEmbed += 3;
+  server.numSinceLastEmbed += 2;
   if (args[1].includes('.')) {
     if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
       args[1] = args[1].substr(1, args[1].length - 2);
@@ -2764,6 +2764,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   // the alternative url to play
   let urlAlt = whatToPlay;
   if (whatToPlay.includes(SPOTIFY_BASE_LINK)) {
+    commandsMap.set('SPOTIFY', (commandsMap.get('SPOTIFY') || 0) + 1);
     whatToPlay = linkFormatter(whatToPlay, SPOTIFY_BASE_LINK);
     let itemIndex = 0;
     if (!infos) {
@@ -2858,6 +2859,23 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     clearTimeout(server.leaveVCTimeout);
     server.leaveVCTimeout = null;
   }
+  if (server.stream) {
+    try {
+      if (!server.stream._readableState.closed) console.log(`not closed: ${server.stream._readableState.pipes.length}`);
+      if (server.stream._readableState.pipes.length > 0) {
+        for (let v of Object.keys(server.stream._readableState.pipes[0])) {
+          server.stream._readableState.pipes[v] = undefined;
+        }
+        server.stream._readableState.pipes.pop();
+        await server.stream.end();
+        await server.stream.destroy();
+        server.stream = null;
+        if (whatToPlay !== whatspMap[vc.id]) return;
+      }
+    } catch (e) {
+      console.log('Error: attempt stream close - ', e);
+    }
+  }
   let dispatcher;
   try {
     let playbackTimeout;
@@ -2866,8 +2884,12 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     let streamHWM;
     // noinspection JSCheckFunctionSignatures
     if (whatToPlay.includes(SOUNDCLOUD_BASE_LINK)) {
+      commandsMap.set('SOUND_CLOUD', (commandsMap.get('SOUND_CLOUD') || 0) + 1);
       whatToPlay = linkFormatter(whatToPlay, SOUNDCLOUD_BASE_LINK);
-      stream = await scdl.download(whatToPlay);
+      whatspMap[vc.id] = whatToPlay;
+      stream = await scdl.download(whatToPlay, {highWaterMark: 1 << 25});
+      streamHWM = 1 << 25;
+      server.stream = stream;
     } else {
       stream = await ytdl(urlAlt, {
         filter: (retries % 2 === 0 ? () => ['251'] : ''),
