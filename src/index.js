@@ -2863,6 +2863,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     let playbackTimeout;
     let stream;
     let streamType;
+    let streamHWM;
     // noinspection JSCheckFunctionSignatures
     if (whatToPlay.includes(SOUNDCLOUD_BASE_LINK)) {
       whatToPlay = linkFormatter(whatToPlay, SOUNDCLOUD_BASE_LINK);
@@ -2872,12 +2873,13 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
         filter: (retries % 2 === 0 ? () => ['251'] : ''),
         highWaterMark: 1 << 25
       });
+      streamHWM = 1 << 25;
       streamType = 'opus';
     }
     dispatcher = connection.play(stream, {
       type: streamType,
-      volume: false,
-      highWaterMark: 1 << 25
+      highWaterMark: streamHWM,
+      volume: false
     });
     dispatcherMap[vc.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
