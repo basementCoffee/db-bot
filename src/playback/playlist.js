@@ -1,6 +1,7 @@
 const {getTracks} = require('spotify-url-info');
 const ytpl = require('ytpl');
 const {MAX_QUEUE_S, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK} = require('../utils/constants');
+const {linkFormatter} = require('../utils/utils');
 // should be completed before first query
 let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
 
@@ -79,7 +80,7 @@ async function getPlaylistArray (playlistUrl, type) {
     case 'yt':
       return (await ytpl(await ytpl.getPlaylistID(playlistUrl), {pages: 1}));
     case 'sc':
-      return (await scpl.playlists.getPlaylist(playlistUrl)).tracks;
+      return (await scpl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
     default:
       console.log(`Error: invalid linkType argument within addPlaylistToQueue`);
       throw `Error: Incorrect type provided, provided ${type}`;
