@@ -23,8 +23,10 @@ const dispatcherMapStatus = new Map();
 const SPOTIFY_BASE_LINK = 'open.spotify.com';
 // soundcloud.com
 const SOUNDCLOUD_BASE_LINK = 'soundcloud.com';
+// twitch.tv
+const TWITCH_BASE_LINK = 'twitch.tv';
 
 module.exports = {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK
 };

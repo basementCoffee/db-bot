@@ -9,6 +9,8 @@ const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 let scdl = require("scdl-core").SoundCloud.create().then(x => scdl = x);
+const m3u8stream = require('m3u8stream');
+const twitch = require('twitch-m3u8');
 const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
 const {
   runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand
@@ -25,7 +27,7 @@ const {runLyricsCommand} = require('./playback/lyrics');
 const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 const {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK
 } = require('./utils/constants');
 
 // UPDATE HERE - before release
@@ -276,6 +278,7 @@ async function runCommandCases (message) {
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed++;
   }
+  // the server prefix
   let prefixString = server.prefix;
   if (!prefixString) {
     await updateServerPrefix(server, mgid);
@@ -868,6 +871,19 @@ async function runCommandCases (message) {
     case 'del':
     case 'delete':
       runDeleteItemCommand(message, args[1], mgid, true).catch((e) => console.log(e));
+      break;
+    case 'soundcloud':
+      message.channel.send(`*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`);
+      break;
+    case 'twitch':
+      if (!args[1]) return message.channel.send(`*no channel name provided \` Ex: ${prefixString}twitch [channel]\`*`);
+      if (message.member.voice && message.member.voice.channel) {
+        args[1] = `https://www.${TWITCH_BASE_LINK}/${args[1]}`;
+        server.queue.unshift(args[1]);
+        playLinkToVC(message, args[1], message.member.voice.channel, server);
+      } else {
+        message.channel.send('*must be in a voice channel*');
+      }
       break;
     // test remove database entries
     case 'grm':
@@ -2731,7 +2747,7 @@ async function updateVoiceState (update) {
 }
 
 /**
- *  The play function. Plays a given link to the voice channel.
+ *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
  * @param {*} message The message that triggered the bot.
  * @param {string} whatToPlay The link of the song to play.
  * @param vc The voice channel to play the song in.
@@ -2869,12 +2885,12 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
         server.stream._readableState.pipes.pop();
         await server.stream.end();
         await server.stream.destroy();
-        server.stream = null;
         if (whatToPlay !== whatspMap[vc.id]) return;
       }
     } catch (e) {
       console.log('Error: attempt stream close - ', e);
     }
+    server.stream = null;
   }
   let dispatcher;
   try {
@@ -2890,6 +2906,34 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       stream = await scdl.download(whatToPlay, {highWaterMark: 1 << 25});
       streamHWM = 1 << 25;
       server.stream = stream;
+    } else if (whatToPlay.includes(TWITCH_BASE_LINK)) {
+      let twitchEncoded;
+      try {
+        twitchEncoded = (await twitch.getStream(whatToPlay.substr(whatToPlay.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, '')));
+        if (twitchEncoded.length > 0) {
+          twitchEncoded = twitchEncoded[twitchEncoded.length - 1];
+        } else twitchEncoded = undefined;
+      } catch (e) {}
+      if (!twitchEncoded) {
+        message.channel.send('*could not find live twitch stream*');
+        return skipLink(message, vc, false, server, true);
+      }
+      // if to send notification of ~20s loading delay
+      if (!server.twitchNotif.isSent) {
+        server.twitchNotif.isSent = true;
+        // only send once every 3 hours
+        if (!server.twitchNotif.isTimer) {
+          setTimeout(() => {
+            server.twitchNotif.isSent = false;
+            server.twitchNotif.isTimer = false;
+          }, 10800000);
+        }
+        const msg = await message.channel.send('`may take up to 20s to get livestream`');
+        setTimeout(() => {
+          if (msg.deletable) msg.delete();
+        }, 11000);
+      }
+      stream = await m3u8stream(twitchEncoded.url);
     } else {
       stream = await ytdl(urlAlt, {
         filter: (retries % 2 === 0 ? () => ['251'] : ''),

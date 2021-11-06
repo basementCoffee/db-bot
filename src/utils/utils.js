@@ -3,7 +3,7 @@ const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const spdl = require('spdl-core');
 const ytpl = require('ytpl');
-const {servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK} = require('./constants');
+const {servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK} = require('./constants');
 const scdl = require('soundcloud-downloader').default;
 
 /**
@@ -93,6 +93,15 @@ async function createEmbed (url, infos) {
       .addField('Duration', formatDuration(infos.duration || 0), true)
       .setThumbnail(infos.artwork_url || (infos.user && infos.user.avatar_url ? infos.user.avatar_url : null));
     timeMS = infos.duration || infos.full_duration || 'N/A';
+  } else if (url.includes(TWITCH_BASE_LINK)) {
+    const artist = url.substr(url.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, '');
+    embed = new MessageEmbed()
+      .setTitle(`${artist}'s stream`)
+      .setURL(url)
+      .setColor('#8a2aef')
+      .addField(`Channel`, artist, true)
+      .addField('Duration', 'live', true)
+      .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg');
   } else {
     if (!infos) infos = await ytdl.getBasicInfo(url);
     let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
@@ -176,17 +185,18 @@ function verifyUrl (url) {
   // noinspection JSUnresolvedFunction
   return (url.includes(SPOTIFY_BASE_LINK) ? spdl.validateURL(linkFormatter(url, SPOTIFY_BASE_LINK)) :
     (url.includes(SOUNDCLOUD_BASE_LINK) ? scdl.isValidUrl(linkFormatter(url, SOUNDCLOUD_BASE_LINK)) :
-      ytdl.validateURL(url)) && !verifyPlaylist(url));
+      (ytdl.validateURL(url) || url.includes(TWITCH_BASE_LINK))) && !verifyPlaylist(url));
 }
 
 /**
- * Given a link, formats the link with https://[index of suffix to string end].
+ * Given a link, formats the link with https://[index of base -> end].
+ * Ex: url = m.youtube.com/test & suffix = youtube.com --> https://youtube.com/test
  * @param url {string} The link to format.
- * @param suffix {string}  The starting of the remainder of the link to always add after the prefix.
+ * @param baseLink {string}  The starting of the remainder of the link to always add after the prefix.
  * @returns {string} The formatted URL.
  */
-function linkFormatter (url, suffix) {
-  return `https://${url.substr(url.indexOf(suffix))}`;
+function linkFormatter (url, baseLink) {
+  return `https://${url.substr(url.indexOf(baseLink))}`;
 }
 
 /**
@@ -288,12 +298,12 @@ async function getTitle (url, cutoff) {
  */
 function getHelpList (prefixString, numOfPages, version) {
   const page1 =
-    '[NEW] - ***added support for soundcloud*** *(Nov. 2021)*\n\n' +
+    '***[NEW]** - added support for SoundCloud & Twitch (Nov. 2021)*\n\n' +
     '--------------  **Music Commands** --------------\n\`' +
     prefixString +
     'play [word] \` Searches YouTube and plays *[p]* \n\`' +
     prefixString +
-    'play [link] \` Play YouTube/Spotify link *[p]* \n\`' +
+    'play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n\`' +
     prefixString +
     'playnow [word/link] \` Plays now, overrides queue *[pn]*\n\`' +
     prefixString +
@@ -469,6 +479,11 @@ function initializeServer (mgid) {
     skipTimes: 0,
     // the readable stream
     stream: null,
+    // if a twitch notification was sent
+    twitchNotif: {
+      isSent: false,
+      isTimer: false
+    },
     // hold a ready-to-go function in case of vc join
     seamless: {
       // the name of the type of function
