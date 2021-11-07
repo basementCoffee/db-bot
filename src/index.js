@@ -31,7 +31,7 @@ const {
 } = require('./utils/constants');
 
 // UPDATE HERE - before release
-let devMode = true; // default false
+let devMode = false; // default false
 const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
 let isInactive = !devMode;
 
