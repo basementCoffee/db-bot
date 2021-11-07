@@ -201,7 +201,7 @@ function linkFormatter (url, baseLink) {
 /**
  * Returns true if the given url is a valid playlist link.
  * @param url The url to verify.
- * @returns {StreamType | boolean} A StreamType or false.
+ * @returns {string | boolean} A StreamType or false.
  */
 function verifyPlaylist (url) {
   try {
@@ -545,6 +545,24 @@ function endStream (server) {
 }
 
 /**
+ * Un-shifts the provided link to the server's queue.
+ * @param server The server.
+ * @param url {string} The url to add.
+ */
+function unshiftQueue (server, url) {
+  server.queue.unshift(url);
+}
+
+/**
+ * Pushes the provided link to the server's queue.
+ * @param server The server.
+ * @param url {string} The url to add.
+ */
+function pushQueue (server, url) {
+  server.queue.push(url);
+}
+
+/**
  * Sets seamless listening on voice channel error. Seamless listening allows the
  * bot to temporarily save a wanted command until voice channel join.
  * @param server The server.
@@ -563,5 +581,5 @@ function setSeamless (server, fName, args, message) {
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
-  initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream
+  initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue
 };

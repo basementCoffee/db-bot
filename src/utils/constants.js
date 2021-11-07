@@ -27,7 +27,10 @@ const SOUNDCLOUD_BASE_LINK = 'soundcloud.com';
 const TWITCH_BASE_LINK = 'twitch.tv';
 // 45 minutes
 const LEAVE_VC_TIMEOUT = 2700000;
-// different sources of streams
+/**
+ * Enum - Acceptable link sources.
+ * @type {{TWITCH: string, SOUNDCLOUD: string, SPOTIFY: string, YOUTUBE: string}}
+ */
 const StreamType = {
   SOUNDCLOUD: 'sc',
   SPOTIFY: 'sp',

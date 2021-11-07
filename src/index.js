@@ -18,7 +18,7 @@ const {
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
-  runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream
+  runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -147,19 +147,15 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   } else return playFromWord(message, args, sheetName, server, mgid, true);
   // places the currently playing into the queue history if played long enough
   adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
+  // the number of added links
   let pNums = 0;
-  // known to be a valid url
-  if (args[1].includes(SPOTIFY_BASE_LINK)) {
-    args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
-    await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SPOTIFY, true);
-  } else if (ytpl.validateID(args[1])) {
-    await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.YOUTUBE, true);
-  } else if (args[1].includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(args[1], SOUNDCLOUD_BASE_LINK))) {
-    args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-    await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SOUNDCLOUD, true);
-  } else {
-    // push to queue
-    server.queue.unshift(args[1]);
+  // counter to iterate over all args - excluding args[0]
+  let linkItem = args.length - 1;
+  while (linkItem > 0) {
+    let url = args[linkItem];
+    if (url[url.length - 1] === ',') url = url.replace(/,/, '');
+    pNums += await addLinkToQueue(url, message, server, mgid, true, unshiftQueue);
+    linkItem--;
   }
   message.channel.send('*playing now*');
   playLinkToVC(message, server.queue[0], voiceChannel, server, 0).then();
@@ -202,33 +198,20 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1])))
       return playFromWord(message, args, sheetName, server, mgid, false);
   } else return playFromWord(message, args, sheetName, server, mgid, false);
+  // valid link
   let queueWasEmpty = false;
   if (server.queue.length < 1) {
     queueWasEmpty = true;
   }
+  // the number of added links
   let pNums = 0;
-  // known to be a valid url
-  if (args[1].includes(SPOTIFY_BASE_LINK)) {
-    args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SPOTIFY);
-  } else if (ytpl.validateID(args[1])) {
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.YOUTUBE);
-  } else if (args[1].includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(args[1], SOUNDCLOUD_BASE_LINK))) {
-    args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-    pNums = await addPlaylistToQueue(message, server, mgid, pNums, args[1], StreamType.SOUNDCLOUD);
-  } else {
-    pNums = 1;
-    while (args[pNums]) {
-      let linkZ = args[pNums];
-      if (linkZ.substring(linkZ.length - 1) === ',') {
-        linkZ = linkZ.substring(0, linkZ.length - 1);
-      }
-      // push to queue
-      server.queue.push(args[pNums]);
-      pNums += 1;
-    }
-    // make pNums the number of added links
-    pNums--;
+  // counter to iterate over remaining link args
+  let linkItem = 1;
+  while (args[linkItem]) {
+    let url = args[linkItem];
+    if (url[url.length - 1] === ',') url = url.replace(/,/, '');
+    pNums += await addLinkToQueue(args[linkItem], message, server, mgid, false, pushQueue);
+    linkItem++;
   }
   // if queue was empty then play
   if (queueWasEmpty) {
@@ -236,6 +219,31 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   } else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
     await updateActiveEmbed(server);
+  }
+}
+
+/**
+ * Adds the link to the queue. Also works for playlist links.
+ * @param url The link to add to the queue.
+ * @param message The message metadata.
+ * @param server The server.
+ * @param mgid The message guild id.
+ * @param addToFront {boolean} If to add to the front.
+ * @param queueFunction {Function} A function that adds a given link to the server queue.
+ * @returns {Promise<Number>} The number of items added.
+ */
+async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunction) {
+  if (url.includes(SPOTIFY_BASE_LINK)) {
+    url = linkFormatter(url, SPOTIFY_BASE_LINK);
+    return await addPlaylistToQueue(message, server, mgid, 0, url, StreamType.SPOTIFY, addToFront);
+  } else if (ytpl.validateID(url)) {
+    return await addPlaylistToQueue(message, server, mgid, 0, url, StreamType.YOUTUBE, addToFront);
+  } else if (url.includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
+    url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
+    return await addPlaylistToQueue(message, server, mgid, 0, url, StreamType.SOUNDCLOUD, addToFront);
+  } else {
+    queueFunction(server, url);
+    return 1;
   }
 }
 
@@ -1713,7 +1721,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
         args[2] = args[2].substr(1, args[2].length - 2);
       }
       if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
-        return message.channel.send('You can only add links to the keys list. (Names cannot be more than one word)');
+        return message.channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString}add key [link]\``);
       if (args[2].includes(SPOTIFY_BASE_LINK)) args[2] = linkFormatter(args[2], SPOTIFY_BASE_LINK);
       else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
       runAddCommand(args, message, sheetName, printMsgToChannel);
@@ -1975,6 +1983,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
       let otherSheet;
       let first = true;
       while (args[dbAddInt]) {
+        args[dbAddInt] = args[dbAddInt].replace(/,/, '');
         tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
         if (tempUrl) {
           // push to queue
@@ -2450,10 +2459,9 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     addAll = true;
     numOfTimes = cdb.size; // number of times is now the size of the db
   }
-  const serverQueueLength = server.queue.length;
   // mutate numberOfTimes to not exceed MAX_QUEUE_S
-  if (numOfTimes + serverQueueLength > MAX_QUEUE_S) {
-    numOfTimes = MAX_QUEUE_S - serverQueueLength;
+  if (numOfTimes + server.queue.length > MAX_QUEUE_S) {
+    numOfTimes = MAX_QUEUE_S - server.queue.length;
     if (numOfTimes < 1) return message.channel.send('*max queue size has been reached*');
     addAll = false; // no longer want to add all
   }
@@ -2468,20 +2476,25 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
       else tempArray = [...valArray];
       // continues until numOfTimes is 0 or the tempArray is completed
       let url;
-      while (tempArray.length > 0 && (i < numOfTimes || addAll)) {
+      while (tempArray.length > 0 && (i < numOfTimes)) {
         const randomNumber = Math.floor(Math.random() * tempArray.length);
         url = tempArray[randomNumber];
         // if it is a playlist, un-package the playlist
         if (verifyPlaylist(url)) {
           // the number of items added to tempArray
           const addedItems = await getPlaylistItems(url, tempArray);
-          if (isPlaylist) numOfTimes = addedItems;
-          else if (addAll) {
-            if ((serverQueueLength + numOfTimes) > MAX_QUEUE_S) {
+          if (isPlaylist || addAll) {
+            if (addAll) numOfTimes += addedItems - 1; // subtract the playlist link
+            else numOfTimes = addedItems; // numOfTimes is new definitive value
+            if ((server.queue.length + numOfTimes - i) > MAX_QUEUE_S) {
               // reduce numOfTimes if greater than MAX_QUEUE_S
-              numOfTimes = Math.abs(MAX_QUEUE_S - serverQueueLength);
-              addAll = false;
-            } else numOfTimes += addedItems - 1;
+              // add i because numOfTimes is in respect to i, which is num added so far
+              numOfTimes = Math.max(MAX_QUEUE_S + i - server.queue.length, 0);
+            }
+            if (server.queue[0] === 'filler link') {
+              server.queue.shift();
+              numOfTimes++;
+            }
           }
         } else if (url) {
           // add url to queue
@@ -2511,7 +2524,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else if (queueWasEmpty && (server.queue.length <= (numOfTimes + 1) || addAll)) {
     // remove the filler string
-    server.queue.shift();
+    if (server.queue[0] === 'filler link') server.queue.shift();
     await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else {
     message.channel.send('*added ' + numOfTimes + ' to queue*');
@@ -2522,7 +2535,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
 }
 
 /**
- * Grabs all of the keys/names from the database
+ * Grabs all the keys/names from the database.
  * @param {*} message The message trigger
  * @param prefixString The character of the prefix
  * @param {*} sheetName The name of the sheet to retrieve
@@ -2532,10 +2545,9 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
  */
 async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceChannel, user) {
   gsrun('A', 'B', sheetName).then((xdb) => {
-    let keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
-    let keyArraySorted = keyArrayUnsorted.map(x => x).sort();
-    let sortByRecent = true;
-    let dbName = '';
+    const keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
+    const keyArraySorted = keyArrayUnsorted.map(x => x).sort();
+    // the keyArray to generate
     let keyArray = keyArraySorted;
     if (keyArray.length < 1) {
       let emptyDBMessage;
@@ -2547,6 +2559,8 @@ async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceC
       message.channel.send('**' + emptyDBMessage + 'music list is empty.**\n*Add a song by putting a word followed by a link.' +
         '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
     } else {
+      let sortByRecent = true;
+      let dbName = '';
       /**
        * Generates the keys list embed
        * @param sortByRecent True if to return an array sorted by date added
@@ -2557,7 +2571,7 @@ async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceC
         else keyArray = keyArraySorted;
         let s = '';
         for (const key in keyArray) {
-          s = s + ', ' + keyArray[key];
+          s = `${s}, ${keyArray[key]}`;
         }
         s = s.substr(1);
         let keysMessage = '';
@@ -2578,15 +2592,15 @@ async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceC
         } else if (!cmdType) {
           keysMessage += '**Server keys ** ';
           dbName = "server's keys";
-          keyEmbedColor = '#b35536';
+          keyEmbedColor = '#90d5cf';
         }
         const embedKeysMessage = new MessageEmbed();
         embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
           .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
         return embedKeysMessage;
       };
-      const server = servers[message.guild.id];
       message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {
+        const server = servers[message.guild.id];
         sentMsg.react('❔').then(() => sentMsg.react('🔀').then(sentMsg.react('🔄')));
         const filter = (reaction, user) => {
           return user.id !== botID && ['❔', '🔄', '🔀'].includes(reaction.emoji.name);
@@ -2781,8 +2795,37 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
   server.infos = infos;
   // the alternative url to play
   let urlAlt = whatToPlay;
+  let connection = server.connection;
+  if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
+    try {
+      connection = await vc.join();
+      await new Promise(res => setTimeout(res, 110));
+    } catch (e) {
+      const eMsg = e.toString();
+      if (eMsg.includes('it is full')) message.channel.send('*cannot join voice channel, it is full*');
+      else if (eMsg.includes('VOICE_JOIN_CHANNEL')) message.channel.send('*permissions error: cannot join voice channel*');
+      else {
+        message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
+        console.log(e);
+      }
+      return;
+    }
+    if (vc.members.size > 6 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
+      message.channel.send('Try the \'dj\' command to become a DJ.');
+      server.djMessageDate = Date.now();
+    }
+    if (startUpMessage.length > 1 && !server.startUpMessage) {
+      server.startUpMessage = true;
+      message.channel.send(startUpMessage);
+    }
+    server.connection = connection;
+    connection.voice.setSelfDeaf(true).then();
+  }
+  if (server.leaveVCTimeout) {
+    clearTimeout(server.leaveVCTimeout);
+    server.leaveVCTimeout = null;
+  }
   if (whatToPlay.includes(SPOTIFY_BASE_LINK)) {
-    commandsMap.set('SPOTIFY', (commandsMap.get('SPOTIFY') || 0) + 1);
     whatToPlay = linkFormatter(whatToPlay, SPOTIFY_BASE_LINK);
     let itemIndex = 0;
     if (!infos) {
@@ -2835,35 +2878,9 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     if (search.items[itemIndex]) urlAlt = search.items[itemIndex].url;
     else {
       message.channel.send(`could not find <${whatToPlay}>`);
-      runSkipCommand(message, vc, server, 1, false, true, message.member);
+      skipLink(message, vc, false, server, true);
       return;
     }
-  }
-  let connection = server.connection;
-  if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
-    try {
-      connection = await vc.join();
-      await new Promise(res => setTimeout(res, 110));
-    } catch (e) {
-      const eMsg = e.toString();
-      if (eMsg.includes('it is full')) message.channel.send('*cannot join voice channel, it is full*');
-      else if (eMsg.includes('VOICE_JOIN_CHANNEL')) message.channel.send('*permissions error: cannot join voice channel*');
-      else {
-        message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
-        console.log(e);
-      }
-      return;
-    }
-    if (vc.members.size > 6 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
-      message.channel.send('Try the \'dj\' command to become a DJ.');
-      server.djMessageDate = Date.now();
-    }
-    if (startUpMessage.length > 1 && !server.startUpMessage) {
-      server.startUpMessage = true;
-      message.channel.send(startUpMessage);
-    }
-    server.connection = connection;
-    connection.voice.setSelfDeaf(true).then();
   }
   whatspMap[vc.id] = whatToPlay;
   // remove previous embed buttons
@@ -2872,10 +2889,6 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     server.numSinceLastEmbed = 0;
     server.currentEmbed.delete();
     server.currentEmbed = null;
-  }
-  if (server.leaveVCTimeout) {
-    clearTimeout(server.leaveVCTimeout);
-    server.leaveVCTimeout = null;
   }
   if (server.streamData.stream) endStream(server);
   if (whatToPlay !== whatspMap[vc.id]) return;
