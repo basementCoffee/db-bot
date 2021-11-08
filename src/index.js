@@ -236,7 +236,7 @@ async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunc
   if (url.includes(SPOTIFY_BASE_LINK)) {
     url = linkFormatter(url, SPOTIFY_BASE_LINK);
     return await addPlaylistToQueue(message, server, mgid, 0, url, StreamType.SPOTIFY, addToFront);
-  } else if (ytpl.validateID(url)) {
+  } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
     return await addPlaylistToQueue(message, server, mgid, 0, url, StreamType.YOUTUBE, addToFront);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
     url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
