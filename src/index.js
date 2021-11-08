@@ -341,7 +341,7 @@ async function runCommandCases (message) {
       const congratsLink = (message.content.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
       if (server.queue[0] !== congratsLink) server.queue.unshift(congratsLink);
       else return;
-      if (message.member.voice && message.member.voice.channel) {
+      if (message.member.voice?.channel) {
         const vc = message.member.voice.channel;
         setTimeout(() => {
           if (whatspMap[vc.id] === congratsLink && parseInt(dispatcherMap[vc.id].streamTime) > 18000)
@@ -896,7 +896,7 @@ async function runCommandCases (message) {
       break;
     case 'twitch':
       if (!args[1]) return message.channel.send(`*no channel name provided \` Ex: ${prefixString}twitch [channel]\`*`);
-      if (message.member.voice && message.member.voice.channel) {
+      if (message.member.voice?.channel) {
         args[1] = `https://www.${TWITCH_BASE_LINK}/${args[1]}`;
         server.queue.unshift(args[1]);
         playLinkToVC(message, args[1], message.member.voice.channel, server);
@@ -1100,7 +1100,7 @@ async function runCommandCases (message) {
         const randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
         message.channel.send('Assuming ' + numToCheck + ' in total. Your number is ' + randomInt2 + '.');
       } else {
-        if (message.member && message.member.voice && message.member.voice.channel) {
+        if (message.member?.voice?.channel) {
           const numToCheck = message.member.voice.channel.members.size;
           if (numToCheck < 1) {
             return message.channel.send('Need at least 1 person in a voice channel.');
@@ -1610,8 +1610,7 @@ function dmHandler (message, messageContent) {
  */
 
 function runPauseCommand (message, actionUser, server, noErrorMsg, force, noPrintMsg) {
-  if (actionUser.voice && message.guild.voice && message.guild.voice.channel &&
-    dispatcherMap[actionUser.voice.channel.id]) {
+  if (actionUser.voice && message.guild.voice?.channel && dispatcherMap[actionUser.voice.channel.id]) {
     if (server.dictator && actionUser.id !== server.dictator.id)
       return message.channel.send('only the dictator can pause');
     if (server.voteAdmin.length > 0) {
@@ -1651,8 +1650,7 @@ function runPauseCommand (message, actionUser, server, noErrorMsg, force, noPrin
  * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
  */
 function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrintMsg) {
-  if (actionUser.voice && message.guild.voice && message.guild.voice.channel &&
-    dispatcherMap[actionUser.voice.channel.id]) {
+  if (actionUser.voice && message.guild.voice?.channel && dispatcherMap[actionUser.voice.channel.id]) {
     if (server.dictator && actionUser.id !== server.dictator.id)
       return message.channel.send('only the dictator can play');
     if (server.voteAdmin.length > 0) {
@@ -1818,8 +1816,8 @@ function runQueueCommand (message, mgid, noErrorMsg) {
     if (startingIndex + 11 < serverQueue.length) {
       queueMsgEmbed.setFooter('embed displays 10 at a time');
     }
-    if (msg) msg.delete();
-    if (sentMsg && sentMsg.deletable) {
+    if (msg?.deletable) msg.delete();
+    if (sentMsg?.deletable) {
       await sentMsg.edit(queueMsgEmbed);
     } else {
       sentMsg = await message.channel.send(queueMsgEmbed);
@@ -2091,7 +2089,7 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
             runDatabasePlayCommand(args, message, `p${message.member.id}`, playRightNow, false, server);
             return true;
           }
-        } else if (ss && ss.length > 0) {
+        } else if (ss?.length > 0) {
           message.channel.send("Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + '*');
           return true;
         } else {
@@ -2361,12 +2359,12 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
       }
     });
     collector.on('end', () => {
-      if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
+      if (playlistMsg?.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
       message.reactions.removeAll();
       server.searchReactionTimeout = null;
     });
     collector.on('remove', (reaction, user) => {
-      if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
+      if (playlistMsg?.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
       if (!notActive && reactionCollector2.id === user.id) {
         reactionCollector2 = false;
         if (msg2.deletable) msg2.delete();
@@ -2425,7 +2423,7 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
     if (isPlaylist) {
       addRandomToQueue(message, origArg, xdb.congratsDatabase, server, true, addToFront).then();
     } else {
-      if (num && num > MAX_QUEUE_S) {
+      if (num > MAX_QUEUE_S) {
         message.channel.send('*max limit for random is ' + MAX_QUEUE_S + '*');
         num = MAX_QUEUE_S;
       }
@@ -2528,7 +2526,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     if (isPlaylist) return;
     const rn = Math.floor(Math.random() * valArray.length);
     sentMsg = await sentMsg;
-    if (sentMsg && sentMsg.deletable) sentMsg.delete();
+    if (sentMsg?.deletable) sentMsg.delete();
     if (verifyPlaylist(valArray[rn])) {
       return message.channel.send('There was an error.');
     }
@@ -2545,7 +2543,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     await updateActiveEmbed(server);
   }
   sentMsg = await sentMsg;
-  if (sentMsg && sentMsg.deletable) sentMsg.delete();
+  if (sentMsg?.deletable) sentMsg.delete();
 }
 
 /**
@@ -2729,7 +2727,7 @@ async function updateVoiceState (update) {
       server.infos = null;
       server.autoplay = false;
       server.currentEmbedLink = null;
-      if (server.currentEmbed && server.currentEmbed.reactions) {
+      if (server.currentEmbed?.reactions) {
         server.collector.stop();
         server.currentEmbed = null;
       }
@@ -2744,7 +2742,7 @@ async function updateVoiceState (update) {
       }
     });
   } else if (botInVC(update)) {
-    if (update.channel && update.channel.members.filter(x => !x.user.bot).size < 1) {
+    if (update.channel?.members.filter(x => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
       if (dispatcherMap[update.channel.id]) leaveVCInt = 420000;
@@ -3022,7 +3020,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
           dispatcherMap[vc.id] = false;
         }
       }
-      if (server && server.followUpMessage) {
+      if (server?.followUpMessage) {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
       }
@@ -3443,7 +3441,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
       voiceChannel.leave();
     }, 600);
   } else {
-    if (server.currentEmbed && server.currentEmbed.reactions) {
+    if (server.currentEmbed?.reactions) {
       server.collector.stop();
     }
     dispatcherMap[voiceChannel.id] = false;
@@ -3510,8 +3508,12 @@ function shutdown (type) {
     console.log('shutting down...');
     isInactive = true;
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get(CH.process).send(`shutting down: '${process.pid}' (${type})`);
-    if (bot.voice.connections.size > 0) {
+    try {
+      bot.channels.cache.get(CH.process).send(`shutting down: '${process.pid}' (${type})`);
+    } catch (e) {}
+    const activeCSize = bot.voice.connections.size;
+    if (activeCSize > 0) {
+      console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? 's' : ''}`);
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get(CH.process).send('=gzz ' + process.pid);
       if (Object.keys(servers).length > 0) {
@@ -3528,8 +3530,9 @@ function shutdown (type) {
           x.disconnect();
         });
       }
-    }
-    setTimeout(() => process.exit(), 4500);
+      setTimeout(() => process.exit(), 4500);
+    } else setTimeout(() => process.exit(), 1500);
+    process.exitCode = 0;
   };
 }
 
@@ -3538,7 +3541,10 @@ let checkActiveInterval = null;
 let resHandlerTimeout = null;
 // A message for users on first VC join
 let startUpMessage = '';
-// login to discord
+
+// The main method
 (async () => {
+  // login to discord
   await bot.login(token);
+  if (bot.user.id !== botID) throw new Error('Invalid botID');
 })();

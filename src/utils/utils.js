@@ -53,7 +53,7 @@ function convertYTFormatToMS (durationArray) {
  */
 function botInVC (message) {
   try {
-    return message.guild.voice && message.guild.voice.channel;
+    return message.guild.voice?.channel;
   } catch (e) {
     return false;
   }
@@ -90,7 +90,7 @@ async function createEmbed (url, infos) {
       .setColor('#ee4900')
       .addField(`Artist`, artist, true)
       .addField('Duration', formatDuration(infos.duration || 0), true)
-      .setThumbnail(infos.artwork_url || (infos.user && infos.user.avatar_url ? infos.user.avatar_url : null));
+      .setThumbnail(infos.artwork_url || infos.user?.avatar_url || null);
     timeMS = infos.duration || infos.full_duration || 'N/A';
   } else if (url.includes(TWITCH_BASE_LINK)) {
     const artist = url.substr(url.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, '');
@@ -235,7 +235,7 @@ function resetSession (server) {
  * @param server The server to use.
  */
 function adjustQueueForPlayNow (dsp, server) {
-  if (server.queue[0] && dsp && dsp.streamTime && (dsp.streamTime > 21000)) {
+  if (server.queue[0] && dsp?.streamTime && (dsp.streamTime > 21000)) {
     server.queueHistory.push(server.queue.shift());
   }
 }

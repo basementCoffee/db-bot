@@ -1,7 +1,7 @@
 const ytdl = require('ytdl-core-discord');
 const {botInVC} = require('../utils/utils');
 const {getData} = require('spotify-url-info');
-const {botID} = require('../utils/constants');
+const {botID, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK} = require('../utils/constants');
 // imports for YouTube captions
 const https = require('https');
 const xml2js = require('xml2js');
@@ -22,6 +22,8 @@ function runLyricsCommand (message, mgid, args, server) {
   if ((!botInVC(message) || !server.queue[0]) && !args[1]) {
     return message.channel.send('must be playing a song');
   }
+  if (server.queue[0].includes(SOUNDCLOUD_BASE_LINK) || server.queue[0].includes(TWITCH_BASE_LINK))
+    return message.channel.send('lyrics command does not support this stream type');
   message.channel.send('retrieving lyrics...').then(async sentMsg => {
     server.numSinceLastEmbed += 2;
     let searchTerm;
