@@ -18,7 +18,7 @@ const {
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
-  runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue
+  runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -483,30 +483,40 @@ async function runCommandCases (message) {
     case 'random':
     case 'rand':
     case 'r':
+      runRandomToQueue(args[1] || 1, message, mgid, server);
+      break;
     case 'shuffle':
       runRandomToQueue(args[1], message, mgid, server);
       break;
     case 'rn':
     case 'randnow':
     case 'randomnow':
+      runRandomToQueue(args[1] || 1, message, mgid, server, true);
+      break;
     case 'shufflen':
     case 'shufflenow':
       runRandomToQueue(args[1], message, mgid, server, true);
       break;
     // test purposes - random command
-    case 'gshuffle':
     case 'grand':
     case 'gr':
+      runRandomToQueue(args[1] || 1, message, 'entries', server);
+      break;
+    case 'gshuffle':
       runRandomToQueue(args[1], message, 'entries', server);
       break;
     // .mr is the personal random that works with the normal queue
-    case 'mshuffle':
     case 'mrand':
     case 'mr':
+      runRandomToQueue(args[1] || 1, message, `p${message.member.id}`, server);
+      break;
+    case 'mshuffle':
       runRandomToQueue(args[1], message, `p${message.member.id}`, server);
       break;
     case 'mrn':
     case 'mrandnow':
+      runRandomToQueue(args[1] || 1, message, `p${message.member.id}`, server, true);
+      break;
     case 'mshufflen':
     case 'mshufflenow':
       runRandomToQueue(args[1], message, `p${message.member.id}`, server, true);
@@ -1017,7 +1027,7 @@ async function runCommandCases (message) {
       else message.channel.send("restarting the bot... (may only shutdown)").then(() => {shutdown('USER')();});
       break;
     case 'gzid':
-      message.channel.send('g: ' + message.guild.id + ', b: ' + +', m: ' + message.member.id);
+      message.channel.send(`g: ${message.guild.id}, b: ${bot.user.id}, m: ${message.member.id}`);
       break;
     case 'gzsm':
       if (args[1]) {
@@ -2373,7 +2383,7 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
  * @param server The server playback metadata
  * @param addToFront Optional - true if to add to the front
  */
-function runRandomToQueue (num = 1, message, sheetName, server, addToFront = false) {
+function runRandomToQueue (num, message, sheetName, server, addToFront = false) {
   if (!message.member.voice.channel) {
     (async () => {
       const sentMsg = await message.channel.send('must be in a voice channel to play random');
@@ -2387,7 +2397,7 @@ function runRandomToQueue (num = 1, message, sheetName, server, addToFront = fal
     return message.channel.send('only the dictator can randomize to queue');
   let isPlaylist;
   // holds the string
-  const numCpy = num;
+  const origArg = num;
   // convert addToFront into a number for addRandomToQueue
   try {
     num = parseInt(num);
@@ -2401,15 +2411,18 @@ function runRandomToQueue (num = 1, message, sheetName, server, addToFront = fal
   server.numSinceLastEmbed++;
   // in case of force disconnect
   if (!botInVC(message)) resetSession(server);
-  else if (server.queue.length >= MAX_QUEUE_S) {
+  else if (server.queue.length >= MAX_QUEUE_S && origArg) {
     return message.channel.send('*max queue size has been reached*');
   }
+  // addToFront parameter must be a number for addRandomToQueue
   if (addToFront) addToFront = 1;
-  if (numCpy.toString().includes('.'))
-    return addRandomToQueue(message, numCpy, undefined, server, true, addToFront);
+  // if no arguments, assumes that the active queue should be shuffled
+  if (!origArg) return shuffleQueue(message, server.queue);
+  if (origArg.toString().includes('.'))
+    return addRandomToQueue(message, origArg, undefined, server, true, addToFront);
   gsrun('A', 'B', sheetName).then((xdb) => {
     if (isPlaylist) {
-      addRandomToQueue(message, numCpy, xdb.congratsDatabase, server, true, addToFront).then();
+      addRandomToQueue(message, origArg, xdb.congratsDatabase, server, true, addToFront).then();
     } else {
       if (num && num > MAX_QUEUE_S) {
         message.channel.send('*max limit for random is ' + MAX_QUEUE_S + '*');

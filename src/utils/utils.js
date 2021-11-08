@@ -241,6 +241,33 @@ function adjustQueueForPlayNow (dsp, server) {
 }
 
 /**
+ * Shuffles the queue and sends updates to the user regarding its status.
+ * @param message The message object.
+ * @param queue {Array<*>} The queue to shuffle.
+ * @returns {*}
+ */
+function shuffleQueue (message, queue) {
+  if (queue.length < 1) return message.channel.send(`*need a playlist url to shuffle, or a number to use random items from your keys list.*`);
+  shuffleQueueComputation(queue);
+  message.channel.send('*your queue has been shuffled*');
+}
+
+/**
+ * Shuffles the queue. Does not send any message to the user.
+ * @param queue {Array<*>} The queue to shuffle.
+ */
+function shuffleQueueComputation (queue) {
+  let currentIndex = queue.length, randomIndex; // indices for shuffling
+  // don't include what's actively playing
+  while (currentIndex > 1) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    // swap current and random index locations
+    [queue[currentIndex], queue[randomIndex]] = [queue[randomIndex], queue[currentIndex]];
+  }
+}
+
+/**
  * Searches a Map for the given key. Provides the keys that contain the given key.
  * @param keyName the key to search for.
  * @param xdb An object containing a Map called congratsDatabase.
@@ -581,5 +608,6 @@ function setSeamless (server, fName, args, message) {
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
-  initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue
+  initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
+  shuffleQueue
 };
