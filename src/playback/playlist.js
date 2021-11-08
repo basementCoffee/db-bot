@@ -4,9 +4,6 @@ const {MAX_QUEUE_S, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, StreamType} = requi
 const {linkFormatter} = require('../utils/utils');
 // should be completed before first query
 let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
-const YTMAPI = require('youtube-music-api');
-const ytmpl = new YTMAPI();
-ytmpl.initalize().then();
 
 /**
  * Adds playlists to the queue.
@@ -81,16 +78,7 @@ async function getPlaylistArray (playlistUrl, type) {
       // filter ensures that each element exists
       return (await getTracks(playlistUrl)).filter(track => track);
     case StreamType.YOUTUBE:
-      if (playlistUrl.includes('music.youtube')) {
-        const listString = 'list=';
-        const listIdStart = playlistUrl.indexOf(listString);
-        if (listIdStart === -1) return [];
-        let id = playlistUrl.substr(listIdStart + listString.length);
-        if (id.includes('&')) id = playlistUrl.substr(0, playlistUrl.indexOf('&'));
-        return (await ytmpl.getPlaylist(id)).content;
-      } else {
-        return (await ytpl(await ytpl.getPlaylistID(playlistUrl), {pages: 10})).items;
-      }
+      return (await ytpl(await ytpl.getPlaylistID(playlistUrl), {pages: 10})).items;
     case StreamType.SOUNDCLOUD:
       return (await scpl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
     default:
