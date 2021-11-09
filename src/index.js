@@ -3058,6 +3058,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
       else {
         server.skipTimes++;
         if (server.skipTimes < 4) {
+          if (server.skipTimes === 2) checkStatusOfYtdl(message);
           message.channel.send(
             '***error code 404:*** *this video may contain a restriction preventing it from being played.*'
             + (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
@@ -3066,9 +3067,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
         } else {
           console.log('status code 404 error');
           connection.disconnect();
-          message.channel.send(
-            '*db bot appears to be facing some issues ... play commands are unreliable at this time.*'
-          ).then(() => {
+          message.channel.send('*db bot appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             console.log(e);
             // noinspection JSUnresolvedFunction
             bot.channels.cache.get(CH.err).send('***status code 404 error***' +
