@@ -13,7 +13,7 @@ const m3u8stream = require('m3u8stream');
 const twitch = require('twitch-m3u8');
 const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
 const {
-  runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand
+  runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb
 } = require('./database/frontend');
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
@@ -95,7 +95,7 @@ function skipLink (message, voiceChannel, playMessageToChannel, server, noHistor
  */
 function playFromWord (message, args, sheetName, server, mgid, playNow) {
   if (sheetName) {
-    runDatabasePlayCommand(args, message, sheetName, playNow, false, server);
+    runDatabasePlayCommand(args, message, sheetName, playNow, false, server).then();
   } else {
     runYoutubeSearch(message, args, mgid, playNow, server).then();
   }
@@ -447,21 +447,21 @@ async function runCommandCases (message) {
       break;
     // test purposes - run database links
     case 'gd':
-      runDatabasePlayCommand(args, message, 'entries', false, true, server);
+      runDatabasePlayCommand(args, message, 'entries', false, true, server).then();
       break;
     // test purposes - run database command
     case 'gdnow':
     case 'gdn':
-      runDatabasePlayCommand(args, message, 'entries', true, true, server);
+      runDatabasePlayCommand(args, message, 'entries', true, true, server).then();
       break;
     // test purposes - run database command
     case 'gkn':
     case 'gknow':
-      runDatabasePlayCommand(args, message, 'entries', true, true, server);
+      runDatabasePlayCommand(args, message, 'entries', true, true, server).then();
       break;
     // .d is the normal play link from database command
     case 'd':
-      runDatabasePlayCommand(args, message, mgid, false, false, server);
+      runDatabasePlayCommand(args, message, mgid, false, false, server).then();
       break;
     case 'know':
     case 'kn':
@@ -471,7 +471,7 @@ async function runCommandCases (message) {
       break;
     // .md is retrieves and plays from the keys list
     case 'md':
-      runDatabasePlayCommand(args, message, `p${message.member.id}`, false, true, server);
+      runDatabasePlayCommand(args, message, `p${message.member.id}`, false, true, server).then();
       break;
     // .mdnow retrieves and plays from the keys list immediately
     case 'mkn':
@@ -484,63 +484,63 @@ async function runCommandCases (message) {
     case 'random':
     case 'rand':
     case 'r':
-      runRandomToQueue(args[1] || 1, message, mgid, server);
+      runRandomToQueue(args[1] || 1, message, mgid, server).then();
       break;
     case 'shuffle':
-      runRandomToQueue(args[1], message, mgid, server);
+      runRandomToQueue(args[1], message, mgid, server).then();
       break;
     case 'rn':
     case 'randnow':
     case 'randomnow':
-      runRandomToQueue(args[1] || 1, message, mgid, server, true);
+      runRandomToQueue(args[1] || 1, message, mgid, server, true).then();
       break;
     case 'shufflen':
     case 'shufflenow':
-      runRandomToQueue(args[1], message, mgid, server, true);
+      runRandomToQueue(args[1], message, mgid, server, true).then();
       break;
     // test purposes - random command
     case 'grand':
     case 'gr':
-      runRandomToQueue(args[1] || 1, message, 'entries', server);
+      runRandomToQueue(args[1] || 1, message, 'entries', server).then();
       break;
     case 'gshuffle':
-      runRandomToQueue(args[1], message, 'entries', server);
+      runRandomToQueue(args[1], message, 'entries', server).then();
       break;
     // .mr is the personal random that works with the normal queue
     case 'mrand':
     case 'mr':
-      runRandomToQueue(args[1] || 1, message, `p${message.member.id}`, server);
+      runRandomToQueue(args[1] || 1, message, `p${message.member.id}`, server).then();
       break;
     case 'mshuffle':
-      runRandomToQueue(args[1], message, `p${message.member.id}`, server);
+      runRandomToQueue(args[1], message, `p${message.member.id}`, server).then();
       break;
     case 'mrn':
     case 'mrandnow':
-      runRandomToQueue(args[1] || 1, message, `p${message.member.id}`, server, true);
+      runRandomToQueue(args[1] || 1, message, `p${message.member.id}`, server, true).then();
       break;
     case 'mshufflen':
     case 'mshufflenow':
-      runRandomToQueue(args[1], message, `p${message.member.id}`, server, true);
+      runRandomToQueue(args[1], message, `p${message.member.id}`, server, true).then();
       break;
     // .keys is server keys
     case 'k':
     case 'key':
     case 'keys':
-      if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false, server);
-      else runKeysCommand(message, prefixString, mgid, '', '', '').then();
+      if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false, server).then();
+      else runKeysCommand(message, server, mgid, '', '', '').then();
       break;
     // .mkeys is personal keys
     case 'mk':
     case 'mkey':
     case 'mkeys':
-      if (args[1]) runDatabasePlayCommand(args, message, `p${message.member.id}`, false, false, server);
-      else runKeysCommand(message, prefixString, `p${message.member.id}`, 'm', '', '').then();
+      if (args[1]) runDatabasePlayCommand(args, message, `p${message.member.id}`, false, false, server).then();
+      else runKeysCommand(message, server, `p${message.member.id}`, 'm', '', '').then();
       break;
     // test purposes - return keys
     case 'gk':
     case 'gkey':
     case 'gkeys':
-      runKeysCommand(message, prefixString, 'entries', 'g', '', '').then();
+      runKeysCommand(message, server, 'entries', 'g', '', '').then();
       break;
     // .search is the search
     case 'find':
@@ -889,6 +889,7 @@ async function runCommandCases (message) {
     // .del deletes database entries
     case 'del':
     case 'delete':
+      server.userKeys.set(message.member.id, null);
       runDeleteItemCommand(message, args[1], mgid, true).catch((e) => console.log(e));
       break;
     case 'soundcloud':
@@ -899,7 +900,7 @@ async function runCommandCases (message) {
       if (message.member.voice?.channel) {
         args[1] = `https://www.${TWITCH_BASE_LINK}/${args[1]}`;
         server.queue.unshift(args[1]);
-        playLinkToVC(message, args[1], message.member.voice.channel, server);
+        playLinkToVC(message, args[1], message.member.voice.channel, server).then();
       } else {
         message.channel.send('*must be in a voice channel*');
       }
@@ -909,6 +910,7 @@ async function runCommandCases (message) {
     case 'gdel':
     case 'gdelete':
     case 'gremove':
+      server.userKeys.set(message.member.id, null);
       runDeleteItemCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
       break;
     // .mrm removes personal database entries
@@ -916,6 +918,7 @@ async function runCommandCases (message) {
     case 'mdel':
     case 'mremove':
     case 'mdelete':
+      server.userKeys.set(message.member.id, null);
       runDeleteItemCommand(message, args[1], `p${message.member.id}`, true).catch((e) => console.log(e));
       break;
     case 'prev':
@@ -1621,12 +1624,7 @@ function runPauseCommand (message, actionUser, server, noErrorMsg, force, noPrin
         else return;
       }
     }
-    if (!dispatcherMapStatus[actionUser.voice.channel.id]) {
-      dispatcherMap[actionUser.voice.channel.id].pause();
-      dispatcherMap[actionUser.voice.channel.id].resume();
-      dispatcherMap[actionUser.voice.channel.id].pause();
-      dispatcherMapStatus[actionUser.voice.channel.id] = true;
-    }
+    pauseComputation(actionUser.voice.channel);
     if (noPrintMsg) return true;
     if (server.followUpMessage) {
       server.followUpMessage.delete();
@@ -1637,6 +1635,20 @@ function runPauseCommand (message, actionUser, server, noErrorMsg, force, noPrin
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     return false;
+  }
+}
+
+/**
+ * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
+ * @param voiceChannel The voice channel that the dispatcher is playing in.
+ * @param force {boolean=} Ignores the status of the dispatcher.
+ */
+function pauseComputation (voiceChannel, force = false) {
+  if (!dispatcherMapStatus[voiceChannel.id] || force) {
+    dispatcherMap[voiceChannel.id].pause();
+    dispatcherMap[voiceChannel.id].resume();
+    dispatcherMap[voiceChannel.id].pause();
+    dispatcherMapStatus[voiceChannel.id] = true;
   }
 }
 
@@ -1661,12 +1673,7 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
         else return false;
       }
     }
-    if (dispatcherMapStatus[actionUser.voice.channel.id]) {
-      dispatcherMap[actionUser.voice.channel.id].resume();
-      dispatcherMap[actionUser.voice.channel.id].pause();
-      dispatcherMap[actionUser.voice.channel.id].resume();
-      dispatcherMapStatus[actionUser.voice.channel.id] = false;
-    }
+    playComputation(actionUser.voice.channel);
     if (noPrintMsg) return true;
     if (server.followUpMessage) {
       server.followUpMessage.delete();
@@ -1677,6 +1684,20 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     return false;
+  }
+}
+
+/**
+ * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
+ * @param voiceChannel The voice channel that the dispatcher is playing in.
+ * @param force {boolean=} Ignores the status of the dispatcher.
+ */
+function playComputation (voiceChannel, force) {
+  if (dispatcherMapStatus[voiceChannel.id] || force) {
+    dispatcherMap[voiceChannel.id].resume();
+    dispatcherMap[voiceChannel.id].pause();
+    dispatcherMap[voiceChannel.id].resume();
+    dispatcherMapStatus[voiceChannel.id] = false;
   }
 }
 
@@ -1731,6 +1752,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       }
       if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
         return message.channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString}add key [link]\``);
+      server.userKeys.set(message.member.id, null);
       if (args[2].includes(SPOTIFY_BASE_LINK)) args[2] = linkFormatter(args[2], SPOTIFY_BASE_LINK);
       else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
       runAddCommand(args, message, sheetName, printMsgToChannel);
@@ -1952,7 +1974,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
  * @param server The server playback metadata
  * @returns bool whether the play command has been handled accordingly
  */
-function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg, server) {
+async function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg, server) {
   if (!args[1]) {
     message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
     return true;
@@ -1960,13 +1982,11 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
   const voiceChannel = message.member.voice.channel;
   const mgid = message.guild.id;
   if (!voiceChannel) {
-    (async () => {
-      const sentMsg = await message.channel.send('must be in a voice channel to play');
-      if (!botInVC(message)) {
-        setSeamless(server, runDatabasePlayCommand, [args, message, sheetName, playRightNow, printErrorMsg, server],
-          sentMsg);
-      }
-    })();
+    const sentMsg = await message.channel.send('must be in a voice channel to play');
+    if (!botInVC(message)) {
+      setSeamless(server, runDatabasePlayCommand, [args, message, sheetName, playRightNow, printErrorMsg, server],
+        sentMsg);
+    }
     return true;
   }
   // in case of force disconnect
@@ -1977,126 +1997,92 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
     return true;
   }
   server.numSinceLastEmbed++;
-  gsrun('A', 'B', sheetName).then(async (xdb) => {
-    let queueWasEmpty = false;
-    // if the queue is empty then play
-    if (server.queue.length < 1) {
-      queueWasEmpty = true;
-    }
-    let tempUrl;
-    let dbAddedToQueue = 0;
-    if (args[2]) {
-      let dbAddInt = 1;
-      let unFoundString = '*could not find: ';
-      let firstUnfoundRan = false;
-      let otherSheet;
-      let first = true;
-      while (args[dbAddInt]) {
-        args[dbAddInt] = args[dbAddInt].replace(/,/, '');
-        tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
-        if (tempUrl) {
-          // push to queue
-          const playlistType = verifyPlaylist(tempUrl);
-          if (playlistType) {
-            dbAddedToQueue += await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
-          } else if (playRightNow) {
-            if (first) {
-              server.queue.unshift(tempUrl);
-              first = false;
-            } else server.queue.splice(dbAddedToQueue, 0, tempUrl);
-            dbAddedToQueue++;
-          } else {
-            server.queue.push(tempUrl);
-            dbAddedToQueue++;
-          }
+  const xdb = await getXdb(server, sheetName);
+  let queueWasEmpty = false;
+  // if the queue is empty then play
+  if (server.queue.length < 1) {
+    queueWasEmpty = true;
+  }
+  let tempUrl;
+  let dbAddedToQueue = 0;
+  if (args[2]) {
+    let dbAddInt = 1;
+    let unFoundString = '*could not find: ';
+    let firstUnfoundRan = false;
+    let otherSheet;
+    let first = true;
+    while (args[dbAddInt]) {
+      args[dbAddInt] = args[dbAddInt].replace(/,/, '');
+      tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
+      if (tempUrl) {
+        // push to queue
+        const playlistType = verifyPlaylist(tempUrl);
+        if (playlistType) {
+          dbAddedToQueue += await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
+        } else if (playRightNow) {
+          if (first) {
+            server.queue.unshift(tempUrl);
+            first = false;
+          } else server.queue.splice(dbAddedToQueue, 0, tempUrl);
+          dbAddedToQueue++;
         } else {
-          // check personal db if applicable
-          if (sheetName.substr(0, 1) !== 'p') {
-            if (!otherSheet) {
-              await gsrun('A', 'B', `p${message.member.id}`).then((xdb) => {
-                otherSheet = xdb.referenceDatabase;
-              });
-            }
-            tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
-            if (tempUrl) {
-              // push to queue
-              const playlistType = verifyPlaylist(tempUrl);
-              if (playlistType) {
-                dbAddedToQueue += await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
-              } else if (playRightNow) {
-                if (first) {
-                  server.queue.unshift(tempUrl);
-                  first = false;
-                } else server.queue.splice(dbAddedToQueue, 0, tempUrl);
-                dbAddedToQueue++;
-              } else {
-                server.queue.push(tempUrl);
-                dbAddedToQueue++;
-              }
-              dbAddInt++;
-              continue;
-            }
-          }
-          if (firstUnfoundRan) {
-            unFoundString = unFoundString.concat(', ');
-          }
-          unFoundString = unFoundString.concat(args[dbAddInt]);
-          firstUnfoundRan = true;
+          server.queue.push(tempUrl);
+          dbAddedToQueue++;
         }
-        dbAddInt++;
-      }
-      if (firstUnfoundRan) {
-        unFoundString = unFoundString.concat('*');
-        message.channel.send(unFoundString);
-      }
-      if (playRightNow) {
-        return playLinkToVC(message, server.queue[0], voiceChannel, server);
       } else {
-        message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
-        await updateActiveEmbed(server);
-      }
-    } else {
-      tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
-      if (!tempUrl) {
-        const sObj = runSearchCommand(args[1], xdb);
-        const ss = sObj.ss;
-        if (sObj.ssi === 1 && ss && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
-          message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
-          tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
-          const playlistType = verifyPlaylist(tempUrl);
-          if (playRightNow) { // push to queue and play
-            adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
+        // check personal db if applicable
+        if (sheetName.substr(0, 1) !== 'p') {
+          if (!otherSheet) {
+            await gsrun('A', 'B', `p${message.member.id}`).then((xdb) => {
+              otherSheet = xdb.referenceDatabase;
+            });
+          }
+          tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
+          if (tempUrl) {
+            // push to queue
+            const playlistType = verifyPlaylist(tempUrl);
             if (playlistType) {
-              await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
-            } else {
-              server.queue.unshift(tempUrl);
-            }
-            playLinkToVC(message, server.queue[0], voiceChannel, server).then();
-            message.channel.send('*playing now*');
-            return true;
-          } else {
-            if (playlistType) {
-              dbAddedToQueue = await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
+              dbAddedToQueue += await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
+            } else if (playRightNow) {
+              if (first) {
+                server.queue.unshift(tempUrl);
+                first = false;
+              } else server.queue.splice(dbAddedToQueue, 0, tempUrl);
+              dbAddedToQueue++;
             } else {
               server.queue.push(tempUrl);
+              dbAddedToQueue++;
             }
+            dbAddInt++;
+            continue;
           }
-        } else if (!printErrorMsg) {
-          if (sheetName.includes('p')) {
-            message.channel.send("Could not find '" + args[1] + "' in database.");
-            return true;
-          } else {
-            runDatabasePlayCommand(args, message, `p${message.member.id}`, playRightNow, false, server);
-            return true;
-          }
-        } else if (ss?.length > 0) {
-          message.channel.send("Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + '*');
-          return true;
-        } else {
-          message.channel.send("Could not find '" + args[1] + "' in database.");
-          return true;
         }
-      } else { // did find in database
+        if (firstUnfoundRan) {
+          unFoundString = unFoundString.concat(', ');
+        }
+        unFoundString = unFoundString.concat(args[dbAddInt]);
+        firstUnfoundRan = true;
+      }
+      dbAddInt++;
+    }
+    if (firstUnfoundRan) {
+      unFoundString = unFoundString.concat('*');
+      message.channel.send(unFoundString);
+    }
+    if (playRightNow) {
+      return playLinkToVC(message, server.queue[0], voiceChannel, server);
+    } else {
+      message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
+      await updateActiveEmbed(server);
+    }
+  } else {
+    tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
+    if (!tempUrl) {
+      const sObj = runSearchCommand(args[1], xdb);
+      const ss = sObj.ss;
+      if (sObj.ssi === 1 && ss && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
+        message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
+        tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
         const playlistType = verifyPlaylist(tempUrl);
         if (playRightNow) { // push to queue and play
           adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
@@ -2109,24 +2095,57 @@ function runDatabasePlayCommand (args, message, sheetName, playRightNow, printEr
           message.channel.send('*playing now*');
           return true;
         } else {
-          // push to queue
           if (playlistType) {
-            await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
+            dbAddedToQueue = await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
           } else {
             server.queue.push(tempUrl);
           }
         }
+      } else if (!printErrorMsg) {
+        if (sheetName.includes('p')) {
+          message.channel.send("Could not find '" + args[1] + "' in database.");
+          return true;
+        } else {
+          runDatabasePlayCommand(args, message, `p${message.member.id}`, playRightNow, false, server).then();
+          return true;
+        }
+      } else if (ss?.length > 0) {
+        message.channel.send("Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + '*');
+        return true;
+      } else {
+        message.channel.send("Could not find '" + args[1] + "' in database.");
+        return true;
       }
-      if (!queueWasEmpty) {
-        message.channel.send('*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*');
-        await updateActiveEmbed(server);
+    } else { // did find in database
+      const playlistType = verifyPlaylist(tempUrl);
+      if (playRightNow) { // push to queue and play
+        adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
+        if (playlistType) {
+          await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
+        } else {
+          server.queue.unshift(tempUrl);
+        }
+        playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+        message.channel.send('*playing now*');
+        return true;
+      } else {
+        // push to queue
+        if (playlistType) {
+          await addPlaylistToQueue(message, server, mgid, 0, tempUrl, playlistType, playRightNow);
+        } else {
+          server.queue.push(tempUrl);
+        }
       }
     }
-    // if queue was empty then play
-    if (queueWasEmpty && server.queue.length > 0) {
-      playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+    if (!queueWasEmpty) {
+      message.channel.send('*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*');
+      await updateActiveEmbed(server);
     }
-  });
+  }
+  // if queue was empty then play
+  if (queueWasEmpty && server.queue.length > 0) {
+    playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+  }
   return true;
 }
 
@@ -2382,12 +2401,10 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
  * @param server The server playback metadata
  * @param addToFront Optional - true if to add to the front
  */
-function runRandomToQueue (num, message, sheetName, server, addToFront = false) {
+async function runRandomToQueue (num, message, sheetName, server, addToFront = false) {
   if (!message.member.voice.channel) {
-    (async () => {
-      const sentMsg = await message.channel.send('must be in a voice channel to play random');
-      if (!botInVC(message)) setSeamless(server, runRandomToQueue, [num, message, sheetName, server, addToFront], sentMsg);
-    })();
+    const sentMsg = await message.channel.send('must be in a voice channel to play random');
+    if (!botInVC(message)) setSeamless(server, runRandomToQueue, [num, message, sheetName, server, addToFront], sentMsg);
     return;
   }
   if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
@@ -2419,17 +2436,16 @@ function runRandomToQueue (num, message, sheetName, server, addToFront = false) 
   if (!origArg) return shuffleQueue(message, server.queue);
   if (origArg.toString().includes('.'))
     return addRandomToQueue(message, origArg, undefined, server, true, addToFront);
-  gsrun('A', 'B', sheetName).then((xdb) => {
-    if (isPlaylist) {
-      addRandomToQueue(message, origArg, xdb.congratsDatabase, server, true, addToFront).then();
-    } else {
-      if (num > MAX_QUEUE_S) {
-        message.channel.send('*max limit for random is ' + MAX_QUEUE_S + '*');
-        num = MAX_QUEUE_S;
-      }
-      addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront).then();
+  const xdb = await getXdb(server, sheetName);
+  if (isPlaylist) {
+    addRandomToQueue(message, origArg, xdb.congratsDatabase, server, true, addToFront).then();
+  } else {
+    if (num > MAX_QUEUE_S) {
+      message.channel.send('*max limit for random is ' + MAX_QUEUE_S + '*');
+      num = MAX_QUEUE_S;
     }
-  });
+    addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront).then();
+  }
 }
 
 /**
@@ -2549,147 +2565,146 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
 /**
  * Grabs all the keys/names from the database.
  * @param {*} message The message trigger
- * @param prefixString The character of the prefix
+ * @param server The server
  * @param {*} sheetName The name of the sheet to retrieve
  * @param cmdType the prefix to call the keys being displayed
  * @param voiceChannel optional, a specific voice channel to use besides the message's
  * @param user Optional - username, overrides the message owner's name
  */
-async function runKeysCommand (message, prefixString, sheetName, cmdType, voiceChannel, user) {
-  gsrun('A', 'B', sheetName).then((xdb) => {
-    const keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
-    const keyArraySorted = keyArrayUnsorted.map(x => x).sort();
-    // the keyArray to generate
-    let keyArray = keyArraySorted;
-    if (keyArray.length < 1) {
-      let emptyDBMessage;
-      if (!cmdType) {
-        emptyDBMessage = "The server's ";
-      } else {
-        emptyDBMessage = 'Your ';
-      }
-      message.channel.send('**' + emptyDBMessage + 'music list is empty.**\n*Add a song by putting a word followed by a link.' +
-        '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
+async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user) {
+  const xdb = await getXdb(server, sheetName);
+  const prefixString = server.prefix;
+  const keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
+  const keyArraySorted = keyArrayUnsorted.map(x => x).sort();
+  // the keyArray to generate
+  let keyArray = keyArraySorted;
+  if (keyArray.length < 1) {
+    let emptyDBMessage;
+    if (!cmdType) {
+      emptyDBMessage = "The server's ";
     } else {
-      let sortByRecent = true;
-      let dbName = '';
-      /**
-       * Generates the keys list embed
-       * @param sortByRecent True if to return an array sorted by date added
-       * @returns {module:"discord.js".MessageEmbed}
-       */
-      const generateKeysEmbed = (sortByRecent) => {
-        if (sortByRecent) keyArray = keyArrayUnsorted;
-        else keyArray = keyArraySorted;
-        let s = '';
-        for (const key in keyArray) {
-          s = `${s}, ${keyArray[key]}`;
-        }
-        s = s.substr(1);
-        let keysMessage = '';
-        let keyEmbedColor = '#ffa200';
-        if (cmdType === 'm') {
-          let name;
-          user ? name = user.username : name = message.member.nickname;
-          if (!name) {
-            name = message.author.username;
-          }
-          if (name) {
-            keysMessage += '**' + name + "'s keys ** ";
-            dbName = name.toLowerCase() + "'s keys";
-          } else {
-            keysMessage += '** Personal keys ** ';
-            dbName = 'personal keys';
-          }
-        } else if (!cmdType) {
-          keysMessage += '**Server keys ** ';
-          dbName = "server's keys";
-          keyEmbedColor = '#90d5cf';
-        }
-        const embedKeysMessage = new MessageEmbed();
-        embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
-          .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
-        return embedKeysMessage;
-      };
-      message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {
-        const server = servers[message.guild.id];
-        sentMsg.react('❔').then(() => sentMsg.react('🔀').then(sentMsg.react('🔄')));
-        const filter = (reaction, user) => {
-          return user.id !== botID && ['❔', '🔄', '🔀'].includes(reaction.emoji.name);
-        };
-        const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
-        keysButtonCollector.on('collect', (reaction, reactionCollector) => {
-          if (reaction.emoji.name === '❔') {
-            let nameToSend;
-            let descriptionSuffix;
-            if (dbName === "server's keys") {
-              nameToSend = 'the server';
-              descriptionSuffix = 'Each server has it\'s own server keys. ' +
-                '\nThey can be used by any member in the server.';
-            } else {
-              nameToSend = 'your personal';
-              descriptionSuffix = 'Your personal keys are keys that only you can play. ' +
-                '\nThey work for you in any server with the db bot.';
-            }
-            const embed = new MessageEmbed()
-              .setTitle('How to add/delete keys from ' + nameToSend + ' list')
-              .setDescription('Add a song by putting a word followed by a link -> \` ' +
-                prefixString + cmdType + 'a [key] [link]\`\n' +
-                'Delete a song by putting the name you wish to delete -> \` ' +
-                prefixString + cmdType + 'del [key]\`')
-              .setFooter(descriptionSuffix);
-            message.channel.send(embed);
-          } else if (reaction.emoji.name === '🔀') {
-            if (!voiceChannel) {
-              voiceChannel = message.member.voice.channel;
-              if (!voiceChannel) return message.channel.send("must be in a voice channel to randomize");
-            }
-            // in case of force disconnect
-            if (!botInVC(message)) {
-              resetSession(server);
-            } else if (server.queue.length >= MAX_QUEUE_S) {
-              return message.channel.send('*max queue size has been reached*');
-            }
-            if (server.lockQueue && !hasDJPermissions(message, reactionCollector.id, true, server.voteAdmin))
-              return message.channel.send('the queue is locked: only the DJ can add to the queue');
-            if (server.dictator && server.dictator.id !== reactionCollector.id)
-              return message.channel.send('only the dictator can perform this action');
-            for (const mem of voiceChannel.members) {
-              if (reactionCollector.id === mem[1].id) {
-                if (sheetName.includes('p')) {
-                  if (reactionCollector.username) {
-                    message.channel.send('*randomizing from ' + reactionCollector.username + "'s keys...*");
-                  } else {
-                    message.channel.send('*randomizing...*');
-                  }
-                  if (reactionCollector.id === user.id) {
-                    addRandomToQueue(message, -1, xdb.congratsDatabase, server, false);
-                    return;
-                  } else {
-                    gsrun('A', 'B', `p${reactionCollector.id}`).then((xdb2) => {
-                      addRandomToQueue(message, -1, xdb2.congratsDatabase, server, false);
-                    });
-                  }
-                } else {
-                  message.channel.send('*randomizing from the server keys...*');
-                  addRandomToQueue(message, -1, xdb.congratsDatabase, server, false);
-                }
-                return;
-              }
-            }
-            return message.channel.send('must be in a voice channel to shuffle play');
-          } else if (reaction.emoji.name === '🔄') {
-            sortByRecent = !sortByRecent;
-            sentMsg.edit(generateKeysEmbed(sortByRecent));
-            reaction.users.remove(reactionCollector.id);
-          }
-        });
-        keysButtonCollector.once('end', () => {
-          sentMsg.reactions.removeAll();
-        });
-      });
+      emptyDBMessage = 'Your ';
     }
-  });
+    message.channel.send('**' + emptyDBMessage + 'music list is empty.**\n*Add a song by putting a word followed by a link.' +
+      '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
+  } else {
+    let sortByRecent = true;
+    let dbName = '';
+    /**
+     * Generates the keys list embed
+     * @param sortByRecent True if to return an array sorted by date added
+     * @returns {module:"discord.js".MessageEmbed}
+     */
+    const generateKeysEmbed = (sortByRecent) => {
+      if (sortByRecent) keyArray = keyArrayUnsorted;
+      else keyArray = keyArraySorted;
+      let s = '';
+      for (const key in keyArray) {
+        s = `${s}, ${keyArray[key]}`;
+      }
+      s = s.substr(1);
+      let keysMessage = '';
+      let keyEmbedColor = '#ffa200';
+      if (cmdType === 'm') {
+        let name;
+        user ? name = user.username : name = message.member.nickname;
+        if (!name) {
+          name = message.author.username;
+        }
+        if (name) {
+          keysMessage += '**' + name + "'s keys ** ";
+          dbName = name.toLowerCase() + "'s keys";
+        } else {
+          keysMessage += '** Personal keys ** ';
+          dbName = 'personal keys';
+        }
+      } else if (!cmdType) {
+        keysMessage += '**Server keys ** ';
+        dbName = "server's keys";
+        keyEmbedColor = '#90d5cf';
+      }
+      const embedKeysMessage = new MessageEmbed();
+      embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
+        .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
+      return embedKeysMessage;
+    };
+    message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {
+      const server = servers[message.guild.id];
+      sentMsg.react('❔').then(() => sentMsg.react('🔀').then(sentMsg.react('🔄')));
+      const filter = (reaction, user) => {
+        return user.id !== botID && ['❔', '🔄', '🔀'].includes(reaction.emoji.name);
+      };
+      const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
+      keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
+        if (reaction.emoji.name === '❔') {
+          let nameToSend;
+          let descriptionSuffix;
+          if (dbName === "server's keys") {
+            nameToSend = 'the server';
+            descriptionSuffix = 'Each server has it\'s own server keys. ' +
+              '\nThey can be used by any member in the server.';
+          } else {
+            nameToSend = 'your personal';
+            descriptionSuffix = 'Your personal keys are keys that only you can play. ' +
+              '\nThey work for you in any server with the db bot.';
+          }
+          const embed = new MessageEmbed()
+            .setTitle('How to add/delete keys from ' + nameToSend + ' list')
+            .setDescription('Add a song by putting a word followed by a link -> \` ' +
+              prefixString + cmdType + 'a [key] [link]\`\n' +
+              'Delete a song by putting the name you wish to delete -> \` ' +
+              prefixString + cmdType + 'del [key]\`')
+            .setFooter(descriptionSuffix);
+          message.channel.send(embed);
+        } else if (reaction.emoji.name === '🔀') {
+          if (!voiceChannel) {
+            voiceChannel = message.member.voice.channel;
+            if (!voiceChannel) return message.channel.send("must be in a voice channel to randomize");
+          }
+          // in case of force disconnect
+          if (!botInVC(message)) {
+            resetSession(server);
+          } else if (server.queue.length >= MAX_QUEUE_S) {
+            return message.channel.send('*max queue size has been reached*');
+          }
+          if (server.lockQueue && !hasDJPermissions(message, reactionCollector.id, true, server.voteAdmin))
+            return message.channel.send('the queue is locked: only the DJ can add to the queue');
+          if (server.dictator && server.dictator.id !== reactionCollector.id)
+            return message.channel.send('only the dictator can perform this action');
+          for (const mem of voiceChannel.members) {
+            if (reactionCollector.id === mem[1].id) {
+              if (sheetName.includes('p')) {
+                if (reactionCollector.username) {
+                  message.channel.send('*randomizing from ' + reactionCollector.username + "'s keys...*");
+                } else {
+                  message.channel.send('*randomizing...*');
+                }
+                if (reactionCollector.id === user.id) {
+                  addRandomToQueue(message, -1, xdb.congratsDatabase, server, false).then();
+                  return;
+                } else {
+                  const xdb2 = await getXdb(server, `p${reactionCollector.id}`);
+                  addRandomToQueue(message, -1, xdb2.congratsDatabase, server, false).then();
+                }
+              } else {
+                message.channel.send('*randomizing from the server keys...*');
+                addRandomToQueue(message, -1, xdb.congratsDatabase, server, false).then();
+              }
+              return;
+            }
+          }
+          return message.channel.send('must be in a voice channel to shuffle play');
+        } else if (reaction.emoji.name === '🔄') {
+          sortByRecent = !sortByRecent;
+          sentMsg.edit(generateKeysEmbed(sortByRecent));
+          reaction.users.remove(reactionCollector.id).then();
+        }
+      });
+      keysButtonCollector.once('end', () => {
+        sentMsg.reactions.removeAll();
+      });
+    });
+  }
 }
 
 bot.on('voiceStateUpdate', update => {
@@ -2727,10 +2742,9 @@ async function updateVoiceState (update) {
       server.infos = null;
       server.autoplay = false;
       server.currentEmbedLink = null;
-      if (server.currentEmbed?.reactions) {
-        server.collector.stop();
-        server.currentEmbed = null;
-      }
+      server.userKeys.clear();
+      if (server.currentEmbed?.reactions) server.collector.stop();
+      server.currentEmbed = null;
       if (server.followUpMessage) {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
@@ -2975,7 +2989,13 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     } else if (!(retries && server.currentEmbedLink === whatToPlay)) {
       await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
     }
-    dispatcherMapStatus[vc.id] = false;
+    if (server.streamData?.type === StreamType.SOUNDCLOUD) {
+      pauseComputation(vc, true);
+      await new Promise(res => setTimeout(() => {
+        if (whatToPlay === whatspMap[vc.id]) playComputation(vc, true);
+        res();
+      }, 3000));
+    } else dispatcherMapStatus[vc.id] = false;
     server.altUrl = urlAlt;
     server.skipTimes = 0;
     dispatcher.on('error', async (e) => {
@@ -3400,10 +3420,10 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         server.followUpMessage = undefined;
       }
     } else if (reaction.emoji.name === '🔑') {
-      runKeysCommand(sentMsg, server.prefix, mgid, '', voiceChannel, '').then();
+      runKeysCommand(sentMsg, server, mgid, '', voiceChannel, '').then();
       server.numSinceLastEmbed += 5;
     } else if (reaction.emoji.name === '🔐') {
-      runKeysCommand(sentMsg, server.prefix, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
+      runKeysCommand(sentMsg, server, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
       server.numSinceLastEmbed += 5;
     }
   });

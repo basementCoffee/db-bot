@@ -103,10 +103,17 @@ async function createEmbed (url, infos) {
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg');
   } else {
     if (!infos) infos = await ytdl.getBasicInfo(url);
-    let duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
-    timeMS = parseInt(duration);
-    if (duration === 'NaNm NaNs') {
-      duration = 'N/A';
+    let duration;
+    if (infos.videoDetails.isLiveContent) {
+      duration = 'live';
+      timeMS = 3600000; // set to 1hr
+    } else {
+      duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
+      timeMS = parseInt(duration);
+      if (duration === 'NaNm NaNs') {
+        duration = 'N/A';
+        timeMS = 0;
+      }
     }
     embed = new MessageEmbed()
       .setTitle(`${infos.videoDetails.title}`)
@@ -529,6 +536,7 @@ function initializeServer (mgid) {
       // optional message to delete
       message: undefined
     },
+    userKeys: new Map(),
     // the server's prefix
     prefix: undefined,
     // the timeout for the YT search results

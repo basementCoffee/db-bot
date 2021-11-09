@@ -182,4 +182,18 @@ function runUniversalSearchCommand (message, sheetName, providedString) {
   });
 }
 
-module.exports = {runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand};
+/**
+ * Get the keys and links from the database. Uses local storage if available.
+ * If there is no current embed then also resorts to an API fetch.
+ */
+async function getXdb (server, sheetName) {
+  if (!server.currentEmbed) return gsrun('A', 'B', sheetName);
+  let xdb = server.userKeys.get(sheetName);
+  if (!xdb) {
+    xdb = await gsrun('A', 'B', sheetName);
+    server.userKeys.set(sheetName, xdb);
+  }
+  return xdb;
+}
+
+module.exports = {runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb};
