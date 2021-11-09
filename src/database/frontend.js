@@ -159,39 +159,42 @@ function runLookupLink (message, sheetName, link) {
 /**
  * A search command that searches both the server and personal database for the string.
  * @param message The message that triggered the bot.
+ * @param server The server.
  * @param sheetName The guild id.
  * @param providedString The string to search for
  */
-function runUniversalSearchCommand (message, sheetName, providedString) {
+async function runUniversalSearchCommand (message, server, sheetName, providedString) {
   if (!providedString) return message.channel.send('must provide a link or word');
   // returns true if the item provided was a link
   if (runLookupLink(message, sheetName, providedString)) return;
-  gsrun('A', 'B', sheetName).then(async (xdb) => {
-    const so = runSearchCommand(providedString, xdb);
-    if (so.ssi) {
-      let link;
-      if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
-      message.channel.send(`${(sheetName[0] === 'p' ? 'Personal' : 'Server')} keys found: ${so.ss} ${(link ? `\n${link}` : '')}`);
-    } else if (sheetName[0] !== 'p') {
-      runUniversalSearchCommand(message, `p${message.member.id}`, providedString);
-    } else if (providedString.length < 2) {
-      message.channel.send('Did not find any keys that start with the given letter.');
-    } else {
-      message.channel.send('Did not find any keys that contain \'' + providedString + '\'');
-    }
-  });
+  const xdb = await getXdb(server, sheetName);
+  const so = runSearchCommand(providedString, xdb);
+  if (so.ssi) {
+    let link;
+    if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
+    message.channel.send(`${(sheetName[0] === 'p' ? 'Personal' : 'Server')} keys found: ${so.ss} ${(link ? `\n${link}` : '')}`);
+  } else if (sheetName[0] !== 'p') {
+    await runUniversalSearchCommand(message, server, `p${message.member.id}`, providedString);
+  } else if (providedString.length < 2) {
+    message.channel.send('Did not find any keys that start with the given letter.');
+  } else {
+    message.channel.send('Did not find any keys that contain \'' + providedString + '\'');
+  }
 }
 
 /**
  * Get the keys and links from the database. Uses local storage if available.
  * If there is no current embed then also resorts to an API fetch.
+ * @param server
+ * @param sheetName
+ * @returns {Promise<unknown>}
  */
 async function getXdb (server, sheetName) {
   if (!server.currentEmbed) return gsrun('A', 'B', sheetName);
-  let xdb = server.userKeys.get(sheetName);
+  let xdb = server.userKeys.get(`${sheetName}`);
   if (!xdb) {
     xdb = await gsrun('A', 'B', sheetName);
-    server.userKeys.set(sheetName, xdb);
+    server.userKeys.set(`${sheetName}`, xdb);
   }
   return xdb;
 }

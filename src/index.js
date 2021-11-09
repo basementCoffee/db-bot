@@ -546,23 +546,23 @@ async function runCommandCases (message) {
     case 'find':
     case 'lookup':
     case 'search':
-      runUniversalSearchCommand(message, mgid, (args[1] ? args[1] : server.currentEmbedLink));
+      runUniversalSearchCommand(message, server, mgid, (args[1] ? args[1] : server.currentEmbedLink));
       break;
     // .m is the personal search command
     case 'ml':
     case 'ms':
       if (botInVC(message) || args[0])
-        runUniversalSearchCommand(message, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
+        runUniversalSearchCommand(message, server, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
       break;
     case 'mfind':
     case 'mlookup':
     case 'msearch':
-      runUniversalSearchCommand(message, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
+      runUniversalSearchCommand(message, server, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
       break;
     case 'gfind':
     case 'glookup':
     case 'gsearch':
-      runUniversalSearchCommand(message, `entries`, (args[1] ? args[1] : server.currentEmbedLink));
+      runUniversalSearchCommand(message, server, `entries`, (args[1] ? args[1] : server.currentEmbedLink));
       break;
     case 'size':
       if (!args[1]) {
@@ -889,7 +889,7 @@ async function runCommandCases (message) {
     // .del deletes database entries
     case 'del':
     case 'delete':
-      server.userKeys.set(message.member.id, null);
+      server.userKeys.set(mgid, null);
       runDeleteItemCommand(message, args[1], mgid, true).catch((e) => console.log(e));
       break;
     case 'soundcloud':
@@ -910,7 +910,7 @@ async function runCommandCases (message) {
     case 'gdel':
     case 'gdelete':
     case 'gremove':
-      server.userKeys.set(message.member.id, null);
+      server.userKeys.set('entries', null);
       runDeleteItemCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
       break;
     // .mrm removes personal database entries
@@ -918,7 +918,7 @@ async function runCommandCases (message) {
     case 'mdel':
     case 'mremove':
     case 'mdelete':
-      server.userKeys.set(message.member.id, null);
+      server.userKeys.set(`p${message.member.id}`, null);
       runDeleteItemCommand(message, args[1], `p${message.member.id}`, true).catch((e) => console.log(e));
       break;
     case 'prev':
@@ -1218,10 +1218,10 @@ async function runInsertCommand (message, mgid, term, position, server) {
   const args = ['', term, position];
   if (insertCommandVerification(message, server, args) !== 1) return -1;
   if (!verifyUrl(args[1]) && !verifyPlaylist(args[1])) {
-    let xdb = await gsrun('A', 'B', mgid);
+    let xdb = await getXdb(server, mgid);
     let link = xdb.referenceDatabase.get(args[1].toUpperCase());
     if (!link) {
-      xdb = await gsrun('A', 'B', `p${message.member.id}`);
+      xdb = await getXdb(server, `p${message.member.id}`);
       link = xdb.referenceDatabase.get(args[1].toUpperCase());
     }
     if (!link) {
@@ -1752,7 +1752,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       }
       if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
         return message.channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString}add key [link]\``);
-      server.userKeys.set(message.member.id, null);
+      server.userKeys.set(sheetName, null);
       if (args[2].includes(SPOTIFY_BASE_LINK)) args[2] = linkFormatter(args[2], SPOTIFY_BASE_LINK);
       else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
       runAddCommand(args, message, sheetName, printMsgToChannel);
@@ -2033,9 +2033,8 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
         // check personal db if applicable
         if (sheetName.substr(0, 1) !== 'p') {
           if (!otherSheet) {
-            await gsrun('A', 'B', `p${message.member.id}`).then((xdb) => {
-              otherSheet = xdb.referenceDatabase;
-            });
+            const xdb = await getXdb(server, `p${message.member.id}`);
+            otherSheet = xdb.referenceDatabase;
           }
           tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
           if (tempUrl) {
@@ -3103,7 +3102,7 @@ async function playLinkToVC (message, whatToPlay, vc, server, retries = 0, infos
     message.channel.send('Could not play <' + whatToPlay + '>' +
       ((server.skipTimes === 1) ? '\nIf the link is not broken or restricted, please try again.' : ''));
     // search the db to find possible broken keys
-    if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, whatToPlay);
+    if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, server, whatToPlay);
     whatspMap[vc.id] = '';
     skipLink(message, vc, false, server, true);
     if (devMode) return;
@@ -3165,17 +3164,18 @@ async function getRecLink (whatToPlay, infos, index = 0) {
 /**
  * Searches the guild db and personal message db for a broken link
  * @param message The message
+ * @param server The server
  * @param whatToPlayS The broken link provided as a string
  */
-function searchForBrokenLinkWithinDB (message, whatToPlayS) {
-  gsrun('A', 'B', message.channel.guild.id).then((xdb) => {
+function searchForBrokenLinkWithinDB (message, server, whatToPlayS) {
+  getXdb(server, message.channel.guild.id).then((xdb) => {
     xdb.congratsDatabase.forEach((value, key) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within the server db: ' + key + '*');
       }
     });
   });
-  gsrun('A', 'B', `p${message.member.id}`).then((xdb) => {
+  getXdb(server, `p${message.member.id}`).then((xdb) => {
     xdb.congratsDatabase.forEach((value, key) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within your personal db: ' + key + '*');

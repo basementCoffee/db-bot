@@ -86,10 +86,10 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
     } catch (e) {}
   }
   return {
-    // the keys - case sensitive
-    congratsDatabase: congratsDatabase,
+    // the keys - case-sensitive
+    congratsDatabase: new Map(congratsDatabase),
     // the keys - all uppercase
-    referenceDatabase: referenceDatabase,
+    referenceDatabase: new Map(referenceDatabase),
     // the array of rows
     line: keyArray,
     // the size of the keys list
