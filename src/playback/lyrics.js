@@ -22,7 +22,7 @@ function runLyricsCommand (message, mgid, args, server) {
   if ((!botInVC(message) || !server.queue[0]) && !args[1]) {
     return message.channel.send('must be playing a song');
   }
-  if (server.queue[0].includes(SOUNDCLOUD_BASE_LINK) || server.queue[0].includes(TWITCH_BASE_LINK))
+  if (server.queue[0].url.includes(SOUNDCLOUD_BASE_LINK) || server.queue[0].url.includes(TWITCH_BASE_LINK))
     return message.channel.send('lyrics command does not support this stream type');
   message.channel.send('retrieving lyrics...').then(async sentMsg => {
     server.numSinceLastEmbed += 2;
@@ -30,7 +30,7 @@ function runLyricsCommand (message, mgid, args, server) {
     let searchTermRemix;
     let songName;
     let artistName;
-    const lUrl = server.queue[0];
+    const lUrl = server.queue[0].url;
     let infos;
     if (args[1]) {
       args[0] = '';
