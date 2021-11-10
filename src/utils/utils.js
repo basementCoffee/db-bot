@@ -104,23 +104,30 @@ async function createEmbed (url, infos) {
   } else {
     if (!infos) infos = await ytdl.getBasicInfo(url);
     let duration;
-    if (infos.videoDetails.isLiveContent) {
+    let videoDetails = infos.videoDetails;
+    if (!videoDetails) videoDetails = infos;
+    if (videoDetails.isLiveContent || videoDetails.isLive) {
       duration = 'live';
       timeMS = 3600000; // set to 1hr
     } else {
-      duration = formatDuration(infos.formats ? infos.formats[0].approxDurationMs : 0);
-      timeMS = parseInt(duration);
+      if (infos.formats && infos.formats[0]) {
+        timeMS = parseInt(infos.formats[0].approxDurationMs);
+        duration = formatDuration(timeMS || 0);
+      } else {
+        timeMS = videoDetails.durationSec * 1000;
+        duration = formatDuration(timeMS);
+      }
       if (duration === 'NaNm NaNs') {
         duration = 'N/A';
         timeMS = 0;
       }
     }
     embed = new MessageEmbed()
-      .setTitle(`${infos.videoDetails.title}`)
-      .setURL(infos.videoDetails.video_url)
+      .setTitle(`${videoDetails.title}`)
+      .setURL(videoDetails.video_url || videoDetails.shortUrl || infos.url)
       .setColor('#c40d00')
-      .addField('Duration', duration, true)
-      .setThumbnail(infos.videoDetails.thumbnails[0].url);
+      .addField('Duration', duration || videoDetails.duration, true)
+      .setThumbnail(videoDetails.thumbnails[0].url);
   }
   return {
     embed,
@@ -305,21 +312,27 @@ function runSearchCommand (keyName, xdb) {
 
 /**
  * Gets the title of a link.
- * @param url {string} The link to get the title.
+ * @param queueItem The queue item to get the title.
  * @param cutoff {number=} A number representing the cutoff value.
  * @returns {Promise<string>} The title of the provided link.
  */
-async function getTitle (url, cutoff) {
+async function getTitle (queueItem, cutoff) {
   let title;
   try {
-    if (url.includes('spotify')) {
-      title = (await getData(url)).name;
-    } else if (url.includes('soundcloud')) {
-      title = (await scdl.getInfo(url)).title;
+    if (queueItem.type === StreamType.SPOTIFY) {
+      if (!queueItem.infos) queueItem.infos = await getData(queueItem.url);
+      title = queueItem.infos.name;
+    } else if (queueItem.type === 'soundcloud') {
+      if (!queueItem.infos) queueItem.infos = await scdl.getInfo(queueItem.url);
+      title = queueItem.infos.title;
+    } else if (queueItem.type === StreamType.TWITCH) {
+      title = 'twitch livestream';
     } else {
-      title = (await ytdl.getBasicInfo(url)).videoDetails.title;
+      if (!queueItem.infos) queueItem.infos = await ytdl.getBasicInfo(queueItem.url);
+      title = queueItem.infos.videoDetails?.title || queueItem.infos.title;
     }
   } catch (e) {
+    console.log('broken_url', e);
     title = 'broken_url';
   }
   if (cutoff && title.length > cutoff) {
@@ -582,20 +595,48 @@ function endStream (server) {
 /**
  * Un-shifts the provided link to the server's queue.
  * @param server The server.
- * @param url {string} The url to add.
+ * @param queueItem The item to add to the queue.
  */
-function unshiftQueue (server, url) {
-  server.queue.unshift(url);
+function unshiftQueue (server, queueItem) {
+  server.queue.unshift(queueItem);
+}
+
+/**
+ * Creates a queue item.
+ * @param url The URL to add.
+ * @param type The type of URL. Provided as a StreamType.
+ * @param infos The infos of the URL.
+ * @returns {{type, url, infos}}
+ */
+function createQueueItem (url, type, infos) {
+  if (!type) type = getLinkType(url);
+  return {
+    url: url,
+    type: type,
+    infos: infos
+  };
 }
 
 /**
  * Pushes the provided link to the server's queue.
  * @param server The server.
- * @param url {string} The url to add.
+ * @param queueItem The item to add to the queue.
  */
-function pushQueue (server, url) {
-  server.queue.push(url);
+function pushQueue (server, queueItem) {
+  server.queue.push(queueItem);
 }
+
+/**
+ * Returns a StreamType string depending on the source of the infos.
+ * @param url The url to get the type of.
+ * @returns {string} A StreamType.
+ */
+const getLinkType = (url) => {
+  if (url.includes(SPOTIFY_BASE_LINK)) return StreamType.SPOTIFY;
+  else if (url.includes(SOUNDCLOUD_BASE_LINK)) return StreamType.SOUNDCLOUD;
+  else if (url.includes(TWITCH_BASE_LINK)) return StreamType.TWITCH;
+  return StreamType.YOUTUBE;
+};
 
 /**
  * Sets seamless listening on voice channel error. Seamless listening allows the
@@ -617,5 +658,5 @@ module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
   initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
-  shuffleQueue
+  shuffleQueue, createQueueItem, getLinkType
 };
