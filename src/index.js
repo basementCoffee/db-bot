@@ -19,7 +19,7 @@ const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
-  createQueueItem, getLinkType
+  createQueueItem, getLinkType, createMemoryEmbed
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -988,6 +988,9 @@ async function runCommandCases (message) {
       vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
       message.channel.send(vEmbed);
       break;
+    case 'gzmem':
+      message.channel.send(createMemoryEmbed());
+      break;
     // dev commands for testing purposes
     case 'gzh':
       const devCEmbed = new MessageEmbed()
@@ -996,7 +999,8 @@ async function runCommandCases (message) {
           '**calibrate the active bot**' +
           '\n' + prefixString + 'gzs - statistics for the active bot' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
-          '\n' + prefixString + 'gzsm [message] - set a startup message on voice channel join' +
+          '\n' + prefixString + 'gzmem - see the process\'s memory usage' +
+          '\n' + prefixString + 'gzsms [message] - set a startup message for all users on voice channel join' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n' + prefixString + 'gzc - view commands stats' +
           '\n\n**calibrate multiple/other bots**' +
@@ -1034,7 +1038,7 @@ async function runCommandCases (message) {
     case 'gzid':
       message.channel.send(`g: ${message.guild.id}, b: ${bot.user.id}, m: ${message.member.id}`);
       break;
-    case 'gzsm':
+    case 'gzsms':
       if (args[1]) {
         if (args[1] === 'clear') {
           startUpMessage = '';
@@ -1043,10 +1047,9 @@ async function runCommandCases (message) {
         startUpMessage = message.content.substr(message.content.indexOf(args[1]));
         Object.values(servers).forEach(x => x.startUpMessage = false);
         message.channel.send('new startup message is set');
-      } else {
-        message.channel.send('current start up message:' + (startUpMessage ? `\n\`${startUpMessage}\`` : ' ') +
-          '\ntype **gzsm clear** to clear the startup message');
-      }
+      } else if (startUpMessage) {
+        message.channel.send(`current start up message:\n\`${startUpMessage}\`\ntype **gzsm clear** to clear the startup message`);
+      } else message.channel.send('*there is no startup message right now*');
       break;
     case 'gzs':
       const embed = new MessageEmbed()

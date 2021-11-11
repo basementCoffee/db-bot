@@ -444,6 +444,24 @@ function getHelpList (prefixString, numOfPages, version) {
 }
 
 /**
+ * Formats B to MB.
+ * @param data The bytes to format to MB.
+ * @returns {`${number}`} A string that has the number of MB.
+ */
+const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100}`;
+
+/**
+ * Creates an embed regarding memory usage.
+ */
+function createMemoryEmbed () {
+  const memUsage = process.memoryUsage();
+  return new MessageEmbed()
+    .setTitle('Memory Usage')
+    .setDescription(`rss -  ${formatMemoryUsage(memUsage.rss)} MB\nheap -  ` +
+      `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB (${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)`);
+}
+
+/**
  * Produces the help list and manages its reactions.
  * @param message The message instance.
  * @param server The server.
@@ -658,5 +676,5 @@ module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
   initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
-  shuffleQueue, createQueueItem, getLinkType
+  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed
 };
