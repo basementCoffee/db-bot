@@ -17,7 +17,11 @@ let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
  * @returns {Promise<Number>} The number of items added to the queue
  */
 async function addPlaylistToQueue (message, qArray, numItems, playlistUrl, linkType, addToFront, position) {
-  const playlist = await getPlaylistArray(playlistUrl, linkType);
+  const playlist = (await getPlaylistArray(playlistUrl, linkType)) || [];
+  if (playlist.length < 1) {
+    message.channel.send('*could not get data from the link provided*');
+    return 0;
+  }
   try {
     let url;
     if (addToFront) {
