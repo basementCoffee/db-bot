@@ -1,7 +1,7 @@
 const ytdl = require('ytdl-core-discord');
 const {botInVC} = require('../utils/utils');
 const {getData} = require('spotify-url-info');
-const {botID, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK} = require('../utils/constants');
+const {botID, StreamType} = require('../utils/constants');
 // imports for YouTube captions
 const https = require('https');
 const xml2js = require('xml2js');
@@ -22,8 +22,6 @@ function runLyricsCommand (message, mgid, args, server) {
   if ((!botInVC(message) || !server.queue[0]) && !args[1]) {
     return message.channel.send('must be playing a song');
   }
-  if (server.queue[0].url.includes(SOUNDCLOUD_BASE_LINK) || server.queue[0].url.includes(TWITCH_BASE_LINK))
-    return message.channel.send('lyrics command does not support this stream type');
   message.channel.send('retrieving lyrics...').then(async sentMsg => {
     server.numSinceLastEmbed += 2;
     let searchTerm;
@@ -36,8 +34,8 @@ function runLyricsCommand (message, mgid, args, server) {
       args[0] = '';
       searchTerm = args.join(' ').trim();
     } else {
-      if (lUrl.toLowerCase().includes('spotify')) {
-        infos = (server.infos ? server.infos : await getData(lUrl));
+      if (server.queue[0].type === StreamType.SPOTIFY) {
+        infos = server.queue[0].infos || await getData(lUrl);
         songName = infos.name.toLowerCase();
         let songNameSubIndex = songName.search('[-]');
         if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
@@ -68,8 +66,8 @@ function runLyricsCommand (message, mgid, args, server) {
               ' remix';
           }
         }
-      } else {
-        infos = (server.infos ? server.infos : await ytdl.getBasicInfo(lUrl));
+      } else if (server.queue[0].type === StreamType.YOUTUBE) {
+        infos = server.queue[0].infos || await ytdl.getBasicInfo(lUrl);
         if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
           // use video metadata
           searchTerm = songName = infos.videoDetails.media.song;
@@ -116,7 +114,7 @@ function runLyricsCommand (message, mgid, args, server) {
               ' remix';
           }
         }
-      }
+      } else return message.channel.send('*lyrics command not supported for this stream type*');
     }
     if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, server)
         && !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), server)

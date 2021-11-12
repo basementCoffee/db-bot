@@ -8,20 +8,20 @@ let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
 /**
  * Adds playlists to the reference array passed in.
  * @param message The message metadata
- * @param qArray The queue to add to.
- * @param pNums {number} The number of items added to queue
+ * @param qArray {Array} The queue to add to.
+ * @param numItems {number} The number of items added to queue
  * @param playlistUrl {string} The url of the playlist
  * @param linkType {string} Either 'sp' 'sc' or 'yt' depending on the type of link.
  * @param addToFront {boolean=} Optional - true if to add to the front of the queue
  * @param position {number=} Optional - the position of the queue to add the item to
  * @returns {Promise<Number>} The number of items added to the queue
  */
-async function addPlaylistToQueue (message, qArray, pNums, playlistUrl, linkType, addToFront, position) {
+async function addPlaylistToQueue (message, qArray, numItems, playlistUrl, linkType, addToFront, position) {
   const playlist = await getPlaylistArray(playlistUrl, linkType);
   try {
     let url;
     if (addToFront) {
-      let itemsLeft = MAX_QUEUE_S - qArray.length;
+      let itemsLeft = numItems || MAX_QUEUE_S - qArray.length;
       let lowestLengthIndex = Math.min(playlist.length, itemsLeft) - 1;
       let pItem;
       while (lowestLengthIndex > -1) {
@@ -31,7 +31,7 @@ async function addPlaylistToQueue (message, qArray, pNums, playlistUrl, linkType
         if (itemsLeft > 0) {
           if (url) {
             qArray.unshift(createQueueItem(url, linkType, pItem));
-            pNums++;
+            numItems++;
             itemsLeft--;
           }
         } else {
@@ -49,7 +49,7 @@ async function addPlaylistToQueue (message, qArray, pNums, playlistUrl, linkType
               qArray.splice(position, 0, createQueueItem(url, linkType, pItem));
               position++;
             } else qArray.push(createQueueItem(url, linkType, pItem));
-            pNums++;
+            numItems++;
             itemsLeft--;
           }
         } else {
@@ -62,7 +62,7 @@ async function addPlaylistToQueue (message, qArray, pNums, playlistUrl, linkType
     console.log(e);
     message.channel.send('there was an error');
   }
-  return pNums;
+  return numItems;
 }
 
 /**

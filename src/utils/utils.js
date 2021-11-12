@@ -114,7 +114,7 @@ async function createEmbed (url, infos) {
         timeMS = parseInt(infos.formats[0].approxDurationMs);
         duration = formatDuration(timeMS || 0);
       } else {
-        timeMS = videoDetails.durationSec * 1000;
+        timeMS = videoDetails.durationSec * 1000 || convertYTFormatToMS(videoDetails.duration.split(':'));
         duration = formatDuration(timeMS);
       }
       if (duration === 'NaNm NaNs') {
@@ -143,9 +143,9 @@ async function createEmbed (url, infos) {
  */
 async function updateActiveEmbed (server) {
   try {
-    if (!server.currentEmbed) return;
-    let embed = await createEmbed(server.currentEmbedLink, server.infos);
-    server.infos = embed.infos;
+    if (!server.currentEmbed && server.queue[0]) return;
+    let embed = await createEmbed(server.queue[0].url, server.queue[0].infos);
+    server.queue[0].infos = embed.infos;
     embed = embed.embed;
     embed.addField('Queue', getQueueText(server), true);
     server.currentEmbed.edit(embed);
@@ -510,20 +510,14 @@ function initializeServer (mgid) {
     autoplay: false,
     // boolean status of looping
     loop: false,
-    // the collector for the current embed message
-    collector: false,
-    // the metadata of the link
-    infos: false,
-    // the playback status message
-    followUpMessage: undefined,
-    // the active link of what is playing
-    currentEmbedLink: undefined,
-    // the alternative link of what is playing
-    altUrl: undefined,
-    // the current embed message
-    currentEmbed: undefined,
     // the number of items sent since embed generation
     numSinceLastEmbed: 0,
+    // the embed object
+    currentEmbed: undefined,
+    // the collector for the current embed message
+    collector: false,
+    // the playback status message
+    followUpMessage: undefined,
     // the id of the channel for now-playing embeds
     currentEmbedChannelId: undefined,
     // boolean status of verbose mode - save embeds on true
@@ -552,6 +546,7 @@ function initializeServer (mgid) {
       type: null,
       // the readable stream
       stream: null
+      // urlAlt is added if it's a YT stream
     },
     // if a twitch notification was sent
     twitchNotif: {

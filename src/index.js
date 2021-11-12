@@ -28,13 +28,9 @@ const {runLyricsCommand} = require('./playback/lyrics');
 const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 const {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode,
+  buildNo
 } = require('./utils/constants');
-
-// UPDATE HERE - before release
-let devMode = false; // default false
-const buildNo = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('') + '02';
-let isInactive = !devMode;
 
 process.setMaxListeners(0);
 
@@ -46,6 +42,9 @@ process.setMaxListeners(0);
 function contentContainCongrats (word) {
   return (word.includes('grats') || word.includes('ongratulations') || word.includes('omedetou'));
 }
+
+let devMode = startupDevMode;
+let isInactive = !devMode;
 
 /**
  * Skips the link that is currently being played.
@@ -70,8 +69,7 @@ function skipLink (message, voiceChannel, playMessageToChannel, server, noHistor
     if (server.queue.length > 0) {
       playLinkToVC(message, server.queue[0], voiceChannel, server).then();
     } else if (server.autoplay && link) {
-      runAutoplayCommand(message, server, voiceChannel, server.altUrl,
-        (server.currentEmbedLink === server.altUrl ? server.infos : undefined)).then();
+      runAutoplayCommand(message, server, voiceChannel, server.queueHistory[server.queueHistory.length - 1]).then();
     } else {
       runStopPlayingCommand(message.guild.id, voiceChannel, true, server, message, message.member);
     }
@@ -430,7 +428,8 @@ async function runCommandCases (message) {
       break;
     case 'l':
     case 'loop':
-      if (!server.currentEmbedLink) {
+      if (!botInVC(message)) {
+        // only send error message for 'loop' command
         if (args[0].length > 1) await message.channel.send('must be actively playing to loop');
         return;
       }
@@ -547,23 +546,23 @@ async function runCommandCases (message) {
     case 'find':
     case 'lookup':
     case 'search':
-      runUniversalSearchCommand(message, server, mgid, (args[1] ? args[1] : server.currentEmbedLink));
+      runUniversalSearchCommand(message, server, mgid, (args[1] ? args[1] : server.queue[0]?.url)).then();
       break;
     // .m is the personal search command
     case 'ml':
     case 'ms':
       if (botInVC(message) || args[0])
-        runUniversalSearchCommand(message, server, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
+        runUniversalSearchCommand(message, server, `p${message.member.id}`, (args[1] ? args[1] : server.queue[0]?.url)).then();
       break;
     case 'mfind':
     case 'mlookup':
     case 'msearch':
-      runUniversalSearchCommand(message, server, `p${message.member.id}`, (args[1] ? args[1] : server.currentEmbedLink));
+      runUniversalSearchCommand(message, server, `p${message.member.id}`, (args[1] ? args[1] : server.queue[0]?.url)).then();
       break;
     case 'gfind':
     case 'glookup':
     case 'gsearch':
-      runUniversalSearchCommand(message, server, `entries`, (args[1] ? args[1] : server.currentEmbedLink));
+      runUniversalSearchCommand(message, server, `entries`, (args[1] ? args[1] : server.queue[0]?.url)).then();
       break;
     case 'size':
       if (!args[1]) {
@@ -944,12 +943,12 @@ async function runCommandCases (message) {
         return message.channel.send('only the DJ can clear the queue');
       if (server.dictator && server.dictator.id !== message.member.id)
         return message.channel.send('only the Dictator can clear the queue');
-      const currentSong = (botInVC(message)) ? server.queue[0] : undefined;
+      const currentQueueItem = (botInVC(message)) ? server.queue[0] : undefined;
       server.queue.length = 0;
       server.queueHistory.length = 0;
-      if (currentSong) {
-        server.queue[0] = currentSong;
-        await sendLinkAsEmbed(message, server.currentEmbedLink, message.member.voice.channel, server, server.infos);
+      if (currentQueueItem) {
+        server.queue[0] = currentQueueItem;
+        await sendLinkAsEmbed(message, currentQueueItem, message.member.voice.channel, server);
       }
       message.channel.send('The queue has been scrubbed clean');
       break;
@@ -979,7 +978,7 @@ async function runCommandCases (message) {
       server.silence = false;
       message.channel.send('*song notifications enabled*');
       if (dispatcherMap[message.member.voice.channel.id]) {
-        sendLinkAsEmbed(message, whatspMap[message.member.voice.channel.id], message.member.voice.channel, server).then();
+        sendLinkAsEmbed(message, server.queue[0], message.member.voice.channel, server).then();
       }
       break;
     // print out the version number
@@ -1270,7 +1269,7 @@ async function runInsertCommand (message, mgid, term, position, server) {
       pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.YOUTUBE, false, num);
     } else if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
       args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-      pNums = await addPlaylistToQueue(message, server.queue, pNums, args[1], StreamType.SOUNDCLOUD, false, num);
+      pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.SOUNDCLOUD, false, num);
     } else {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get(CH.err).send('there was a playlist reading error: ' + args[1]);
@@ -1760,8 +1759,8 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
       runAddCommand(args, message, sheetName, printMsgToChannel);
       return;
-    } else if (message.member.voice.channel && server.currentEmbedLink) {
-      args[2] = server.currentEmbedLink;
+    } else if (message.member.voice.channel && server.queue[0]?.url) {
+      args[2] = server.queue[0].url;
       if (args[1].includes('.')) return message.channel.send('cannot add names with \'.\'');
       message.channel.send('Would you like to add what\'s currently playing as **' + (args[1]) + '**?').then(sentMsg => {
         sentMsg.react('✅').then(() => sentMsg.react('❌'));
@@ -1797,12 +1796,12 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
  * Prints the queue to the console
  * @param message The message that triggered the bot
  * @param mgid The message guild id
- * @param noErrorMsg Optional - Do not send error msg if true
+ * @param noErrorMsg Optional - Do not send error msg if not in a voice channel
  * @returns {Promise<void>|*}
  */
 function runQueueCommand (message, mgid, noErrorMsg) {
   if (servers[mgid].queue < 1 || !message.guild.voice.channel) {
-    if (noErrorMsg) return;
+    if (noErrorMsg && !botInVC(message)) return;
     return message.channel.send('There is no active queue right now');
   }
   // a copy of the queue
@@ -1903,7 +1902,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                   return;
                 }
                 serverQueue.splice(num, 0, createQueueItem(link, null, null));
-                if (server.currentEmbedLink) updateActiveEmbed(server).then();
+                if (server.queue.length > 0) updateActiveEmbed(server).then();
                 let pageNum;
                 if (num === 11) pageNum = 0;
                 else pageNum = Math.floor((num - 1) / 10);
@@ -1945,7 +1944,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 server.queue.splice(num, 1);
                 serverQueue.splice(num, 1);
                 message.channel.send('removed item from queue');
-                if (server.currentEmbedLink) updateActiveEmbed(server).then();
+                if (server.queue.length > 0) updateActiveEmbed(server).then();
                 let pageNum;
                 if (num === 11) pageNum = 0;
                 else pageNum = Math.floor((num - 1) / 10);
@@ -2228,8 +2227,8 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
   }
   if (!searchResult) {
     indexToLookup = 0;
-    searchResult = await ytsr(searchTerm, {pages: 1});
-    if (!searchResult.items[0]) {
+    searchResult = (await ytsr(searchTerm, {pages: 1})).items.filter(x => x.type === 'video');
+    if (!searchResult[0]) {
       if (!searchTerm.includes('video')) {
         return runYoutubeSearch(message, args, mgid, playNow, server, indexToLookup, searchTerm + ' video', undefined, playlistMsg);
       }
@@ -2242,31 +2241,28 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
   }
   let ytLink;
   // if we found a video then play it
-  if (searchResult.items[indexToLookup].type === 'video') {
-    ytLink = searchResult.items[indexToLookup].url;
-  } else {
-    // else try again but with a new index
-    return runYoutubeSearch(message, args, mgid, playNow, server, indexToLookup += 2, searchTerm, searchResult, playlistMsg);
-  }
+  ytLink = searchResult[indexToLookup].url;
   if (!ytLink) return message.channel.send('could not find video');
   if (playNow) {
     adjustQueueForPlayNow(dispatcherMap[message.member.voice.channel.id], server);
-    server.queue.unshift(createQueueItem(ytLink, StreamType.YOUTUBE, searchResult.items[indexToLookup]));
+    server.queue.unshift(createQueueItem(ytLink, StreamType.YOUTUBE, searchResult[indexToLookup]));
     try {
-      await playLinkToVC(message, createQueueItem(ytLink, StreamType.YOUTUBE, searchResult.items[indexToLookup]), message.member.voice.channel, server);
+      await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
+
     } catch (e) {
+      console.log(e);
       return;
     }
   } else {
     server.queue.push(createQueueItem(ytLink, StreamType.YOUTUBE, null));
     if (server.queue.length === 1) {
       try {
-        await playLinkToVC(message, ytLink, message.member.voice.channel, server);
+        await playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
       } catch (e) {
         return;
       }
     } else {
-      const foundTitle = searchResult.items[indexToLookup].title;
+      const foundTitle = searchResult[indexToLookup].title;
       let sentMsg;
       if (foundTitle.charCodeAt(0) < 120) {
         sentMsg = await message.channel.send('*added **' + foundTitle.replace(/\*/g, '') + '** to queue*');
@@ -2324,71 +2320,63 @@ async function runYoutubeSearch (message, args, mgid, playNow, server, indexToLo
     let res;
     let notActive = true;
     let reactionCollector2;
-    let msg2;
     collector.on('collect', async (reaction, reactionCollector) => {
       clearTimeout(server.searchReactionTimeout);
       server.searchReactionTimeout = setTimeout(() => {collector.stop();}, 60000);
       if (!playlistMsg) {
-        res = searchResult.items.slice(indexToLookup + 1, 6).map(x => {
-          if (x.type === 'video') return x.title;
-          else return '';
-        });
-        for (let i = 0; i < res.length; i++) {
-          if (res[i] === '') {
-            res.splice(i, 1);
-            i--;
-          }
-        }
-        let finalString = '**- Pick a different video -**\n';
+        res = searchResult.slice(indexToLookup + 1, 6).map(x => `${x.title}`);
+        let finalString = ''; //**- Pick a different video -**
         let i = 0;
         res.forEach(x => {
           i++;
           return finalString += i + '. ' + x + '\n';
         });
-        playlistMsg = await message.channel.send(finalString);
+        const playlistEmebed = new MessageEmbed()
+          .setTitle(`Pick a different video`)
+          .setColor('#ffffff')
+          .setDescription(`${finalString}\n***What would you like me to play? (1-${res.length})*** *[or type 'q' to quit]*`);
+        playlistMsg = await message.channel.send(playlistEmebed);
       }
       if (notActive) {
         notActive = false;
-        message.channel.send('***What would you like me to play? (1-' + (res.length) + ')*** *[or type \'q\' to quit]*').then(msg => {
-          reactionCollector2 = reactionCollector;
-          msg2 = msg;
-          const filter = m => {
-            return (m.author.id !== botID && reactionCollector.id === m.author.id);
-          };
-          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-            .then(messages => {
-              if (!reactionCollector2) return;
-              let playNum = parseInt(messages.first().content && messages.first().content.trim());
-              if (playNum) {
-                if (playNum < 1 || playNum > res.length) {
-                  message.channel.send('*invalid number*');
-                } else {
-                  server.queueHistory.push(server.queue.shift());
-                  runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
-                }
+
+        reactionCollector2 = reactionCollector;
+        const filter = m => {
+          return (m.author.id !== botID && reactionCollector.id === m.author.id);
+        };
+        message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+          .then(messages => {
+            if (!reactionCollector2) return;
+            let playNum = parseInt(messages.first().content && messages.first().content.trim());
+            if (playNum) {
+              if (playNum < 1 || playNum > res.length) {
+                message.channel.send('*invalid number*');
+              } else {
+                server.queueHistory.push(server.queue.shift());
+                runYoutubeSearch(message, args, mgid, true, server, playNum + 1, searchTerm, searchResult, playlistMsg);
               }
-              clearTimeout(server.searchReactionTimeout);
-              server.searchReactionTimeout = setTimeout(() => {collector.stop();}, 22000);
-              if (msg.deletable) msg.delete();
-              notActive = true;
-            }).catch(() => {
-            if (msg.deletable) msg.delete();
+            }
+            if (playlistMsg?.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;}).catch();
+            clearTimeout(server.searchReactionTimeout);
+            server.searchReactionTimeout = setTimeout(() => {collector.stop();}, 22000);
             notActive = true;
-          });
+          }).catch(() => {
+          if (playlistMsg?.deletable) playlistMsg.delete().catch();
+          notActive = true;
         });
       }
     });
     collector.on('end', () => {
       if (playlistMsg?.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
-      message.reactions.removeAll();
+      if (message.deletable && message.reactions) message.reactions.removeAll();
       server.searchReactionTimeout = null;
     });
     collector.on('remove', (reaction, user) => {
-      if (playlistMsg?.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
       if (!notActive && reactionCollector2.id === user.id) {
         reactionCollector2 = false;
-        if (msg2.deletable) msg2.delete();
+        if (playlistMsg?.deletable) playlistMsg.delete().catch();
         notActive = true;
+        playlistMsg = undefined;
       }
     });
   }
@@ -2738,7 +2726,7 @@ async function updateVoiceState (update) {
       server.leaveVCTimeout = null;
     }
     clearDJTimer(server);
-    await sendLinkAsEmbed(server.currentEmbed, server.currentEmbedLink, update.channel, server, server.infos, false).then(() => {
+    await sendLinkAsEmbed(server.currentEmbed, server.queueHistory[0], update.channel, server, false).then(() => {
       // end the stream (if applicable)
       if (server.streamData.stream) endStream(server);
       server.numSinceLastEmbed = 0;
@@ -2748,9 +2736,7 @@ async function updateVoiceState (update) {
       server.voteAdmin.length = 0;
       server.lockQueue = false;
       server.dictator = null;
-      server.infos = null;
       server.autoplay = false;
-      server.currentEmbedLink = null;
       server.userKeys.clear();
       server.queueHistory.length = 0;
       if (server.currentEmbed?.reactions) server.collector.stop();
@@ -2805,9 +2791,8 @@ async function updateVoiceState (update) {
  * @param vc The voice channel to play the song in.
  * @param server The server playback metadata.
  * @param retries {number} Optional - Integer representing the number of retries.
- * @param infos Optional - The embed infos.
  */
-async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos) {
+async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
   let whatToPlay = queueItem.url;
   if (!whatToPlay) {
     queueItem = server.queue[0];
@@ -2827,7 +2812,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
     server.voteRewindMembersId.length = 0;
     server.votePlayPauseMembersId.length = 0;
   }
-  infos = server.infos = infos || queueItem.infos;
   // the alternative url to play
   let urlAlt = whatToPlay;
   let connection = server.connection;
@@ -2837,8 +2821,8 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
       await new Promise(res => setTimeout(res, 110));
     } catch (e) {
       const eMsg = e.toString();
-      if (eMsg.includes('it is full')) message.channel.send('*cannot join voice channel, it is full*');
-      else if (eMsg.includes('VOICE_JOIN_CHANNEL')) message.channel.send('*permissions error: cannot join voice channel*');
+      if (eMsg.includes('it is full')) message.channel.send('\`error: cannot join voice channel, it is full\`');
+      else if (eMsg.includes('VOICE_JOIN_CHANNEL')) message.channel.send('\`permissions error: cannot join voice channel\`');
       else {
         message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
         console.log(e);
@@ -2867,11 +2851,9 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
     } else {
       whatToPlay = linkFormatter(whatToPlay, SPOTIFY_BASE_LINK);
       let itemIndex = 0;
-      if (!infos) {
+      if (!queueItem.infos) {
         try {
-          infos = await getData(whatToPlay);
-          server.infos = infos;
-          queueItem.infos = infos;
+          queueItem.infos = await getData(whatToPlay);
         } catch (e) {
           if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries);
           console.log(e);
@@ -2882,11 +2864,11 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
         }
       }
       let artists = '';
-      if (infos.artists) {
-        infos.artists.forEach(x => artists += x.name + ' ');
+      if (queueItem.infos.artists) {
+        queueItem.infos.artists.forEach(x => artists += x.name + ' ');
         artists = artists.trim();
       } else artists = 'N/A';
-      let search = await ytsr(infos.name + ' ' + artists, {pages: 1});
+      let search = await ytsr(queueItem.infos.name + ' ' + artists, {pages: 1});
       let youtubeDuration;
       if (search.items[itemIndex]) {
         if (search.items[itemIndex].duration) {
@@ -2895,13 +2877,12 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
           const ytdlInfos = await ytdl.getBasicInfo(search.items[itemIndex].url);
           youtubeDuration = ytdlInfos.formats[itemIndex].approxDurationMs || 0;
         } else {
-          server.infos = null;
           skipLink(message, vc, false, server, true);
           await message.channel.send(`link not playable: <${search.items[itemIndex].url}>`);
           await updateActiveEmbed(server);
           return;
         }
-        const spotifyDuration = parseInt(infos.duration_ms);
+        const spotifyDuration = parseInt(queueItem.infos.duration_ms);
         let itemIndex2 = itemIndex + 1;
         while (search.items[itemIndex2] && search.items[itemIndex2].type !== 'video' && itemIndex2 < 6) {
           itemIndex2++;
@@ -2913,7 +2894,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
           itemIndex = itemIndex2;
         }
       } else {
-        search = await ytsr(infos.name + ' ' + artists + ' lyrics', {pages: 1});
+        search = await ytsr(queueItem.infos.name + ' ' + artists + ' lyrics', {pages: 1});
       }
       if (search.items[itemIndex]) queueItem.urlAlt = urlAlt = search.items[itemIndex].url;
       else {
@@ -2990,6 +2971,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
       });
       streamHWM = 1 << 25;
       encoderType = 'opus';
+      queueItem.urlAlt = urlAlt;
     }
     dispatcher = connection.play(stream, {
       type: encoderType,
@@ -2999,11 +2981,9 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
     dispatcherMap[vc.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
-      server.currentEmbedLink = whatToPlay;
       server.currentEmbed = null;
-    } else if (!(retries && server.currentEmbedLink === whatToPlay)) {
-      await sendLinkAsEmbed(message, whatToPlay, vc, server, infos).then(() => dispatcher.setVolume(0.5));
-      queueItem.infos = server.infos;
+    } else if (!(retries && whatToPlay === server.queue[0].url)) {
+      await sendLinkAsEmbed(message, queueItem, vc, server).then(() => dispatcher.setVolume(0.5));
     }
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
       pauseComputation(vc, true);
@@ -3012,13 +2992,12 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
         res();
       }, 3000));
     } else dispatcherMapStatus[vc.id] = false;
-    server.altUrl = urlAlt;
     server.skipTimes = 0;
     dispatcher.on('error', async (e) => {
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
-        if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries, server.infos).then();
+        if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries).then();
         return;
       }
       skipLink(message, vc, false, server, false);
@@ -3049,7 +3028,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
         if (server.queue.length > 0) {
           playLinkToVC(message, server.queue[0], vc, server);
         } else if (server.autoplay) {
-          runAutoplayCommand(message, server, vc, urlAlt, (whatToPlay === urlAlt ? server.infos : undefined));
+          runAutoplayCommand(message, server, vc, queueItem);
         } else {
           if (server.collector) server.collector.stop();
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), LEAVE_VC_TIMEOUT);
@@ -3063,7 +3042,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
     });
     if (!retries) {
       playbackTimeout = setTimeout(() => {
-        if (server.queue[0].url === whatToPlay && botInVC(message) && dispatcher.streamTime < 1) {
+        if (server.queue[0]?.url === whatToPlay && botInVC(message) && dispatcher.streamTime < 1) {
           playLinkToVC(message, queueItem, vc, server, ++retries);
         }
       }, 2000);
@@ -3135,42 +3114,47 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, infos)
  * @param message The message metadata.
  * @param server The server.
  * @param vc The voice channel to be played in.
- * @param whatToPlay The prev YT link.
- * @param infos Optional - The infos of the prev YT link.
+ * @param queueItem The last queueItem.
  * @returns {Promise<void>}
  */
-async function runAutoplayCommand (message, server, vc, whatToPlay, infos) {
-  try {
-    const links = [await getRecLink(whatToPlay, infos, 0)];
-    // ensures that the second to last song played is not the same as current
-    if (server.queueHistory.length > 1 && server.queueHistory[server.queueHistory.length - 2] === links[0]) {
-      links.push(await getRecLink(whatToPlay, infos, 1));
-    }
-    while (links.length) {
-      const link = links.pop();
-      if (link) {
-        server.queue.push(createQueueItem(link, StreamType.YOUTUBE));
-        playLinkToVC(message, server.queue[0], vc, server).then();
-        return;
+async function runAutoplayCommand (message, server, vc, queueItem) {
+  if (queueItem?.urlAlt) {
+    const whatToPlay = queueItem.urlAlt;
+    try {
+      const links = [await getRecLink(whatToPlay, queueItem.infos, 0)];
+      // ensures that the second to last song played is not the same as current
+      if (server.queueHistory.length > 1 && server.queueHistory[server.queueHistory.length - 2] === links[0]) {
+        links.push(await getRecLink(whatToPlay, queueItem.infos, 1));
       }
-    }
-  } catch (e) {}
-  message.channel.send('*could not find a video to play*');
-  server.collector.stop();
-  dispatcherMap[vc.id] = false;
+      while (links.length) {
+        const link = links.pop();
+        if (link) {
+          server.queue.push(createQueueItem(link, StreamType.YOUTUBE));
+          playLinkToVC(message, server.queue[0], vc, server).then();
+          return;
+        }
+      }
+    } catch (e) {}
+    message.channel.send('*could not find a video to play*');
+    server.collector.stop();
+    dispatcherMap[vc.id] = false;
+  } else {
+    message.channel.send(`*smartplay is not supported for this stream type*`);
+    runStopPlayingCommand(message.guild.id, vc, true, server, message, message.member);
+  }
 }
 
 /**
  * Gets the recommended link from infos depending on the given link and index.
  * @param whatToPlay The link to find recommendations for.
- * @param infos The infos of whatToPlay.
+ * @param infos Optional - The infos of whatToPlay.
  * @param index The index of the recommendation to get.
  * @returns {Promise<string|undefined>} A new link if successful.
  */
 async function getRecLink (whatToPlay, infos, index = 0) {
   try {
     let id;
-    if (infos) id = infos.related_videos[index].id;
+    if (infos && infos.related_videos) id = infos.related_videos[index].id;
     else id = (await ytdl.getBasicInfo(whatToPlay)).related_videos[index].id;
     return `https://www.youtube.com/watch?v=${id}`;
   } catch (e) {
@@ -3271,31 +3255,31 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
 
 /**
  * Sends an embed to the channel depending on the given link.
- * If not given a voice channel then playback buttons will not appear.
+ * If not given a voice channel then playback buttons will not appear. This is the main playabck embed.
+ * If no url is provided then returns.
  * @param message the message to send the channel to
- * @param url the url to generate the embed for
+ * @param queueItem the queueItem to generate the embed for
  * @param voiceChannel the voice channel that the song is being played in, if playing
  * @param server The server playback metadata
- * @param infos Optional - Spotify information if already generated
  * @param forceEmbed Optional - force the embed to be regenerated
  * @returns {Promise<void>}
  */
-async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, forceEmbed) {
-  if (!message || !url) return;
+async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceEmbed) {
+  if (!message || !queueItem) return;
+  const url = queueItem.url;
   if (!voiceChannel) {
     voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return;
   }
   if (server.verbose) forceEmbed = true;
-  if (server.loop && server.currentEmbedLink === url && !forceEmbed && botInVC(message)
+  if (server.loop && url === server.queue[0]?.url && !forceEmbed && botInVC(message)
     && server.currentEmbed.reactions) {
     return;
   }
-  server.currentEmbedLink = url;
-  let embed = await createEmbed(url, infos);
-  server.infos = embed.infos;
-  const timeMS = embed.timeMS;
-  embed = embed.embed;
+  // the created embed
+  const embedData = await createEmbed(url, queueItem.infos);
+  const timeMS = embedData.timeMS;
+  const embed = embedData.embed;
   let showButtons = true;
   if (botInVC(message)) {
     if (server.currentEmbedChannelId !== message.channel.id) {
@@ -3309,7 +3293,8 @@ async function sendLinkAsEmbed (message, url, voiceChannel, server, infos, force
     embed.addField('-', 'Session ended', true);
     showButtons = false;
   }
-  if (url === whatspMap[voiceChannel.id]) {
+  if (server.queue.length < 1 || server.queue[0]?.url === url) {
+    queueItem.infos = embedData.infos;
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed) {
       try {
         const sentMsg = await server.currentEmbed.edit(embed);
@@ -3386,13 +3371,11 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
   server.collector = collector;
 
   collector.on('collect', (reaction, reactionCollector) => {
-    if (!dispatcherMap[voiceChannel.id] || !voiceChannel) {
-      return;
-    }
+    if (!dispatcherMap[voiceChannel.id] || !voiceChannel) return;
     if (reaction.emoji.name === '⏩') {
-      reaction.users.remove(reactionCollector.id).then();
       runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice.channel.members.get(reactionCollector.id));
-      if (server.followUpMessage) {
+      reaction.users.remove(reactionCollector.id).then();
+      if (server.followUpMessage?.deletable) {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
       }
@@ -3468,9 +3451,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     !server.voteAdmin.map(x => x.id).includes(actionUser.id) && server.queue.length > 0) {
     return message.channel.send('*only the DJ can end the session*');
   }
-  try {
-    dispatcherMap[voiceChannel.id].pause();
-  } catch (e) {}
+  dispatcherMap[voiceChannel.id]?.pause();
   if (server.followUpMessage) {
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
@@ -3485,7 +3466,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     }
     dispatcherMap[voiceChannel.id] = false;
     if (whatspMap[voiceChannel.id] !== 'https://www.youtube.com/watch?v=oyFQVZ2h0V8')
-      sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, server, server.infos).then();
+      sendLinkAsEmbed(message, server.queue[0], voiceChannel, server).then();
   }
   if (server.queue[0]) server.queueHistory.push(server.queue.shift());
 }
@@ -3500,6 +3481,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
  * (server or personal)
  */
 async function runWhatsPCommand (message, voiceChannel, keyName, sheetName, sheetLetter) {
+  const server = servers[message.guild.id];
   if (keyName && sheetName) {
     gsrun('A', 'B', sheetName).then((xdb) => {
       let link = xdb.referenceDatabase.get(keyName.toUpperCase());
@@ -3513,13 +3495,13 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetName, shee
         return message.channel.send(link);
       } else {
         message.channel.send(`Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`);
-        return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], servers[message.guild.id].infos, true);
+        return sendLinkAsEmbed(message, server.queue[0], voiceChannel, servers[message.guild.id], true);
       }
     });
   } else if (!voiceChannel) {
     return message.channel.send('must be in a voice channel');
-  } else if (whatspMap[voiceChannel.id]) {
-    return sendLinkAsEmbed(message, whatspMap[voiceChannel.id], voiceChannel, servers[message.guild.id], servers[message.guild.id].infos, true);
+  } else if (server.queue[0]) {
+    return sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, true);
   } else {
     return message.channel.send('nothing is playing right now');
   }
@@ -3537,10 +3519,7 @@ process.on('error', (e) => {
 process
   .on('SIGTERM', shutdown('SIGTERM'))
   .on('SIGINT', shutdown('SIGINT'))
-  .on('uncaughtException', (e) => {
-    console.log('uncaughtException: ', e);
-    return shutdown('uncaughtException');
-  });
+  .on('uncaughtException', (e) => console.log('uncaughtException: ', e));
 
 function shutdown (type) {
   return () => {
