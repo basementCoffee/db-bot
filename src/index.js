@@ -1,6 +1,8 @@
 'use strict';
 require('dotenv').config();
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
+const {exec} = require('child_process');
+const wtf = require('wtfnode');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
@@ -1013,6 +1015,20 @@ async function runCommandCases (message) {
         )
         .setFooter('version: ' + version);
       message.channel.send(devCEmbed);
+      break;
+    case 'gwtf':
+      wtf.dump();
+      message.channel.send();
+      break;
+    case 'gupdate':
+      if (process.pid === 4) return;
+      exec('git pull && npm upgrade && pm2 restart index');
+      message.channel.send('updating process...');
+      break;
+    case 'gupdate-all':
+      if (process.pid === 4) return;
+      exec('git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
+      message.channel.send('updating process...');
       break;
     case 'gzc':
       const commandsMapEmbed = new MessageEmbed();
@@ -2224,7 +2240,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
     searchResult = (await ytsr(searchTerm, {pages: 1})).items.filter(x => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);
     if (!searchResult[0]) {
       if (!searchTerm.includes('video')) {
-        return runYoutubeSearch(message, playNow, server, searchTerm + ' video', indexToLookup, null, playlistMsg);
+        return runYoutubeSearch(message, playNow, server, `${searchTerm} video`, indexToLookup, null, playlistMsg);
       }
       return message.channel.send('could not find video');
     }
@@ -2257,8 +2273,6 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
       }
     } else {
       const foundTitle = searchResult[indexToLookup].title;
-      // to generate a button
-      queueItem.ytsr = true;
       let sentMsg;
       if (foundTitle.charCodeAt(0) < 120) {
         sentMsg = await message.channel.send('*added **' + foundTitle.replace(/\*/g, '') + '** to queue*');
