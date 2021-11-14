@@ -3385,7 +3385,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
   collector.on('collect', (reaction, reactionCollector) => {
     if (!dispatcherMap[voiceChannel.id] || !voiceChannel) return;
     switch (reaction.emoji.name) {
-      case reactions.skip:
+      case reactions.SKIP:
         runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice.channel.members.get(reactionCollector.id));
         reaction.users.remove(reactionCollector.id).then();
         if (server.followUpMessage?.deletable) {
