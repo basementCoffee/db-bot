@@ -29,8 +29,9 @@ const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 const {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
   botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode,
-  buildNo
+  buildNo, NUM_SEARCH_RES
 } = require('./utils/constants');
+const {reactions} = require('./utils/reactions');
 
 process.setMaxListeners(0);
 
@@ -1399,16 +1400,16 @@ async function devProcessCommands (message, zmsg) {
         }
         message.channel.send((isInactive ? 'sidelined: ' : (devMode ? 'active: ' : '**active: **')) + process.pid +
           ' (' + version + ')' + dm).then(sentMsg => {
-          let devR = '🔸';
+          let devR = reactions.O_DIAMOND;
           if (devMode) {
             sentMsg.react(devR);
           } else {
-            sentMsg.react('⚙️');
+            sentMsg.react(reactions.GEAR);
           }
 
           const filter = (reaction, user) => {
             return user.id !== botID && user.id === message.member.id &&
-              ['⚙️', devR].includes(reaction.emoji.name);
+              [reactions.GEAR, devR].includes(reaction.emoji.name);
           };
           // updates the existing gzk message
           const updateMessage = () => {
@@ -1439,7 +1440,7 @@ async function devProcessCommands (message, zmsg) {
           }, 4500);
 
           collector.on('collect', (reaction, user) => {
-            if (reaction.emoji.name === '⚙️') {
+            if (reaction.emoji.name === reactions.GEAR) {
               if (!isInactive && bot.voice.connections.size > 0) {
                 let hasDeveloper = false;
                 if (bot.voice.connections.size === 1) {
@@ -1579,7 +1580,7 @@ function dmHandler (message, messageContent) {
     else if (mc.includes('invite '))
       return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
   }
-  const mb = '📤';
+  const mb = reactions.OUTBOX;
   // noinspection JSUnresolvedFunction
   bot.channels.cache.get('870800306655592489')
     .send('------------------------------------------\n' +
@@ -1721,7 +1722,7 @@ function sendMessageToUser (message, userID, reactionUserID) {
         if (messages.first().content && messages.first().content.trim() !== 'q') {
           user.send(messages.first().content).then(() => {
             message.channel.send('Message sent to ' + user.username + '.');
-            message.react('✅').then();
+            message.react(reactions.CHECK).then();
           });
         } else if (messages.first().content.trim().toLowerCase() === 'q') {
           message.channel.send('No message sent.');
@@ -1763,16 +1764,16 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       args[2] = server.queue[0].url;
       if (args[1].includes('.')) return message.channel.send('cannot add names with \'.\'');
       message.channel.send('Would you like to add what\'s currently playing as **' + (args[1]) + '**?').then(sentMsg => {
-        sentMsg.react('✅').then(() => sentMsg.react('❌'));
+        sentMsg.react(reactions.CHECK).then(() => sentMsg.react(reactions.X));
 
         const filter = (reaction, user) => {
-          return botID !== user.id && ['✅', '❌'].includes(reaction.emoji.name) && message.member.id === user.id;
+          return botID !== user.id && [reactions.CHECK, reactions.X].includes(reaction.emoji.name) && message.member.id === user.id;
         };
 
         const collector = sentMsg.createReactionCollector(filter, {time: 60000, dispose: true});
         collector.once('collect', (reaction) => {
           sentMsg.delete();
-          if (reaction.emoji.name === '✅') {
+          if (reaction.emoji.name === reactions.CHECK) {
             runAddCommand(args, message, sheetName, printMsgToChannel);
           } else {
             message.channel.send('*cancelled*');
@@ -1849,19 +1850,19 @@ function runQueueCommand (message, mgid, noErrorMsg) {
     }
     server.numSinceLastEmbed += 10;
     if (startingIndex + 11 < serverQueue.length) {
-      sentMsg.react('➡️').then(() => {
+      sentMsg.react(reactions.ARROW_R).then(() => {
         if (!collector.ended)
-          sentMsg.react('📥').then(() => {
+          sentMsg.react(reactions.INBOX).then(() => {
             if (server.queue.length > 0 && !collector.ended)
-              sentMsg.react('📤');
+              sentMsg.react(reactions.OUTBOX);
           });
       });
-    } else sentMsg.react('📥').then(() => {if (server.queue.length > 0) sentMsg.react('📤');});
+    } else sentMsg.react(reactions.INBOX).then(() => {if (server.queue.length > 0) sentMsg.react(reactions.OUTBOX);});
     const filter = (reaction, user) => {
       if (message.member.voice.channel) {
         for (const mem of message.member.voice.channel.members) {
           if (user.id === mem[1].id) {
-            return user.id !== botID && ['➡️', '📥', '📤'].includes(reaction.emoji.name);
+            return user.id !== botID && [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX].includes(reaction.emoji.name);
           }
         }
       }
@@ -1872,13 +1873,13 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       sentMsg.reactions.removeAll();
     }, 300500);
     collector.on('collect', (reaction, reactionCollector) => {
-      if (reaction.emoji.name === '➡️' && startingIndex + 11 < serverQueue.length) {
+      if (reaction.emoji.name === reactions.ARROW_R && startingIndex + 11 < serverQueue.length) {
         clearTimeout(arrowReactionTimeout);
         collector.stop();
         sentMsg.reactions.removeAll();
         qIterations += 10;
         generateQueue(startingIndex + 10, true, false, sentMsgArray);
-      } else if (reaction.emoji.name === '📥') {
+      } else if (reaction.emoji.name === reactions.INBOX) {
         if (server.dictator && reactionCollector.id !== server.dictator.id)
           return message.channel.send('only the dictator can insert');
         if (server.lockQueue && server.voteAdmin.filter(x => x.id === reactionCollector.id).length === 0)
@@ -1919,7 +1920,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
             msg.delete();
           });
         });
-      } else if (reaction.emoji.name === '📤') {
+      } else if (reaction.emoji.name === reactions.OUTBOX) {
         if (server.dictator && reactionCollector.id !== server.dictator.id)
           return message.channel.send('only the dictator can remove from the queue');
         if (server.voteAdmin.length > 0 && server.voteAdmin.filter(x => x.id === reactionCollector.id).length === 0)
@@ -2220,10 +2221,10 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
 async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLookup, searchResult, playlistMsg) {
   if (!searchResult) {
     indexToLookup = 0;
-    searchResult = (await ytsr(searchTerm, {pages: 1})).items.filter(x => x.type === 'video');
+    searchResult = (await ytsr(searchTerm, {pages: 1})).items.filter(x => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);
     if (!searchResult[0]) {
       if (!searchTerm.includes('video')) {
-        return runYoutubeSearch(message, playNow, server, searchTerm + ' video', indexToLookup, searchResult, playlistMsg);
+        return runYoutubeSearch(message, playNow, server, searchTerm + ' video', indexToLookup, null, playlistMsg);
       }
       return message.channel.send('could not find video');
     }
@@ -2267,16 +2268,16 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
         sentMsg = await message.channel.send('*added **' + infos.videoDetails.title.replace(/\*/g, '') + '** to queue*');
         await updateActiveEmbed(server);
       }
-      sentMsg.react('❌').then();
+      sentMsg.react(reactions.X).then();
       const filter = (reaction, user) => {
-        return user.id === message.member.id && ['❌'].includes(reaction.emoji.name);
+        return user.id === message.member.id && [reactions.X].includes(reaction.emoji.name);
       };
       const collector = sentMsg.createReactionCollector(filter, {time: 12000, dispose: true});
       collector.once('collect', () => {
         if (!collector.ended) collector.stop();
         const queueStartIndex = server.queue.length - 1;
         // 5 is the number of items checked from the end of the queue
-        const queueEndIndex = Math.max(queueStartIndex - 5, 1);
+        const queueEndIndex = Math.max(queueStartIndex - 5, 0);
         for (let i = queueStartIndex; i > queueEndIndex; i--) {
           if (server.queue[i].url === ytLink) {
             server.queue.splice(i, 1);
@@ -2292,7 +2293,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
     }
   }
   if ((playNow || server.queue.length < 2) && !playlistMsg) {
-    await message.react('📃');
+    await message.react(reactions.PAGE_C);
     let collector;
     if (server.searchReactionTimeout) clearTimeout(server.searchReactionTimeout);
     server.searchReactionTimeout = setTimeout(() => {
@@ -2307,7 +2308,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
       if (message.member.voice.channel) {
         for (const mem of message.member.voice.channel.members) {
           if (user.id === mem[1].id) {
-            return user.id !== botID && ['📃'].includes(reaction.emoji.name);
+            return user.id !== botID && [reactions.PAGE_C].includes(reaction.emoji.name);
           }
         }
       }
@@ -2321,7 +2322,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
       clearTimeout(server.searchReactionTimeout);
       server.searchReactionTimeout = setTimeout(() => {collector.stop();}, 60000);
       if (!playlistMsg) {
-        res = searchResult.slice(indexToLookup + 1, 6).map(x => `${x.title}`);
+        res = searchResult.slice(1).map(x => `${x.title}`);
         let finalString = '';
         let i = 0;
         res.forEach(x => {
@@ -2623,13 +2624,13 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
     };
     message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {
       const server = servers[message.guild.id];
-      sentMsg.react('❔').then(() => sentMsg.react('🔀').then(sentMsg.react('🔄')));
+      sentMsg.react(reactions.QUESTION).then(() => sentMsg.react(reactions.SHUFFLE).then(sentMsg.react(reactions.MIX)));
       const filter = (reaction, user) => {
-        return user.id !== botID && ['❔', '🔄', '🔀'].includes(reaction.emoji.name);
+        return user.id !== botID && [reactions.QUESTION, reactions.MIX, reactions.SHUFFLE].includes(reaction.emoji.name);
       };
       const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
-        if (reaction.emoji.name === '❔') {
+        if (reaction.emoji.name === reactions.QUESTION) {
           let nameToSend;
           let descriptionSuffix;
           if (dbName === "server's keys") {
@@ -2649,7 +2650,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
               prefixString + cmdType + 'del [key]\`')
             .setFooter(descriptionSuffix);
           message.channel.send(embed);
-        } else if (reaction.emoji.name === '🔀') {
+        } else if (reaction.emoji.name === reactions.SHUFFLE) {
           if (!voiceChannel) {
             voiceChannel = message.member.voice.channel;
             if (!voiceChannel) return message.channel.send("must be in a voice channel to randomize");
@@ -2687,7 +2688,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
             }
           }
           return message.channel.send('must be in a voice channel to shuffle play');
-        } else if (reaction.emoji.name === '🔄') {
+        } else if (reaction.emoji.name === reactions.MIX) {
           sortByRecent = !sortByRecent;
           sentMsg.edit(generateKeysEmbed(sortByRecent));
           reaction.users.remove(reactionCollector.id).then();
@@ -3338,17 +3339,17 @@ async function sendEmbedUpdate (message, server, forceEmbed, embed) {
  */
 function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid) {
   if (!sentMsg) return;
-  sentMsg.react('⏪').then(() => {
+  sentMsg.react(reactions.REWIND).then(() => {
     if (collector.ended) return;
-    sentMsg.react('⏯').then(() => {
+    sentMsg.react(reactions.PPAUSE).then(() => {
       if (collector.ended) return;
-      sentMsg.react('⏩').then(() => {
+      sentMsg.react(reactions.SKIP).then(() => {
         if (collector.ended) return;
-        sentMsg.react('⏹').then(() => {
+        sentMsg.react(reactions.STOP).then(() => {
           if (collector.ended) return;
-          sentMsg.react('🔑').then(() => {
+          sentMsg.react(reactions.KEY).then(() => {
             if (collector.ended) return;
-            sentMsg.react('🔐').then();
+            sentMsg.react(reactions.PKEY).then();
           });
         });
       });
@@ -3357,7 +3358,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
 
   const filter = (reaction, user) => {
     if (voiceChannel && user.id !== botID) {
-      if (voiceChannel.members.has(user.id)) return ['⏯', '⏩', '⏪', '⏹', '🔑', '🔐', '📃'].includes(reaction.emoji.name);
+      if (voiceChannel.members.has(user.id)) return [reactions.PPAUSE, reactions.SKIP, reactions.REWIND, reactions.STOP, reactions.KEY, reactions.PKEY, reactions.PAGE_C].includes(reaction.emoji.name);
     }
     return false;
   };
@@ -3368,14 +3369,14 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
 
   collector.on('collect', (reaction, reactionCollector) => {
     if (!dispatcherMap[voiceChannel.id] || !voiceChannel) return;
-    if (reaction.emoji.name === '⏩') {
+    if (reaction.emoji.name === reactions.SKIP) {
       runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice.channel.members.get(reactionCollector.id));
       reaction.users.remove(reactionCollector.id).then();
       if (server.followUpMessage?.deletable) {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
       }
-    } else if (reaction.emoji.name === '⏯' && !dispatcherMapStatus[voiceChannel.id]) {
+    } else if (reaction.emoji.name === reactions.PPAUSE && !dispatcherMapStatus[voiceChannel.id]) {
       let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
       runPauseCommand(sentMsg, tempUser, server, true, false, true);
       tempUser = tempUser.nickname;
@@ -3389,7 +3390,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         }
       }
       reaction.users.remove(reactionCollector.id).then();
-    } else if (reaction.emoji.name === '⏯' && dispatcherMapStatus[voiceChannel.id]) {
+    } else if (reaction.emoji.name === reactions.PPAUSE && dispatcherMapStatus[voiceChannel.id]) {
       let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
       runPlayCommand(sentMsg, tempUser, server, true, false, true);
       if (server.voteAdmin.length < 1 && !server.dictator) {
@@ -3403,27 +3404,27 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         }
       }
       reaction.users.remove(reactionCollector.id).then();
-    } else if (reaction.emoji.name === '⏪') {
+    } else if (reaction.emoji.name === reactions.REWIND) {
       reaction.users.remove(reactionCollector.id).then();
       runRewindCommand(sentMsg, mgid, voiceChannel, undefined, true, false, sentMsg.member.voice.channel.members.get(reactionCollector.id), server);
       if (server.followUpMessage) {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
       }
-    } else if (reaction.emoji.name === '⏹') {
+    } else if (reaction.emoji.name === reactions.STOP) {
       const mem = sentMsg.member.voice.channel.members.get(reactionCollector.id);
       runStopPlayingCommand(mgid, voiceChannel, false, server, sentMsg, mem);
       if (server.followUpMessage) {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;
       }
-    } else if (reaction.emoji.name === '🔑') {
+    } else if (reaction.emoji.name === reactions.KEY) {
       runKeysCommand(sentMsg, server, mgid, '', voiceChannel, '').then();
       server.numSinceLastEmbed += 5;
-    } else if (reaction.emoji.name === '🔐') {
+    } else if (reaction.emoji.name === reactions.PKEY) {
       runKeysCommand(sentMsg, server, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
       server.numSinceLastEmbed += 5;
-    } else if (reaction.emoji.name === '📃') {
+    } else if (reaction.emoji.name === reactions.PAGE_C) {
       // todo
       // if (server.queue[0].yt)
       message.channel.send('*not supported yet*');
