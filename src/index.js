@@ -2,7 +2,6 @@
 require('dotenv').config();
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 const {exec} = require('child_process');
-const wtf = require('wtfnode');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
@@ -991,10 +990,7 @@ async function runCommandCases (message) {
       message.channel.send(vEmbed);
       break;
     case 'gzmem':
-      if (args[1] === 'wtf') {
-        wtf.dump();
-      }
-      message.channel.send(createMemoryEmbed());
+      message.channel.send(await createMemoryEmbed());
       break;
     // dev commands for testing purposes
     case 'gzh':

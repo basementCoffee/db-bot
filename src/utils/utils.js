@@ -6,6 +6,7 @@ const ytpl = require('ytpl');
 const {servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType} = require('./constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
+const cpu = require('node-os-utils').cpu;
 
 /**
  * Given a duration in ms, it returns a formatted string separating
@@ -455,12 +456,14 @@ const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 10
 /**
  * Creates an embed regarding memory usage.
  */
-function createMemoryEmbed () {
+async function createMemoryEmbed () {
   const memUsage = process.memoryUsage();
+  const cpuUsage = await cpu.usage();
   return new MessageEmbed()
     .setTitle('Memory Usage')
     .setDescription(`rss -  ${formatMemoryUsage(memUsage.rss)} MB\nheap -  ` +
-      `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB (${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)`);
+      `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB ` +
+      `(${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)\ncpu: ${cpuUsage}%`);
 }
 
 /**
