@@ -31,7 +31,7 @@ const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 const {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
   botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode,
-  buildNo, NUM_SEARCH_RES
+  buildNo
 } = require('./utils/constants');
 const {reactions} = require('./utils/reactions');
 
@@ -991,6 +991,9 @@ async function runCommandCases (message) {
       message.channel.send(vEmbed);
       break;
     case 'gzmem':
+      if (args[1] === 'wtf') {
+        wtf.dump();
+      }
       message.channel.send(createMemoryEmbed());
       break;
     // dev commands for testing purposes
@@ -1002,6 +1005,7 @@ async function runCommandCases (message) {
           '\n' + prefixString + 'gzs - statistics for the active bot' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n' + prefixString + 'gzmem - see the process\'s memory usage' +
+          '\n' + prefixString + 'gzupdate - updates the pi instance of the bot' +
           '\n' + prefixString + 'gzsms [message] - set a startup message for all users on voice channel join' +
           '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n' + prefixString + 'gzc - view commands stats' +
@@ -1016,18 +1020,13 @@ async function runCommandCases (message) {
         .setFooter('version: ' + version);
       message.channel.send(devCEmbed);
       break;
-    case 'gwtf':
-      wtf.dump();
-      message.channel.send();
-      break;
-    case 'gupdate':
+    case 'gzupdate':
       if (process.pid === 4) return;
-      exec('git pull && npm upgrade && pm2 restart index');
-      message.channel.send('updating process...');
-      break;
-    case 'gupdate-all':
-      if (process.pid === 4) return;
-      exec('git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
+      if (args[1] === 'all') {
+        exec('git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
+      } else {
+        exec('git pull && npm upgrade && pm2 restart index');
+      }
       message.channel.send('updating process...');
       break;
     case 'gzc':
@@ -2235,6 +2234,8 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
  * @returns {Promise<*|boolean|undefined>}
  */
 async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLookup, searchResult, playlistMsg) {
+  // the number of search results to return
+  const NUM_SEARCH_RES = 5;
   if (!searchResult) {
     indexToLookup = 0;
     searchResult = (await ytsr(searchTerm, {pages: 1})).items.filter(x => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);

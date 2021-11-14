@@ -32,8 +32,6 @@ const SOUNDCLOUD_BASE_LINK = 'soundcloud.com';
 const TWITCH_BASE_LINK = 'twitch.tv';
 // 45 minutes
 const LEAVE_VC_TIMEOUT = 2700000;
-// the number of search results to return
-const NUM_SEARCH_RES = 5;
 /**
  * Enum - Acceptable link sources.
  * @type {{TWITCH: string, SOUNDCLOUD: string, SPOTIFY: string, YOUTUBE: string}}
@@ -48,5 +46,5 @@ const StreamType = {
 module.exports = {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
   botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode,
-  buildNo, NUM_SEARCH_RES
+  buildNo
 };
