@@ -2723,7 +2723,7 @@ async function updateVoiceState (update) {
       server.leaveVCTimeout = null;
     }
     clearDJTimer(server);
-    await sendLinkAsEmbed(server.currentEmbed, server.queueHistory[0], update.channel, server, false).then(() => {
+    await sendLinkAsEmbed(server.currentEmbed, server.queue[0] || server.queueHistory[0], update.channel, server, false).then(() => {
       // end the stream (if applicable)
       if (server.streamData.stream) endStream(server);
       server.numSinceLastEmbed = 0;
@@ -3290,7 +3290,7 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
     embed.addField('-', 'Session ended', true);
     showButtons = false;
   }
-  if (server.queue.length < 1 || server.queue[0]?.url === url) {
+  if (server.queue.length < 1 || server.queue[0]?.url === url || !botInVC(message)) {
     queueItem.infos = embedData.infos;
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed) {
       try {
@@ -3358,7 +3358,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
 
   const filter = (reaction, user) => {
     if (voiceChannel && user.id !== botID) {
-      if (voiceChannel.members.has(user.id)) return [reactions.PPAUSE, reactions.SKIP, reactions.REWIND, reactions.STOP, reactions.KEY, reactions.PKEY, reactions.PAGE_C].includes(reaction.emoji.name);
+      if (voiceChannel.members.has(user.id)) return [reactions.PPAUSE, reactions.SKIP, reactions.REWIND, reactions.STOP, reactions.KEY, reactions.PKEY].includes(reaction.emoji.name);
     }
     return false;
   };
@@ -3424,10 +3424,6 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
     } else if (reaction.emoji.name === reactions.PKEY) {
       runKeysCommand(sentMsg, server, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
       server.numSinceLastEmbed += 5;
-    } else if (reaction.emoji.name === reactions.PAGE_C) {
-      // todo
-      // if (server.queue[0].yt)
-      message.channel.send('*not supported yet*');
     }
   });
   collector.on('end', () => {
@@ -3469,7 +3465,6 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     if (whatspMap[voiceChannel.id] !== 'https://www.youtube.com/watch?v=oyFQVZ2h0V8')
       sendLinkAsEmbed(message, server.queue[0], voiceChannel, server).then();
   }
-  if (server.queue[0]) server.queueHistory.push(server.queue.shift());
 }
 
 /**
