@@ -34,6 +34,6 @@ const reactions = {
   GEAR: '⚙️',
   // orange diamond
   O_DIAMOND: '🔸'
-}
+};
 
 module.exports = {reactions};

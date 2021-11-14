@@ -1429,7 +1429,7 @@ async function devProcessCommands (message, zmsg) {
           let prevVCSize = bot.voice.connections.size;
           let prevStatus = isInactive;
           let prevDevMode = devMode;
-          let statusInterval = setInterval(() => {
+          const statusInterval = setInterval(() => {
             if (!(bot.voice.connections.size === prevVCSize && prevStatus === isInactive && prevDevMode === devMode)) {
               prevVCSize = bot.voice.connections.size;
               prevDevMode = devMode;
@@ -3290,7 +3290,7 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
     embed.addField('-', 'Session ended', true);
     showButtons = false;
   }
-  if (server.queue.length < 1 || server.queue[0]?.url === url || !botInVC(message)) {
+  if (server.queue.length < 1 || server.queue[0]?.url === url) {
     queueItem.infos = embedData.infos;
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed) {
       try {
@@ -3369,61 +3369,68 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
 
   collector.on('collect', (reaction, reactionCollector) => {
     if (!dispatcherMap[voiceChannel.id] || !voiceChannel) return;
-    if (reaction.emoji.name === reactions.SKIP) {
-      runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice.channel.members.get(reactionCollector.id));
-      reaction.users.remove(reactionCollector.id).then();
-      if (server.followUpMessage?.deletable) {
-        server.followUpMessage.delete();
-        server.followUpMessage = undefined;
-      }
-    } else if (reaction.emoji.name === reactions.PPAUSE && !dispatcherMapStatus[voiceChannel.id]) {
-      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-      runPauseCommand(sentMsg, tempUser, server, true, false, true);
-      tempUser = tempUser.nickname;
-      if (server.voteAdmin.length < 1 && !server.dictator) {
-        if (server.followUpMessage) {
-          server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-            '\`*');
-        } else {
-          sentMsg.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-            '\`*').then(msg => {server.followUpMessage = msg;});
+    switch (reaction.emoji.name) {
+      case reactions.skip:
+        runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice.channel.members.get(reactionCollector.id));
+        reaction.users.remove(reactionCollector.id).then();
+        if (server.followUpMessage?.deletable) {
+          server.followUpMessage.delete();
+          server.followUpMessage = undefined;
         }
-      }
-      reaction.users.remove(reactionCollector.id).then();
-    } else if (reaction.emoji.name === reactions.PPAUSE && dispatcherMapStatus[voiceChannel.id]) {
-      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-      runPlayCommand(sentMsg, tempUser, server, true, false, true);
-      if (server.voteAdmin.length < 1 && !server.dictator) {
-        tempUser = tempUser.nickname;
-        if (server.followUpMessage) {
-          server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-            '\`*');
+        break;
+      case reactions.PPAUSE:
+        let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
+        if (dispatcherMapStatus[voiceChannel.id]) {
+          runPlayCommand(sentMsg, tempUser, server, true, false, true);
+          if (server.voteAdmin.length < 1 && !server.dictator) {
+            tempUser = tempUser.nickname;
+            if (server.followUpMessage) {
+              server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                '\`*');
+            } else {
+              sentMsg.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                '\`*').then(msg => {server.followUpMessage = msg;});
+            }
+          }
         } else {
-          sentMsg.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-            '\`*').then(msg => {server.followUpMessage = msg;});
+          runPauseCommand(sentMsg, tempUser, server, true, false, true);
+          tempUser = tempUser.nickname;
+          if (server.voteAdmin.length < 1 && !server.dictator) {
+            if (server.followUpMessage) {
+              server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                '\`*');
+            } else {
+              sentMsg.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                '\`*').then(msg => {server.followUpMessage = msg;});
+            }
+          }
         }
-      }
-      reaction.users.remove(reactionCollector.id).then();
-    } else if (reaction.emoji.name === reactions.REWIND) {
-      reaction.users.remove(reactionCollector.id).then();
-      runRewindCommand(sentMsg, mgid, voiceChannel, undefined, true, false, sentMsg.member.voice.channel.members.get(reactionCollector.id), server);
-      if (server.followUpMessage) {
-        server.followUpMessage.delete();
-        server.followUpMessage = undefined;
-      }
-    } else if (reaction.emoji.name === reactions.STOP) {
-      const mem = sentMsg.member.voice.channel.members.get(reactionCollector.id);
-      runStopPlayingCommand(mgid, voiceChannel, false, server, sentMsg, mem);
-      if (server.followUpMessage) {
-        server.followUpMessage.delete();
-        server.followUpMessage = undefined;
-      }
-    } else if (reaction.emoji.name === reactions.KEY) {
-      runKeysCommand(sentMsg, server, mgid, '', voiceChannel, '').then();
-      server.numSinceLastEmbed += 5;
-    } else if (reaction.emoji.name === reactions.PKEY) {
-      runKeysCommand(sentMsg, server, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
-      server.numSinceLastEmbed += 5;
+        reaction.users.remove(reactionCollector.id).then();
+        break;
+      case reactions.REWIND:
+        reaction.users.remove(reactionCollector.id).then();
+        runRewindCommand(sentMsg, mgid, voiceChannel, undefined, true, false, sentMsg.member.voice.channel.members.get(reactionCollector.id), server);
+        if (server.followUpMessage) {
+          server.followUpMessage.delete();
+          server.followUpMessage = undefined;
+        }
+        break;
+      case reactions.STOP:
+        const mem = sentMsg.member.voice.channel.members.get(reactionCollector.id);
+        runStopPlayingCommand(mgid, voiceChannel, false, server, sentMsg, mem);
+        if (server.followUpMessage) {
+          server.followUpMessage.delete();
+          server.followUpMessage = undefined;
+        }
+        break;
+      case reactions.KEY:
+        runKeysCommand(sentMsg, server, mgid, '', voiceChannel, '').then();
+        server.numSinceLastEmbed += 5;
+        break;
+      case reactions.PKEY:
+        runKeysCommand(sentMsg, server, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
+        server.numSinceLastEmbed += 5;
+        break;
     }
   });
   collector.on('end', () => {
