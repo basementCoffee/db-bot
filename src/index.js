@@ -1024,6 +1024,8 @@ async function runCommandCases (message) {
       if (process.pid === 4) return;
       if (args[1] === 'all') {
         exec('git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
+      } else if (args[1] === 'custom' && args[2]) {
+        exec(args.slice(2).join(''));
       } else {
         exec('git pull && npm upgrade && pm2 restart index');
       }
