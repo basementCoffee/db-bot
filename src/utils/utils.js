@@ -126,6 +126,8 @@ async function createEmbed (url, infos) {
       .setTitle(`${videoDetails.title}`)
       .setURL(videoDetails.video_url || videoDetails.shortUrl || infos.url)
       .setColor('#c40d00')
+      .addField('Channel', `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]` +
+        `(${videoDetails.author.url || videoDetails.author.channel_url})`, true)
       .addField('Duration', duration || videoDetails.duration, true)
       .setThumbnail(videoDetails.thumbnails[0].url);
   }
