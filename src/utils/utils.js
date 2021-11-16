@@ -7,6 +7,7 @@ const {servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
+const os = require('os');
 
 /**
  * Given a duration in ms, it returns a formatted string separating
@@ -463,7 +464,8 @@ async function createMemoryEmbed () {
     .setTitle('Memory Usage')
     .setDescription(`rss -  ${formatMemoryUsage(memUsage.rss)} MB\nheap -  ` +
       `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB ` +
-      `(${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)\ncpu: ${cpuUsage}%`);
+      `(${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)\ncpu: ${cpuUsage}%` +
+      `\nload-avg: ${Math.round(os.loadavg()[1] * 100) / 100}%`);
 }
 
 /**

@@ -2985,8 +2985,8 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
     }
     dispatcher = connection.play(stream, {
       type: encoderType,
-      highWaterMark: streamHWM,
-      volume: false
+      volume: false,
+      highWaterMark: streamHWM
     });
     dispatcherMap[vc.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
@@ -3267,7 +3267,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  * Sends an embed to the channel depending on the given link.
  * If not given a voice channel then playback buttons will not appear. This is the main playabck embed.
  * If no url is provided then returns.
- * @param message the message to send the channel to
+ * @param message {module:"discord.js".Message} The message to send the channel to.
  * @param queueItem the queueItem to generate the embed for
  * @param voiceChannel the voice channel that the song is being played in, if playing
  * @param server The server playback metadata
@@ -3305,7 +3305,7 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
   }
   if (server.queue.length < 1 || server.queue[0]?.url === url) {
     queueItem.infos = embedData.infos;
-    if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed) {
+    if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed?.deletable) {
       try {
         const sentMsg = await server.currentEmbed.edit(embed);
         if (sentMsg.reactions.cache.size < 1 && showButtons && dispatcherMap[voiceChannel.id])
@@ -3313,7 +3313,7 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
         return;
       } catch (e) {}
     }
-    await sendEmbedUpdate(message, server, forceEmbed, embed).then(sentMsg => {
+    await sendEmbedUpdate(message.channel, server, forceEmbed, embed).then(sentMsg => {
       if (showButtons && dispatcherMap[voiceChannel.id])
         generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
     });
@@ -3322,22 +3322,24 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
 
 /**
  * Sends a new message embed to the channel. Is a helper for sendLinkAsEmbed.
- * @param message The message.
+ * @param channel {module:"discord.js".TextChannel | module:"discord.js".DMChannel | module:"discord.js".NewsChannel}
+ * Discord's Channel object. Used for sending the new embed.
  * @param server The server.
  * @param forceEmbed {Boolean} If to keep the old embed and send a new one.
  * @param embed The embed to send.
  * @returns {Promise<Message>} The new message that was sent.
  */
-async function sendEmbedUpdate (message, server, forceEmbed, embed) {
+async function sendEmbedUpdate (channel, server, forceEmbed, embed) {
   server.numSinceLastEmbed = 0;
   if (server.currentEmbed) {
     if (!forceEmbed && server.currentEmbed.deletable) {
-      server.currentEmbed.delete();
+      await server.currentEmbed.delete();
     } else if (server.currentEmbed.reactions) {
       server.collector.stop();
     }
   }
-  const sentMsg = await message.channel.send(embed);
+  // noinspection JSUnresolvedFunction
+  const sentMsg = await channel.send(embed);
   server.currentEmbed = sentMsg;
   return sentMsg;
 }
