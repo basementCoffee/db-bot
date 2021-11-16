@@ -56,7 +56,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
         } else {
           typeString = "the server's";
         }
-        message.channel.send('*song added to ' + typeString + " keys list. (see '" + ps + databaseType + "keys')*");
+        message.channel.send(`*song added to ${typeString} keys list. (use \` ${ps}d ${args[1]} \` to play)*`);
       } else if (songsAddedInt > 1) {
         await new Promise(res => setTimeout(res, 1000));
         gsUpdateOverwrite(-1, songsAddedInt, sheetName, xdb.dsInt);

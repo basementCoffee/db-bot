@@ -2632,7 +2632,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       }
       const embedKeysMessage = new MessageEmbed();
       embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
-        .setColor(keyEmbedColor).setFooter("(use '" + prefixString + cmdType + "d [key]' to play)\n");
+        .setColor(keyEmbedColor).setFooter(`play command: ${prefixString + cmdType}d [key]`);
       return embedKeysMessage;
     };
     message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {

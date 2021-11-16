@@ -8,6 +8,7 @@ const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 // Genius imports
 const Genius = require("genius-lyrics");
+const {reactions} = require('../utils/reactions');
 const GeniusClient = new Genius.Client();
 
 /**
@@ -116,10 +117,10 @@ function runLyricsCommand (message, mgid, args, server) {
         }
       } else return message.channel.send('*lyrics command not supported for this stream type*');
     }
-    if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, server)
-        && !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), server)
-        && !await sendSongLyrics(sentMsg, searchTerm, server)) :
-      !await sendSongLyrics(sentMsg, searchTerm, server)) {
+    if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, server, message.member)
+        && !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), server, message.member)
+        && !await sendSongLyrics(sentMsg, searchTerm, server, message.member)) :
+      !await sendSongLyrics(sentMsg, searchTerm, server, message.member)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
         getYoutubeSubtitles(sentMsg, lUrl, server, infos);
       } else {
@@ -135,9 +136,10 @@ function runLyricsCommand (message, mgid, args, server) {
  * @param message The message metadata.
  * @param searchTerm The search term to look for.
  * @param server The server.
+ * @param messageMember {module:"discord.js".GuildMember} The member that send the command.
  * @returns {Promise<Boolean>} The status of if the song lyrics were found and sent.
  */
-async function sendSongLyrics (message, searchTerm, server) {
+async function sendSongLyrics (message, searchTerm, server, messageMember) {
   try {
     const firstSong = (await GeniusClient.songs.search(searchTerm))[0];
     await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
@@ -145,11 +147,27 @@ async function sendSongLyrics (message, searchTerm, server) {
       const filter = (reaction, user) => {
         return user.id !== botID && ['📄'].includes(reaction.emoji.name);
       };
-      const collector = sentMsg.createReactionCollector(filter, {time: 600000});
+      let lyrics = firstSong.lyrics();
+      const collector = sentMsg.createReactionCollector(filter, {time: 300000});
       collector.once('collect', async () => {
-        const lyrics = await firstSong.lyrics();
+        lyrics = await lyrics;
         // send the lyrics text on reaction click
-        message.channel.send((lyrics.length > 1910 ? lyrics.substr(0, 1910) + '...' : lyrics)).then(server.numSinceLastEmbed += 10);
+        const sentLyricsMsg = await message.channel.send((lyrics.length > 1910 ? lyrics.substr(0, 1910) + '...' : lyrics));
+        server.numSinceLastEmbed += 10;
+        // start reactionCollector for lyrics
+        sentLyricsMsg.react(reactions.X).then();
+        const lyricsFilter = (reaction, user) => {
+          return user.id === messageMember.id && [reactions.X].includes(reaction.emoji.name);
+        };
+        const lyricsCollector = sentLyricsMsg.createReactionCollector(lyricsFilter, {time: 300000, dispose: true});
+        lyricsCollector.once('collect', () => {
+          if (sentLyricsMsg.deletable) sentLyricsMsg.delete();
+          lyricsCollector.stop();
+        });
+        lyricsCollector.on('end', () => {
+          if (sentMsg.reactions) sentMsg.reactions.removeAll();
+        });
+
       });
     });
     return true;
