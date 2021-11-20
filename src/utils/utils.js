@@ -1,4 +1,4 @@
-const {getData} = require('spotify-url-info');
+const {getData, getTracks} = require('spotify-url-info');
 const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const spdl = require('spdl-core');
@@ -58,6 +58,32 @@ function botInVC (message) {
     return message.guild.voice?.channel;
   } catch (e) {
     return false;
+  }
+}
+
+/**
+ * Returns whether a given ID has Admin rights.
+ * @param id {string} The id of the member.
+ * @return {boolean} True if provided Admin rights.
+ */
+function isAdmin (id) {
+  // kzbuu
+  return ['268554823283113985', '443150640823271436', '730350452268597300', '799524729173442620',
+    '434532121244073984'].includes(id);
+}
+
+/**
+ * A wrapper for getTracks to handle errors regarding Spotify requests.
+ * @param playlistUrl {string} The url to get the tracks for.
+ * @param retries {number=} Used within the function for error handling.
+ * @returns { Promise<Tracks[]> | Tracks[]}
+ */
+async function getTracksWrapper (playlistUrl, retries = 0) {
+  try {
+    return await getTracks(playlistUrl);
+  } catch {
+    if (retries < 2) return getTracksWrapper(playlistUrl, ++retries);
+    else return [];
   }
 }
 
@@ -678,5 +704,5 @@ module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
   initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
-  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed
+  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper
 };

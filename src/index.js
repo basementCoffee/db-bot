@@ -20,7 +20,7 @@ const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
-  createQueueItem, getLinkType, createMemoryEmbed
+  createQueueItem, getLinkType, createMemoryEmbed, isAdmin
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -69,7 +69,7 @@ function skipLink (message, voiceChannel, playMessageToChannel, server, noHistor
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
-      playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+      playLinkToVC(message, server.queue[0], voiceChannel, server);
     } else if (server.autoplay && link) {
       runAutoplayCommand(message, server, voiceChannel, server.queueHistory[server.queueHistory.length - 1]).then();
     } else {
@@ -159,7 +159,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     linkItem--;
   }
   message.channel.send('*playing now*');
-  playLinkToVC(message, server.queue[0], voiceChannel, server, 0).then();
+  playLinkToVC(message, server.queue[0], voiceChannel, server, 0);
 }
 
 /**
@@ -216,7 +216,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   }
   // if queue was empty then play
   if (queueWasEmpty) {
-    playLinkToVC(message, server.queue[0], message.member.voice.channel, server, 0).then();
+    playLinkToVC(message, server.queue[0], message.member.voice.channel, server, 0);
   } else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
     await updateActiveEmbed(server);
@@ -298,7 +298,8 @@ async function runCommandCases (message) {
   const fwPrefix = firstWordBegin.substr(0, 1);
   // for all non-commands
   if (fwPrefix !== prefixString) {
-    if (devMode) return;
+    // todo - remove when done
+    if (!isAdmin(message.member.id)) return;
     if (firstWordBegin === '.db-bot ') {
       return message.channel.send('Current prefix is: ' + prefixString);
     }
@@ -340,23 +341,25 @@ async function runCommandCases (message) {
         ((message.member.voice && message.member.voice.channel) ?
           '!' : text));
       const congratsLink = (message.content.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
-      if (server.queue[0] !== congratsLink) server.queue.unshift(createQueueItem(congratsLink, StreamType.YOUTUBE, null));
+      if (server.queue[0]?.url !== congratsLink) server.queue.unshift(createQueueItem(congratsLink, StreamType.YOUTUBE, null));
       else return;
       if (message.member.voice?.channel) {
         const vc = message.member.voice.channel;
         setTimeout(() => {
           if (whatspMap[vc.id] === congratsLink && parseInt(dispatcherMap[vc.id].streamTime) > 18000)
             skipLink(message, vc, false, server, true);
-          const item = server.queueHistory.indexOf(congratsLink);
+          const item = server.queueHistory.findIndex((val) => val.url === congratsLink);
           if (item !== -1)
             server.queueHistory.splice(item, 1);
         }, 20000);
-        return playLinkToVC(message, congratsLink, vc, servers[mgid]).then(() => {
-          setTimeout(() => servers[mgid].silence = false, 400);
-          const item = server.queueHistory.indexOf(congratsLink);
-          if (item !== -1)
-            server.queueHistory.splice(item, 1);
-        });
+        const embedStatus = server.silence;
+        server.silence = true;
+        playLinkToVC(message, server.queue[0], vc, servers[mgid]);
+        setTimeout(() => server.silence = embedStatus, 4000);
+        const item = server.queueHistory.findIndex((val) => val.url === congratsLink);
+        if (item !== -1)
+          server.queueHistory.splice(item, 1);
+        return;
       }
     }
     return;
@@ -902,7 +905,7 @@ async function runCommandCases (message) {
       if (message.member.voice?.channel) {
         args[1] = `https://www.${TWITCH_BASE_LINK}/${args[1]}`;
         server.queue.unshift(createQueueItem(args[1], StreamType.TWITCH, null));
-        playLinkToVC(message, args[1], message.member.voice.channel, server).then();
+        playLinkToVC(message, args[1], message.member.voice.channel, server);
       } else {
         message.channel.send('*must be in a voice channel*');
       }
@@ -1235,10 +1238,10 @@ async function runInsertCommand (message, mgid, term, position, server) {
   const args = ['', term, position];
   if (insertCommandVerification(message, server, args) !== 1) return -1;
   if (!verifyUrl(args[1]) && !verifyPlaylist(args[1])) {
-    let xdb = await getXdb(server, mgid);
+    let xdb = await getXdb(server, mgid, true);
     let link = xdb.referenceDatabase.get(args[1].toUpperCase());
     if (!link) {
-      xdb = await getXdb(server, `p${message.member.id}`);
+      xdb = await getXdb(server, `p${message.member.id}`, true);
       link = xdb.referenceDatabase.get(args[1].toUpperCase());
     }
     if (!link) {
@@ -1560,17 +1563,10 @@ async function devProcessCommands (message, zmsg) {
 
 // parses message, provides a response
 bot.on('message', (message) => {
-  if (message.content.substr(0, 3) === '=gz' &&
-    (message.member.id === '730350452268597300' ||
-      message.member.id === '443150640823271436' ||
-      message.member.id === '268554823283113985')) {
+  if (message.content.substr(0, 3) === '=gz' && isAdmin(message.member.id)) {
     return devProcessCommands(message, message.content.substr(3, 1));
   }
-  if (message.author.bot || isInactive || (devMode && message.author.id !== '443150640823271436' &&
-    message.author.id !== '268554823283113985' && message.author.id !== '799524729173442620' &&
-    message.author.id !== '434532121244073984')) {
-    return;
-  }
+  if (message.author.bot || isInactive || (devMode && !isAdmin(message.member.id))) return;
   if (message.channel.type === 'dm') {
     return dmHandler(message, message.content);
   } else {
@@ -1992,7 +1988,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
  */
 async function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg, server) {
   if (!args[1]) {
-    message.channel.send("There's nothing to play! ... I'm just gonna pretend that you didn't mean that.");
+    message.channel.send("*no key provided: put a key-name after the command to play a specific key*");
     return true;
   }
   const voiceChannel = message.member.voice.channel;
@@ -2012,7 +2008,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
     return true;
   }
   server.numSinceLastEmbed++;
-  const xdb = await getXdb(server, sheetName);
+  const xdb = await getXdb(server, sheetName, true);
   let queueWasEmpty = false;
   // if the queue is empty then play
   if (server.queue.length < 1) {
@@ -2048,7 +2044,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
         // check personal db if applicable
         if (sheetName.substr(0, 1) !== 'p') {
           if (!otherSheet) {
-            const xdb = await getXdb(server, `p${message.member.id}`);
+            const xdb = await getXdb(server, `p${message.member.id}`, true);
             otherSheet = xdb.referenceDatabase;
           }
           tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
@@ -2105,7 +2101,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
           } else {
             server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
           }
-          playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+          playLinkToVC(message, server.queue[0], voiceChannel, server);
           message.channel.send('*playing now*');
           return true;
         } else {
@@ -2139,7 +2135,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
         } else {
           server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
         }
-        playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+        playLinkToVC(message, server.queue[0], voiceChannel, server);
         message.channel.send('*playing now*');
         return true;
       } else {
@@ -2158,7 +2154,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
   }
   // if queue was empty then play
   if (queueWasEmpty && server.queue.length > 0) {
-    playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+    playLinkToVC(message, server.queue[0], voiceChannel, server);
   }
   return true;
 }
@@ -2220,7 +2216,7 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
 }
 
 /**
- * Function for searching for message contents on youtube for playback.
+ * Function for searching for message contents on YouTube for playback.
  * Does not check for force disconnect.
  * @param message The discord message
  * @param playNow Bool, whether to override the queue
@@ -2228,7 +2224,7 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
  * @param searchTerm The specific phrase to search for, required if not provided a search result
  * @param indexToLookup Optional - The search index, requires searchResult to be valid
  * @param searchResult Optional - For recursive call with memoization
- * @param playlistMsg Optional - A message to be used for other youtube search results
+ * @param playlistMsg Optional - A message to be used for other YouTube search results
  * @returns {Promise<*|boolean|undefined>}
  */
 async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLookup, searchResult, playlistMsg) {
@@ -2435,7 +2431,7 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
   if (!origArg) return shuffleQueue(message, server.queue);
   if (origArg.toString().includes('.'))
     return addRandomToQueue(message, origArg, undefined, server, true, addToFront);
-  const xdb = await getXdb(server, sheetName);
+  const xdb = await getXdb(server, sheetName, true);
   if (isPlaylist) {
     addRandomToQueue(message, origArg, xdb.congratsDatabase, server, true, addToFront).then();
   } else {
@@ -2579,7 +2575,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
  * @param user Optional - username, overrides the message owner's name
  */
 async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user) {
-  const xdb = await getXdb(server, sheetName);
+  const xdb = await getXdb(server, sheetName, botInVC(message));
   const prefixString = server.prefix;
   const keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
   const keyArraySorted = keyArrayUnsorted.map(x => x).sort();
@@ -2690,7 +2686,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
                   addRandomToQueue(message, -1, xdb.congratsDatabase, server, false).then();
                   return;
                 } else {
-                  const xdb2 = await getXdb(server, `p${reactionCollector.id}`);
+                  const xdb2 = await getXdb(server, `p${reactionCollector.id}`, botInVC(message));
                   addRandomToQueue(message, -1, xdb2.congratsDatabase, server, false).then();
                 }
               } else {
@@ -2801,6 +2797,7 @@ async function updateVoiceState (update) {
  * @param vc The voice channel to play the song in.
  * @param server The server playback metadata.
  * @param retries {number} Optional - Integer representing the number of retries.
+ * @returns {void}
  */
 async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
   let whatToPlay = queueItem.url;
@@ -2991,7 +2988,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
     dispatcherMap[vc.id] = dispatcher;
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
-      server.currentEmbed = null;
+      if (server.currentEmbed) {
+        if (server.currentEmbed.deletable) await server.currentEmbed.delete();
+        server.currentEmbed = null;
+      }
     } else if (!(retries && whatToPlay === server.queue[0].url)) {
       await sendLinkAsEmbed(message, queueItem, vc, server).then(() => dispatcher.setVolume(0.5));
     }
@@ -3007,7 +3007,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
-        if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries).then();
+        if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries);
         return;
       }
       skipLink(message, vc, false, server, false);
@@ -3060,7 +3060,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
   } catch (e) {
     const errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!retries) playLinkToVC(message, queueItem, vc, server, ++retries).then();
+      if (!retries) playLinkToVC(message, queueItem, vc, server, ++retries);
       else {
         server.skipTimes++;
         if (server.skipTimes < 4) {
@@ -3092,7 +3092,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       } else skipLink(message, vc, false, server, true);
       return;
     }
-    if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries);
+    if (retries < 2) {
+      playLinkToVC(message, queueItem, vc, server, ++retries);
+      return;
+    }
     console.log('error in playLinkToVC: ', whatToPlay);
     console.log(e);
     if (server.skipTimes > 3) {
@@ -3140,7 +3143,7 @@ async function runAutoplayCommand (message, server, vc, queueItem) {
         const link = links.pop();
         if (link) {
           server.queue.push(createQueueItem(link, StreamType.YOUTUBE));
-          playLinkToVC(message, server.queue[0], vc, server).then();
+          playLinkToVC(message, server.queue[0], vc, server);
           return;
         }
       }
@@ -3179,14 +3182,14 @@ async function getRecLink (whatToPlay, infos, index = 0) {
  * @param whatToPlayS The broken link provided as a string
  */
 function searchForBrokenLinkWithinDB (message, server, whatToPlayS) {
-  getXdb(server, message.channel.guild.id).then((xdb) => {
+  getXdb(server, message.channel.guild.id, botInVC(message)).then((xdb) => {
     xdb.congratsDatabase.forEach((value, key) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within the server db: ' + key + '*');
       }
     });
   });
-  getXdb(server, `p${message.member.id}`).then((xdb) => {
+  getXdb(server, `p${message.member.id}`, botInVC(message)).then((xdb) => {
     xdb.congratsDatabase.forEach((value, key) => {
       if (value === whatToPlayS) {
         return message.channel.send('*possible broken link within your personal db: ' + key + '*');
@@ -3234,7 +3237,7 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
   let rwIncrementor = 0;
   while (server.queueHistory.length > 0 && rwIncrementor < rewindTimes) {
     if (server.queue.length > (MAX_QUEUE_S + 99)) {
-      playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+      playLinkToVC(message, server.queue[0], voiceChannel, server);
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
     // assumes there is no queueItem to enter while
@@ -3250,9 +3253,9 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
     if (ignoreSingleRewind) {} else {
       message.channel.send('*rewound' + (rewindTimes === 1 ? '*' : ` ${rwIncrementor} times*`));
     }
-    playLinkToVC(message, queueItem, voiceChannel, server).then();
+    playLinkToVC(message, queueItem, voiceChannel, server);
   } else if (server.queue[0]) {
-    playLinkToVC(message, server.queue[0], voiceChannel, server).then();
+    playLinkToVC(message, server.queue[0], voiceChannel, server);
     message.channel.send('*replaying first song*');
   } else {
     message.channel.send('cannot find previous song');
@@ -3449,7 +3452,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
     }
   });
   collector.on('end', () => {
-    if (sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then();
+    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then();
   });
 }
 

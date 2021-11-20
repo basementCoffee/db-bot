@@ -185,12 +185,13 @@ async function runUniversalSearchCommand (message, server, sheetName, providedSt
 /**
  * Get the keys and links from the database. Uses local storage if available.
  * If there is no current embed then also resorts to an API fetch.
- * @param server
- * @param sheetName
- * @returns {Promise<unknown>}
+ * @param server The server object.
+ * @param sheetName {string} The name of the sheet to get info from.
+ * @param save {Boolean=} Whether to save the fetch within the server.
+ * @returns {Promise<{congratsDatabase: Map<>, referenceDatabase: Map<>, line: Array<>, dsInt: int} | undefined>}
  */
-async function getXdb (server, sheetName) {
-  if (!server.currentEmbed) return gsrun('A', 'B', sheetName);
+async function getXdb (server, sheetName, save) {
+  if (!save) return gsrun('A', 'B', sheetName);
   let xdb = server.userKeys.get(`${sheetName}`);
   if (!xdb) {
     xdb = await gsrun('A', 'B', sheetName);

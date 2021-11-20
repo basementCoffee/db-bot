@@ -1,7 +1,7 @@
 const {getTracks} = require('spotify-url-info');
 const ytpl = require('ytpl');
 const {MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, StreamType} = require('../utils/constants');
-const {linkFormatter, createQueueItem, getLinkType} = require('../utils/utils');
+const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require('../utils/utils');
 // should be completed before first query
 let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
 
@@ -79,7 +79,7 @@ async function getPlaylistArray (playlistUrl, type) {
   switch (type) {
     case StreamType.SPOTIFY:
       // filter ensures that each element exists
-      return (await getTracks(playlistUrl)).filter(track => track);
+      return (await getTracksWrapper(playlistUrl)).filter(track => track);
     case StreamType.YOUTUBE:
       const items = (await ytpl(playlistUrl, {pages: 5})).items;
       // index of -1 means that items will repeat
