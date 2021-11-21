@@ -139,7 +139,7 @@ async function createEmbed (url, infos) {
       timeMS = 3600000; // set to 1hr
     } else {
       if (infos.formats && infos.formats[0]) {
-        timeMS = parseInt(infos.formats[0].approxDurationMs);
+        timeMS = parseInt(infos.formats[0].approxDurationMs || videoDetails.lengthSeconds * 1000);
         duration = formatDuration(timeMS || 0);
       } else {
         timeMS = videoDetails.durationSec * 1000 || convertYTFormatToMS(videoDetails.duration.split(':'));
