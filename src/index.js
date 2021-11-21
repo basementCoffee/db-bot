@@ -1162,7 +1162,10 @@ bot.on('guildCreate', guild => {
 
 bot.once('ready', () => {
   // bot starts up as inactive, if no response from the channel then activates itself
-  if (process.pid.toString() === '4') devMode = false;
+  if (process.pid.toString() === '4' && devMode) {
+    bot.channels.cache.get(CH.err).send('`NOTICE: production process started up in devMode` (switching off devMode..)');
+    devMode = false;
+  }
   // noinspection JSUnresolvedFunction
   if (devMode) {
     console.log('-devmode enabled-');
@@ -1984,11 +1987,11 @@ function runQueueCommand (message, mgid, noErrorMsg) {
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
  * @param server The server playback metadata
- * @returns bool whether the play command has been handled accordingly
+ * @returns {Promise<boolean>} whether the play command has been handled accordingly
  */
 async function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg, server) {
   if (!args[1]) {
-    message.channel.send("*no key provided: put a key-name after the command to play a specific key*");
+    message.channel.send("*put a key-name after the command to play a specific key*");
     return true;
   }
   const voiceChannel = message.member.voice.channel;
@@ -2080,7 +2083,8 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
       message.channel.send(unFoundString);
     }
     if (playRightNow) {
-      return playLinkToVC(message, server.queue[0], voiceChannel, server);
+      playLinkToVC(message, server.queue[0], voiceChannel, server);
+      return true;
     } else {
       message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
       await updateActiveEmbed(server);
@@ -3014,7 +3018,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get(CH.err).send(
         (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
-        timestamp: ${formatDuration(dispatcher.streamTime)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]}`)
+        timestamp: ${formatDuration(dispatcher.streamTime)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)
       );
       console.log('dispatcher error: ', e);
     });
@@ -3134,19 +3138,19 @@ async function runAutoplayCommand (message, server, vc, queueItem) {
   if (queueItem?.urlAlt) {
     const whatToPlay = queueItem.urlAlt;
     try {
-      const links = [await getRecLink(whatToPlay, queueItem.infos, 0)];
-      // ensures that the second to last song played is not the same as current
-      if (server.queueHistory.length > 1 && server.queueHistory[server.queueHistory.length - 2] === links[0]) {
-        links.push(await getRecLink(whatToPlay, queueItem.infos, 1));
+      let uniqueVid;
+      let index = 0;
+      // find a new recommendation that is unique
+      do {
+        uniqueVid = await getRecLink(whatToPlay, queueItem.infos, index++);
+      } while (uniqueVid && (server.queueHistory.findIndex((qi) => qi.url === uniqueVid) > -1));
+      // if no unique vid found then return the first recommendation
+      if (!uniqueVid) uniqueVid = await getRecLink(whatToPlay, queueItem.infos, 0);
+      if (uniqueVid) {
+        server.queue.push(createQueueItem(uniqueVid, StreamType.YOUTUBE));
+        playLinkToVC(message, server.queue[0], vc, server);
       }
-      while (links.length) {
-        const link = links.pop();
-        if (link) {
-          server.queue.push(createQueueItem(link, StreamType.YOUTUBE));
-          playLinkToVC(message, server.queue[0], vc, server);
-          return;
-        }
-      }
+      return;
     } catch (e) {}
     message.channel.send('*could not find a video to play*');
     server.collector.stop();
@@ -3160,15 +3164,15 @@ async function runAutoplayCommand (message, server, vc, queueItem) {
 /**
  * Gets the recommended link from infos depending on the given link and index.
  * @param whatToPlay The link to find recommendations for.
- * @param infos Optional - The infos of whatToPlay.
+ * @param infos Optional - The infos of whatToPlay. Will mutate a reference.
  * @param index The index of the recommendation to get.
  * @returns {Promise<string|undefined>} A new link if successful.
  */
 async function getRecLink (whatToPlay, infos, index = 0) {
   try {
     let id;
-    if (infos && infos.related_videos) id = infos.related_videos[index].id;
-    else id = (await ytdl.getBasicInfo(whatToPlay)).related_videos[index].id;
+    if (!infos || !infos.related_videos) infos = await ytdl.getBasicInfo(whatToPlay);
+    id = infos.related_videos[index].id;
     return `https://www.youtube.com/watch?v=${id}`;
   } catch (e) {
     return undefined;
