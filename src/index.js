@@ -298,8 +298,7 @@ async function runCommandCases (message) {
   const fwPrefix = firstWordBegin.substr(0, 1);
   // for all non-commands
   if (fwPrefix !== prefixString) {
-    // todo - remove when done
-    if (!isAdmin(message.member.id)) return;
+    if (devMode) return;
     if (firstWordBegin === '.db-bot ') {
       return message.channel.send('Current prefix is: ' + prefixString);
     }
