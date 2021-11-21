@@ -1776,15 +1776,14 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       if (args[1].includes('.')) return message.channel.send('cannot add names with \'.\'');
       message.channel.send('Would you like to add what\'s currently playing as **' + (args[1]) + '**?').then(sentMsg => {
         sentMsg.react(reactions.CHECK).then(() => sentMsg.react(reactions.X));
-
         const filter = (reaction, user) => {
           return botID !== user.id && [reactions.CHECK, reactions.X].includes(reaction.emoji.name) && message.member.id === user.id;
         };
-
         const collector = sentMsg.createReactionCollector(filter, {time: 60000, dispose: true});
         collector.once('collect', (reaction) => {
           sentMsg.delete();
           if (reaction.emoji.name === reactions.CHECK) {
+            server.userKeys.set(sheetName, null);
             runAddCommand(args, message, sheetName, printMsgToChannel);
           } else {
             message.channel.send('*cancelled*');
