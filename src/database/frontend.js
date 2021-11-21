@@ -91,7 +91,7 @@ async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChann
         }
       }
       if (couldNotFindKey && sendMsgToChannel) {
-        const foundStrings = runSearchCommand(keyName, xdb).ss;
+        const foundStrings = runSearchCommand(keyName, xdb.congratsDatabase).ss;
         if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
           message.channel.send("Could not find '" + keyName + "'\n*Did you mean: " + foundStrings + '*');
         } else {
@@ -168,7 +168,7 @@ async function runUniversalSearchCommand (message, server, sheetName, providedSt
   // returns true if the item provided was a link
   if (runLookupLink(message, sheetName, providedString)) return;
   const xdb = await getXdb(server, sheetName);
-  const so = runSearchCommand(providedString, xdb);
+  const so = runSearchCommand(providedString, xdb.congratsDatabase);
   if (so.ssi) {
     let link;
     if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);

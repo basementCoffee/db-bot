@@ -167,6 +167,22 @@ async function createEmbed (url, infos) {
 }
 
 /**
+ * Tries to get a close match of a valid existing key from the word provided.
+ * Otherwise, returns false.
+ * @param word {string} The word to check.
+ * @param cdb {Map<>} A map containing all the keys and their links.
+ * @return {string | false} The closest valid assumption or false.
+ */
+function getAssumption (word, cdb) {
+  const sObj = runSearchCommand(word, cdb);
+  const ss = sObj.ss;
+  if (sObj.ssi === 1 && ss && word.length > 1 && (ss.length - word.length) < Math.floor((ss.length / 2) + 2)) {
+    return ss;
+  }
+  return false;
+}
+
+/**
  * Sends an updated playback embed with the fields updated. Assumes that a session is ongoing.
  * @param server The server.
  * @returns {Promise<void>}
@@ -313,13 +329,13 @@ function shuffleQueueComputation (queue) {
 
 /**
  * Searches a Map for the given key. Provides the keys that contain the given key.
- * @param keyName the key to search for.
- * @param xdb An object containing a Map called congratsDatabase.
- * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values
+ * @param keyName {string} the key to search for.
+ * @param cdb {Map<>} A map containing all the keys and their links.
+ * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values.
  */
-function runSearchCommand (keyName, xdb) {
+function runSearchCommand (keyName, cdb) {
   const keyNameLen = keyName.length;
-  const keyArray = Array.from(xdb.congratsDatabase.keys());
+  const keyArray = Array.from(cdb.keys());
   let ss = '';
   let ssi = 0;
   let searchKey;
@@ -704,5 +720,5 @@ module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
   initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
-  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper
+  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption
 };

@@ -20,7 +20,7 @@ const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
-  createQueueItem, getLinkType, createMemoryEmbed, isAdmin
+  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -2090,9 +2090,8 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
   } else {
     tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
     if (!tempUrl) {
-      const sObj = runSearchCommand(args[1], xdb);
-      const ss = sObj.ss;
-      if (sObj.ssi === 1 && ss && args[1].length > 1 && (ss.length - args[1].length) < Math.floor((ss.length / 2) + 2)) {
+      const ss = getAssumption(args[1], xdb.congratsDatabase);
+      if (ss) {
         message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
         tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
         const playlistType = verifyPlaylist(tempUrl);
@@ -2115,17 +2114,17 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
         }
       } else if (!printErrorMsg) {
         if (sheetName.includes('p')) {
-          message.channel.send("Could not find '" + args[1] + "' in database.");
+          message.channel.send(`*could not find **${args[1]}** in the keys list*`);
           return true;
         } else {
           runDatabasePlayCommand(args, message, `p${message.member.id}`, playRightNow, false, server).then();
           return true;
         }
       } else if (ss?.length > 0) {
-        message.channel.send("Could not find '" + args[1] + "' in database.\n*Did you mean: " + ss + '*');
+        message.channel.send("*could not find '" + args[1] + "' in database*\n*Did you mean: " + ss + '*');
         return true;
       } else {
-        message.channel.send("Could not find '" + args[1] + "' in database.");
+        message.channel.send(`*could not find **${args[1]}** in the keys list*`);
         return true;
       }
     } else { // did find in database
@@ -2449,7 +2448,7 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
  * Adds a number of items from the database to the queue randomly.
  * @param message The message that triggered the bot
  * @param numOfTimes The number of items to add to the queue, or a playlist url if isPlaylist
- * @param {Map} cdb The database to reference
+ * @param cdb {Map}  The database to reference
  * @param server The server playback metadata
  * @param isPlaylist Optional - True if to randomize just a playlist
  * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
@@ -2465,8 +2464,17 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
   if (isPlaylist) {
     // if given a cdb then it is a key-name, else it is a url
     // playlist name is passed from numOfTimes argument
-    if (cdb) playlistUrl = cdb.get(numOfTimes);
-    else playlistUrl = numOfTimes;
+    if (cdb) {
+      playlistUrl = cdb.get(numOfTimes) || (() => {
+        // tries to get a close match
+        const assumption = getAssumption(numOfTimes, cdb);
+        if (assumption) {
+          message.channel.send(`could not find '${numOfTimes}'. **Assuming '${assumption}'**`);
+          return cdb.get(assumption);
+        }
+        return null;
+      })();
+    } else playlistUrl = numOfTimes;
     if (!playlistUrl) return message.channel.send(`*could not find **${numOfTimes}** in the keys list*`);
     numOfTimes = 1;
     if (verifyPlaylist(playlistUrl)) sentMsg = message.channel.send('randomizing your playlist...');
@@ -3510,7 +3518,7 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetName, shee
       let link = xdb.referenceDatabase.get(keyName.toUpperCase());
       // update link value here
       if (!link) {
-        let sObj = runSearchCommand(keyName, xdb);
+        let sObj = runSearchCommand(keyName, xdb.congratsDatabase);
         if (sObj.ssi === 1 && sObj.ss)
           link = `Assuming **${sObj.ss}**\n${xdb.referenceDatabase.get(sObj.ss.toUpperCase())}`;
       }
