@@ -1,5 +1,5 @@
 const {gsrun, gsUpdateAdd, gsUpdateOverwrite, deleteRows} = require('./backend');
-const {verifyUrl, verifyPlaylist, runSearchCommand} = require('../utils/utils');
+const {verifyUrl, verifyPlaylist, runSearchCommand, botInVC} = require('../utils/utils');
 const {servers} = require('../utils/constants');
 
 /**
@@ -56,7 +56,7 @@ function runAddCommand (args, message, sheetName, printMsgToChannel) {
         } else {
           typeString = "the server's";
         }
-        message.channel.send(`*song added to ${typeString} keys list. (use \` ${ps}d ${args[1]} \` to play)*`);
+        message.channel.send(`*link added to ${typeString} keys list. (use \`${ps}d ${args[1]}\` to play)*`);
       } else if (songsAddedInt > 1) {
         await new Promise(res => setTimeout(res, 1000));
         gsUpdateOverwrite(-1, songsAddedInt, sheetName, xdb.dsInt);
@@ -200,4 +200,20 @@ async function getXdb (server, sheetName, save) {
   return xdb;
 }
 
-module.exports = {runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb};
+/**
+ * Sends the list size of the sheet provided.
+ * @param message The message that triggered the bot.
+ * @param server The server object.
+ * @param sheetName {string} The sheet to reference.
+ * @return {Promise<void>}
+ */
+async function sendListSize (message, server, sheetName) {
+  const xdb = await getXdb(server, sheetName, botInVC(message));
+  const str = `${(sheetName[0] === 'p' ? 'Personal' : 'Server')} list size: ${(xdb?.congratsDatabase.size)}`;
+  message.channel.send(str);
+}
+
+module.exports = {
+  runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb,
+  sendListSize
+};

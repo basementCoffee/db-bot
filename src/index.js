@@ -14,7 +14,7 @@ const m3u8stream = require('m3u8stream');
 const twitch = require('twitch-m3u8');
 const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
 const {
-  runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb
+  runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb, sendListSize
 } = require('./database/frontend');
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
@@ -569,18 +569,13 @@ async function runCommandCases (message) {
       runUniversalSearchCommand(message, server, `entries`, (args[1] ? args[1] : server.queue[0]?.url)).then();
       break;
     case 'size':
-      if (!args[1]) {
-        return gsrun('A', 'B', mgid).then((xdb) =>
-          message.channel.send('Server list size: ' + (xdb.dsInt - 1))
-        );
-      }
+      if (!args[1]) sendListSize(message, server, mgid).then();
       break;
     case 'msize':
-      if (!args[1]) {
-        return gsrun('A', 'B', `p${message.member.id}`).then((xdb) =>
-          message.channel.send('Personal list size: ' + (xdb.dsInt - 1))
-        );
-      }
+      if (!args[1]) sendListSize(message, server, `p${message.member.id}`).then();
+      break;
+    case 'gsize':
+      if (!args[1]) sendListSize(message, server, 'entries').then();
       break;
     case 'ticket':
       if (args[1]) {
@@ -597,15 +592,15 @@ async function runCommandCases (message) {
     case 'playing':
     case 'what':
     case 'now':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], mgid, '');
+      await runWhatsPCommand(message, message.member.voice?.channel, args[1], mgid, '');
       break;
     case 'g?':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], 'entries', 'g');
+      await runWhatsPCommand(message, message.member.voice?.channel, args[1], 'entries', 'g');
       break;
     case 'm?':
     case 'mnow':
     case 'mwhat':
-      await runWhatsPCommand(message, message.member.voice.channel, args[1], `p${message.member.id}`, 'm');
+      await runWhatsPCommand(message, message.member.voice?.channel, args[1], `p${message.member.id}`, 'm');
       break;
     case 'gurl':
     case 'glink':
@@ -3514,21 +3509,20 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
 async function runWhatsPCommand (message, voiceChannel, keyName, sheetName, sheetLetter) {
   const server = servers[message.guild.id];
   if (keyName && sheetName) {
-    gsrun('A', 'B', sheetName).then((xdb) => {
-      let link = xdb.referenceDatabase.get(keyName.toUpperCase());
-      // update link value here
-      if (!link) {
-        let sObj = runSearchCommand(keyName, xdb.congratsDatabase);
-        if (sObj.ssi === 1 && sObj.ss)
-          link = `Assuming **${sObj.ss}**\n${xdb.referenceDatabase.get(sObj.ss.toUpperCase())}`;
-      }
-      if (link) {
-        return message.channel.send(link);
-      } else {
-        message.channel.send(`Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`);
-        return sendLinkAsEmbed(message, server.queue[0], voiceChannel, servers[message.guild.id], true);
-      }
-    });
+    const xdb = await getXdb(server, sheetName, !!voiceChannel);
+    let link = xdb.referenceDatabase.get(keyName.toUpperCase());
+    // update link value here
+    if (!link) {
+      let sObj = runSearchCommand(keyName, xdb.congratsDatabase);
+      if (sObj.ssi === 1 && sObj.ss)
+        link = `Assuming **${sObj.ss}**\n${xdb.referenceDatabase.get(sObj.ss.toUpperCase())}`;
+    }
+    if (link) {
+      return message.channel.send(link);
+    } else {
+      message.channel.send(`Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`);
+      return sendLinkAsEmbed(message, server.queue[0], voiceChannel, servers[message.guild.id], true);
+    }
   } else if (!voiceChannel) {
     return message.channel.send('must be in a voice channel');
   } else if (server.queue[0]) {
