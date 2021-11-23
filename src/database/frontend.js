@@ -150,7 +150,7 @@ function runLookupLink (message, sheetName, link) {
         return;
       }
     }
-    if (sheetName[0] === 'p') message.channel.send(`could not find the any keys matching the given link`);
+    if (sheetName[0] === 'p') message.channel.send(`could not find any keys matching the given link`);
     else runLookupLink(message, `p${message.member.id}`, link);
   });
   return true;
