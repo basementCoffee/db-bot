@@ -336,14 +336,12 @@ async function runCommandCases (message) {
       const oneInThree = Math.floor(Math.random() * 3);
       const text = (oneInThree === 0 ? '!   ||*I would\'ve sung for you in a voice channel*  '
         + randomEmojis[randENum] + '||' : '!');
-      message.channel.send('Congratulations' + (name ? (' ' + name) : '') +
-        ((message.member.voice && message.member.voice?.channel) ?
-          '!' : text));
+      message.channel.send('Congratulations' + (name ? (' ' + name) : '') + ((message.member.voice?.channel) ? '!' : text));
       const congratsLink = (message.content.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
       if (server.queue[0]?.url !== congratsLink) server.queue.unshift(createQueueItem(congratsLink, StreamType.YOUTUBE, null));
       else return;
       if (message.member.voice?.channel) {
-        const vc = message.member.voice?.channel;
+        const vc = message.member.voice.channel;
         setTimeout(() => {
           if (whatspMap[vc.id] === congratsLink && parseInt(dispatcherMap[vc.id].streamTime) > 18000)
             skipLink(message, vc, false, server, true);
@@ -840,7 +838,7 @@ async function runCommandCases (message) {
     case 'time':
     case 'timestamp':
       if (!message.member.voice?.channel) message.channel.send('must be in a voice channel');
-      else if (dispatcherMap[message.member.voice?.channel.id])
+      else if (dispatcherMap[message.member.voice.channel.id])
         message.channel.send('timestamp: ' + formatDuration(dispatcherMap[message.member.voice?.channel.id].streamTime));
       else message.channel.send('nothing is playing right now');
       break;
@@ -899,7 +897,7 @@ async function runCommandCases (message) {
       if (message.member.voice?.channel) {
         args[1] = `https://www.${TWITCH_BASE_LINK}/${args[1]}`;
         server.queue.unshift(createQueueItem(args[1], StreamType.TWITCH, null));
-        playLinkToVC(message, args[1], message.member.voice?.channel, server);
+        playLinkToVC(message, args[1], message.member.voice.channel, server);
       } else {
         message.channel.send('*must be in a voice channel*');
       }
@@ -1118,12 +1116,12 @@ async function runCommandCases (message) {
         message.channel.send('Assuming ' + numToCheck + ' in total. Your number is ' + randomInt2 + '.');
       } else {
         if (message.member?.voice?.channel) {
-          const numToCheck = message.member.voice?.channel.members.size;
+          const numToCheck = message.member.voice.channel.members.size;
           if (numToCheck < 1) {
             return message.channel.send('Need at least 1 person in a voice channel.');
           }
           const randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-          const person = message.member.voice?.channel.members.array()[randomInt2 - 1];
+          const person = message.member.voice.channel.members.array()[randomInt2 - 1];
           message.channel.send(
             '**Voice channel size: ' + numToCheck + '**\nRandom number: \`' + randomInt2 + '\`\n' +
             'Random person: \`' + (person.nickname ? person.nickname : person.user.username) + '\`');
@@ -1865,7 +1863,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
     } else sentMsg.react(reactions.INBOX).then(() => {if (server.queue.length > 0) sentMsg.react(reactions.OUTBOX);});
     const filter = (reaction, user) => {
       if (message.member.voice?.channel) {
-        for (const mem of message.member.voice?.channel.members) {
+        for (const mem of message.member.voice.channel.members) {
           if (user.id === mem[1].id) {
             return user.id !== botID && [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX].includes(reaction.emoji.name);
           }
@@ -2311,7 +2309,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
     }, 22000);
     const filter = (reaction, user) => {
       if (message.member.voice?.channel) {
-        for (const mem of message.member.voice?.channel.members) {
+        for (const mem of message.member.voice.channel.members) {
           if (user.id === mem[1].id) {
             return user.id !== botID && [reactions.PAGE_C].includes(reaction.emoji.name);
           }
