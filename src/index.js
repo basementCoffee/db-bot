@@ -632,7 +632,7 @@ async function runCommandCases (message) {
     case 'reccommend':
     case 'recommend':
       args[0] = '';
-      let rUrl = server.queue[0].url;
+      let rUrl = server.queue[0]?.url;
       if (args[1] && verifyUrl(args[1])) {
         rUrl = args[1];
         args[1] = '';
@@ -1765,7 +1765,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
       runAddCommand(args, message, sheetName, printMsgToChannel);
       return;
-    } else if (message.member.voice?.channel && server.queue[0]?.url) {
+    } else if (message.member.voice?.channel && server.queue[0]) {
       args[2] = server.queue[0].url;
       if (args[1].includes('.')) return message.channel.send('cannot add names with \'.\'');
       message.channel.send('Would you like to add what\'s currently playing as **' + (args[1]) + '**?').then(sentMsg => {
@@ -2996,7 +2996,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
         if (server.currentEmbed.deletable) await server.currentEmbed.delete();
         server.currentEmbed = null;
       }
-    } else if (!(retries && whatToPlay === server.queue[0].url)) {
+    } else if (!(retries && whatToPlay === server.queue[0])) {
       await sendLinkAsEmbed(message, queueItem, vc, server).then(() => dispatcher.setVolume(0.5));
     }
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
