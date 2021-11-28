@@ -362,6 +362,7 @@ async function runCommandCases (message) {
     return;
   }
   const args = message.content.replace(/\s+/g, ' ').split(' ');
+  // the command name
   const statement = args[0].substr(1).toLowerCase();
   if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
     if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
@@ -615,7 +616,7 @@ async function runCommandCases (message) {
     case 'link':
       if (!args[1]) {
         if (server.queue[0] && message.member.voice?.channel) {
-          return message.channel.send(server.queue[0]);
+          return message.channel.send(server.queue[0].url);
         } else {
           return message.channel.send('*add a key to get it\'s ' + statement + ' \`(i.e. ' + statement + ' [key])\`*');
         }
@@ -631,7 +632,7 @@ async function runCommandCases (message) {
     case 'reccommend':
     case 'recommend':
       args[0] = '';
-      let rUrl = server.queue[0];
+      let rUrl = server.queue[0].url;
       if (args[1] && verifyUrl(args[1])) {
         rUrl = args[1];
         args[1] = '';
@@ -676,9 +677,9 @@ async function runCommandCases (message) {
       runInsertCommand(message, mgid, args[1], args[2], server).then();
       break;
     case 'q':
+    case 'que':
       runQueueCommand(message, mgid, true);
       break;
-    case 'que':
     case 'list':
     case 'upnext':
     case 'queue':
