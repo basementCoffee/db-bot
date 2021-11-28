@@ -2996,7 +2996,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
         if (server.currentEmbed.deletable) await server.currentEmbed.delete();
         server.currentEmbed = null;
       }
-    } else if (!(retries && whatToPlay === server.queue[0])) {
+    } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
       await sendLinkAsEmbed(message, queueItem, vc, server).then(() => dispatcher.setVolume(0.5));
     }
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
