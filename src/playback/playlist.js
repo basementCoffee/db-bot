@@ -6,7 +6,7 @@ const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require(
 let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
 
 /**
- * Adds playlists to the reference array passed in.
+ * Adds playlists to the reference array passed in. Can handle Spotify and SoundCloud tracks.
  * @param message The message metadata
  * @param qArray {Array} The queue to add to.
  * @param numItems {number} The number of items added to queue
