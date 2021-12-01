@@ -1274,23 +1274,15 @@ async function runInsertCommand (message, mgid, term, position, server) {
   }
   if (num > server.queue.length) num = server.queue.length;
   let pNums = 0;
-  if (verifyPlaylist(args[1])) {
-    if (args[1].includes('/playlist/') && args[1].includes(SPOTIFY_BASE_LINK)) {
-      args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
-      pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.SPOTIFY, false, num);
-    } else if (ytpl.validateID(args[1])) {
-      pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.YOUTUBE, false, num);
-    } else if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
-      args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-      pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.SOUNDCLOUD, false, num);
-    } else {
-      // noinspection JSUnresolvedFunction
-      bot.channels.cache.get(CH.err).send('there was a playlist reading error: ' + args[1]);
-      message.channel.send('there was a link reading issue');
-      return -1;
-    }
+  if (args[1].includes(SPOTIFY_BASE_LINK)) {
+    args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
+    pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.SPOTIFY, false, num);
+  } else if (ytpl.validateID(args[1])) {
+    pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.YOUTUBE, false, num);
+  } else if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
+    args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
+    pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.SOUNDCLOUD, false, num);
   } else {
-    if (num > server.queue.length) num = server.queue.length;
     server.queue.splice(num, 0, createQueueItem(args[1], args[1].includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE));
   }
   await message.channel.send(`inserted ${(pNums > 1 ? (pNums + ' links') : 'link')} into position ${num}`);
