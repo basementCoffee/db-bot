@@ -502,16 +502,22 @@ async function runCommandCases (message) {
       if (message.member.voice?.channel) {
         const syncVCId = message.member.voice.channel.id;
         if (dispatcherMap[syncVCId] && botInVC(message)) {
+          const MIN_SYNC_SECONDS = 7;
+          let seconds = MIN_SYNC_SECONDS;
+          if (args[1]) {
+            seconds = parseInt(args[1]);
+            if (!seconds || seconds < MIN_SYNC_SECONDS) seconds = MIN_SYNC_SECONDS;
+          }
           const playArgs = [message, message.member, server, true, false, true];
           runPauseCommand(...playArgs);
           await message.channel.send(`timestamp is **${formatDuration(dispatcherMap[syncVCId].streamTime + 1000)}**`);
-          const syncMsg = await message.channel.send(`\npress play on the video when I say 'now' (~7 seconds)`);
+          const syncMsg = await message.channel.send(`\naudio will resume when I say 'now' (~${seconds} seconds)`);
           setTimeout(async () => {
             if (dispatcherMapStatus[syncVCId]) {
               await syncMsg.edit('***now***');
               runPlayCommand(...playArgs);
             }
-          }, 5500);
+          }, (seconds * 1000));
         } else message.channel.send('no active link is playing');
       }
       break;
