@@ -497,6 +497,24 @@ async function runCommandCases (message) {
     case 'randomnow':
       runRandomToQueue(args[1] || 1, message, mgid, server, true).then();
       break;
+    case 'sync':
+      // assume that there is something playing
+      if (message.member.voice?.channel) {
+        const syncVCId = message.member.voice.channel.id;
+        if (dispatcherMap[syncVCId] && botInVC(message)) {
+          const playArgs = [message, message.member, server, true, false, true];
+          runPauseCommand(...playArgs);
+          await message.channel.send(`timestamp is **${formatDuration(dispatcherMap[syncVCId].streamTime + 1000)}**`);
+          const syncMsg = await message.channel.send(`\npress play on the video when I say 'now' (~7 seconds)`);
+          setTimeout(async () => {
+            if (dispatcherMapStatus[syncVCId]) {
+              await syncMsg.edit('***now***');
+              runPlayCommand(...playArgs);
+            }
+          }, 5500);
+        } else message.channel.send('no active link is playing');
+      }
+      break;
     case 'shufflen':
     case 'shufflenow':
       runRandomToQueue(args[1], message, mgid, server, true).then();
@@ -839,7 +857,7 @@ async function runCommandCases (message) {
     case 'time':
     case 'timestamp':
       if (!message.member.voice?.channel) message.channel.send('must be in a voice channel');
-      else if (dispatcherMap[message.member.voice.channel.id])
+      else if (dispatcherMap[message.member.voice?.channel.id])
         message.channel.send('timestamp: ' + formatDuration(dispatcherMap[message.member.voice?.channel.id].streamTime));
       else message.channel.send('nothing is playing right now');
       break;
@@ -1605,7 +1623,7 @@ function dmHandler (message, messageContent) {
 /**
  * Pauses the now playing, if playing.
  * @param message The message content metadata
- * @param actionUser The user that is performing the action
+ * @param actionUser The member that is performing the action
  * @param server The server playback metadata
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
@@ -1655,7 +1673,7 @@ function pauseComputation (voiceChannel, force = false) {
 /**
  * Plays the now playing if paused.
  * @param message The message content metadata
- * @param actionUser The user that is performing the action
+ * @param actionUser The member that is performing the action
  * @param server The server playback metadata
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
@@ -2793,7 +2811,7 @@ async function updateVoiceState (update) {
  * @param vc The voice channel to play the song in.
  * @param server The server playback metadata.
  * @param retries {number} Optional - Integer representing the number of retries.
- * @returns {void}
+ * @returns {Promise<void>}
  */
 async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
   let whatToPlay = queueItem.url;
