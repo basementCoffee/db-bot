@@ -3038,7 +3038,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
         } else {
           if (server.collector) server.collector.stop();
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), LEAVE_VC_TIMEOUT);
-          dispatcherMap[vc.id] = false;
+          dispatcherMap[vc.id] = undefined;
         }
       }
       if (server?.followUpMessage) {
@@ -3146,7 +3146,7 @@ async function runAutoplayCommand (message, server, vc, queueItem) {
     } catch (e) {}
     message.channel.send('*could not find a video to play*');
     server.collector.stop();
-    dispatcherMap[vc.id] = false;
+    dispatcherMap[vc.id] = undefined;
   } else {
     message.channel.send(`*smartplay is not supported for this stream type*`);
     runStopPlayingCommand(message.guild.id, vc, true, server, message, message.member);
@@ -3482,7 +3482,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     if (server.currentEmbed?.reactions) {
       server.collector.stop();
     }
-    dispatcherMap[voiceChannel.id] = false;
+    dispatcherMap[voiceChannel.id] = undefined;
     if (whatspMap[voiceChannel.id] !== 'https://www.youtube.com/watch?v=oyFQVZ2h0V8')
       sendLinkAsEmbed(message, server.queue[0], voiceChannel, server).then();
   }
