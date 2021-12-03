@@ -503,10 +503,12 @@ async function runCommandCases (message) {
         const syncVCId = message.member.voice.channel.id;
         if (dispatcherMap[syncVCId] && botInVC(message)) {
           const MIN_SYNC_SECONDS = 7;
+          const MAX_SYNC_SECONDS = 60;
           let seconds = MIN_SYNC_SECONDS;
           if (args[1]) {
             seconds = parseInt(args[1]);
             if (!seconds || seconds < MIN_SYNC_SECONDS) seconds = MIN_SYNC_SECONDS;
+            else if (seconds > MAX_SYNC_SECONDS) seconds = MAX_SYNC_SECONDS;
           }
           const playArgs = [message, message.member, server, true, false, true];
           runPauseCommand(...playArgs);
