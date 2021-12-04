@@ -512,14 +512,30 @@ async function runCommandCases (message) {
           }
           const playArgs = [message, message.member, server, true, false, true];
           runPauseCommand(...playArgs);
-          await message.channel.send(`timestamp is **${formatDuration(dispatcherMap[syncVCId].streamTime + 1000)}**`);
-          const syncMsg = await message.channel.send(`\naudio will resume when I say 'now' (~${seconds} seconds)`);
+          const streamTime = dispatcherMap[syncVCId].streamTime;
+          if (!streamTime) return message.channel.send('*could not find a valid stream time*');
+          // the seconds shown to the user
+          let streamTimeSeconds = (streamTime / 1000) % 60 + 1; // add 1 to get user ahead of actual stream
+          // the formatted duration (with seconds supposed to be replaced)
+          const duration = formatDuration(streamTime);
+          const vals = duration.split(' ');
+          // if the stream is close to next second (7 represents the tenth's place)
+          const isClose = +streamTimeSeconds.toString().split('.')[1][0] > 7;
+          if (!vals.slice(-1)[0].includes('s')) vals.push(`${Math.floor(streamTimeSeconds)}s`);
+          else vals[vals.length - 1] = `${Math.floor(streamTimeSeconds)}s`;
+          const syncMsg = await message.channel.send(
+            `timestamp is **${vals.join(' ')}**` +
+            `\naudio will resume when I say 'now' (~${seconds} seconds)`
+          );
           setTimeout(async () => {
             if (dispatcherMapStatus[syncVCId]) {
-              await syncMsg.edit('***now***');
+              const newMsgStr = `timestamp is **${vals.join(' ')}**` + '\n***---now---***';
+              if (isClose) await syncMsg.edit(newMsgStr);
+              else syncMsg.edit(newMsgStr);
               runPlayCommand(...playArgs);
+              setTimeout(() => {if (syncMsg.deletable) syncMsg.delete();}, 5000);
             }
-          }, (seconds * 1000));
+          }, (seconds * 1000) + 1000); // convert seconds to ms and add another second
         } else message.channel.send('no active link is playing');
       }
       break;
