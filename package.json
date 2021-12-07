@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "5.28.31",
+  "version": "5.28.32",
   "description": "A discord playback bot with a UI.",
   "main": "src/index.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/opus": "^0.6.0",
+    "@discordjs/opus": "^0.7.0",
     "discord.js": "^12.5.3",
     "dotenv": "^10.0.0",
     "ffmpeg": "^0.0.4",
