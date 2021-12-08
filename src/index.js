@@ -1760,9 +1760,11 @@ function playComputation (voiceChannel, force) {
  */
 async function playRecommendation (message, server, args) {
   if (!isCoreAdmin(message.member.id)) return;
+  if (!botInVC(message)) resetSession(server);
   const user = await bot.users.fetch(message.member.id);
   const channel = await user.createDM();
-  const links = [];
+  // all rec links
+  let links = [];
   let num = parseInt(args[1]);
   let func;
   if (num < 1) {
@@ -1770,34 +1772,74 @@ async function playRecommendation (message, server, args) {
     return;
   }
   if (num && !isNaN(num)) func = () => num > 0;
-  else func = (m) => {
-    // if the message was created in the last 48 hours
-    return Date.now() - m.createdTimestamp < 172800000;
-  };
+  else {
+    num = 0;
+    func = (m) => {
+      // if the message was created in the last 48 hours
+      return Date.now() - m.createdTimestamp < 172800000;
+    };
+  }
+  // links that should be forwarded by default (meet func criteria)
+  let recs = [];
   // earliest message are in the front
   const messages = await channel.messages.fetch();
   for (const [, m] of messages) {
-    if (func(m)) {
-      const regex = /<(((?!discord).)*)>/g;
-      const res = regex.exec(m.content);
-      if (res && res[1]) {
-        links.push(res[1]);
+    const regex = /<(((?!discord).)*)>/g;
+    const res = regex.exec(m.content);
+    if (res && res[1]) {
+      if (func(m)) {
+        recs.push(res[1]);
         num--;
-      }
-    } else break;
+      } else links.push(res[1]);
+    }
   }
-  if (links.length < 1) {
-    message.channel.send('***no new recommendations***, *provide a number to get a specific number of recs*');
+  const tempRecs = [];
+  const filterUrlArgs = (link) => {
+    if (link && link.includes(SPOTIFY_BASE_LINK) && link.includes('?si=')) return link.split('?si=')[0];
+    else return link;
+  };
+  // expects the queue to have a .url field
+  const isInQueue = (queue, link) => {
+    return queue.find(val => {
+      link = filterUrlArgs(link);
+      return val.url === link;
+    });
+  };
+  for (let link of recs) {
+    // avoid adding the same recommendation again
+    if (!isInQueue(server.queue, link)) tempRecs.push(link);
+    else num++;
+  }
+  for (let i = 0; i < links.length; i++) {
+    let link = links[i];
+    if (isInQueue(server.queue, link)) {
+      links.splice(i, 1);
+      i--;
+    }
+  }
+  recs = tempRecs;
+  // less than 0 = no args provided
+  if (num >= 0) {
+    // num contains number of needed elements
+    while (num > 0 && links.length > 0) {
+      recs.push(links.shift());
+      num--;
+    }
+  }
+  if (recs.length < 1) {
+    if (links.length > 0) {
+      message.channel.send('***no new recommendations***, *provide a number to get a specific number of recs*');
+    } else message.channel.send('*no more recommendations (the queue contains all of them)*');
     return;
   }
-  if (!botInVC(message)) resetSession(server);
-  for (const link of links) {
+  let wasEmpty = !server.queue[0];
+  for (let link of recs) {
     await addLinkToQueue(link, message, server, message.guild.id, false, pushQueue);
   }
-  if (!botInVC(message)) {
+  if (!botInVC(message) || wasEmpty) {
     playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
   } else {
-    message.channel.send(`*added ${links.length} recommendations to queue*`);
+    message.channel.send(`*added ${recs.length} recommendation${recs.length > 1 ? 's' : ''} to queue*`);
     updateActiveEmbed(server);
   }
 }
