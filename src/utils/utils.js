@@ -8,6 +8,8 @@ const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
+const AD_1 = '443150640823271436'; // z
+const AD_2 = '268554823283113985'; // k
 
 /**
  * Given a duration in ms, it returns a formatted string separating
@@ -221,10 +223,10 @@ function getQueueText (server) {
  * @returns {Promise<void>}
  */
 async function sendRecommendation (message, content, url, uManager) {
-  if (message.member.id !== '443150640823271436' && message.member.id !== '268554823283113985') return;
+  if (!isCoreAdmin(message.member.id)) return;
   if (!url) return;
   try {
-    let recUser = await uManager.fetch((message.member.id === '443150640823271436' ? '268554823283113985' : '443150640823271436'));
+    let recUser = await uManager.fetch((message.member.id === AD_1 ? AD_2 : AD_1));
     await recUser.send({
       content: `**${message.member.user.username}** has a recommendation for you${(content ? `:\n*${content}*` : '')}\n<${url}>`,
       embed: (await createEmbed(url)).embed
@@ -233,6 +235,15 @@ async function sendRecommendation (message, content, url, uManager) {
   } catch (e) {
     console.log(e);
   }
+}
+
+/**
+ * If the id is a coreAdmin ID;
+ * @param id {string} The id of the user.
+ * @return {boolean} If the user is a core admin.
+ */
+function isCoreAdmin (id) {
+  return id === AD_1 || id === AD_2;
 }
 
 /**
@@ -656,11 +667,11 @@ function endStream (server) {
 
 /**
  * Un-shifts the provided link to the server's queue.
- * @param server The server.
+ * @param queue {Array} The queue to unshift.
  * @param queueItem The item to add to the queue.
  */
-function unshiftQueue (server, queueItem) {
-  server.queue.unshift(queueItem);
+function unshiftQueue (queue, queueItem) {
+  queue.unshift(queueItem);
 }
 
 /**
@@ -681,11 +692,11 @@ function createQueueItem (url, type, infos) {
 
 /**
  * Pushes the provided link to the server's queue.
- * @param server The server.
+ * @param queue {Array} The queue to push to.
  * @param queueItem The item to add to the queue.
  */
-function pushQueue (server, queueItem) {
-  server.queue.push(queueItem);
+function pushQueue (queue, queueItem) {
+  queue.push(queueItem);
 }
 
 /**
@@ -720,5 +731,5 @@ module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
   initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
-  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption
+  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin
 };

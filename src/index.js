@@ -20,7 +20,7 @@ const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
-  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption
+  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -230,7 +230,8 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
  * @param server The server.
  * @param mgid The message guild id.
  * @param addToFront {boolean} If to add to the front.
- * @param queueFunction {Function} A function that adds a given link to the server queue.
+ * @param queueFunction {(arr: Array, qi)=>void}
+ * A function that adds a given link to the server queue. Used for YT only.
  * @returns {Promise<Number>} The number of items added.
  */
 async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunction) {
@@ -244,7 +245,7 @@ async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunc
     url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SOUNDCLOUD, addToFront);
   } else {
-    queueFunction(server, createQueueItem(url, (url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE), null));
+    queueFunction(server.queue, createQueueItem(url, (url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE), null));
     return 1;
   }
 }
@@ -667,6 +668,13 @@ async function runCommandCases (message) {
       break;
     case 'ping':
       message.channel.send(`latency is ${Math.round(bot.ws.ping)}ms`);
+      break;
+    case 'prec':
+    case 'precc':
+    case 'playrec':
+    case 'playrecc':
+    case 'playrecs':
+      playRecommendation(message, server, args);
       break;
     case 'rec':
     case 'recc':
@@ -1740,6 +1748,57 @@ function playComputation (voiceChannel, force) {
     dispatcherMap[voiceChannel.id].pause();
     dispatcherMap[voiceChannel.id].resume();
     dispatcherMapStatus[voiceChannel.id] = false;
+  }
+}
+
+/**
+ * Plays a recommendation. Testing - allows only isCoreAdmin() usage.
+ * @param message The message metadata.
+ * @param server The server metadata.
+ * @param args The message content in an array.
+ * @return {Promise<void>}
+ */
+async function playRecommendation (message, server, args) {
+  if (!isCoreAdmin(message.member.id)) return;
+  const user = await bot.users.fetch(message.member.id);
+  const channel = await user.createDM();
+  const links = [];
+  let num = parseInt(args[1]);
+  let func;
+  if (num < 1) {
+    message.channel.send('*provided number must be positive*');
+    return;
+  }
+  if (num && !isNaN(num)) func = () => num > 0;
+  else func = (m) => {
+    // if the message was created in the last 48 hours
+    return Date.now() - m.createdTimestamp < 172800000;
+  };
+  // earliest message are in the front
+  const messages = await channel.messages.fetch();
+  for (const [, m] of messages) {
+    if (func(m)) {
+      const regex = /<(((?!discord).)*)>/g;
+      const res = regex.exec(m.content);
+      if (res && res[1]) {
+        links.push(res[1]);
+        num--;
+      }
+    } else break;
+  }
+  if (links.length < 1) {
+    message.channel.send('***no new recommendations***, *provide a number to get a specific number of recs*');
+    return;
+  }
+  if (!botInVC(message)) resetSession(server);
+  for (const link of links) {
+    await addLinkToQueue(link, message, server, message.guild.id, false, pushQueue);
+  }
+  if (!botInVC(message)) {
+    playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
+  } else {
+    message.channel.send(`*added ${links.length} recommendations to queue*`);
+    updateActiveEmbed(server);
   }
 }
 
@@ -2838,7 +2897,7 @@ async function updateVoiceState (update) {
  * @returns {Promise<void>}
  */
 async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
-  let whatToPlay = queueItem.url;
+  let whatToPlay = queueItem?.url;
   if (!whatToPlay) {
     queueItem = server.queue[0];
     whatToPlay = queueItem.url;
