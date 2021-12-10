@@ -1,11 +1,11 @@
 {
   "name": "discordbotz",
-  "version": "5.29.1",
+  "version": "5.29.2",
   "description": "A discord playback bot with a UI.",
   "main": "src/index.js",
   "scripts": {
     "start": "node ./src/index.js",
-    "test": "semistandard && node my-normal-tests-littered-with-semicolons.js"
+    "test": "jest --detectOpenHandles"
   },
   "engines": {
     "node": ">=16.13.0"
@@ -37,7 +37,7 @@
     "ytsr": "^3.5.3"
   },
   "devDependencies": {
-    "jest": "^27.3.1",
+    "jest": "^27.4.3",
     "semistandard": "*"
   }
 }
