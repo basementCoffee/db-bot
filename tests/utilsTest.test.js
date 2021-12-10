@@ -58,6 +58,7 @@ messageNoVoice = new MockMessage(new MockChannel(), new MockGuild());
 });
 
 
+
 describe('test formatDuration', ()=> {
   it('formatDuration()', ()=> {
     expect(formatDuration(-1)).toEqual('0m 0s');
@@ -101,7 +102,7 @@ describe('test runMoveItemCommand', () => {
     expect(arr).toEqual(['A', 'B']);
   });
 
-  it('invalid positions', ()=> {
+  it('invalid - positions', ()=> {
 
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(message, arr, 0, 2);
@@ -118,11 +119,23 @@ describe('test runMoveItemCommand', () => {
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
   });
 
-  it('empty array', ()=> {
+  it('invalid - empty array', ()=> {
     arr = [];
     runMoveItemCommand(message, arr, 2, 3);
     expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual([]);
+  });
+
+  it ('undefined - positions', ()=> {
+    arr = ['A', 'B', 'C', 'D'];
+    runMoveItemCommand(message, arr, undefined, 2);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
+
+    message.clearSent();
+    runMoveItemCommand(message, arr, 2, undefined);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
+
+    expect(arr).toEqual(['A', 'B', 'C', 'D']);
   });
 
   it ('no voice channel', ()=> {
