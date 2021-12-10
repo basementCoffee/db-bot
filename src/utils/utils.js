@@ -317,22 +317,12 @@ function adjustQueueForPlayNow (dsp, server) {
 }
 
 /**
- * Shuffles the queue and sends updates to the user regarding its status.
- * @param message The message object.
+ * Shuffles the queue. If provided a Message object, sends an update to the user regarding its status.
  * @param queue {Array<*>} The queue to shuffle.
+ * @param message {Object?} The message object.
  * @returns {*}
  */
-function shuffleQueue (message, queue) {
-  if (queue.length < 1) return message.channel.send(`*need a playlist url to shuffle, or a number to use random items from your keys list.*`);
-  shuffleQueueComputation(queue);
-  message.channel.send('*your queue has been shuffled*');
-}
-
-/**
- * Shuffles the queue. Does not send any message to the user.
- * @param queue {Array<*>} The queue to shuffle.
- */
-function shuffleQueueComputation (queue) {
+function shuffleQueue (queue, message) {
   let currentIndex = queue.length, randomIndex; // indices for shuffling
   // don't include what's actively playing
   while (currentIndex > 1) {
@@ -341,6 +331,7 @@ function shuffleQueueComputation (queue) {
     // swap current and random index locations
     [queue[currentIndex], queue[randomIndex]] = [queue[randomIndex], queue[currentIndex]];
   }
+  if (message) message.channel.send('*your queue has been shuffled*');
 }
 
 /**

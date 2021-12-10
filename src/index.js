@@ -2569,7 +2569,16 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
   // addToFront parameter must be a number for addRandomToQueue
   if (addToFront) addToFront = 1;
   // if no arguments, assumes that the active queue should be shuffled
-  if (!origArg) return shuffleQueue(message, server.queue);
+  if (!origArg) {
+    if (server.queue[0]) {
+      // save the first item to prevent it from being shuffled
+      const firstItem = server.queue[0];
+      server.queue.shift();
+      shuffleQueue(server.queue, message);
+      server.queue.unshift(firstItem);
+    } else message.channel.send(`*need a playlist url to shuffle, or a number to use random items from your keys list.*`);
+    return;
+  }
   if (origArg.toString().includes('.'))
     return addRandomToQueue(message, origArg, undefined, server, true, addToFront);
   const xdb = await getXdb(server, sheetName, true);
