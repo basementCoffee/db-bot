@@ -2882,7 +2882,8 @@ async function updateVoiceState (update) {
       server.leaveVCTimeout = null;
     }
     clearDJTimer(server);
-    await sendLinkAsEmbed(server.currentEmbed, server.queue[0] || server.queueHistory[0], update.channel, server, false).then(() => {
+    await sendLinkAsEmbed(server.currentEmbed, server.queue[0] ||
+      server.queueHistory.slice(-1)[0], update.channel, server, false).then(() => {
       // end the stream (if applicable)
       if (server.streamData.stream) endStream(server);
       server.numSinceLastEmbed = 0;
