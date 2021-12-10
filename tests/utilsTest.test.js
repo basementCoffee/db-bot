@@ -28,6 +28,10 @@ class MockChannel {
   getSent(){
     return this.sentMsg;
   }
+
+  clearSent(){
+    this.sentMsg = undefined;
+  }
 }
 
 class MockMessage {
@@ -40,6 +44,10 @@ class MockMessage {
 
   getSent(){
     return this.channel.getSent();
+  }
+
+  clearSent(){
+    return this.channel.clearSent();
   }
 }
 let message;
@@ -67,33 +75,45 @@ describe('test formatDuration', ()=> {
 
 })
 describe('test runMoveItemCommand', () => {
-  it ('small array', ()=> {
-    arr = ['A', 'B'];
-    runMoveItemCommand(message, arr, 1, 2)
-    expect(typeof message.getSent()).toEqual('string');
-    expect(arr).toEqual(['A', 'B']);
-  });
+  // substring of what is sent on successful move
+  const MOVED_SUBSTR = 'moved item to position';
+  const msgIncludes = (txt)=> (message.getSent() || '').includes(txt);
+
   it('valid A < B', () => {
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(message, arr, 1, 2);
-    expect(typeof message.getSent()).toEqual('string');
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(true);
     expect(arr).toEqual(['A', 'C', 'B', 'D']);
   });
 
   it('valid A > B', () => {
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(message, arr, 2, 1);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(true);
     expect(arr).toEqual(['A', 'C', 'B', 'D']);
     arr = ['A', 'B', 'C', 'D'];
   });
 
-  it('invalid', ()=> {
+  it ('invalid - array is too small', ()=> {
+    arr = ['A', 'B'];
+    runMoveItemCommand(message, arr, 1, 2);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
+    expect(arr).toEqual(['A', 'B']);
+  });
+
+  it('invalid positions', ()=> {
+
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(message, arr, 0, 2);
-    expect(!message.getSent()).toEqual(false);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
 
+    message.clearSent();
+    runMoveItemCommand(message, arr, 2, 0);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
+
+    message.clearSent();
     runMoveItemCommand(message, arr, -1, -1);
-    expect(!message.getSent()).toBe(false);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
     // expect the arr to be the same
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
   });
@@ -101,13 +121,14 @@ describe('test runMoveItemCommand', () => {
   it('empty array', ()=> {
     arr = [];
     runMoveItemCommand(message, arr, 2, 3);
-    expect(!message.getSent()).toEqual(false);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual([]);
   });
 
   it ('no voice channel', ()=> {
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(messageNoVoice, arr, 2, 3);
+    expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual( ['A', 'B', 'C', 'D']);
   });
 
