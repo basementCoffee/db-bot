@@ -726,11 +726,13 @@ const getLinkType = (url) => {
  */
 function runMoveItemCommand (message, arr, posA, posB) {
   if (!botInVC(message)) return;
+  posA = Math.floor(posA);
+  posB = Math.floor(posB);
   if (!(posA || posB)) message.channel.send(
     '*two numbers expected: the position of the item to move and it\'s new position*\n`ex: move 1 5`'
   );
   else if (arr.length < 3) message.channel.send('*not enough items in the queue*');
-  else if (posA < 1 || posB < 0) {
+  else if (posA < 1 || posB < 1) {
     message.channel.send('positions must be greater than 0');
   } else {
     const item = arr.splice(posA, 1)[0];
