@@ -20,7 +20,7 @@ const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
-  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin
+  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -721,6 +721,9 @@ async function runCommandCases (message) {
         (server.queue.length - 1) + '** is the last item in the queue.*');
       server.queue.splice(rNum, 1);
       message.channel.send('removed item from queue');
+      break;
+    case 'move':
+      runMoveItemCommand(message, server.queue, args[1], args[2]);
       break;
     case 'input':
     case 'insert':
@@ -1752,7 +1755,8 @@ function playComputation (voiceChannel, force) {
 }
 
 /**
- * Plays a recommendation. Testing - allows only isCoreAdmin() usage.
+ * Plays a recommendation.
+ * NOTE: Is in testing phase - allows only isCoreAdmin() usage.
  * @param message The message metadata.
  * @param server The server metadata.
  * @param args The message content in an array.
@@ -1760,6 +1764,13 @@ function playComputation (voiceChannel, force) {
  */
 async function playRecommendation (message, server, args) {
   if (!isCoreAdmin(message.member.id)) return;
+  if (!message.member.voice?.channel) {
+    const sentMsg = await message.channel.send('must be in a voice channel to play');
+    if (!botInVC(message)) {
+      setSeamless(server, playRecommendation, [message, server, args], sentMsg);
+    }
+    return;
+  }
   if (!botInVC(message)) resetSession(server);
   const user = await bot.users.fetch(message.member.id);
   const channel = await user.createDM();
@@ -2964,7 +2975,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
   if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
     try {
       connection = await vc.join();
-      await new Promise(res => setTimeout(res, 110));
+      await new Promise(res => setTimeout(res, 300));
     } catch (e) {
       const eMsg = e.toString();
       if (eMsg.includes('it is full')) message.channel.send('\`error: cannot join voice channel, it is full\`');

@@ -1,19 +1,22 @@
 const {getData, getTracks} = require('spotify-url-info');
 const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
-const spdl = require('spdl-core');
 const ytpl = require('ytpl');
-const {servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType} = require('./constants');
+const {
+  servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot
+} = require('./constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const AD_1 = '443150640823271436'; // z
 const AD_2 = '268554823283113985'; // k
+const destroyBot = () => bot.destroy();
 
 /**
- * Given a duration in ms, it returns a formatted string separating
- * the hours, minutes, and seconds.
+ * Given a positive duration in ms, returns a formatted string separating
+ * the time in days, hours, minutes, and seconds. Otherwise, returns 0m 0s.
+ * Will always return two time identifiers (ex: 2d 5h, 3h 12m, 1m 2s, 0m, 30s)
  * @param duration a duration in milliseconds
  * @returns {string} a formatted string duration
  */
@@ -28,7 +31,10 @@ function formatDuration (duration) {
   if (hours > 0) {
     return `${hours}h ${Math.floor(min % 60)}m`;
   }
-  return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
+  if (seconds >= 0) {
+    return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
+  }
+  return `0m 0s`;
 }
 
 /**
@@ -92,7 +98,7 @@ async function getTracksWrapper (playlistUrl, retries = 0) {
 /**
  * Return an object containing the embed and time based on the data provided.
  * @param url {string} The url to create the embed for.
- * @param infos Optional - the info metadata to use.
+ * @param infos {Object?} Optional - the info metadata to use.
  * @return {Promise<{embed: module:"discord.js".MessageEmbed, infos: {formats}, timeMS: number}>}
  */
 async function createEmbed (url, infos) {
@@ -252,8 +258,7 @@ function isCoreAdmin (id) {
  * @returns {boolean} True if given a playable URL.
  */
 function verifyUrl (url) {
-  // noinspection JSUnresolvedFunction
-  return (url.includes(SPOTIFY_BASE_LINK) ? spdl.validateURL(linkFormatter(url, SPOTIFY_BASE_LINK)) :
+  return (url.includes(SPOTIFY_BASE_LINK) ? url.includes('/track/') :
     (url.includes(SOUNDCLOUD_BASE_LINK) ? scdl.isValidUrl(linkFormatter(url, SOUNDCLOUD_BASE_LINK)) :
       (ytdl.validateURL(url) || url.includes(TWITCH_BASE_LINK))) && !verifyPlaylist(url));
 }
@@ -712,6 +717,29 @@ const getLinkType = (url) => {
 };
 
 /**
+ * Mutates the provided array by moving an element at posA to posB.
+ * @param message The message object.
+ * @param arr The array.
+ * @param posA The first position.
+ * @param posB THe second position.
+ * @return {void}
+ */
+function runMoveItemCommand (message, arr, posA, posB) {
+  if (!botInVC(message)) return;
+  if (!(posA || posB)) message.channel.send(
+    '*two numbers expected: the position of the item to move and it\'s new position*\n`ex: move 1 5`'
+  );
+  else if (arr.length < 3) message.channel.send('*not enough items in the queue*');
+  else if (posA < 1 || posB < 0) {
+    message.channel.send('positions must be greater than 0');
+  } else {
+    const item = arr.splice(posA, 1)[0];
+    arr.splice(posB, 0, item);
+    message.channel.send(`*moved item to position ${posB}*`);
+  }
+}
+
+/**
  * Sets seamless listening on voice channel error. Seamless listening allows the
  * bot to temporarily save a wanted command until voice channel join.
  * @param server The server.
@@ -731,5 +759,6 @@ module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
   initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
-  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin
+  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin,
+  runMoveItemCommand, destroyBot
 };
