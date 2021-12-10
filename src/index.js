@@ -190,7 +190,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   } else if (server.queue.length >= MAX_QUEUE_S) {
     return message.channel.send('*max queue size has been reached*');
   }
-  if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
+  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (args[1].includes('.')) {
     if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
@@ -352,7 +352,7 @@ async function runCommandCases (message) {
         }, 20000);
         const embedStatus = server.silence;
         server.silence = true;
-        playLinkToVC(message, server.queue[0], vc, servers[mgid]);
+        playLinkToVC(message, server.queue[0], vc, server);
         setTimeout(() => server.silence = embedStatus, 4000);
         const item = server.queueHistory.findIndex((val) => val.url === congratsLink);
         if (item !== -1)
@@ -417,10 +417,14 @@ async function runCommandCases (message) {
       runStopPlayingCommand(mgid, message.member.voice?.channel, false, server, message, message.member);
       break;
     case 'autoplay':
-    case StreamType.SPOTIFY:
+    case 'sp':
     case 'smartp':
     case 'smartplay':
-      if (!botInVC(message)) return message.channel.send('must be playing something to use smartplay');
+      if (!botInVC(message)) {
+        // avoid sending a message for smaller command names
+        if (args[0].length > 2) message.channel.send('must be playing something to use smartplay');
+        return;
+      }
       if (server.autoplay) {
         server.autoplay = false;
         message.channel.send('*smartplay turned off*');
@@ -1951,16 +1955,16 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
  * @returns {Promise<void>|*}
  */
 function runQueueCommand (message, mgid, noErrorMsg) {
-  if (servers[mgid].queue < 1 || !message.guild.voice.channel) {
+  const server = servers[mgid];
+  if (server.queue < 1 || !message.guild.voice.channel) {
     if (noErrorMsg && !botInVC(message)) return;
     return message.channel.send('There is no active queue right now');
   }
   // a copy of the queue
-  const serverQueue = servers[mgid].queue.map((x) => x);
+  const serverQueue = server.queue.map((x) => x);
   let qIterations = serverQueue.length;
   if (qIterations > 11) qIterations = 11;
   let authorName;
-  const server = servers[mgid];
 
   async function generateQueue (startingIndex, notFirstRun, sentMsg, sentMsgArray) {
     let queueSB = '';
@@ -2543,7 +2547,7 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
     if (!botInVC(message)) setSeamless(server, runRandomToQueue, [num, message, sheetName, server, addToFront], sentMsg);
     return;
   }
-  if (servers[message.guild.id].lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
+  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (server.dictator && message.member.id !== server.dictator.id)
     return message.channel.send('only the dictator can randomize to queue');
@@ -2572,8 +2576,7 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
   if (!origArg) {
     if (server.queue[0]) {
       // save the first item to prevent it from being shuffled
-      const firstItem = server.queue[0];
-      server.queue.shift();
+      const firstItem = server.queue.shift();
       shuffleQueue(server.queue, message);
       server.queue.unshift(firstItem);
     } else message.channel.send(`*need a playlist url to shuffle, or a number to use random items from your keys list.*`);
@@ -3676,7 +3679,7 @@ async function runWhatsPCommand (message, voiceChannel, keyName, sheetName, shee
       return message.channel.send(link);
     } else {
       message.channel.send(`Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`);
-      return sendLinkAsEmbed(message, server.queue[0], voiceChannel, servers[message.guild.id], true);
+      return sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, true);
     }
   } else if (!voiceChannel) {
     return message.channel.send('must be in a voice channel');
