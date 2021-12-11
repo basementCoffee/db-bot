@@ -3,7 +3,7 @@ const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
-  servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot
+  servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S
 } = require('./constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
@@ -734,6 +734,26 @@ function runMoveItemCommand (message, arr, posA, posB) {
 }
 
 /**
+ * Helper for runInsertCommand. Does some preliminary verification.
+ * @param message The message object.
+ * @param server The server.
+ * @param args {Array<string>} args[1] being the term, args[2] being the position.
+ * @returns {*} 1 if passed
+ */
+function insertCommandVerification (message, server, args) {
+  if (!message.member.voice?.channel) return message.channel.send('must be in a voice channel');
+  if (server.dictator && message.member.id !== server.dictator.id)
+    return message.channel.send('only the dictator can insert');
+  if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
+    return message.channel.send('the queue is locked: only the dj can insert');
+  if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
+  if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
+  if (!args[1]) return message.channel.send('put a link followed by the position in the queue \`(i.e. insert [link] [num])\`');
+  if (args[2] && isNaN(parseInt(args[2]))) return message.channel.send('second argument must be a number');
+  return 1;
+}
+
+/**
  * Sets seamless listening on voice channel error. Seamless listening allows the
  * bot to temporarily save a wanted command until voice channel join.
  * @param server The server.
@@ -751,8 +771,8 @@ function setSeamless (server, fName, args, message) {
 
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession: resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList,
-  initializeServer, runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
-  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin,
-  runMoveItemCommand, destroyBot
+  resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
+  runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
+  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin,
+  runMoveItemCommand, destroyBot, insertCommandVerification
 };

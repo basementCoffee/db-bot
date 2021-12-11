@@ -20,7 +20,8 @@ const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
-  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand
+  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand,
+  insertCommandVerification
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -741,7 +742,7 @@ async function runCommandCases (message) {
     case 'list':
     case 'upnext':
     case 'queue':
-      runQueueCommand(message, mgid);
+      runQueueCommand(message, mgid, false);
       break;
     case 'changeprefix':
       if (!message.member.hasPermission('KICK_MEMBERS')) {
@@ -1237,7 +1238,7 @@ bot.once('ready', () => {
 
 // calibrate on startup
 bot.on('message', async (message) => {
-  if (devMode || message.channel.id !== CH.process) return;
+  if (devMode) return;
   if (message.channel.id === '919157187106967552' && !message.member.user.bot) {
     if (message.content.toLowerCase() !== 'done') return;
     const u1 = '443150640823271436';
@@ -1245,6 +1246,7 @@ bot.on('message', async (message) => {
     const other = message.member.id === u1 ? u2 : u1;
     message.channel.send(`<@${other}>`);
   }
+  if (message.channel.id !== CH.process) return;
   // ~db-process (standard)[11] | -on [3] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
   // turn off active bots -- activates on '~db-process'
   if (message.content.substr(0, 11) === '~db-process') {
@@ -1265,26 +1267,6 @@ bot.on('message', async (message) => {
     }
   }
 });
-
-/**
- * Helper for runInsertCommand. Does some preliminary verification.
- * @param message The message object.
- * @param server The server.
- * @param args {Array<string>} args[1] being the term, args[2] being the position.
- * @returns {*} 1 if passed
- */
-function insertCommandVerification (message, server, args) {
-  if (!message.member.voice?.channel) return message.channel.send('must be in a voice channel');
-  if (server.dictator && message.member.id !== server.dictator.id)
-    return message.channel.send('only the dictator can insert');
-  if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
-    return message.channel.send('the queue is locked: only the dj can insert');
-  if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
-  if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
-  if (!args[1]) return message.channel.send('put a link followed by the position in the queue \`(i.e. insert [link] [num])\`');
-  if (args[2] && isNaN(parseInt(args[2]))) return message.channel.send('second argument must be a number');
-  return 1;
-}
 
 /**
  * Inserts a term into position into the queue. Accepts a valid link or key.
@@ -1951,7 +1933,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
  * Prints the queue to the console
  * @param message The message that triggered the bot
  * @param mgid The message guild id
- * @param noErrorMsg Optional - Do not send error msg if not in a voice channel
+ * @param noErrorMsg {Boolean} True if to not send error msg (if not in a voice channel)
  * @returns {Promise<void>|*}
  */
 function runQueueCommand (message, mgid, noErrorMsg) {
