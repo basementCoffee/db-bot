@@ -675,6 +675,7 @@ async function runCommandCases (message) {
       break;
     case 'prec':
     case 'precc':
+    case 'precs':
     case 'playrec':
     case 'playrecc':
     case 'playrecs':
@@ -1778,71 +1779,63 @@ async function playRecommendation (message, server, args) {
   if (!botInVC(message)) resetSession(server);
   const user = await bot.users.fetch(message.member.id);
   const channel = await user.createDM();
-  // all rec links
-  let links = [];
   let num = parseInt(args[1]);
-  let func;
+  let isRelevant = () => {}; // will be redefined
   if (num < 1) {
     message.channel.send('*provided number must be positive*');
     return;
   }
-  if (num && !isNaN(num)) func = () => num > 0;
+  if (num) isRelevant = () => num > 0;
   else {
     num = 0;
-    func = (m) => {
-      // if the message was created in the last 48 hours
-      return Date.now() - m.createdTimestamp < 172800000;
-    };
+    // if the message was created in the last 48 hours
+    isRelevant = (m) => Date.now() - m.createdTimestamp < 172800000;
   }
+  // attempts to get a valid url from a regex.exec or message
+  const getUrl = (res, m) => {
+    if (res && res[1]) return res[1];
+    else if (m.embeds.length > 0) {
+      return m.embeds[0].url;
+    }
+    return undefined;
+  };
   // links that should be forwarded by default (meet func criteria)
   let recs = [];
-  // earliest message are in the front
-  const messages = await channel.messages.fetch();
-  for (const [, m] of messages) {
-    const regex = /<(((?!discord).)*)>/g;
-    const res = regex.exec(m.content);
-    if (res && res[1]) {
-      if (func(m)) {
-        recs.push(res[1]);
-        num--;
-      } else links.push(res[1]);
-    }
-  }
-  const tempRecs = [];
+  // array of messages, the earliest message are in the front
+  const messages = await channel.messages.fetch({limit: 99});
   const filterUrlArgs = (link) => {
-    if (link && link.includes(SPOTIFY_BASE_LINK) && link.includes('?si=')) return link.split('?si=')[0];
+    if (link.includes(SPOTIFY_BASE_LINK) && link.includes('?si=')) return link.split('?si=')[0];
     else return link;
   };
-  // expects the queue to have a .url field
-  const isInQueue = (queue, link) => {
-    return queue.find(val => {
-      link = filterUrlArgs(link);
-      return val.url === link;
-    });
-  };
-  for (let link of recs) {
-    // avoid adding the same recommendation again
-    if (!isInQueue(server.queue, link)) tempRecs.push(link);
-    else num++;
-  }
-  for (let i = 0; i < links.length; i++) {
-    let link = links[i];
-    if (isInQueue(server.queue, link)) {
-      links.splice(i, 1);
-      i--;
-    }
-  }
-  recs = tempRecs;
-  // less than 0 = no args provided
-  if (num >= 0) {
-    // num contains number of needed elements
-    while (num > 0 && links.length > 0) {
-      recs.push(links.shift());
-      num--;
+  // if there are more links available
+  let isMore = false;
+  /**
+   * Determines if a link is within an array.
+   * Expects the queue param to have a '.url' field.
+   * @param queue {Array<Object>} The queue to check.
+   * @param link {string} The link to filter.
+   * @return {Boolean} Returns true if the item exists within the queue.
+   */
+  const isInQueue = (queue, link) => queue.some(val => val.url === link);
+  for (const [, m] of messages) {
+    if (m.author.id !== bot.user.id) continue;
+    const regex = /<(((?!discord).)*)>/g;
+    const res = regex.exec(m.content);
+    let url = getUrl(res, m);
+    if (url) {
+      url = filterUrlArgs(url);
+      if (isInQueue(server.queue, url) || recs.slice(-1)[0] === url) continue;
+      if (isRelevant(m)) {
+        recs.push(url);
+        num--;
+      } else {
+        isMore = true;
+        break;
+      }
     }
   }
   if (recs.length < 1) {
-    if (links.length > 0) {
+    if (isMore) {
       message.channel.send('***no new recommendations***, *provide a number to get a specific number of recs*');
     } else message.channel.send('*no more recommendations (the queue contains all of them)*');
     return;
