@@ -1239,13 +1239,6 @@ bot.once('ready', () => {
 // calibrate on startup
 bot.on('message', async (message) => {
   if (devMode) return;
-  if (message.channel.id === '919157187106967552' && !message.member.user.bot) {
-    if (message.content.toLowerCase() !== 'done') return;
-    const u1 = '443150640823271436';
-    const u2 = '268554823283113985';
-    const other = message.member.id === u1 ? u2 : u1;
-    message.channel.send(`<@${other}>`);
-  }
   if (message.channel.id !== CH.process) return;
   // ~db-process (standard)[11] | -on [3] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
   // turn off active bots -- activates on '~db-process'
