@@ -1005,7 +1005,7 @@ async function runCommandCases (message) {
       server.queueHistory.length = 0;
       if (currentQueueItem) {
         server.queue[0] = currentQueueItem;
-        await sendLinkAsEmbed(message, currentQueueItem, message.member.voice?.channel, server);
+        await sendLinkAsEmbed(message, currentQueueItem, message.member.voice?.channel, server, false);
       }
       message.channel.send('The queue has been scrubbed clean');
       break;
@@ -1035,7 +1035,7 @@ async function runCommandCases (message) {
       server.silence = false;
       message.channel.send('*song notifications enabled*');
       if (dispatcherMap[message.member.voice?.channel.id]) {
-        sendLinkAsEmbed(message, server.queue[0], message.member.voice?.channel, server).then();
+        sendLinkAsEmbed(message, server.queue[0], message.member.voice?.channel, server, false).then();
       }
       break;
     // print out the version number
@@ -1923,7 +1923,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
 }
 
 /**
- * Prints the queue to the console
+ * Displays the queue in the channel.
  * @param message The message that triggered the bot
  * @param mgid The message guild id
  * @param noErrorMsg {Boolean} True if to not send error msg (if not in a voice channel)
@@ -2342,9 +2342,9 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
  * @param playNow Bool, whether to override the queue
  * @param server The server playback metadata
  * @param searchTerm The specific phrase to search for, required if not provided a search result
- * @param indexToLookup Optional - The search index, requires searchResult to be valid
- * @param searchResult Optional - For recursive call with memoization
- * @param playlistMsg Optional - A message to be used for other YouTube search results
+ * @param indexToLookup {string | number?} The search index, requires searchResult to be valid
+ * @param searchResult {Object?} The search results, used for recursive call with memoization
+ * @param playlistMsg {Object?} A message to be used for other YouTube search results
  * @returns {Promise<*|boolean|undefined>}
  */
 async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLookup, searchResult, playlistMsg) {
@@ -3131,7 +3131,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
         server.currentEmbed = null;
       }
     } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
-      await sendLinkAsEmbed(message, queueItem, vc, server).then(() => dispatcher.setVolume(0.5));
+      await sendLinkAsEmbed(message, queueItem, vc, server, false).then(() => dispatcher.setVolume(0.5));
     }
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
       pauseComputation(vc, true);
@@ -3408,11 +3408,11 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  * Sends an embed to the channel depending on the given link.
  * If not given a voice channel then playback buttons will not appear. This is the main playabck embed.
  * If no url is provided then returns.
- * @param message {module:"discord.js".Message} The message to send the channel to.
- * @param queueItem the queueItem to generate the embed for
- * @param voiceChannel the voice channel that the song is being played in, if playing
- * @param server The server playback metadata
- * @param forceEmbed Optional - force the embed to be regenerated
+ * @param message {module:"discord.js".Message} The message to send the channel to
+ * @param queueItem {Object} the queueItem to generate the embed for
+ * @param voiceChannel {module:"discord.js".VoiceChannel} the voice channel that the song is being played in, if playing
+ * @param server {Object} The server playback metadata
+ * @param forceEmbed {Boolean} Force the embed to be re-sent in the text channel
  * @returns {Promise<void>}
  */
 async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceEmbed) {
@@ -3626,7 +3626,7 @@ function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, a
     }
     dispatcherMap[voiceChannel.id] = undefined;
     if (whatspMap[voiceChannel.id] !== 'https://www.youtube.com/watch?v=oyFQVZ2h0V8')
-      sendLinkAsEmbed(message, server.queue[0], voiceChannel, server).then();
+      sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, false).then();
   }
 }
 
