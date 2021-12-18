@@ -69,8 +69,10 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
   let line;
   let keyT;
   let valueT;
-  congratsDatabase.clear();
-  referenceDatabase.clear();
+// What is returned when searching the db, uses key-name
+  const congratsDatabase = new Map();
+// Reference for the database, uses uppercase key-name
+  const referenceDatabase = new Map();
   const keyArray = [];
   for (let i = 0; i < dsInt; i++) {
     // the array of rows (has two columns)
@@ -87,13 +89,13 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
   }
   return {
     // the keys - case-sensitive
-    congratsDatabase: new Map(congratsDatabase),
+    congratsDatabase,
     // the keys - all uppercase
-    referenceDatabase: new Map(referenceDatabase),
+    referenceDatabase,
     // the array of rows
     line: keyArray,
     // the size of the keys list
-    dsInt: dsInt
+    dsInt
   };
 };
 
@@ -290,11 +292,6 @@ const gsUpdateOverwrite = (value, addOn, nameOfSheet, dsInt) => {
       }
     );
 };
-
-// What is returned when searching the db, uses key-name
-const congratsDatabase = new Map();
-// Reference for the congrats database, uses uppercase key-name
-const referenceDatabase = new Map();
 
 exports.gsrun = gsrun;
 exports.gsUpdateAdd = gsUpdateAdd;
