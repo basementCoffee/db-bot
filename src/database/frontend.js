@@ -135,25 +135,60 @@ async function updateServerPrefix (server, mgid) {
 }
 
 /**
- * Looks for an exact match of a link within a given database.
+ * Looks for an exact match of a given link within a given database.
  * @param message The message metadata.
  * @param sheetName The sheet name to use for the lookup.
  * @param link The link to lookup. Defaults to server
+ * @param server The server metadata.
  * @returns {Boolean} If the request was a valid link.
  */
-function runLookupLink (message, sheetName, link) {
+async function runLookupLink (message, sheetName, link, server) {
   if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
-  gsrun("A", "B", sheetName).then(xdb => {
-    for (let [key, value] of xdb.congratsDatabase) {
-      if (value === link) {
-        message.channel.send(`Found it! key name is: **${key}**`);
-        return;
-      }
+  const xdb = await getXdb(server, sheetName);
+  for (let [key, value] of xdb.congratsDatabase) {
+    if (value === link) {
+      message.channel.send(`Found it! key name is: **${key}**`);
+      return true;
     }
-    if (sheetName[0] === 'p') message.channel.send(`could not find any keys matching the given link`);
-    else runLookupLink(message, `p${message.member.id}`, link);
-  });
+  }
+  if (sheetName[0] === 'p') message.channel.send(`could not find any keys matching the given link`);
+  else runLookupLink(message, `p${message.member.id}`, link, server);
   return true;
+}
+
+/**
+ * Searches the xdb for the provided string. Returns a JSON of a potential value and a guaranteed message.
+ * If provided a value it will be in the format of a JSON with fields ss and ssi.
+ * ss represents the search strings as CSVs and ssi would be the number of values within the ss.
+ * NOTICE: Saves the keys of the sheetName referenced to the server object. This will have to be manually cleared later.
+ * @param message
+ * @param sheetName
+ * @param providedString
+ * @param server
+ * @return {Promise<{valueObj: {ss: string, ssi: number}, link, message: string}|{message: string}|*|undefined>}
+ */
+async function searchForSingleKey (message, sheetName, providedString, server) {
+  const xdb = await getXdb(server, sheetName, true);
+  const so = runSearchCommand(providedString, xdb.congratsDatabase);
+  if (so.ssi) {
+    let link;
+    if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
+    return {
+      valueObj: so,
+      link,
+      message: `${(sheetName[0] === 'p' ? 'Personal' : 'Server')} keys found: ${so.ss} ${(link ? `\n${link}` : '')}`
+    };
+  } else if (sheetName[0] !== 'p') {
+    return searchForSingleKey(message, `p${message.member.id}`, providedString, server);
+  } else if (providedString.length < 2) {
+    return {
+      message: 'Did not find any keys that start with the given letter.'
+    };
+  } else {
+    return {
+      message: 'Did not find any keys that contain \'' + providedString + '\''
+    };
+  }
 }
 
 /**
@@ -161,25 +196,31 @@ function runLookupLink (message, sheetName, link) {
  * @param message The message that triggered the bot.
  * @param server The server.
  * @param sheetName The guild id.
- * @param providedString The string to search for
+ * @param providedString The string to search for. If given a key-name then can it can contain multiple values separated by commas or spaces.
  */
 async function runUniversalSearchCommand (message, server, sheetName, providedString) {
   if (!providedString) return message.channel.send('must provide a link or word');
+  let words = providedString.split(/, | |,/);
+  console.log(words);
   // returns true if the item provided was a link
-  if (runLookupLink(message, sheetName, providedString)) return;
-  const xdb = await getXdb(server, sheetName);
-  const so = runSearchCommand(providedString, xdb.congratsDatabase);
-  if (so.ssi) {
-    let link;
-    if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
-    message.channel.send(`${(sheetName[0] === 'p' ? 'Personal' : 'Server')} keys found: ${so.ss} ${(link ? `\n${link}` : '')}`);
-  } else if (sheetName[0] !== 'p') {
-    await runUniversalSearchCommand(message, server, `p${message.member.id}`, providedString);
-  } else if (providedString.length < 2) {
-    message.channel.send('Did not find any keys that start with the given letter.');
+  if (await runLookupLink(message, sheetName, words[0], server)) return;
+  const BASE_KEYS_STRING = '**_Keys found_**\n';
+  let finalString = BASE_KEYS_STRING;
+  let obj;
+  if (words.length === 1) {
+    message.channel.send((await searchForSingleKey(message, sheetName, words[0], server)).message);
   } else {
-    message.channel.send('Did not find any keys that contain \'' + providedString + '\'');
+    for (const word of words) {
+      obj = await searchForSingleKey(message, sheetName, word, server);
+      if (obj.link) finalString += `${obj.valueObj.ss}:\n${obj.link}\n`;
+    }
+    if (finalString === BASE_KEYS_STRING) {
+      finalString = 'did not find any exact key matches, ' +
+        'try a single search word (instead of multiple) for a more refined search within the keys lists';
+    }
+    message.channel.send(finalString);
   }
+  if (botInVC(!message)) server.userKeys.clear();
 }
 
 /**

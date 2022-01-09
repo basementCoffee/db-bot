@@ -597,13 +597,7 @@ async function runCommandCases (message) {
     case 'find':
     case 'lookup':
     case 'search':
-      runUniversalSearchCommand(message, server, mgid, (args[1] ? args[1] : server.queue[0]?.url)).then();
-      break;
-    // .m is the personal search command
-    case 'ml':
-    case 'ms':
-      if (botInVC(message) || args[0])
-        runUniversalSearchCommand(message, server, `p${message.member.id}`, (args[1] ? args[1] : server.queue[0]?.url)).then();
+      runUniversalSearchCommand(message, server, mgid, (args[1] ? args.join(' ') : server.queue[0]?.url)).then();
       break;
     case 'mfind':
     case 'mlookup':
