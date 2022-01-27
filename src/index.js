@@ -2004,9 +2004,12 @@ function runQueueCommand (message, mgid, noErrorMsg) {
         clearTimeout(arrowReactionTimeout);
         collector.stop();
         reaction.users.remove(reactionCollector);
-        let newStartingIndex = startingIndex - 10;
-        if (newStartingIndex <= 0) {
-          newStartingIndex = serverQueue.length - 10;
+        let newStartingIndex;
+        if (startingIndex <= 0) {
+          const lastDigit = Number(serverQueue.length.toString().slice(-1)[0]);
+          newStartingIndex = serverQueue.length - (lastDigit ? lastDigit : 10);
+        } else {
+          newStartingIndex = Math.max(0, startingIndex - 10);
         }
         generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
       }
@@ -2015,7 +2018,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
         clearTimeout(arrowReactionTimeout);
         collector.stop();
         let newStartingIndex = startingIndex + 10;
-        if (newStartingIndex >= serverQueue.length) {
+        if (newStartingIndex >= serverQueue.length - 1) {
           newStartingIndex = 0;
         }
         generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
