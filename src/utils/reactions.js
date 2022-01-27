@@ -26,6 +26,8 @@ const reactions = {
   CHECK: '✅',
   // right arrow
   ARROW_R: '➡️',
+  // left arrow
+  ARROW_L: '⬅️',
   // outbox
   OUTBOX: '📤',
   // inbox
