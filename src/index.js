@@ -1930,7 +1930,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
     return message.channel.send('There is no active queue right now');
   }
   // a copy of the queue
-  const serverQueue = server.queue.map((x) => x);
+  let serverQueue = server.queue.map((x) => x);
   let qIterations = serverQueue.length;
   if (qIterations > 11) qIterations = 11;
   let authorName;
@@ -2033,6 +2033,8 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 qIterations = startingIndex + 11;
                 clearTimeout(arrowReactionTimeout);
                 collector.stop();
+                // update the local queue
+                serverQueue = server.queue.map((x) => x);
                 generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray).then();
               } else {
                 message.channel.send('*cancelled*');
@@ -2062,7 +2064,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
               num = parseInt(num);
               if (num) {
                 if (server.queue[num] !== serverQueue[num])
-                  return message.channel.send('**queue is out of date:** the positions may not align properly with the embed shown\n*please type \'queue\' again*');
+                  return message.channel.send('**queue is out of date:** the positions may not align properly with the embed shown\n*please use the \'queue\' command again*');
                 if (num >= server.queue.length) return message.channel.send('*that position is out of bounds, **' +
                   (server.queue.length - 1) + '** is the last item in the queue.*');
                 server.queue.splice(num, 1);
