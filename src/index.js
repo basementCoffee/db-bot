@@ -1931,8 +1931,6 @@ function runQueueCommand (message, mgid, noErrorMsg) {
   }
   // a copy of the queue
   let serverQueue = server.queue.map((x) => x);
-  let qIterations = serverQueue.length;
-  if (qIterations > 11) qIterations = 11;
   let authorName;
 
   async function generateQueue (startingIndex, notFirstRun, sentMsg, sentMsgArray) {
@@ -1942,15 +1940,17 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       authorName = await getTitle(serverQueue[0], 50);
     }
     const n = serverQueue.length - startingIndex - 1;
-    let msg;
+    // generating queue message
+    let tempMsg;
     if (!sentMsg) {
       let msgTxt = (notFirstRun ? 'generating ' + (n < 11 ? 'remaining ' + n : 'next 10') : 'generating queue') + '...';
-      msg = await message.channel.send(msgTxt);
+      tempMsg = await message.channel.send(msgTxt);
     }
     queueMsgEmbed.setTitle('Up Next')
       .setAuthor('playing:  ' + authorName)
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
     let sizeConstraint = 0;
+    const qIterations = Math.min(serverQueue.length, startingIndex + 11);
     for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length && sizeConstraint < 10); qi++) {
       const title = (await getTitle(serverQueue[qi]));
       const url = serverQueue[qi].url;
@@ -1961,31 +1961,35 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       queueSB = 'queue is empty';
     }
     queueMsgEmbed.setDescription(queueSB);
-    if (startingIndex + 11 < serverQueue.length) {
-      queueMsgEmbed.setFooter('embed displays 10 at a time');
+    if (serverQueue.length > 11) {
+      queueMsgEmbed.setFooter('use \'insert\' & \'remove\' to edit the queue');
     }
-    if (msg?.deletable) msg.delete();
+    if (tempMsg?.deletable) tempMsg.delete();
     if (sentMsg?.deletable) {
       await sentMsg.edit(queueMsgEmbed);
     } else {
       sentMsg = await message.channel.send(queueMsgEmbed);
       sentMsgArray.push(sentMsg);
     }
-    server.numSinceLastEmbed += 10;
-    if (startingIndex + 11 < serverQueue.length) {
-      sentMsg.react(reactions.ARROW_R).then(() => {
-        if (!collector.ended)
-          sentMsg.react(reactions.INBOX).then(() => {
-            if (server.queue.length > 0 && !collector.ended)
-              sentMsg.react(reactions.OUTBOX);
+    if (sentMsg.reactions.cache.size < 1) {
+      server.numSinceLastEmbed += 10;
+      if (startingIndex + 11 < serverQueue.length) {
+        sentMsg.react(reactions.ARROW_L).then(() => {
+          sentMsg.react(reactions.ARROW_R).then(() => {
+            if (!collector.ended && serverQueue.length < 12)
+              sentMsg.react(reactions.INBOX).then(() => {
+                if (server.queue.length > 0 && !collector.ended)
+                  sentMsg.react(reactions.OUTBOX);
+              });
           });
-      });
-    } else sentMsg.react(reactions.INBOX).then(() => {if (server.queue.length > 0) sentMsg.react(reactions.OUTBOX);});
+        });
+      } else sentMsg.react(reactions.INBOX).then(() => {if (server.queue.length > 0) sentMsg.react(reactions.OUTBOX);});
+    }
     const filter = (reaction, user) => {
       if (message.member.voice?.channel) {
         for (const mem of message.member.voice.channel.members) {
           if (user.id === mem[1].id) {
-            return user.id !== botID && [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX].includes(reaction.emoji.name);
+            return user.id !== botID && [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX, reactions.ARROW_L].includes(reaction.emoji.name);
           }
         }
       }
@@ -1996,12 +2000,25 @@ function runQueueCommand (message, mgid, noErrorMsg) {
       sentMsg.reactions.removeAll();
     }, 300500);
     collector.on('collect', (reaction, reactionCollector) => {
-      if (reaction.emoji.name === reactions.ARROW_R && startingIndex + 11 < serverQueue.length) {
+      if (reaction.emoji.name === reactions.ARROW_L) {
         clearTimeout(arrowReactionTimeout);
         collector.stop();
-        sentMsg.reactions.removeAll();
-        qIterations += 10;
-        generateQueue(startingIndex + 10, true, false, sentMsgArray);
+        reaction.users.remove(reactionCollector);
+        let newStartingIndex = startingIndex - 10;
+        if (newStartingIndex <= 0) {
+          newStartingIndex = serverQueue.length - 10;
+        }
+        generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
+      }
+      if (reaction.emoji.name === reactions.ARROW_R) {
+        reaction.users.remove(reactionCollector);
+        clearTimeout(arrowReactionTimeout);
+        collector.stop();
+        let newStartingIndex = startingIndex + 10;
+        if (newStartingIndex >= serverQueue.length) {
+          newStartingIndex = 0;
+        }
+        generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
       } else if (reaction.emoji.name === reactions.INBOX) {
         if (server.dictator && reactionCollector.id !== server.dictator.id)
           return message.channel.send('only the dictator can insert');
@@ -2030,7 +2047,6 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 let pageNum;
                 if (num === 11) pageNum = 0;
                 else pageNum = Math.floor((num - 1) / 10);
-                qIterations = startingIndex + 11;
                 clearTimeout(arrowReactionTimeout);
                 collector.stop();
                 // update the local queue
@@ -2074,7 +2090,6 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 let pageNum;
                 if (num === 11) pageNum = 0;
                 else pageNum = Math.floor((num - 1) / 10);
-                qIterations = startingIndex + 11;
                 clearTimeout(arrowReactionTimeout);
                 collector.stop();
                 return generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
