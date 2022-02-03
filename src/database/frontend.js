@@ -200,16 +200,15 @@ async function searchForSingleKey (message, sheetName, providedString, server) {
  */
 async function runUniversalSearchCommand (message, server, sheetName, providedString) {
   if (!providedString) return message.channel.send('must provide a link or word');
-  let words = providedString.split(/, | |,/);
-  console.log(words);
-  // returns true if the item provided was a link
+  const words = providedString.split(/, | |,/);
+  // returns true if the item provided was a link, handles the request
   if (await runLookupLink(message, sheetName, words[0], server)) return;
-  const BASE_KEYS_STRING = '**_Keys found_**\n';
-  let finalString = BASE_KEYS_STRING;
-  let obj;
   if (words.length === 1) {
     message.channel.send((await searchForSingleKey(message, sheetName, words[0], server)).message);
   } else {
+    const BASE_KEYS_STRING = '**_Keys found_**\n';
+    let finalString = BASE_KEYS_STRING;
+    let obj;
     for (const word of words) {
       obj = await searchForSingleKey(message, sheetName, word, server);
       if (obj.link) finalString += `${obj.valueObj.ss}:\n${obj.link}\n`;
