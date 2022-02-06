@@ -231,7 +231,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
  * @param server The server.
  * @param mgid The message guild id.
  * @param addToFront {boolean} If to add to the front.
- * @param queueFunction {(arr: Array, qi)=>void}
+ * @param queueFunction {(arr: Array, {type, url, infos})=>void}
  * A function that adds a given link to the server queue. Used for YT only.
  * @returns {Promise<Number>} The number of items added.
  */
@@ -242,13 +242,16 @@ async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunc
   } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
     url = url.replace(/music.youtube/, 'youtube');
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.YOUTUBE, addToFront);
-  } else if (url.includes(SOUNDCLOUD_BASE_LINK) && verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
-    url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
-    return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SOUNDCLOUD, addToFront);
+  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
+    if (verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))){
+      url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
+      return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SOUNDCLOUD, addToFront);
+    }
+    queueFunction(server.queue, createQueueItem(url, StreamType.SOUNDCLOUD, null));
   } else {
     queueFunction(server.queue, createQueueItem(url, (url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE), null));
-    return 1;
   }
+    return 1;
 }
 
 /**
@@ -3138,6 +3141,13 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       highWaterMark: streamHWM
     });
     dispatcherMap[vc.id] = dispatcher;
+    if (server.streamData?.type === StreamType.SOUNDCLOUD) {
+      pauseComputation(vc, true);
+      await new Promise(res => setTimeout(() => {
+        if (whatToPlay === whatspMap[vc.id]) playComputation(vc, true);
+        res();
+      }, 3000));
+    } else dispatcherMapStatus[vc.id] = false;
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
       if (server.currentEmbed) {
@@ -3147,13 +3157,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
     } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
       await sendLinkAsEmbed(message, queueItem, vc, server, false).then(() => dispatcher.setVolume(0.5));
     }
-    if (server.streamData?.type === StreamType.SOUNDCLOUD) {
-      pauseComputation(vc, true);
-      await new Promise(res => setTimeout(() => {
-        if (whatToPlay === whatspMap[vc.id]) playComputation(vc, true);
-        res();
-      }, 3000));
-    } else dispatcherMapStatus[vc.id] = false;
     server.skipTimes = 0;
     dispatcher.on('error', async (e) => {
       if (dispatcher.streamTime < 1000 && retries < 4) {
