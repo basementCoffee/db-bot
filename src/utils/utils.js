@@ -402,7 +402,7 @@ async function getTitle (queueItem, cutoff) {
  */
 function getHelpList (prefixString, numOfPages, version) {
   const page1 =
-    '***[NEW]** - added support for SoundCloud & Twitch (Nov. 2021)*\n\n' +
+    '***[NEW]** - fixed SoundCloud playback issues (Feb. 2022)*\n\n' +
     '--------------  **Music Commands** --------------\n\`' +
     prefixString +
     'play [word] \` Searches YouTube and plays *[p]* \n\`' +
