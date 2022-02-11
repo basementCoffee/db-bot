@@ -3055,8 +3055,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
           (Math.abs(spotifyDuration - (convertYTFormatToMS(search.items[itemIndex2].duration.split(':')))) + 1000)) {
           itemIndex = itemIndex2;
         }
+      } else if (queueItem.infos.name.includes('feat')) {
+        search = await ytsr(queueItem.infos.name + ' lyrics', {pages: 1});
       } else {
-        search = await ytsr(queueItem.infos.name + ' ' + artists + ' lyrics', {pages: 1});
+        search = await ytsr(queueItem.infos.name + ' ' + artists.split(' ')[0] + ' lyrics', {pages: 1});
       }
       if (search.items[itemIndex]) queueItem.urlAlt = urlAlt = search.items[itemIndex].url;
       else {
