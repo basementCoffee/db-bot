@@ -243,7 +243,7 @@ async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunc
     url = url.replace(/music.youtube/, 'youtube');
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.YOUTUBE, addToFront);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
-    if (verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))){
+    if (verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
       url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
       return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SOUNDCLOUD, addToFront);
     }
@@ -251,7 +251,7 @@ async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunc
   } else {
     queueFunction(server.queue, createQueueItem(url, (url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE), null));
   }
-    return 1;
+  return 1;
 }
 
 /**
