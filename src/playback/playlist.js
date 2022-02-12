@@ -1,4 +1,4 @@
-const {getTracks, getPreview, getData} = require('spotify-url-info');
+const {getData} = require('spotify-url-info');
 const ytpl = require('ytpl');
 const {MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, StreamType} = require('../utils/constants');
 const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require('../utils/utils');
