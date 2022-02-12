@@ -1,4 +1,4 @@
-const {getTracks} = require('spotify-url-info');
+const {getTracks, getPreview, getData} = require('spotify-url-info');
 const ytpl = require('ytpl');
 const {MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, StreamType} = require('../utils/constants');
 const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require('../utils/utils');
@@ -79,7 +79,12 @@ async function getPlaylistArray (playlistUrl, type) {
   switch (type) {
     case StreamType.SPOTIFY:
       // filter ensures that each element exists
-      return (await getTracksWrapper(playlistUrl)).filter(track => track);
+      const tracks = (await getTracksWrapper(playlistUrl)).filter(track => track);
+      if (tracks[0] && !tracks[0].album) {
+        const firstTrack = await getData(playlistUrl);
+        tracks.map(item => item.album = {images: firstTrack.images})
+      }
+      return tracks;
     case StreamType.YOUTUBE:
       const items = (await ytpl(playlistUrl, {pages: 5})).items;
       // index of -1 means that items will repeat

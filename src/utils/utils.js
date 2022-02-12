@@ -114,7 +114,7 @@ async function createEmbed (url, infos) {
       .setColor('#1DB954')
       .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, artists, true)
       .addField('Duration', formatDuration(infos.duration_ms), true)
-      .setThumbnail(infos.album.images[infos.album.images.length - 1].url);
+      .setThumbnail(infos.album?.images[infos.album.images.length - 1].url);
     timeMS = parseInt(infos.duration_ms);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (!infos) infos = await scdl.getInfo(url);
