@@ -749,7 +749,6 @@ function insertCommandVerification (message, server, args) {
   if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
   if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
   if (!args[1]) return message.channel.send('put a link followed by the position in the queue \`(i.e. insert [link] [num])\`');
-  if (args[2] && isNaN(parseInt(args[2]))) return message.channel.send('second argument must be a number');
   return 1;
 }
 
