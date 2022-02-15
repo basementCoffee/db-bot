@@ -730,7 +730,7 @@ async function runCommandCases (message) {
       break;
     case 'input':
     case 'insert':
-      runInsertCommand(message, mgid, args[1], args[2], server).then();
+      runInsertCommand(message, mgid, args.slice(1), server).then();
       break;
     case 'q':
     case 'que':
@@ -1262,28 +1262,21 @@ bot.on('message', async (message) => {
  * Inserts a term into position into the queue. Accepts a valid link or key.
  * @param message The message metadata.
  * @param mgid The message guild id.
- * @param term The word/link to add to the queue.
- * @param position The position to place in the queue.
+ * @param args {string[]} An array of string args to parse, can include multiple terms and a position.
  * @param server The server to use.
  * @returns {Promise<number>} The position to insert or a negative if failed.
  */
-async function runInsertCommand (message, mgid, term, position, server) {
-  const args = ['', term, position];
+async function runInsertCommand (message, mgid, args, server) {
+  if (!args || args.length < 1) return -1;
   if (insertCommandVerification(message, server, args) !== 1) return -1;
-  if (!verifyUrl(args[1]) && !verifyPlaylist(args[1])) {
-    let xdb = await getXdb(server, mgid, true);
-    let link = xdb.referenceDatabase.get(args[1].toUpperCase());
-    if (!link) {
-      xdb = await getXdb(server, `p${message.member.id}`, true);
-      link = xdb.referenceDatabase.get(args[1].toUpperCase());
-    }
-    if (!link) {
-      message.channel.send('could not find the provided key in any keys list');
-      return -1;
-    } else args[1] = link;
-  }
-  let num = parseInt(args[2]);
-  if (!num) {
+  let num = args.filter(item => !Number.isNaN(Number(item))).slice(-1)[0];
+  let links;
+  // get position
+  if (num) {
+    links = args.filter(item => item !== num);
+    num = parseInt(num);
+  } else {
+    links = args;
     if (server.queue.length === 1) num = 1;
     else {
       const sentMsg = await message.channel.send('What position would you like to insert? (1-' + server.queue.length + ') [or type \'q\' to quit]');
@@ -1310,17 +1303,39 @@ async function runInsertCommand (message, mgid, term, position, server) {
     return -1;
   }
   if (num > server.queue.length) num = server.queue.length;
+  let tempLink;
+  // convert all terms into links
+  for (let i = 0; i < links.length; i++) {
+    tempLink = links[i];
+    if (!verifyUrl(tempLink) && !verifyPlaylist(tempLink)) {
+      let xdb = await getXdb(server, mgid, true);
+      let link = xdb.referenceDatabase.get(tempLink.toUpperCase());
+      if (!link) {
+        xdb = await getXdb(server, `p${message.member.id}`, true);
+        link = xdb.referenceDatabase.get(tempLink.toUpperCase());
+      }
+      if (!link) {
+        message.channel.send(`could not find ${tempLink} in any keys list`);
+        links.splice(i, 1);
+      } else links[i] = link;
+    }
+  }
   let pNums = 0;
-  if (args[1].includes(SPOTIFY_BASE_LINK)) {
-    args[1] = linkFormatter(args[1], SPOTIFY_BASE_LINK);
-    pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.SPOTIFY, false, num);
-  } else if (ytpl.validateID(args[1])) {
-    pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.YOUTUBE, false, num);
-  } else if (args[1].includes(SOUNDCLOUD_BASE_LINK)) {
-    args[1] = linkFormatter(args[1], SOUNDCLOUD_BASE_LINK);
-    pNums = await addPlaylistToQueue(message, server.queue, 0, args[1], StreamType.SOUNDCLOUD, false, num);
-  } else {
-    server.queue.splice(num, 0, createQueueItem(args[1], args[1].includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE));
+  let link;
+  while (links.length > 0) {
+    link = links.pop();
+    if (link.includes(SPOTIFY_BASE_LINK)) {
+      link = linkFormatter(link, SPOTIFY_BASE_LINK);
+      pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SPOTIFY, false, num);
+    } else if (ytpl.validateID(link)) {
+      pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.YOUTUBE, false, num);
+    } else if (link.includes(SOUNDCLOUD_BASE_LINK)) {
+      link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
+      pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SOUNDCLOUD, false, num);
+    } else {
+      server.queue.splice(num, 0, createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined));
+      pNums++;
+    }
   }
   await message.channel.send(`inserted ${(pNums > 1 ? (pNums + ' links') : 'link')} into position ${num}`);
   await updateActiveEmbed(server);
@@ -2043,7 +2058,7 @@ function runQueueCommand (message, mgid, noErrorMsg) {
                 return;
               }
               if (link) {
-                const num = await runInsertCommand(message, message.guild.id, link, '', server);
+                const num = await runInsertCommand(message, message.guild.id, [link], server);
                 if (num < 0) {
                   msg.delete();
                   return;
