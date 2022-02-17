@@ -2019,13 +2019,13 @@ function runQueueCommand (message, mgid, noErrorMsg) {
     }, 300500);
     collector.on('collect', (reaction, reactionCollector) => {
       if (reaction.emoji.name === reactions.ARROW_L) {
+        reaction.users.remove(reactionCollector);
         clearTimeout(arrowReactionTimeout);
         collector.stop();
-        reaction.users.remove(reactionCollector);
         let newStartingIndex;
         if (startingIndex <= 0) {
           const lastDigit = Number(serverQueue.length.toString().slice(-1)[0]);
-          newStartingIndex = serverQueue.length - (lastDigit ? lastDigit : 10);
+          newStartingIndex = serverQueue.length - (lastDigit > 1 ? lastDigit : 10);
         } else {
           newStartingIndex = Math.max(0, startingIndex - 10);
         }
