@@ -727,6 +727,8 @@ function runMoveItemCommand (message, arr, posA, posB) {
   else if (posA < MIN_POS || posB < MIN_POS) {
     message.channel.send(`positions must be greater than ${MIN_POS - 1}`);
   } else {
+    if (posA > arr.length-1) posA = arr.length-1;
+    if (posB > arr.length-1) posB = arr.length-1;
     const item = arr.splice(posA, 1)[0];
     arr.splice(posB, 0, item);
     message.channel.send(`*moved item to position ${posB}*`);
