@@ -48,7 +48,7 @@ function convertYTFormatToMS (durationArray) {
       let duration = 0;
       durationArray.reverse();
       if (durationArray[1]) duration += durationArray[1] * 60000;
-      if (durationArray[2]) duration += durationArray[1] * 3600000;
+      if (durationArray[2]) duration += durationArray[2] * 3600000;
       duration += durationArray[0] * 1000;
       return duration;
     }
