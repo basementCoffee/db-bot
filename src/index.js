@@ -1267,7 +1267,7 @@ bot.on('message', async (message) => {
  * @returns {Promise<number>} The position to insert or a negative if failed.
  */
 async function runInsertCommand (message, mgid, args, server) {
-  if (!args || args.length < 1) return -1;
+  if (!args) return -1;
   if (insertCommandVerification(message, server, args) !== 1) return -1;
   let num = args.filter(item => !Number.isNaN(Number(item))).slice(-1)[0];
   let links;
