@@ -750,7 +750,7 @@ function insertCommandVerification (message, server, args) {
     return message.channel.send('the queue is locked: only the dj can insert');
   if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
   if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
-  if (!args[1]) return message.channel.send('put a link followed a position in the queue \`(i.e. insert [link] [num])\`');
+  if (!args[1]) return message.channel.send('put a link followed by a position in the queue \`(i.e. insert [link] [num])\`');
   return 1;
 }
 
