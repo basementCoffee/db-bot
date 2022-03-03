@@ -1411,16 +1411,14 @@ async function responseHandler () {
     devMode = false;
     console.log('-active-');
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo + '-' +
-      process.pid.toString());
+    bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo + '-' + process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 18) + 9) * 1000)); // 9 - 27 seconds
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo + '-' +
-      process.pid.toString());
+    bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo + '-' + process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
