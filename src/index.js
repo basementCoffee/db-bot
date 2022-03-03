@@ -1245,7 +1245,7 @@ bot.on('message', async (message) => {
       const oBuildNo = message.content.substr(15, 8);
       // compare versions || check if actively being used (if so: keep on)
       if (parseInt(oBuildNo) >= parseInt(buildNo) || message.content.substr(14, 1) !== '0') {
-        setOfBotsOn.add(oBuildNo);
+        setOfBotsOn.add(message.content.substring(26));
       }
     } else if (message.content.substr(11, 4) === '-off') {
       // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
