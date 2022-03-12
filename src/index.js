@@ -2720,18 +2720,31 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
   }
   if (addToFront) {
     await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else if (queueWasEmpty && (server.queue.length <= (numOfTimes + 1) || addAll)) {
+  } else if (!botInVC(message)) {
     // remove the filler string
     if (server.queue[0] === 'filler link') server.queue.shift();
-    await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
+    if (botInVC(message)) {
+      updatedQueueMessage(message.channel,`*added ${numOfTimes} to queue*`, server);
+    } else {
+      await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
+    }
   } else {
-    message.channel.send('*added ' + numOfTimes + ' to queue*');
-    await updateActiveEmbed(server);
+    updatedQueueMessage(message.channel,`*added ${numOfTimes} to queue*`, server);
   }
   sentMsg = await sentMsg;
   if (sentMsg?.deletable) sentMsg.delete();
 }
 
+/**
+ * Sends a message that the queue was updated and then updates the active embed.
+ * @param channel The channel object.
+ * @param messageText The text to send to the channel.
+ * @param server The server object.
+ */
+function updatedQueueMessage(channel, messageText, server){
+  channel.send(messageText);
+  updateActiveEmbed(server).then();
+}
 /**
  * Grabs all the keys/names from the database.
  * @param {*} message The message trigger
