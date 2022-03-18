@@ -2560,15 +2560,9 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
   // holds the string
   const origArg = num;
   // convert addToFront into a number for addRandomToQueue
-  try {
-    num = parseInt(num);
-    if (num < 1) return message.channel.send('*invalid number*');
-  } catch (e) {
-    isPlaylist = true;
-  }
-  if (!num) {
-    isPlaylist = true;
-  }
+  num = Math.floor(num);
+  if (!num) isPlaylist = true;
+  else if (num < 1) return message.channel.send('*invalid number*');
   server.numSinceLastEmbed++;
   // in case of force disconnect
   if (!botInVC(message)) resetSession(server);
