@@ -2724,12 +2724,12 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     // remove the filler string
     if (server.queue[0] === 'filler link') server.queue.shift();
     if (botInVC(message)) {
-      updatedQueueMessage(message.channel,`*added ${numOfTimes} to queue*`, server);
+      updatedQueueMessage(message.channel, `*added ${numOfTimes} to queue*`, server);
     } else {
       await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
     }
   } else {
-    updatedQueueMessage(message.channel,`*added ${numOfTimes} to queue*`, server);
+    updatedQueueMessage(message.channel, `*added ${numOfTimes} to queue*`, server);
   }
   sentMsg = await sentMsg;
   if (sentMsg?.deletable) sentMsg.delete();
@@ -2741,10 +2741,11 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
  * @param messageText The text to send to the channel.
  * @param server The server object.
  */
-function updatedQueueMessage(channel, messageText, server){
+function updatedQueueMessage (channel, messageText, server) {
   channel.send(messageText);
   updateActiveEmbed(server).then();
 }
+
 /**
  * Grabs all the keys/names from the database.
  * @param {*} message The message trigger
