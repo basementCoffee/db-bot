@@ -2736,7 +2736,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     }
     server.queue.push(createQueueItem(valArray[rn], null, null));
   }
-  if (addToFront) {
+  if (addToFront || (queueWasEmpty && server.queue.length === numOfTimes)) {
     await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
   } else if (!botInVC(message)) {
     // remove the filler string
@@ -3122,7 +3122,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     server.currentEmbed.delete();
     server.currentEmbed = null;
   }
-  if (server.streamData.type === StreamType.YOUTUBE) await server.streamData.stream.destroy()
+  if (server.streamData.type === StreamType.YOUTUBE) await server.streamData.stream.destroy();
   else if (server.streamData.stream) endStream(server);
   if (whatToPlay !== whatspMap[vc.id]) return;
   let dispatcher;
