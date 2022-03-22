@@ -7,6 +7,7 @@ const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
 const {getData} = require("spotify-url-info");
 const ytdl = require('ytdl-core-discord');
+const ytdl_core = require('ytdl-core');
 const ytsr = require('ytsr');
 const ytpl = require('ytpl');
 let scdl = require("scdl-core").SoundCloud.create().then(x => scdl = x);
@@ -21,7 +22,7 @@ const {
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand,
-  insertCommandVerification
+  insertCommandVerification, convertSeekFormatToSec
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -106,7 +107,7 @@ function playFromWord (message, args, sheetName, server, mgid, playNow) {
 /**
  * Runs the play now command.
  * @param message the message that triggered the bot
- * @param args the message split into an array
+ * @param args the message split into an array (ignores the first argument)
  * @param mgid the message guild id
  * @param server The server playback metadata
  * @param sheetName the name of the sheet to reference
@@ -140,6 +141,11 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     server.followUpMessage = undefined;
   }
   server.numSinceLastEmbed += 2;
+  let seekAmt;
+  if (args.length === 3) {
+    seekAmt = convertSeekFormatToSec(args[2]);
+    if (seekAmt) args.pop();
+  }
   if (args[1].includes('.')) {
     if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
       args[1] = args[1].substr(1, args[1].length - 2);
@@ -160,7 +166,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     linkItem--;
   }
   message.channel.send('*playing now*');
-  playLinkToVC(message, server.queue[0], voiceChannel, server, 0);
+  playLinkToVC(message, server.queue[0], voiceChannel, server, 0, seekAmt);
 }
 
 /**
@@ -410,6 +416,22 @@ async function runCommandCases (message) {
     case 'mplaynow':
     case 'mpnow':
     case 'mpn':
+      runPlayNowCommand(message, args, mgid, server, `p${message.member.id}`).then();
+      break;
+    // allows seeking of YouTube and Spotify links
+    case 'seek':
+      const SEEK_ERR_MSG = '*provide a link followed by the seek timestamp (ex: seek [link] 5m32s)*';
+      if (args.length === 2) {
+        if (!server.queue[0]) return message.channel.send(SEEK_ERR_MSG);
+        // continues if only one argument was provided
+        let numSeconds = convertSeekFormatToSec(args[1]);
+        if (numSeconds) {
+          args.splice(1, 1, server.queue[0].url, numSeconds);
+          server.queue.shift();
+        } else return message.channel.send(SEEK_ERR_MSG);
+      } else if (!args[1]) {
+        return message.channel.send(SEEK_ERR_MSG);
+      }
       runPlayNowCommand(message, args, mgid, server, `p${message.member.id}`).then();
       break;
     // stop session commands
@@ -2973,9 +2995,10 @@ async function updateVoiceState (update) {
  * @param vc The voice channel to play the song in.
  * @param server The server playback metadata.
  * @param retries {number} Optional - Integer representing the number of retries.
+ * @param seekSec {number} The amount to seek in seconds
  * @returns {Promise<void>}
  */
-async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
+async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSec) {
   let whatToPlay = queueItem?.url;
   if (!whatToPlay) {
     queueItem = server.queue[0];
@@ -3038,7 +3061,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
         try {
           queueItem.infos = await getData(whatToPlay);
         } catch (e) {
-          if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries);
+          if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
           console.log(e);
           message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
           whatspMap[vc.id] = '';
@@ -3149,7 +3172,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       whatspMap[vc.id] = whatToPlay;
       server.streamData.stream = stream = await m3u8stream(twitchEncoded.url);
       server.streamData.type = StreamType.TWITCH;
-    } else {
+    } else if (!seekSec) {
       stream = await ytdl(urlAlt, {
         filter: (retries % 2 === 0 ? () => ['251'] : ''),
         highWaterMark: 1 << 25
@@ -3158,11 +3181,16 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       encoderType = 'opus';
       queueItem.urlAlt = urlAlt;
     }
-    dispatcher = connection.play(stream, {
-      type: encoderType,
-      volume: false,
-      highWaterMark: streamHWM
-    });
+    if (seekSec) {
+      stream = await ytdl_core(urlAlt, {filter: 'audioonly'});
+      dispatcher = connection.play(stream, {seek: seekSec});
+    } else {
+      dispatcher = connection.play(stream, {
+        type: encoderType,
+        volume: false,
+        highWaterMark: streamHWM
+      });
+    }
     dispatcherMap[vc.id] = dispatcher;
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
       pauseComputation(vc, true);
@@ -3185,7 +3213,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
-        if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries);
+        if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
         return;
       }
       skipLink(message, vc, false, server, false);
@@ -3210,11 +3238,11 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       if (vc.members.size < 2) {
         connection.disconnect();
       } else if (server.loop) {
-        playLinkToVC(message, queueItem, vc, server);
+        playLinkToVC(message, queueItem, vc, server, undefined, undefined);
       } else {
         server.queueHistory.push(server.queue.shift());
         if (server.queue.length > 0) {
-          playLinkToVC(message, server.queue[0], vc, server);
+          playLinkToVC(message, server.queue[0], vc, server, undefined, undefined);
         } else if (server.autoplay) {
           runAutoplayCommand(message, server, vc, queueItem);
         } else {
@@ -3231,14 +3259,14 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
     if (!retries) {
       playbackTimeout = setTimeout(() => {
         if (server.queue[0]?.url === whatToPlay && botInVC(message) && dispatcher.streamTime < 1) {
-          playLinkToVC(message, queueItem, vc, server, ++retries);
+          playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
         }
       }, 2000);
     }
   } catch (e) {
     const errorMsg = e.toString().substr(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!retries) playLinkToVC(message, queueItem, vc, server, ++retries);
+      if (!retries) playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
       else {
         server.skipTimes++;
         if (server.skipTimes < 4) {
@@ -3271,7 +3299,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0) {
       return;
     }
     if (retries < 2) {
-      playLinkToVC(message, queueItem, vc, server, ++retries);
+      playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
       return;
     }
     console.log('error in playLinkToVC: ', whatToPlay);

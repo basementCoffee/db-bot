@@ -57,6 +57,32 @@ function convertYTFormatToMS (durationArray) {
 }
 
 /**
+ * Converts a provided seek format (ex: 1s 10m2s 1h31s) to seconds. If a number without an appending letter
+ * is provided, then assumes it is already provided in seconds.
+ * @param seekString The string to parse.
+ */
+function convertSeekFormatToSec (seekString) {
+  let numSeconds;
+  if (Number(seekString)) {
+    numSeconds = seekString;
+  } else {
+    let array = [];
+    const testVals = ['h', 'm', 's'];
+    const convertToArray = (formattedNum) => {
+      for (let val of testVals) {
+        const search = new RegExp(`(\\d*)${val}`);
+        const res = search.exec(formattedNum);
+        if (res) array.push(Number(res[1]) || 0);
+        else array.push(0);
+      }
+    };
+    convertToArray(seekString);
+    numSeconds = convertYTFormatToMS(array) / 1000;
+  }
+  return numSeconds;
+}
+
+/**
  * Returns whether the bot is in a voice channel within the guild.
  * @param message The message that triggered the bot.
  * @returns {Boolean} True if the bot is in a voice channel.
@@ -197,7 +223,7 @@ function getAssumption (word, cdb) {
  */
 async function updateActiveEmbed (server) {
   try {
-    if (!server.currentEmbed && server.queue[0]) return;
+    if (!server.currentEmbed && server.queue[0]?.url) return;
     let embed = await createEmbed(server.queue[0].url, server.queue[0].infos);
     server.queue[0].infos = embed.infos;
     embed = embed.embed;
@@ -402,7 +428,7 @@ async function getTitle (queueItem, cutoff) {
  */
 function getHelpList (prefixString, numOfPages, version) {
   const page1 =
-    '***[NEW]** - fixed SoundCloud playback issues (Feb. 2022)*\n\n' +
+    '***[NEW]** - added seek command (March 2022)*\n\n' +
     '--------------  **Music Commands** --------------\n\`' +
     prefixString +
     'play [word] \` Searches YouTube and plays *[p]* \n\`' +
@@ -410,6 +436,8 @@ function getHelpList (prefixString, numOfPages, version) {
     'play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n\`' +
     prefixString +
     'playnow [word/link] \` Plays now, overrides queue *[pn]*\n\`' +
+    prefixString +
+    'playnow [link] [time] \` Begin at a specific timestamp\n\`' +
     prefixString +
     'pause \` Pause *[pa]*\n\`' +
     prefixString +
@@ -425,8 +453,10 @@ function getHelpList (prefixString, numOfPages, version) {
     prefixString +
     'loop \` Loops songs on finish *[l]*\n\`' +
     prefixString +
-    'queue \` Displays the queue *[q]*\n' +
-    '\n-----------  **Advanced Music Commands**  -----------\n\`' +
+    'queue \` Displays the queue *[q]*\n\`' +
+    prefixString +
+    'seek [link] [duration]\` Seek to a certain timestamp' +
+    '\n\n-----------  **Advanced Music Commands**  -----------\n\`' +
     prefixString +
     'smartplay \` Autoplay when there is nothing next to play\n\`' +
     prefixString +
@@ -442,7 +472,10 @@ function getHelpList (prefixString, numOfPages, version) {
     prefixString +
     'silence \` Silence/hide the now-playing embed \n';
   const page2 =
-    '-----------  **Server Keys**  -----------\n\`' +
+    '-----------  **Keys**  -----------\n' +
+     '*Keys are ways to save your favorite links as words.*\n' +
+    '*There are two types of keys: Server Keys & Personal Keys*\n\n'+
+    '-----------  **Server Keys**  -----------\`\n' +
     prefixString +
     "keys \` See all of the server's keys *[k]*\n\`" +
     prefixString +
@@ -471,7 +504,7 @@ function getHelpList (prefixString, numOfPages, version) {
     prefixString +
     'remove [num] \` Remove a link from the queue\n\`' +
     prefixString +
-    'ticket [message] \` report an issue / request a new feature \n' +
+    'ticket [message] \` contact the developers, request a feature \n' +
     `\n**Or just say congrats to a friend. I will chime in too! :) **\n*version ${version}*`;
   const helpListEmbed = new MessageEmbed();
   helpListEmbed.setTitle('Help List  *[short-command]*');
@@ -775,5 +808,5 @@ module.exports = {
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin,
-  runMoveItemCommand, destroyBot, insertCommandVerification
+  runMoveItemCommand, destroyBot, insertCommandVerification, convertSeekFormatToSec
 };
