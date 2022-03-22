@@ -144,7 +144,10 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
   let seekAmt;
   if (args.length === 3) {
     seekAmt = convertSeekFormatToSec(args[2]);
-    if (seekAmt) args.pop();
+    if (seekAmt) {
+      args.pop();
+      server.numSinceLastEmbed -= 2;
+    }
   }
   if (args[1].includes('.')) {
     if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
@@ -165,7 +168,6 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     pNums += await addLinkToQueue(url, message, server, mgid, true, unshiftQueue);
     linkItem--;
   }
-  message.channel.send('*playing now*');
   playLinkToVC(message, server.queue[0], voiceChannel, server, 0, seekAmt);
 }
 
@@ -3120,7 +3122,8 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     server.currentEmbed.delete();
     server.currentEmbed = null;
   }
-  if (server.streamData.stream) endStream(server);
+  if (server.streamData.type === StreamType.YOUTUBE) await server.streamData.stream.destroy()
+  else if (server.streamData.stream) endStream(server);
   if (whatToPlay !== whatspMap[vc.id]) return;
   let dispatcher;
   try {
@@ -3136,7 +3139,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       whatspMap[vc.id] = whatToPlay;
       stream = await scdl.download(whatToPlay, {highWaterMark: 1 << 25});
       streamHWM = 1 << 25;
-      server.streamData.stream = stream;
       server.streamData.type = StreamType.SOUNDCLOUD;
     } else if (queueItem.type === StreamType.TWITCH) {
       let twitchEncoded;
@@ -3170,9 +3172,13 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       whatToPlay = linkFormatter(whatToPlay, TWITCH_BASE_LINK);
       // add formatted link to whatspMap
       whatspMap[vc.id] = whatToPlay;
-      server.streamData.stream = stream = await m3u8stream(twitchEncoded.url);
+      stream = await m3u8stream(twitchEncoded.url);
       server.streamData.type = StreamType.TWITCH;
-    } else if (!seekSec) {
+    } else if (seekSec) {
+      stream = await ytdl_core(urlAlt, {filter: 'audioonly'});
+      server.streamData.type = StreamType.YOUTUBE;
+      queueItem.urlAlt = urlAlt;
+    } else {
       stream = await ytdl(urlAlt, {
         filter: (retries % 2 === 0 ? () => ['251'] : ''),
         highWaterMark: 1 << 25
@@ -3181,16 +3187,13 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       encoderType = 'opus';
       queueItem.urlAlt = urlAlt;
     }
-    if (seekSec) {
-      stream = await ytdl_core(urlAlt, {filter: 'audioonly'});
-      dispatcher = connection.play(stream, {seek: seekSec});
-    } else {
-      dispatcher = connection.play(stream, {
+    server.streamData.stream = stream;
+    dispatcher = connection.play(stream, (seekSec ? {seek: seekSec} : {
         type: encoderType,
         volume: false,
         highWaterMark: streamHWM
-      });
-    }
+      }
+    ));
     dispatcherMap[vc.id] = dispatcher;
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
       pauseComputation(vc, true);
