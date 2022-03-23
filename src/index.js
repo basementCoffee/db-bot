@@ -2736,11 +2736,11 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     }
     server.queue.push(createQueueItem(valArray[rn], null, null));
   }
+  // remove the filler string
+  if (server.queue[0] === 'filler link') server.queue.shift();
   if (addToFront || (queueWasEmpty && server.queue.length === numOfTimes)) {
     await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
   } else if (!botInVC(message)) {
-    // remove the filler string
-    if (server.queue[0] === 'filler link') server.queue.shift();
     if (botInVC(message)) {
       updatedQueueMessage(message.channel, `*added ${numOfTimes} to queue*`, server);
     } else {
