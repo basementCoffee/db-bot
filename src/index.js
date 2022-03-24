@@ -1314,8 +1314,9 @@ async function runInsertCommand (message, mgid, args, server) {
   if (num > server.queue.length) num = server.queue.length;
   let tempLink;
   // convert all terms into links
+  let notFoundString = '';
   for (let i = 0; i < links.length; i++) {
-    tempLink = links[i];
+    tempLink = links[i]?.replace(',', '');
     if (!verifyUrl(tempLink) && !verifyPlaylist(tempLink)) {
       let xdb = await getXdb(server, mgid, true);
       let link = xdb.referenceDatabase.get(tempLink.toUpperCase());
@@ -1324,27 +1325,37 @@ async function runInsertCommand (message, mgid, args, server) {
         link = xdb.referenceDatabase.get(tempLink.toUpperCase());
       }
       if (!link) {
-        message.channel.send(`could not find ${tempLink} in any keys list`);
+        notFoundString += `${tempLink}, `;
         links.splice(i, 1);
       } else links[i] = link;
     }
   }
+  if (notFoundString.length) message.channel.send(`could not find ${notFoundString} in any keys list`);
   let pNums = 0;
   let link;
+  let failedLinks = '';
+  // todo - address soundcloud link issues (tested with soundcloud key)
   while (links.length > 0) {
-    link = links.pop();
-    if (link.includes(SPOTIFY_BASE_LINK)) {
-      link = linkFormatter(link, SPOTIFY_BASE_LINK);
-      pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SPOTIFY, false, num);
-    } else if (ytpl.validateID(link)) {
-      pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.YOUTUBE, false, num);
-    } else if (link.includes(SOUNDCLOUD_BASE_LINK)) {
-      link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
-      pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SOUNDCLOUD, false, num);
-    } else {
-      server.queue.splice(num, 0, createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined));
-      pNums++;
+    try {
+      link = links.pop();
+      if (link.includes(SPOTIFY_BASE_LINK)) {
+        link = linkFormatter(link, SPOTIFY_BASE_LINK);
+        pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SPOTIFY, false, num);
+      } else if (ytpl.validateID(link)) {
+        pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.YOUTUBE, false, num);
+      } else if (link.includes(SOUNDCLOUD_BASE_LINK)) {
+        link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
+        pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SOUNDCLOUD, false, num);
+      } else {
+        server.queue.splice(num, 0, createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined));
+        pNums++;
+      }
+    } catch (e) {
+      failedLinks += `<${link}>, `;
     }
+  }
+  if (failedLinks.length) {
+    message.channel.send(`there were issues adding the following: ${failedLinks.substring(0, failedLinks.length - 2)}`);
   }
   await message.channel.send(`inserted ${(pNums > 1 ? (pNums + ' links') : 'link')} into position ${num}`);
   await updateActiveEmbed(server);
