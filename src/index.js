@@ -1079,14 +1079,7 @@ async function runCommandCases (message) {
       break;
     case 'gzupdate':
       if (process.pid === 4) return;
-      if (args[1] === 'all') {
-        exec('git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
-      } else if (args[1] === 'custom' && args[2]) {
-        exec(args.slice(2).join(''));
-      } else {
-        exec('git pull && npm upgrade && pm2 restart index');
-      }
-      message.channel.send('updating process...');
+      devUpdateCommand(message, args.splice(1));
       break;
     case 'gzc':
       const commandsMapEmbed = new MessageEmbed();
@@ -1446,6 +1439,29 @@ async function responseHandler () {
     if ((new Date()).getHours() === 5 && bot.uptime > 3600000 && bot.voice.connections.size < 1) {
       shutdown('HOUR(05)');
     }
+  }
+}
+
+/**
+ * Manages a custom or PM2 update command. Does not work with the heroku process.
+ * Provided arguments must start with a keyword. If the first argument is 'custom' then processes a custom command.
+ * If it is 'all' then restarts both PM2 processes. Providing an invalid first argument would void the update.
+ * An empty argument array represents a standard update.
+ * @param message The message that triggered the bot.
+ * @param args {array<string>} The arguments for the command.
+ */
+function devUpdateCommand (message, args) {
+  if (!args[0]) {
+    exec('git pull && npm upgrade && pm2 restart index');
+    message.channel.send('updating process...');
+  } else if (args[0] === 'all') {
+    exec('git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
+    message.channel.send('updating process...');
+  } else if (args[0] === 'custom' && args[1]) {
+    exec(args.slice(1).join(' '));
+    message.channel.send('updating process...');
+  } else {
+    message.channel.send('incorrect argument provided');
   }
 }
 
