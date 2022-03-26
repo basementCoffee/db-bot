@@ -1930,7 +1930,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
         args[2] = args[2].substr(1, args[2].length - 2);
       }
       if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
-        return message.channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString}add key [link]\``);
+        return message.channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString}add [name] [link]\``);
       server.userKeys.set(sheetName, null);
       if (args[2].includes(SPOTIFY_BASE_LINK)) args[2] = linkFormatter(args[2], SPOTIFY_BASE_LINK);
       else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
