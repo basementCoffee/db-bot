@@ -22,7 +22,7 @@ const {
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand,
-  insertCommandVerification, convertSeekFormatToSec, runRemoveCommand
+  insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -1058,14 +1058,16 @@ async function runCommandCases (message) {
       const devCEmbed = new MessageEmbed()
         .setTitle('Dev Commands')
         .setDescription(
-          '**calibrate the active bot**' +
+          '**active bot commands**' +
           '\n' + prefixString + 'gzs - statistics for the active bot' +
-          '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n' + prefixString + 'gzmem - see the process\'s memory usage' +
-          '\n' + prefixString + 'gzupdate - updates the pi instance of the bot' +
-          '\n' + prefixString + 'gzsms [message] - set a startup message for all users on voice channel join' +
-          '\n' + prefixString + 'gzm update - sends a message to all active guilds that the bot will be updating' +
           '\n' + prefixString + 'gzc - view commands stats' +
+          '\n' + prefixString + 'gznuke [num] - deletes [num] recent db bot messages' +
+          '\n\n**calibrate the active bot**' +
+          '\n' + prefixString + 'gzq - quit/restarts the active bot' +
+          '\n' + prefixString + 'gzupdate - updates the pi instance of the bot' +
+          '\n' + prefixString + 'gzm update - sends a message to active guilds that the bot will be updating' +
+          '\n' + prefixString + 'gzsms [message] - set a default message for all users on VC join' +
           '\n\n**calibrate multiple/other bots**' +
           '\n=gzl - return all bot\'s ping and latency' +
           '\n=gzk - start/kill a process' +
@@ -1076,6 +1078,9 @@ async function runCommandCases (message) {
         )
         .setFooter('version: ' + version);
       message.channel.send(devCEmbed);
+      break;
+    case 'gznuke':
+      removeDBMessage(message.channel.id, parseInt(args[1]) || 1, args[2] === 'force');
       break;
     case 'gzupdate':
       if (process.pid === 4) return;
@@ -1451,18 +1456,17 @@ async function responseHandler () {
  * @param args {array<string>} The arguments for the command.
  */
 function devUpdateCommand (message, args) {
+  let response = 'updating process...';
   if (!args[0]) {
-    exec('git pull && npm upgrade && pm2 restart index');
-    message.channel.send('updating process...');
+    exec('git stash && git pull && npm upgrade && pm2 restart index');
   } else if (args[0] === 'all') {
-    exec('git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
-    message.channel.send('updating process...');
+    exec('git stash && git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
   } else if (args[0] === 'custom' && args[1]) {
     exec(args.slice(1).join(' '));
-    message.channel.send('updating process...');
   } else {
-    message.channel.send('incorrect argument provided');
+    response = 'incorrect argument provided';
   }
+  message.channel.send(response);
 }
 
 /**

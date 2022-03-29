@@ -473,8 +473,8 @@ function getHelpList (prefixString, numOfPages, version) {
     'silence \` Silence/hide the now-playing embed \n';
   const page2 =
     '-----------  **Keys**  -----------\n' +
-     '*Keys are ways to save your favorite links as words.*\n' +
-    '*There are two types of keys: Server Keys & Personal Keys*\n\n'+
+    '*Keys are ways to save your favorite links as words.*\n' +
+    '*There are two types of keys: Server Keys & Personal Keys*\n\n' +
     '-----------  **Server Keys**  -----------\`\n' +
     prefixString +
     "keys \` See all of the server's keys *[k]*\n\`" +
@@ -830,10 +830,38 @@ function setSeamless (server, fName, args, message) {
   server.seamless.timeout = setTimeout(() => server.seamless.function = null, 9000);
 }
 
+/**
+ * Removes a specific number of recent db bot messages.
+ * Also removes the command message if possible.
+ * @param channelID {string} The channel id to search within.
+ * @param deleteNum {number} The number of recent db bot messages to remove.
+ * @param force {boolean} True if to delete non db bot messages as well.
+ */
+function removeDBMessage (channelID, deleteNum = 1, force) {
+  try {
+    bot.channels.fetch(channelID).then(x =>
+      x.messages.fetch(30).then(async x => {
+        let firstRun = true;
+        for (let [, item] of x) {
+          if (item.deletable) {
+            if (firstRun) {
+              firstRun = false;
+              await item.delete();
+            } else if (item.member.id === botID || force) {
+              await item.delete();
+              deleteNum--;
+            }
+          }
+          if (!deleteNum) break;
+        }
+      }));
+  } catch (e) {}
+}
+
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin,
-  runMoveItemCommand, destroyBot, insertCommandVerification, convertSeekFormatToSec, runRemoveCommand
+  runMoveItemCommand, destroyBot, insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage
 };
