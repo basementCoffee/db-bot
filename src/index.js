@@ -1074,7 +1074,6 @@ async function runCommandCases (message) {
       removeDBMessage(message.channel.id, parseInt(args[1]) || 1, args[2] === 'force');
       break;
     case 'gzupdate':
-      if (process.pid === 4) return;
       devUpdateCommand(message, args.splice(1));
       break;
     case 'gzc':
@@ -1447,7 +1446,19 @@ async function responseHandler () {
  * @param args {array<string>} The arguments for the command.
  */
 function devUpdateCommand (message, args) {
+  if (process.pid === 4) {
+    message.channel.send('*heroku process cannot be updated*');
+    return;
+  }
   let response = 'updating process...';
+  if (bot.voice.connections.size > 0) {
+    if (args[0] === 'force') {
+      args.splice(0,1);
+    } else {
+      message.channel.send('***people are using the bot:*** *to force an update type \`force\` after the command*');
+      return;
+    }
+  }
   if (!args[0]) {
     exec('git stash && git pull && npm upgrade && pm2 restart index');
   } else if (args[0] === 'all') {
