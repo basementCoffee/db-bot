@@ -1453,7 +1453,7 @@ function devUpdateCommand (message, args) {
   let response = 'updating process...';
   if (bot.voice.connections.size > 0) {
     if (args[0] === 'force') {
-      args.splice(0,1);
+      args.splice(0, 1);
     } else {
       message.channel.send('***people are using the bot:*** *to force an update type \`force\` after the command*');
       return;
@@ -1541,7 +1541,7 @@ async function devProcessCommands (message, zmsg) {
                 let hasDeveloper = false;
                 if (bot.voice.connections.size === 1) {
                   bot.voice.connections.forEach(x => {
-                    if (x.channel.members.get('730350452268597300') || x.channel.members.get('443150640823271436')) {
+                    if (x.channel.members.get('443150640823271436') || x.channel.members.get('268554823283113985')) {
                       hasDeveloper = true;
                       x.disconnect();
                     }
