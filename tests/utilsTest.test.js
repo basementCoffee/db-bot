@@ -1,16 +1,20 @@
-const {runMoveItemCommand, destroyBot, formatDuration} = require('../src/utils/utils');
+const {runMoveItemCommand, formatDuration} = require('../src/utils/utils');
+const {bot} = require('../src/utils/constants');
 
 let arr;
+const destroyBot = () => bot.destroy();
 
-
-class MockVoice{
+class MockVoice {
   channel;
+
   constructor (channel) {
     this.channel = channel;
   }
 }
+
 class MockGuild {
   voice;
+
   constructor (voice) {
     this.voice = voice;
   }
@@ -25,11 +29,11 @@ class MockChannel {
     this.sentMsg = msg;
   }
 
-  getSent(){
+  getSent () {
     return this.sentMsg;
   }
 
-  clearSent(){
+  clearSent () {
     this.sentMsg = undefined;
   }
 }
@@ -37,30 +41,30 @@ class MockChannel {
 class MockMessage {
   channel;
   guild;
+
   constructor (channel, guild) {
     this.channel = channel;
     this.guild = guild;
   }
 
-  getSent(){
+  getSent () {
     return this.channel.getSent();
   }
 
-  clearSent(){
+  clearSent () {
     return this.channel.clearSent();
   }
 }
+
 let message;
 let messageNoVoice;
-beforeEach(()=> {
-message = new MockMessage(new MockChannel(), new MockGuild(new MockVoice(new MockChannel())));
-messageNoVoice = new MockMessage(new MockChannel(), new MockGuild());
+beforeEach(() => {
+  message = new MockMessage(new MockChannel(), new MockGuild(new MockVoice(new MockChannel())));
+  messageNoVoice = new MockMessage(new MockChannel(), new MockGuild());
 });
 
-
-
-describe('test formatDuration', ()=> {
-  it('formatDuration()', ()=> {
+describe('test formatDuration', () => {
+  it('formatDuration()', () => {
     expect(formatDuration(-1)).toEqual('0m 0s');
     expect(formatDuration(0)).toEqual('0m 0s');
     expect(formatDuration(600)).toEqual('0m 0s');
@@ -69,16 +73,16 @@ describe('test formatDuration', ()=> {
     expect(formatDuration(50000)).toEqual('0m 50s');
     expect(formatDuration(700000)).toEqual('11m 40s');
   });
-  it('formatDuration() undefined', ()=>{
+  it('formatDuration() undefined', () => {
     expect(formatDuration(undefined)).toEqual('0m 0s');
     expect(formatDuration(null)).toEqual('0m 0s');
   });
 
-})
+});
 describe('test runMoveItemCommand', () => {
   // substring of what is sent on successful move
   const MOVED_SUBSTR = 'moved item to position';
-  const msgIncludes = (txt)=> (message.getSent() || '').includes(txt);
+  const msgIncludes = (txt) => (message.getSent() || '').includes(txt);
 
   it('valid A < B', () => {
     arr = ['A', 'B', 'C', 'D'];
@@ -95,14 +99,14 @@ describe('test runMoveItemCommand', () => {
     arr = ['A', 'B', 'C', 'D'];
   });
 
-  it ('invalid - array is too small', ()=> {
+  it('invalid - array is too small', () => {
     arr = ['A', 'B'];
     runMoveItemCommand(message, arr, 1, 2);
     expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual(['A', 'B']);
   });
 
-  it('invalid - positions', ()=> {
+  it('invalid - positions', () => {
 
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(message, arr, 0, 2);
@@ -119,14 +123,14 @@ describe('test runMoveItemCommand', () => {
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
   });
 
-  it('invalid - empty array', ()=> {
+  it('invalid - empty array', () => {
     arr = [];
     runMoveItemCommand(message, arr, 2, 3);
     expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual([]);
   });
 
-  it ('undefined - positions', ()=> {
+  it('undefined - positions', () => {
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(message, arr, undefined, 2);
     expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
@@ -138,11 +142,11 @@ describe('test runMoveItemCommand', () => {
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
   });
 
-  it ('no voice channel', ()=> {
+  it('no voice channel', () => {
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(messageNoVoice, arr, 2, 3);
     expect(msgIncludes(MOVED_SUBSTR)).toEqual(false);
-    expect(arr).toEqual( ['A', 'B', 'C', 'D']);
+    expect(arr).toEqual(['A', 'B', 'C', 'D']);
   });
 
 });
