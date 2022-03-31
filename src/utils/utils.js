@@ -884,11 +884,32 @@ function catchVCJoinError (error, textChannel) {
   }
 }
 
+/**
+ * Joins the voice channel of the message member (if applicable).
+ * If there is an error upon join attempt then it caught and forwarded to the user.
+ * @param message The message metadata.
+ * @param server The server object.
+ * @return {Promise<boolean>} True upon successful voice channel join.
+ */
+async function joinVoiceChannelSafe (message, server) {
+  let connection = server.connection;
+  let vc = message.member?.voice?.channel;
+  if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
+    try {
+      server.connection = await vc.join();
+      return true;
+    } catch (e) {
+      catchVCJoinError(e, message.channel);
+    }
+  }
+  return false;
+}
+
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin,
   runMoveItemCommand, insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage,
-  catchVCJoinError, logError
+  catchVCJoinError, logError, joinVoiceChannelSafe
 };

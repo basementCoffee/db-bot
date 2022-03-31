@@ -22,7 +22,8 @@ const {
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand,
-  insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError
+  insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError,
+  joinVoiceChannelSafe
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -426,6 +427,9 @@ async function runCommandCases (message) {
         return message.channel.send(SEEK_ERR_MSG);
       }
       runPlayNowCommand(message, args, mgid, server, `p${message.member.id}`).then();
+      break;
+    case 'join':
+      joinVoiceChannelSafe(message, server);
       break;
     // stop session commands
     case 'disconnect':
