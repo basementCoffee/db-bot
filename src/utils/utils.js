@@ -9,9 +9,9 @@ const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
+const CH = require('../../channel.json');
 const AD_1 = '443150640823271436'; // z
 const AD_2 = '268554823283113985'; // k
-const destroyBot = () => bot.destroy();
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -858,10 +858,37 @@ function removeDBMessage (channelID, deleteNum = 1, force) {
   } catch (e) {}
 }
 
+/**
+ * Logs an error to a channel.
+ * @param msgTxt {string} The message to send.
+ */
+function logError (msgTxt) {
+  bot.channels.fetch(CH.err)
+    .then((channel) => channel.send(msgTxt))
+    .catch((e) => console.log('Failed sending error message: ', e));
+}
+
+/**
+ * Handles the error upon voice channel join. Sends the appropriate message to the user.
+ * @param error The error.
+ * @param textChannel The text channel to notify.
+ */
+function catchVCJoinError (error, textChannel) {
+  const eMsg = error.toString();
+  if (eMsg.includes('it is full')) textChannel.send('\`error: cannot join voice channel, it is full\`');
+  else if (eMsg.includes('VOICE_JOIN_CHANNEL')) textChannel.send('\`permissions error: cannot join voice channel\`');
+  else {
+    textChannel.send('db bot ran into this error:\n`' + eMsg + '`');
+    logError(`voice channel join error:\n ${eMsg}`);
+    console.log(error);
+  }
+}
+
 module.exports = {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin,
-  runMoveItemCommand, destroyBot, insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage
+  runMoveItemCommand, insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage,
+  catchVCJoinError, logError
 };

@@ -22,7 +22,7 @@ const {
   resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand,
-  insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage
+  insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -1209,7 +1209,7 @@ bot.on('guildCreate', guild => {
 bot.once('ready', () => {
   // bot starts up as inactive, if no response from the channel then activates itself
   if (process.pid.toString() === '4' && devMode) {
-    bot.channels.cache.get(CH.err).send('`NOTICE: production process started up in devMode` (switching off devMode..)');
+    logError('`NOTICE: production process started up in devMode` (switching off devMode..)');
     devMode = false;
   }
   // noinspection JSUnresolvedFunction
@@ -1389,7 +1389,7 @@ function checkStatusOfYtdl (message) {
           if (message.deletable) message.edit(diagnosisStr);
           else message.channel.send(diagnosisStr);
         }
-        await bot.channels.cache.get(CH.err).send('ytdl status is unhealthy, shutting off bot');
+        logError('ytdl status is unhealthy, shutting off bot');
         connection.disconnect();
         if (isInactive) setTimeout(() => process.exit(0), 2000);
         else shutdown('YTDL-POOR')();
@@ -3046,13 +3046,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       connection = await vc.join();
       await new Promise(res => setTimeout(res, 300));
     } catch (e) {
-      const eMsg = e.toString();
-      if (eMsg.includes('it is full')) message.channel.send('\`error: cannot join voice channel, it is full\`');
-      else if (eMsg.includes('VOICE_JOIN_CHANNEL')) message.channel.send('\`permissions error: cannot join voice channel\`');
-      else {
-        message.channel.send('db bot ran into this error:\n`' + eMsg + '`');
-        console.log(e);
-      }
+      catchVCJoinError(e, message.channel);
       return;
     }
     if (vc.members.size > 6 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
@@ -3239,7 +3233,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       }
       skipLink(message, vc, false, server, false);
       // noinspection JSUnresolvedFunction
-      bot.channels.cache.get(CH.err).send(
+      logError(
         (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
         timestamp: ${formatDuration(dispatcher.streamTime)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)
       );
@@ -3251,7 +3245,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         console.log(errString);
         try {
           // noinspection JSUnresolvedFunction
-          bot.channels.cache.get(CH.err).send(errString);
+          logError(errString);
         } catch (e) {
           console.log(e);
         }
@@ -3303,7 +3297,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
           message.channel.send('*db bot appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             console.log(e);
             // noinspection JSUnresolvedFunction
-            bot.channels.cache.get(CH.err).send('***status code 404 error***' +
+            logError('***status code 404 error***' +
               '\n*if this error persists, try to change the active process*');
           });
         }
@@ -3342,10 +3336,8 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     skipLink(message, vc, false, server, true);
     if (devMode) return;
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get(CH.err).send(`there was a playback error within playLinkToVC: ${whatToPlay}`).then(() => {
-      // noinspection JSUnresolvedFunction
-      bot.channels.cache.get(CH.err).send(e.toString().substr(0, 1910));
-    });
+    logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
+    logError(e.toString().substr(0, 1910));
   }
 }
 
