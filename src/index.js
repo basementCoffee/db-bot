@@ -3049,10 +3049,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       catchVCJoinError(e, message.channel);
       return;
     }
-    if (vc.members.size > 6 && (!server.djMessageDate || (Date.now() - server.djMessageDate) > 97200000)) {
-      message.channel.send('Try the \'dj\' command to become a DJ.');
-      server.djMessageDate = Date.now();
-    }
     if (startUpMessage.length > 1 && !server.startUpMessage) {
       server.startUpMessage = true;
       message.channel.send(startUpMessage);
