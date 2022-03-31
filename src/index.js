@@ -38,15 +38,6 @@ const {reactions} = require('./utils/reactions');
 
 process.setMaxListeners(0);
 
-/**
- * Determines whether the message contains a form of congratulations.
- * @param word {string} The text to compare.
- * @returns {*} true if congrats is detected.
- */
-function contentContainCongrats (word) {
-  return (word.includes('grats') || word.includes('ongratulations') || word.includes('omedetou'));
-}
-
 let devMode = startupDevMode;
 let isInactive = !devMode;
 
@@ -315,15 +306,33 @@ async function runCommandCases (message) {
     if (firstWordBegin === '.db-bot ') {
       return message.channel.send('Current prefix is: ' + prefixString);
     }
-    // scan the first word
-    if (contentContainCongrats(firstWordBegin)) {
+    return;
+  }
+  const args = message.content.replace(/\s+/g, ' ').split(' ');
+  // the command name
+  const statement = args[0].substr(1).toLowerCase();
+  if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
+    if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
+      return;
+    }
+  } else {
+    commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
+  }
+  if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
+  switch (statement) {
+    case 'db-bot':
+      runHelpCommand(message, server, version);
+      break;
+    case 'congratulations':
+    case 'congratz':
+    case 'congrats':
       if (!botInVC(message)) {
         server.queue.length = 0;
         server.queueHistory.length = 0;
         server.loop = false;
       }
       server.numSinceLastEmbed++;
-      const args = message.content.toLowerCase().replace(/\s+/g, ' ').split(' ');
+      const args2 = message.content.toLowerCase().replace(/\s+/g, ' ').split(' ');
       let indexOfWord;
       const findIndexOfWord = (word) => {
         for (let w in args) {
@@ -336,7 +345,7 @@ async function runCommandCases (message) {
       };
       let name;
       if (findIndexOfWord('grats') !== -1 || findIndexOfWord('congratulations') !== -1) {
-        name = args[parseInt(indexOfWord) + 1];
+        name = args2[parseInt(indexOfWord) + 1];
         const excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
         if (excludedWords.includes(name)) name = '';
         if (name && name.length > 1) name = name.substr(0, 1).toUpperCase() + name.substr(1);
@@ -347,7 +356,7 @@ async function runCommandCases (message) {
       const randomEmojis = ['🥲', '😉', '😇', '😗', '😅', '🥳', '😄'];
       const randENum = Math.floor(Math.random() * randomEmojis.length);
       const oneInThree = Math.floor(Math.random() * 3);
-      const text = (oneInThree === 0 ? '!   ||*I would\'ve sung for you in a voice channel*  '
+      const text = (oneInThree === 0 ? '!   ||*I could\'ve sung for you in a voice channel*  '
         + randomEmojis[randENum] + '||' : '!');
       message.channel.send('Congratulations' + (name ? (' ' + name) : '') + ((message.member.voice?.channel) ? '!' : text));
       const congratsLink = (message.content.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
@@ -367,27 +376,9 @@ async function runCommandCases (message) {
         playLinkToVC(message, server.queue[0], vc, server);
         setTimeout(() => server.silence = embedStatus, 4000);
         const item = server.queueHistory.findIndex((val) => val.url === congratsLink);
-        if (item !== -1)
-          server.queueHistory.splice(item, 1);
+        if (item !== -1) server.queueHistory.splice(item, 1);
         return;
       }
-    }
-    return;
-  }
-  const args = message.content.replace(/\s+/g, ' ').split(' ');
-  // the command name
-  const statement = args[0].substr(1).toLowerCase();
-  if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
-    if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
-      return;
-    }
-  } else {
-    commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
-  }
-  if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
-  switch (statement) {
-    case 'db-bot':
-      runHelpCommand(message, server, version);
       break;
     // the normal play command
     case 'play':
