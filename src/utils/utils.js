@@ -895,6 +895,7 @@ async function joinVoiceChannelSafe (message, server) {
   let connection = server.connection;
   let vc = message.member?.voice?.channel;
   if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
+    resetSession(server);
     try {
       server.connection = await vc.join();
       return true;
