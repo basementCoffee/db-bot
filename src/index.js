@@ -19,12 +19,13 @@ const {
 } = require('./database/frontend');
 const {
   formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, getHelpList, initializeServer,
-  runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
-  createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand,
-  insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError,
-  joinVoiceChannelSafe, pauseComputation
+  resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, initializeServer,
+  runSearchCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue, createQueueItem,
+  getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand, insertCommandVerification,
+  convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError, joinVoiceChannelSafe,
+  pauseComputation
 } = require('./utils/utils');
+const {runHelpCommand, getHelpList} = require('./utils/help');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
 } = require('./playback/dj');
