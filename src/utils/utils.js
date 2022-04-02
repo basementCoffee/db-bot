@@ -3,7 +3,8 @@ const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
-  servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S
+  servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S,
+  dispatcherMapStatus, dispatcherMap
 } = require('./constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
@@ -601,7 +602,7 @@ function initializeServer (mgid) {
     loop: false,
     // the number of items sent since embed generation
     numSinceLastEmbed: 0,
-    // the embed object
+    // the embed message
     currentEmbed: undefined,
     // the collector for the current embed message
     collector: false,
@@ -885,6 +886,20 @@ function catchVCJoinError (error, textChannel) {
 }
 
 /**
+ * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
+ * @param voiceChannel The voice channel that the dispatcher is playing in.
+ * @param force {boolean=} Ignores the status of the dispatcher.
+ */
+function pauseComputation (voiceChannel, force = false) {
+  if (!dispatcherMapStatus[voiceChannel.id] || force) {
+    dispatcherMap[voiceChannel.id].pause();
+    dispatcherMap[voiceChannel.id].resume();
+    dispatcherMap[voiceChannel.id].pause();
+    dispatcherMapStatus[voiceChannel.id] = true;
+  }
+}
+
+/**
  * Joins the voice channel of the message member (if applicable).
  * If there is an error upon join attempt then it caught and forwarded to the user.
  * @param message The message metadata.
@@ -895,7 +910,9 @@ async function joinVoiceChannelSafe (message, server) {
   let connection = server.connection;
   let vc = message.member?.voice?.channel;
   if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
+    if (connection && dispatcherMap[connection.channel.id]) pauseComputation(connection.channel);
     resetSession(server);
+    await server.currentEmbed?.reactions?.removeAll();
     try {
       server.connection = await vc.join();
       return true;
@@ -912,5 +929,5 @@ module.exports = {
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin,
   runMoveItemCommand, insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage,
-  catchVCJoinError, logError, joinVoiceChannelSafe
+  catchVCJoinError, logError, joinVoiceChannelSafe, pauseComputation
 };

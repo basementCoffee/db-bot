@@ -23,7 +23,7 @@ const {
   runSearchCommand, runHelpCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue,
   createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand,
   insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError,
-  joinVoiceChannelSafe
+  joinVoiceChannelSafe, pauseComputation
 } = require('./utils/utils');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
@@ -1726,25 +1726,11 @@ function runPauseCommand (message, actionUser, server, noErrorMsg, force, noPrin
       server.followUpMessage.delete();
       server.followUpMessage = undefined;
     }
-    message.channel.send('**paused**');
+    message.channel.send('*paused*');
     return true;
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     return false;
-  }
-}
-
-/**
- * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param voiceChannel The voice channel that the dispatcher is playing in.
- * @param force {boolean=} Ignores the status of the dispatcher.
- */
-function pauseComputation (voiceChannel, force = false) {
-  if (!dispatcherMapStatus[voiceChannel.id] || force) {
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMapStatus[voiceChannel.id] = true;
   }
 }
 
