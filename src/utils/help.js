@@ -127,7 +127,7 @@ function getHelpList (prefixString, numOfPages, version) {
     helpListEmbed
       .setTitle(titleArray[i] || titleArray.slice(-1)[0])
       .setDescription(pages[i])
-      .setFooter(`(${i + 1}/${pages.length})`);
+      .setFooter(`(${i + 1}/${numOfPages})`);
     embedPages.push(helpListEmbed);
   }
 
@@ -142,7 +142,7 @@ function getHelpList (prefixString, numOfPages, version) {
  */
 function runHelpCommand (message, server, version) {
   server.numSinceLastEmbed += 10;
-  let helpPages = getHelpList(server.prefix, undefined, version);
+  let helpPages = getHelpList(server.prefix, 2, version);
   message.channel.send(helpPages[0]).then((sentMsg) => {
     let currentHelp = 0;
     const hr = '➡️';
