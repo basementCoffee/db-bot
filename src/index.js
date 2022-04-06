@@ -1223,7 +1223,7 @@ bot.once('ready', () => {
   } else {
     checkStatusOfYtdl();
     isInactive = true;
-    bot.user.setActivity('music | .db-bot', {type: 'PLAYING'}).then();
+    bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'}).then();
     checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
@@ -2666,8 +2666,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     valArray = Array.from(cdb.values());
     if (valArray.length < 1) {
       const pf = server.prefix;
-      return message.channel.send('Your music list is empty *(Try  `' + pf + 'a` or `' + pf
-        + 'ma` to add to a keys list)*');
+      return message.channel.send('Your saved-links list is empty *(Try  `' + pf + 'add` to add to a list)*');
     }
     if (numOfTimes > 50) sentMsg = message.channel.send('generating random from your keys...');
   }
@@ -2796,7 +2795,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
     } else {
       emptyDBMessage = 'Your ';
     }
-    message.channel.send('**' + emptyDBMessage + 'music list is empty.**\n*Add a song by putting a word followed by a link.' +
+    message.channel.send('**' + emptyDBMessage + 'saved-links list is empty.**\n*Save a link by putting a word followed by a link.' +
       '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
   } else {
     let sortByRecent = true;
