@@ -1061,13 +1061,14 @@ async function runCommandCases (message) {
           '\n' + prefixString + 'gznuke [num] - deletes [num] recent db bot messages' +
           '\n\n**calibrate the active bot**' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
-          '\n' + prefixString + 'gzupdate - updates the pi instance of the bot' +
+          '\n' + prefixString + 'gzupdate - updates the (active) pi instance of the bot' +
           '\n' + prefixString + 'gzm update - sends a message to active guilds that the bot will be updating' +
           '\n' + prefixString + 'gzsms [message] - set a default message for all users on VC join' +
           '\n\n**calibrate multiple/other bots**' +
           '\n=gzl - return all bot\'s ping and latency' +
           '\n=gzk - start/kill a process' +
           '\n=gzd [process #] - toggle dev mode' +
+          '\n=gzupdate - updates all (inactive) pi instances of the bot' +
           '\n\n**other commands**' +
           '\n' + prefixString + 'gzid - guild, bot, and member id' +
           '\ndevadd - access the database'
@@ -1447,12 +1448,12 @@ async function responseHandler () {
  * Provided arguments must start with a keyword. If the first argument is 'custom' then processes a custom command.
  * If it is 'all' then restarts both PM2 processes. Providing an invalid first argument would void the update.
  * An empty argument array represents a standard update.
- * @param message The message that triggered the bot.
- * @param args {array<string>} The arguments for the command.
+ * @param message {any?} Optional - The message that triggered the bot.
+ * @param args {array<string>?} Optional - arguments for the command.
  */
-function devUpdateCommand (message, args) {
+function devUpdateCommand (message, args = []) {
   if (process.pid === 4) {
-    message.channel.send('*heroku process cannot be updated*');
+    message?.channel.send('*heroku process cannot be updated*');
     return;
   }
   let response = 'updating process...';
@@ -1460,7 +1461,7 @@ function devUpdateCommand (message, args) {
     if (args[0] === 'force') {
       args.splice(0, 1);
     } else {
-      message.channel.send('***people are using the bot:*** *to force an update type \`force\` after the command*');
+      message?.channel.send('***people are using the bot:*** *to force an update type \`force\` after the command*');
       return;
     }
   }
@@ -1473,7 +1474,7 @@ function devUpdateCommand (message, args) {
   } else {
     response = 'incorrect argument provided';
   }
-  message.channel.send(response);
+  message?.channel.send(response);
 }
 
 /**
@@ -1640,6 +1641,13 @@ async function devProcessCommands (message, zmsg) {
         checkToSeeActive();
       }
       break;
+    case 'update':
+      // =gzupdate
+      if (!devMode && isInactive && process.pid !== 4) {
+        message.channel.send(`*updating process ${process.pid}*`);
+        devUpdateCommand();
+      }
+      break;
     default:
       if (devMode && !isInactive) return runCommandCases(message);
       break;
@@ -1649,7 +1657,7 @@ async function devProcessCommands (message, zmsg) {
 // parses message, provides a response
 bot.on('message', (message) => {
   if (message.content.substr(0, 3) === '=gz' && isAdmin(message.member.id)) {
-    return devProcessCommands(message, message.content.substr(3, 1));
+    return devProcessCommands(message, message.content.substr(3));
   }
   if (message.author.bot || isInactive || (devMode && !isAdmin(message.member.id))) return;
   if (message.channel.type === 'dm') {
