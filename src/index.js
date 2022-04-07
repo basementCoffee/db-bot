@@ -1479,12 +1479,12 @@ function devUpdateCommand (message, args = []) {
 
 /**
  * Interpret developer process-related commands. Used for maintenance of multiple db bot instances.
+ * The first three letters of the message are assumed to be the developer prefix and are therefore ignored.
  * @param message The message metadata.
- * @param zmsg The command letter.
  */
-async function devProcessCommands (message, zmsg) {
+async function devProcessCommands (message) {
   const zargs = message.content.split(' ');
-  switch (zmsg) {
+  switch (zargs[0].substring(3)) {
     case 'k':
       // =gzk
       if (message.member.id === '730350452268597300') {
@@ -1599,19 +1599,16 @@ async function devProcessCommands (message, zmsg) {
       break;
     case 'd':
       // =gzd
-      let activeStatus = 'active';
-      if (isInactive) {
-        activeStatus = 'inactive';
-      }
+      let activeStatus = isInactive ? 'inactive' : '**active**';
       if (!zargs[1]) {
-        return message.channel.send(activeStatus + ' bot id: ' + process.pid.toString() +
+        return message.channel.send(activeStatus + ' process: ' + process.pid.toString() +
           ' (' + 'dev mode: ' + devMode + ')');
       }
       if (devMode && zargs[1] === process.pid.toString()) {
         devMode = false;
         isInactive = true;
         servers[message.guild.id] = null;
-        return message.channel.send('*devmode is off* ' + process.pid.toString());
+        return message.channel.send(`*devmode is off ${process.pid}*`);
       } else if (zargs[1] === process.pid.toString()) {
         devMode = true;
         servers[message.guild.id] = null;
@@ -1619,7 +1616,7 @@ async function devProcessCommands (message, zmsg) {
           clearInterval(checkActiveInterval);
           checkActiveInterval = null;
         }
-        return message.channel.send('*devmode is on* ' + process.pid.toString());
+        return message.channel.send(`*devmode is on ${process.pid}*`);
       }
       break;
     case 'l':
@@ -1643,6 +1640,7 @@ async function devProcessCommands (message, zmsg) {
       break;
     case 'update':
       // =gzupdate
+      if (zargs[1] && zargs[1] !== process.pid.toString()) return;
       if (!devMode && isInactive && process.pid !== 4) {
         message.channel.send(`*updating process ${process.pid}*`);
         devUpdateCommand();
@@ -1656,8 +1654,8 @@ async function devProcessCommands (message, zmsg) {
 
 // parses message, provides a response
 bot.on('message', (message) => {
-  if (message.content.substr(0, 3) === '=gz' && isAdmin(message.member.id)) {
-    return devProcessCommands(message, message.content.substr(3));
+  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.member.id)) {
+    return devProcessCommands(message);
   }
   if (message.author.bot || isInactive || (devMode && !isAdmin(message.member.id))) return;
   if (message.channel.type === 'dm') {
