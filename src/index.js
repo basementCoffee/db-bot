@@ -13,6 +13,7 @@ const ytpl = require('ytpl');
 let scdl = require("scdl-core").SoundCloud.create().then(x => scdl = x);
 const m3u8stream = require('m3u8stream');
 const twitch = require('twitch-m3u8');
+const buildNo = require('./utils/BuildNumber');
 const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
 const {
   runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb, sendListSize
@@ -31,10 +32,9 @@ const {
 } = require('./playback/dj');
 const {runLyricsCommand} = require('./playback/lyrics');
 const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
-const {
+let {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode,
-  buildNo
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode
 } = require('./utils/constants');
 const {reactions} = require('./utils/reactions');
 
@@ -1123,7 +1123,7 @@ async function runCommandCases (message) {
       const embed = new MessageEmbed()
         .setTitle('db bot - statistics')
         .setDescription('version: ' + version +
-          '\nbuild: ' + buildNo +
+          '\nbuild: ' + buildNo.getBuildNo() +
           '\nprocess: ' + process.pid.toString() +
           '\nservers: ' + bot.guilds.cache.size +
           '\nuptime: ' + formatDuration(bot.uptime) +
@@ -1247,15 +1247,15 @@ bot.on('message', async (message) => {
     if (message.content.substr(11, 3) === '-on') {
       const oBuildNo = message.content.substr(15, 8);
       // compare versions || check if actively being used (if so: keep on)
-      if (parseInt(oBuildNo) >= parseInt(buildNo) || message.content.substr(14, 1) !== '0') {
+      if (parseInt(oBuildNo) >= parseInt(buildNo.getBuildNo()) || message.content.substr(14, 1) !== '0') {
         setOfBotsOn.add(message.content.substring(26));
         // update this process if out-of-date or reset process interval if an up-to-date process has queried
         if (isInactive) {
           // 2hrs of uptime is required to update process
           if (bot.uptime > 7200000 && process.pid !== 4 &&
-            parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.substring(0, 6))) {
+            parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))) {
             devUpdateCommand();
-          } else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.substring(0, 6))) {
+          } else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.getBuildNo().substring(0, 6))) {
             clearInterval(checkActiveInterval);
             // offset for process timer is 3.5 seconds - 5.9 minutes
             const offset = Math.floor(((Math.random() * 100) + 1) / 17 * 60000);
@@ -1439,14 +1439,14 @@ async function responseHandler () {
     devMode = false;
     console.log('-active-');
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo + '-' + process.pid.toString());
+    bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 18) + 9) * 1000)); // 9 - 27 seconds
   } else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     // noinspection JSUnresolvedFunction
-    bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo + '-' + process.pid.toString());
+    bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString());
     setTimeout(() => {
       if (isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
@@ -1503,7 +1503,7 @@ async function devProcessCommands (message) {
       // =gzk
       if (message.member.id === botID) {
         if (!isInactive && !devMode) {
-          return message.channel.send(`~db-process-on${Math.min(bot.voice.connections.size, 9)}${buildNo}ver${process.pid}`);
+          return message.channel.send(`~db-process-on${Math.min(bot.voice.connections.size, 9)}${buildNo.getBuildNo()}ver${process.pid}`);
         }
         return;
       }
@@ -1658,6 +1658,26 @@ async function devProcessCommands (message) {
       if (!devMode && isInactive && process.pid !== 4) {
         message.channel.send(`*updating process ${process.pid}*`);
         devUpdateCommand();
+      }
+      break;
+    case 'b':
+      if (zargs[1]) {
+        if (zargs[1] !== process.pid.toString()) return;
+        if (zargs[2]) {
+          if (zargs[2] === '+') {
+            if (buildNo.incrementBuildNo()) {
+              message.channel.send(`*build no incremented (${buildNo.getBuildNo()})*`);
+            } else message.channel.send(`*could not increment (${buildNo.getBuildNo()})*`);
+          } else if (zargs[2] === '-') {
+            if (buildNo.decrementBuildNo()) {
+              message.channel.send(`*build no decremented (${buildNo.getBuildNo()})*`);
+            } else message.channel.send(`*could not decrement (${buildNo.getBuildNo()})*`);
+          }
+        } else {
+          message.channel.send(`try again followed by a '+' or '-' to increment or decrement.`);
+        }
+      } else {
+        message.channel.send(`*process ${process.pid} (${buildNo.getBuildNo()})*`);
       }
       break;
     default:
