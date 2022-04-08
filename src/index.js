@@ -1231,11 +1231,9 @@ bot.once('ready', () => {
     if (!checkActiveInterval) checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
-    // bot logs - startup
-    // noinspection JSUnresolvedFunction
-    bot.channels.cache.get(CH.process).send('starting up: ' + process.pid).then(() => {
-      checkToSeeActive();
-    });
+    // bot logs - startup (NOTICE: "starting:" is reserved)
+    bot.channels.cache.get(CH.process).send(`starting: ${process.pid} [${buildNo.getBuildNo()}]`)
+      .then(() => {checkToSeeActive();});
   }
 });
 
@@ -1274,6 +1272,16 @@ bot.on('message', async (message) => {
         isInactive = true;
         console.log('-sidelined-');
       } else isInactive = false;
+    }
+  } else if (isInactive && message.content.substring(0, 9) === 'starting:') {
+    // view the build number of the starting process, if newer version then update
+    if (bot.uptime > 7200000 && process.pid !== 4) {
+      const regExp = /\[(\d+)\]/;
+      const regResult = regExp.exec(message.content);
+      const oBuildNo = regResult ? regResult[1] : null;
+      if (oBuildNo && parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))) {
+        devUpdateCommand();
+      }
     }
   }
 });
