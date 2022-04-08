@@ -1214,9 +1214,12 @@ bot.on('guildCreate', guild => {
 
 bot.once('ready', () => {
   // bot starts up as inactive, if no response from the channel then activates itself
-  if (process.pid === 4 && devMode) {
-    logError('`NOTICE: production process started up in devMode` (switching off devMode..)');
-    devMode = false;
+  if (process.pid === 4) {
+    if (devMode) {
+      logError('`NOTICE: production process started up in devMode` (switching off devMode..)');
+      devMode = false;
+    }
+    buildNo.decrementBuildNo();
   }
   // noinspection JSUnresolvedFunction
   if (devMode) {
