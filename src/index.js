@@ -1249,9 +1249,19 @@ bot.on('message', async (message) => {
       // compare versions || check if actively being used (if so: keep on)
       if (parseInt(oBuildNo) >= parseInt(buildNo) || message.content.substr(14, 1) !== '0') {
         setOfBotsOn.add(message.content.substring(26));
-        if (isInactive && bot.uptime > 7200000 && process.pid !== 4 &&
-          parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.substring(0, 6))) {
-          devUpdateCommand();
+        // update this process if out-of-date or reset process interval if an up-to-date process has queried
+        if (isInactive) {
+          // 2hrs of uptime is required to update process
+          if (bot.uptime > 7200000 && process.pid !== 4 &&
+            parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.substring(0, 6))) {
+            devUpdateCommand();
+          } else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.substring(0, 6))) {
+            clearInterval(checkActiveInterval);
+            // offset for process timer is 0-6 minutes
+            const offset = Math.floor(Math.random() * 6) * 60000;
+            // reset the =gzk interval since query was already made by another process
+            checkActiveInterval = setInterval(checkToSeeActive, (checkActiveMS + offset));
+          }
         }
       }
     } else if (message.content.substr(11, 4) === '-off') {
