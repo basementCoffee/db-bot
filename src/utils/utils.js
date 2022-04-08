@@ -4,7 +4,7 @@ const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
   servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S,
-  dispatcherMapStatus, dispatcherMap
+  dispatcherMapStatus, dispatcherMap, LEAVE_VC_TIMEOUT
 } = require('./constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
@@ -768,9 +768,14 @@ async function joinVoiceChannelSafe (message, server) {
   if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
     if (connection && dispatcherMap[connection.channel.id]) pauseComputation(connection.channel);
     resetSession(server);
+    if (server.leaveVCTimeout) {
+      clearTimeout(server.leaveVCTimeout);
+      server.leaveVCTimeout = null;
+    }
     await server.currentEmbed?.reactions?.removeAll();
     try {
       server.connection = await vc.join();
+      server.leaveVCTimeout = setTimeout(() => server.connection.disconnect(), LEAVE_VC_TIMEOUT);
       return true;
     } catch (e) {
       catchVCJoinError(e, message.channel);
