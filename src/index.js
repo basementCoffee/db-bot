@@ -3795,7 +3795,7 @@ function shutdown (type) {
     isInactive = true;
     // noinspection JSUnresolvedFunction
     try {
-      bot.channels.cache.get(CH.process).send(`shutting down: '${process.pid}' (${type})`);
+      bot.channels.cache.get(CH.process).send(`shutting down: '${process.pid}' (${type}) ${devMode ? `(dev)` : ''}`);
     } catch (e) {}
     const activeCSize = bot.voice.connections.size;
     if (activeCSize > 0) {
