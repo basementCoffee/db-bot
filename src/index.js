@@ -1214,7 +1214,7 @@ bot.on('guildCreate', guild => {
 
 bot.once('ready', () => {
   // bot starts up as inactive, if no response from the channel then activates itself
-  if (process.pid.toString() === '4' && devMode) {
+  if (process.pid === 4 && devMode) {
     logError('`NOTICE: production process started up in devMode` (switching off devMode..)');
     devMode = false;
   }
@@ -1225,7 +1225,7 @@ bot.once('ready', () => {
     checkStatusOfYtdl();
     isInactive = true;
     bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'}).then();
-    checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
+    if (!checkActiveInterval) checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup
