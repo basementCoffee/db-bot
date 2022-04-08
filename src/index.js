@@ -1257,8 +1257,8 @@ bot.on('message', async (message) => {
             devUpdateCommand();
           } else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.substring(0, 6))) {
             clearInterval(checkActiveInterval);
-            // offset for process timer is 0-6 minutes
-            const offset = Math.floor(Math.random() * 6) * 60000;
+            // offset for process timer is 3.5 seconds - 5.9 minutes
+            const offset = Math.floor(((Math.random() * 100) + 1) / 17 * 60000);
             // reset the =gzk interval since query was already made by another process
             checkActiveInterval = setInterval(checkToSeeActive, (checkActiveMS + offset));
           }
@@ -1501,7 +1501,7 @@ async function devProcessCommands (message) {
   switch (zargs[0].substring(3)) {
     case 'k':
       // =gzk
-      if (message.member.id === '730350452268597300') {
+      if (message.member.id === botID) {
         if (!isInactive && !devMode) {
           return message.channel.send(`~db-process-on${Math.min(bot.voice.connections.size, 9)}${buildNo}ver${process.pid}`);
         }
