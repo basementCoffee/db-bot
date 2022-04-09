@@ -32,6 +32,10 @@ class ProcessStats {
     }
   }
 
+  getActiveStreamSize(){
+    return this.activeStreamsMap.size;
+  }
+
   /**
    * Gets the total stream time in milliseconds
    * @return {number}

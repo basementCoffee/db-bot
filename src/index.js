@@ -1124,10 +1124,10 @@ async function runCommandCases (message) {
           '\nprocess: ' + process.pid.toString() +
           '\nservers: ' + bot.guilds.cache.size +
           '\nuptime: ' + formatDuration(bot.uptime) +
-          '\ntime active: ' + getTimeActive() +
+          '\nactive time: ' + getTimeActive() +
           '\nstream time: ' + formatDuration(processStats.getTotalStreamTime()) +
           '\nup since: ' + bot.readyAt.toString().substring(0, 21) +
-          '\nactive voice channels: ' + bot.voice.connections.size
+          `\nactive voice channels: ${bot.voice.connections.size} (${processStats.getActiveStreamSize()})`
         );
       message.channel.send(embed);
       break;
