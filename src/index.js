@@ -14,6 +14,7 @@ let scdl = require("scdl-core").SoundCloud.create().then(x => scdl = x);
 const m3u8stream = require('m3u8stream');
 const twitch = require('twitch-m3u8');
 const buildNo = require('./utils/BuildNumber');
+const processStats = require('./utils/ProcessStats');
 const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
 const {
   runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb, sendListSize
@@ -34,7 +35,7 @@ const {runLyricsCommand} = require('./playback/lyrics');
 const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 let {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, pStats
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode
 } = require('./utils/constants');
 const {reactions} = require('./utils/reactions');
 
@@ -1124,6 +1125,7 @@ async function runCommandCases (message) {
           '\nservers: ' + bot.guilds.cache.size +
           '\nuptime: ' + formatDuration(bot.uptime) +
           '\ntime active: ' + getTimeActive() +
+          '\nstream time: ' + formatDuration(processStats.getTotalStreamTime()) +
           '\nup since: ' + bot.readyAt.toString().substring(0, 21) +
           '\nactive voice channels: ' + bot.voice.connections.size
         );
@@ -1290,10 +1292,10 @@ bot.on('message', async (message) => {
  * @return {string}
  */
 function getTimeActive () {
-  if (pStats.dateActive) {
-    return formatDuration(pStats.activeMS + Date.now() - pStats.dateActive);
+  if (processStats.dateActive) {
+    return formatDuration(processStats.activeMS + Date.now() - processStats.dateActive);
   } else {
-    return formatDuration(pStats.activeMS);
+    return formatDuration(processStats.activeMS);
   }
 }
 
@@ -1303,9 +1305,9 @@ function getTimeActive () {
 function setProcessInactive () {
   isInactive = true;
   console.log('-sidelined-');
-  if (pStats.dateActive) {
-    pStats.activeMS += Date.now() - pStats.dateActive;
-    pStats.dateActive = null;
+  if (processStats.dateActive) {
+    processStats.activeMS += Date.now() - processStats.dateActive;
+    processStats.dateActive = null;
   }
 }
 
@@ -1315,7 +1317,7 @@ function setProcessInactive () {
 function setProcessActive () {
   isInactive = false;
   console.log('-active-');
-  pStats.dateActive = Date.now();
+  processStats.dateActive = Date.now();
 }
 
 /**
@@ -1608,6 +1610,7 @@ async function devProcessCommands (message) {
                     if (x.channel.members.get('443150640823271436') || x.channel.members.get('268554823283113985')) {
                       hasDeveloper = true;
                       x.disconnect();
+                      processStats.removeActiveStream(x.channel.guild.id);
                     }
                   });
                 }
@@ -3016,6 +3019,7 @@ async function updateVoiceState (update) {
       server.leaveVCTimeout = null;
     }
     clearDJTimer(server);
+    processStats.removeActiveStream(update.guild.id);
     await sendLinkAsEmbed(server.currentEmbed, server.queue[0] ||
       server.queueHistory.slice(-1)[0], update.channel, server, false).then(() => {
       // end the stream (if applicable)
@@ -3286,6 +3290,8 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
       await sendLinkAsEmbed(message, queueItem, vc, server, false).then(() => dispatcher.setVolume(0.5));
     }
+    processStats.removeActiveStream(message.guild.id);
+    processStats.addActiveStream(message.guild.id);
     server.skipTimes = 0;
     dispatcher.on('error', async (e) => {
       if (dispatcher.streamTime < 1000 && retries < 4) {
@@ -3316,6 +3322,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       if (vc.members.size < 2) {
         connection.disconnect();
         dispatcherMap[vc.id] = undefined;
+        processStats.removeActiveStream(message.guild.id);
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
       } else {
@@ -3328,6 +3335,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
           if (server.collector) server.collector.stop();
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), LEAVE_VC_TIMEOUT);
           dispatcherMap[vc.id] = undefined;
+          processStats.removeActiveStream(message.guild.id);
         }
       }
       if (server?.followUpMessage) {
@@ -3358,6 +3366,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         } else {
           console.log('status code 404 error');
           connection.disconnect();
+          processStats.removeActiveStream(message.guild.id);
           message.channel.send('*db bot appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             console.log(e);
             // noinspection JSUnresolvedFunction
@@ -3385,6 +3394,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     console.log(e);
     if (server.skipTimes > 3) {
       connection.disconnect();
+      processStats.removeActiveStream(message.guild.id);
       message.channel.send('***db bot is facing some issues, may restart***');
       checkStatusOfYtdl(message);
       return;

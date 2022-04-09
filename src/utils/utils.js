@@ -11,6 +11,7 @@ const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
+const processStats = require('./ProcessStats');
 const AD_1 = '443150640823271436'; // z
 const AD_2 = '268554823283113985'; // k
 
@@ -753,6 +754,7 @@ function pauseComputation (voiceChannel, force = false) {
     dispatcherMap[voiceChannel.id].resume();
     dispatcherMap[voiceChannel.id].pause();
     dispatcherMapStatus[voiceChannel.id] = true;
+    processStats.removeActiveStream(voiceChannel.guild.id);
   }
 }
 
@@ -768,6 +770,7 @@ function playComputation (voiceChannel, force) {
     dispatcherMap[voiceChannel.id].pause();
     dispatcherMap[voiceChannel.id].resume();
     dispatcherMapStatus[voiceChannel.id] = false;
+    processStats.addActiveStream(voiceChannel.guild.id);
   }
 }
 
