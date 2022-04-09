@@ -325,6 +325,7 @@ async function runCommandCases (message) {
     case 'db-bot':
       runHelpCommand(message, server, version);
       break;
+    case 'omedetou':
     case 'congratulations':
     case 'congratz':
     case 'congrats':
@@ -355,13 +356,8 @@ async function runCommandCases (message) {
         name = '';
       }
       commandsMap.set('congrats', (commandsMap.get('congrats') || 0) + 1);
-      const randomEmojis = ['🥲', '😉', '😇', '😗', '😅', '🥳', '😄'];
-      const randENum = Math.floor(Math.random() * randomEmojis.length);
-      const oneInThree = Math.floor(Math.random() * 3);
-      const text = (oneInThree === 0 ? '!   ||*I could\'ve sung for you in a voice channel*  '
-        + randomEmojis[randENum] + '||' : '!');
-      message.channel.send('Congratulations' + (name ? (' ' + name) : '') + ((message.member.voice?.channel) ? '!' : text));
-      const congratsLink = (message.content.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
+      message.channel.send('Congratulations' + (name ? (' ' + name) : '') + '!');
+      const congratsLink = (statement.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
       if (server.queue[0]?.url !== congratsLink) server.queue.unshift(createQueueItem(congratsLink, StreamType.YOUTUBE, null));
       else return;
       if (message.member.voice?.channel) {
