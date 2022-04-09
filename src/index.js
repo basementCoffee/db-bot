@@ -34,7 +34,7 @@ const {runLyricsCommand} = require('./playback/lyrics');
 const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
 let {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, pStats
 } = require('./utils/constants');
 const {reactions} = require('./utils/reactions');
 
@@ -1218,12 +1218,6 @@ bot.once('ready', () => {
     }
     buildNo.decrementBuildNo();
   }
-  servers['stats'] = {
-    // total time active in MS
-    activeMS: 0,
-    // if active, the current Date.now()
-    dateActive: null,
-  };
   // noinspection JSUnresolvedFunction
   if (devMode) {
     console.log('-devmode enabled-');
@@ -1296,10 +1290,10 @@ bot.on('message', async (message) => {
  * @return {string}
  */
 function getTimeActive () {
-  if (servers['stats'].dateActive) {
-    return formatDuration(servers['stats'].activeMS + Date.now() - servers['stats'].dateActive);
+  if (pStats.dateActive) {
+    return formatDuration(pStats.activeMS + Date.now() - pStats.dateActive);
   } else {
-    return formatDuration(servers['stats'].activeMS);
+    return formatDuration(pStats.activeMS);
   }
 }
 
@@ -1309,8 +1303,8 @@ function getTimeActive () {
 function setProcessInactive () {
   isInactive = true;
   console.log('-sidelined-');
-  servers['stats'].activeMS += Date.now() - servers['stats'].dateActive;
-  servers['stats'].dateActive = null;
+  pStats.activeMS += Date.now() - pStats.dateActive;
+  pStats.dateActive = null;
 }
 
 /**
@@ -1319,7 +1313,7 @@ function setProcessInactive () {
 function setProcessActive () {
   isInactive = false;
   console.log('-active-');
-  servers['stats'].dateActive = Date.now();
+  pStats.dateActive = Date.now();
 }
 
 /**
