@@ -24,7 +24,7 @@ const {
   runSearchCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue, createQueueItem,
   getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand, insertCommandVerification,
   convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError, joinVoiceChannelSafe,
-  pauseComputation
+  pauseComputation, playComputation
 } = require('./utils/utils');
 const {runHelpCommand, getHelpList} = require('./utils/help');
 const {
@@ -1862,20 +1862,6 @@ function runPlayCommand (message, actionUser, server, noErrorMsg, force, noPrint
 }
 
 /**
- * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param voiceChannel The voice channel that the dispatcher is playing in.
- * @param force {boolean=} Ignores the status of the dispatcher.
- */
-function playComputation (voiceChannel, force) {
-  if (dispatcherMapStatus[voiceChannel.id] || force) {
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMapStatus[voiceChannel.id] = false;
-  }
-}
-
-/**
  * Plays a recommendation.
  * NOTE: Is in testing phase - allows only isCoreAdmin() usage.
  * @param message The message metadata.
@@ -3329,6 +3315,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       }
       if (vc.members.size < 2) {
         connection.disconnect();
+        dispatcherMap[vc.id] = undefined;
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
       } else {

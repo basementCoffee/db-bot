@@ -747,11 +747,27 @@ function catchVCJoinError (error, textChannel) {
  * @param force {boolean=} Ignores the status of the dispatcher.
  */
 function pauseComputation (voiceChannel, force = false) {
+  if (!dispatcherMap[voiceChannel.id]) return;
   if (!dispatcherMapStatus[voiceChannel.id] || force) {
     dispatcherMap[voiceChannel.id].pause();
     dispatcherMap[voiceChannel.id].resume();
     dispatcherMap[voiceChannel.id].pause();
     dispatcherMapStatus[voiceChannel.id] = true;
+  }
+}
+
+/**
+ * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
+ * @param voiceChannel The voice channel that the dispatcher is playing in.
+ * @param force {boolean=} Ignores the status of the dispatcher.
+ */
+function playComputation (voiceChannel, force) {
+  if (!dispatcherMap[voiceChannel.id]) return;
+  if (dispatcherMapStatus[voiceChannel.id] || force) {
+    dispatcherMap[voiceChannel.id].resume();
+    dispatcherMap[voiceChannel.id].pause();
+    dispatcherMap[voiceChannel.id].resume();
+    dispatcherMapStatus[voiceChannel.id] = false;
   }
 }
 
@@ -767,6 +783,7 @@ async function joinVoiceChannelSafe (message, server) {
   let vc = message.member?.voice?.channel;
   if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
     if (connection && dispatcherMap[connection.channel.id]) pauseComputation(connection.channel);
+    dispatcherMap[connection.channel.id] = undefined;
     resetSession(server);
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
@@ -790,5 +807,5 @@ module.exports = {
   getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue, createQueueItem, getLinkType,
   createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin, runMoveItemCommand,
   insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError,
-  joinVoiceChannelSafe, pauseComputation
+  joinVoiceChannelSafe, pauseComputation, playComputation
 };
