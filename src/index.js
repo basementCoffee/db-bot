@@ -1303,8 +1303,10 @@ function getTimeActive () {
 function setProcessInactive () {
   isInactive = true;
   console.log('-sidelined-');
-  pStats.activeMS += Date.now() - pStats.dateActive;
-  pStats.dateActive = null;
+  if (pStats.dateActive) {
+    pStats.activeMS += Date.now() - pStats.dateActive;
+    pStats.dateActive = null;
+  }
 }
 
 /**
