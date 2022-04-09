@@ -1127,7 +1127,8 @@ async function runCommandCases (message) {
           '\nprocess: ' + process.pid.toString() +
           '\nservers: ' + bot.guilds.cache.size +
           '\nuptime: ' + formatDuration(bot.uptime) +
-          '\nup since: ' + bot.readyAt.toString().substr(0, 21) +
+          '\ntime active: ' + getTimeActive() +
+          '\nup since: ' + bot.readyAt.toString().substring(0, 21) +
           '\nactive voice channels: ' + bot.voice.connections.size
         );
       message.channel.send(embed);
@@ -1221,12 +1222,19 @@ bot.once('ready', () => {
     }
     buildNo.decrementBuildNo();
   }
+  servers['stats'] = {
+    // total time active in MS
+    activeMS: 0,
+    // if active, the current Date.now()
+    dateActive: null,
+  };
   // noinspection JSUnresolvedFunction
   if (devMode) {
     console.log('-devmode enabled-');
+    setProcessActive();
   } else {
     checkStatusOfYtdl();
-    isInactive = true;
+    setProcessInactive();
     bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'}).then();
     if (!checkActiveInterval) checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
@@ -1269,9 +1277,10 @@ bot.on('message', async (message) => {
       // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
       // compare process IDs
       if (message.content.substr(24).trim() !== process.pid.toString()) {
-        isInactive = true;
-        console.log('-sidelined-');
-      } else isInactive = false;
+        setProcessInactive();
+      } else {
+        setProcessActive();
+      }
     }
   } else if (isInactive && message.content.substring(0, 9) === 'starting:') {
     // view the build number of the starting process, if newer version then update
@@ -1285,6 +1294,37 @@ bot.on('message', async (message) => {
     }
   }
 });
+
+/**
+ * Get the amount of time that this process has been active as a formatted string.
+ * @return {string}
+ */
+function getTimeActive () {
+  if (servers['stats'].dateActive) {
+    return formatDuration(servers['stats'].activeMS + Date.now() - servers['stats'].dateActive);
+  } else {
+    return formatDuration(servers['stats'].activeMS);
+  }
+}
+
+/**
+ * Sets the process as inactive.
+ */
+function setProcessInactive () {
+  isInactive = true;
+  console.log('-sidelined-');
+  servers['stats'].activeMS += Date.now() - servers['stats'].dateActive;
+  servers['stats'].dateActive = null;
+}
+
+/**
+ * Sets the process as active.
+ */
+function setProcessActive () {
+  isInactive = false;
+  console.log('-active-');
+  servers['stats'].dateActive = Date.now();
+}
 
 /**
  * Inserts a term into position into the queue. Accepts a valid link or key.
@@ -1446,9 +1486,8 @@ async function responseHandler () {
       initializeServer(gid);
       servers[gid].prefix = pfx;
     }
-    isInactive = false;
+    setProcessActive();
     devMode = false;
-    console.log('-active-');
     // noinspection JSUnresolvedFunction
     bot.channels.cache.get(CH.process).send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString());
     setTimeout(() => {
@@ -1585,15 +1624,19 @@ async function devProcessCommands (message) {
                   return;
                 }
               }
-              isInactive = !isInactive;
-              console.log((isInactive ? '-sidelined-' : '-active-'));
+              if (isInactive) {
+                setProcessActive();
+              } else {
+                setProcessInactive();
+              }
+
               if (sentMsg.deletable) {
                 updateMessage();
                 reaction.users.remove(user.id);
               }
             } else if (reaction.emoji.name === devR) {
               devMode = false;
-              isInactive = true;
+              setProcessInactive();
               if (!checkActiveInterval) checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
               if (sentMsg.deletable) updateMessage();
             }
@@ -1607,15 +1650,18 @@ async function devProcessCommands (message) {
           });
         });
       } else if (zargs[1] === 'all') {
-        isInactive = true;
-        console.log('-sidelined-');
+        setProcessInactive();
       } else {
         let i = 1;
         while (zargs[i]) {
           if (zargs[i].replace(/,/g, '') === process.pid.toString()) {
-            isInactive = !isInactive;
-            message.channel.send('*db bot ' + process.pid + (isInactive ? ' has been sidelined*' : ' is now active*')).then();
-            console.log((isInactive ? '-sidelined-' : '-active-'));
+            if (isInactive) {
+              setProcessActive();
+              message.channel.send('*db bot ' + process.pid + ' is now active*');
+            } else {
+              setProcessInactive();
+              message.channel.send('*db bot ' + process.pid + ' has been sidelined*');
+            }
             return;
           }
           i++;
@@ -1631,7 +1677,7 @@ async function devProcessCommands (message) {
       }
       if (devMode && zargs[1] === process.pid.toString()) {
         devMode = false;
-        isInactive = true;
+        setProcessInactive();
         servers[message.guild.id] = null;
         return message.channel.send(`*devmode is off ${process.pid}*`);
       } else if (zargs[1] === process.pid.toString()) {
@@ -3800,7 +3846,7 @@ process
 function shutdown (type) {
   return () => {
     console.log('shutting down...');
-    isInactive = true;
+    setProcessInactive();
     // noinspection JSUnresolvedFunction
     try {
       bot.channels.cache.get(CH.process).send(`shutting down: '${process.pid}' (${type}) ${devMode ? `(dev)` : ''}`);
