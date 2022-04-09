@@ -9,8 +9,8 @@ const botID = '730350452268597300';
 let startupDevMode = process.argv[2] === '--dev';
 // max queue size
 const MAX_QUEUE_S = 500;
-// active process timeout
-const checkActiveMS = 600000;
+// active process interval (9min)
+const checkActiveMS = 540000;
 // number of active processes
 const setOfBotsOn = new Set();
 // commands frequency
