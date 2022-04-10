@@ -1127,7 +1127,7 @@ async function runCommandCases (message) {
           '\nactive time: ' + getTimeActive() +
           '\nstream time: ' + formatDuration(processStats.getTotalStreamTime()) +
           '\nup since: ' + bot.readyAt.toString().substring(0, 21) +
-          `\nactive voice channels: ${bot.voice.connections.size} (${processStats.getActiveStreamSize()})`
+          `\nactive voice channels: ${processStats.getActiveStreamSize()} / ${bot.voice.connections.size}`
         );
       message.channel.send(embed);
       break;
