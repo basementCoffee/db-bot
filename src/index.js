@@ -1119,15 +1119,15 @@ async function runCommandCases (message) {
     case 'gzs':
       const embed = new MessageEmbed()
         .setTitle('db bot - statistics')
-        .setDescription('version: ' + version +
-          '\nbuild: ' + buildNo.getBuildNo() +
-          '\nprocess: ' + process.pid.toString() +
-          '\nservers: ' + bot.guilds.cache.size +
-          '\nuptime: ' + formatDuration(bot.uptime) +
-          '\nactive time: ' + getTimeActive() +
-          '\nstream time: ' + formatDuration(processStats.getTotalStreamTime()) +
-          '\nup since: ' + bot.readyAt.toString().substring(0, 21) +
-          `\nactive voice channels: ${processStats.getActiveStreamSize()} / ${bot.voice.connections.size}`
+        .setDescription(`version: ${version} (${buildNo.getBuildNo()})` +
+          `\nprocess: ${process.pid.toString()}` +
+          `\nservers: ${bot.guilds.cache.size}` +
+          `\nuptime: ${formatDuration(bot.uptime)}` +
+          `\nactive time: ${getTimeActive()}` +
+          `\nstream time: ${formatDuration(processStats.getTotalStreamTime())}` +
+          `\nup since: ${bot.readyAt.toString().substring(0, 21)}` +
+          `\nnumber of streams: ${processStats.getActiveStreamSize()}` +
+          `\nactive voice channels: ${bot.voice.connections.size}`
         );
       message.channel.send(embed);
       break;
@@ -3836,8 +3836,8 @@ process
 
 function shutdown (type) {
   return () => {
-    console.log('shutting down...');
     setProcessInactive();
+    console.log('shutting down...');
     // noinspection JSUnresolvedFunction
     try {
       bot.channels.cache.get(CH.process).send(`shutting down: '${process.pid}' (${type}) ${devMode ? `(dev)` : ''}`);
