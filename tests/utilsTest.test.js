@@ -1,5 +1,6 @@
-const {runMoveItemCommand, formatDuration} = require('../src/utils/utils');
+const {formatDuration} = require('../src/utils/utils');
 const {bot} = require('../src/utils/constants');
+const {runMoveItemCommand} = require('../src/playback-commands/move');
 
 let arr;
 const destroyBot = () => bot.destroy();
