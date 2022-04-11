@@ -1,6 +1,7 @@
 const {gsrun, gsUpdateAdd, gsUpdateOverwrite, deleteRows} = require('./backend');
-const {verifyUrl, verifyPlaylist, runSearchCommand, botInVC} = require('../utils/utils');
+const {verifyUrl, verifyPlaylist, botInVC} = require('../utils/utils');
 const {servers} = require('../utils/constants');
+const {runSearchCommand} = require('../playback-commands/search');
 
 /**
  * The command to add a song to a given database.
@@ -86,7 +87,7 @@ async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChann
           await deleteRows(sheetName, i);
           if (sendMsgToChannel) {
             message.channel.send('deleted \'' + itemToCheck + '\' from ' +
-              (sheetName.substr(0, 1) === 'p' ? 'your' : 'the server\'s') + ' keys');
+              (sheetName.substring(0, 1) === 'p' ? 'your' : 'the server\'s') + ' keys');
           }
         }
       }

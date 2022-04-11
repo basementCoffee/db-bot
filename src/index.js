@@ -20,24 +20,27 @@ const {
   runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb, sendListSize
 } = require('./database/frontend');
 const {
-  formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, initializeServer,
-  runSearchCommand, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue, createQueueItem,
-  getLinkType, createMemoryEmbed, isAdmin, getAssumption, isCoreAdmin, runMoveItemCommand, insertCommandVerification,
-  convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError, joinVoiceChannelSafe,
-  pauseComputation, playComputation
+  formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
+  setSeamless, getQueueText, initializeServer, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
+  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, isCoreAdmin, insertCommandVerification,
+  convertSeekFormatToSec, removeDBMessage, catchVCJoinError, logError, joinVoiceChannelSafe, pauseComputation,
+  playComputation
 } = require('./utils/utils');
 const {runHelpCommand, getHelpList} = require('./utils/help');
 const {
   hasDJPermissions, runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand
-} = require('./playback/dj');
-const {runLyricsCommand} = require('./playback/lyrics');
-const {addPlaylistToQueue, getPlaylistItems} = require('./playback/playlist');
+} = require('./playback-commands/dj');
+const {runLyricsCommand} = require('./playback-commands/lyrics');
+const {addPlaylistToQueue, getPlaylistItems} = require('./utils/playlist');
 let {
   MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
   botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode
 } = require('./utils/constants');
 const {reactions} = require('./utils/reactions');
+const {runRemoveCommand} = require('./playback-commands/remove');
+const {getAssumption, runSearchCommand} = require('./playback-commands/search');
+const {updateActiveEmbed, sendRecommendation, createEmbed} = require('./utils/embed');
+const {runMoveItemCommand} = require('./playback-commands/move');
 
 process.setMaxListeners(0);
 
@@ -301,8 +304,8 @@ async function runCommandCases (message) {
     await updateServerPrefix(server, mgid);
     prefixString = server.prefix;
   }
-  const firstWordBegin = message.content.substr(0, 14).trim() + ' ';
-  const fwPrefix = firstWordBegin.substr(0, 1);
+  const firstWordBegin = message.content.substring(0, 14).trim() + ' ';
+  const fwPrefix = firstWordBegin.substring(0, 1);
   // for all non-commands
   if (fwPrefix !== prefixString) {
     if (devMode) return;
@@ -314,7 +317,7 @@ async function runCommandCases (message) {
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   // the command name
   const statement = args[0].substr(1).toLowerCase();
-  if (statement.substr(0, 1) === 'g' && statement !== 'guess') {
+  if (statement.substring(0, 1) === 'g' && statement !== 'guess') {
     if (message.member.id.toString() !== '443150640823271436' && message.member.id.toString() !== '268554823283113985') {
       return;
     }
@@ -352,7 +355,7 @@ async function runCommandCases (message) {
         name = args2[parseInt(indexOfWord) + 1];
         const excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
         if (excludedWords.includes(name)) name = '';
-        if (name && name.length > 1) name = name.substr(0, 1).toUpperCase() + name.substr(1);
+        if (name && name.length > 1) name = name.substring(0, 1).toUpperCase() + name.substr(1);
       } else {
         name = '';
       }
@@ -786,7 +789,7 @@ async function runCommandCases (message) {
               }
             }
 
-            if (!message.guild.me.nickname || (message.guild.me.nickname.substr(0, 1) !== '['
+            if (!message.guild.me.nickname || (message.guild.me.nickname.substring(0, 1) !== '['
               && message.guild.me.nickname.substr(2, 1) !== ']')) {
               message.channel.send('----------------------\nWould you like me to update my name to reflect this? (yes or no)\nFrom **' +
                 (message.guild.me.nickname || 'db bot') + '**  -->  **[' + prefixString + '] ' + name + '**').then(() => {
@@ -806,7 +809,7 @@ async function runCommandCases (message) {
                     message.channel.send('prefix is now: ' + prefixString);
                   });
               });
-            } else if (message.guild.me.nickname.substr(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
+            } else if (message.guild.me.nickname.substring(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
               await changeNamePrefix();
             }
           });
@@ -1243,7 +1246,7 @@ bot.on('message', async (message) => {
   if (message.channel.id !== CH.process) return;
   // ~db-process (standard)[11] | -on [3] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
   // turn off active bots -- activates on '~db-process'
-  if (message.content.substr(0, 11) === '~db-process') {
+  if (message.content.substring(0, 11) === '~db-process') {
     // if seeing bots that are on
     if (message.content.substr(11, 3) === '-on') {
       const oBuildNo = message.content.substr(15, 8);
@@ -2003,7 +2006,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (args[1]) {
     if (args[2]) {
-      if (args[2].substr(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
+      if (args[2].substring(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
         args[2] = args[2].substr(1, args[2].length - 2);
       }
       if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
@@ -2305,7 +2308,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
         }
       } else {
         // check personal db if applicable
-        if (sheetName.substr(0, 1) !== 'p') {
+        if (sheetName.substring(0, 1) !== 'p') {
           if (!otherSheet) {
             const xdb = await getXdb(server, `p${message.member.id}`, true);
             otherSheet = xdb.referenceDatabase;
@@ -3351,7 +3354,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       }, 2000);
     }
   } catch (e) {
-    const errorMsg = e.toString().substr(0, 100);
+    const errorMsg = e.toString().substring(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
       if (!retries) playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
       else {
@@ -3411,7 +3414,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     if (devMode) return;
     // noinspection JSUnresolvedFunction
     logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
-    logError(e.toString().substr(0, 1910));
+    logError(e.toString().substring(0, 1910));
   }
 }
 

@@ -1,7 +1,7 @@
 const {getData} = require('spotify-url-info');
 const ytpl = require('ytpl');
-const {MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, StreamType} = require('../utils/constants');
-const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require('../utils/utils');
+const {MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, StreamType} = require('./constants');
+const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require('./utils');
 // should be completed before first query
 let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
 

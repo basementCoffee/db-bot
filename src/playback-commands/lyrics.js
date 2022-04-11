@@ -39,12 +39,12 @@ function runLyricsCommand (message, mgid, args, server) {
         infos = server.queue[0].infos || await getData(lUrl);
         songName = infos.name.toLowerCase();
         let songNameSubIndex = songName.search('[-]');
-        if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+        if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
         songNameSubIndex = songName.search('[(]');
-        if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+        if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
         else {
           songNameSubIndex = songName.search('[\[]');
-          if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+          if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
         }
         artistName = infos.artists[0].name;
         searchTerm = songName + ' ' + artistName;
@@ -73,18 +73,18 @@ function runLyricsCommand (message, mgid, args, server) {
           // use video metadata
           searchTerm = songName = infos.videoDetails.media.song;
           let songNameSubIndex = songName.search('[(]');
-          if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+          if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
           else {
             songNameSubIndex = songName.search('[\[]');
-            if (songNameSubIndex !== -1) songName = songName.substr(0, songNameSubIndex);
+            if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
           }
           artistName = infos.videoDetails.media.artist;
           if (artistName) {
             let artistNameSubIndex = artistName.search('ft.');
-            if (artistNameSubIndex !== -1) artistName = artistName.substr(0, artistNameSubIndex);
+            if (artistNameSubIndex !== -1) artistName = artistName.substring(0, artistNameSubIndex);
             else {
               artistNameSubIndex = artistName.search(' feat');
-              if (artistNameSubIndex !== -1) artistName = artistName.substr(0, artistNameSubIndex);
+              if (artistNameSubIndex !== -1) artistName = artistName.substring(0, artistNameSubIndex);
             }
             searchTerm = songName + ' ' + artistName;
           }
@@ -92,10 +92,10 @@ function runLyricsCommand (message, mgid, args, server) {
           // use title
           let songNameSubIndex = infos.videoDetails.title.search('[(]');
           if (songNameSubIndex !== -1) {
-            searchTerm = infos.videoDetails.title.substr(0, songNameSubIndex);
+            searchTerm = infos.videoDetails.title.substring(0, songNameSubIndex);
           } else {
             songNameSubIndex = infos.videoDetails.title.search('[\[]');
-            if (songNameSubIndex !== -1) searchTerm = infos.videoDetails.title.substr(0, songNameSubIndex);
+            if (songNameSubIndex !== -1) searchTerm = infos.videoDetails.title.substring(0, songNameSubIndex);
             else searchTerm = infos.videoDetails.title;
           }
         }
@@ -152,7 +152,7 @@ async function sendSongLyrics (message, searchTerm, server, messageMember) {
       collector.once('collect', async () => {
         lyrics = await lyrics;
         // send the lyrics text on reaction click
-        const sentLyricsMsg = await message.channel.send((lyrics.length > 1910 ? lyrics.substr(0, 1910) + '...' : lyrics));
+        const sentLyricsMsg = await message.channel.send((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics));
         server.numSinceLastEmbed += 10;
         // start reactionCollector for lyrics
         sentLyricsMsg.react(reactions.X).then();
@@ -203,7 +203,7 @@ function getYoutubeSubtitles (message, url, server, infos) {
               let prevDuration = 0;
               let newDuration;
               for (let i of result.transcript.text) {
-                if (i._.trim().substr(0, 1) === '[') {
+                if (i._.trim().substring(0, 1) === '[') {
                   finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
                     i._;
                   prevDuration -= 5;
@@ -215,7 +215,7 @@ function getYoutubeSubtitles (message, url, server, infos) {
                 }
               }
               finalString = finalString.replace(/&#39;/g, '\'').trim();
-              finalString = finalString.length > 1910 ? finalString.substr(0, 1910) + '...' : finalString;
+              finalString = finalString.length > 1910 ? finalString.substring(0, 1910) + '...' : finalString;
               message.edit('Could not find lyrics. Video captions are available.').then(sentMsg => {
                 const mb = '📄';
                 sentMsg.react(mb).then();

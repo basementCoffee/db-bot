@@ -4,7 +4,7 @@ const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
   servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S,
-  dispatcherMapStatus, dispatcherMap, LEAVE_VC_TIMEOUT
+  dispatcherMapStatus, dispatcherMap, LEAVE_VC_TIMEOUT, CORE_ADM
 } = require('./constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
@@ -12,8 +12,6 @@ const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
 const processStats = require('./ProcessStats');
-const AD_1 = '443150640823271436'; // z
-const AD_2 = '268554823283113985'; // k
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -109,6 +107,15 @@ function isAdmin (id) {
 }
 
 /**
+ * If the id is a coreAdmin ID;
+ * @param id {string} The id of the user.
+ * @return {boolean} If the user is a core admin.
+ */
+function isCoreAdmin (id) {
+  return CORE_ADM.includes(id);
+}
+
+/**
  * A wrapper for getTracks to handle errors regarding Spotify requests.
  * @param playlistUrl {string} The url to get the tracks for.
  * @param retries {number=} Used within the function for error handling.
@@ -124,119 +131,6 @@ async function getTracksWrapper (playlistUrl, retries = 0) {
 }
 
 /**
- * Return an object containing the embed and time based on the data provided.
- * @param url {string} The url to create the embed for.
- * @param infos {Object?} Optional - the info metadata to use.
- * @return {Promise<{embed: module:"discord.js".MessageEmbed, infos: {formats}, timeMS: number}>}
- */
-async function createEmbed (url, infos) {
-  let timeMS;
-  let embed;
-  if (url.toString().includes(SPOTIFY_BASE_LINK)) {
-    if (!infos) infos = await getData(url);
-    let artists = '';
-    infos.artists.forEach(x => artists ? artists += ', ' + x.name : artists += x.name);
-    embed = new MessageEmbed()
-      .setTitle(`${infos.name}`)
-      .setURL(infos.external_urls.spotify)
-      .setColor('#1DB954')
-      .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, artists, true)
-      .addField('Duration', formatDuration(infos.duration_ms), true)
-      .setThumbnail(infos.album?.images[infos.album.images.length - 1].url);
-    timeMS = parseInt(infos.duration_ms);
-  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
-    if (!infos) infos = await scdl.getInfo(url);
-    const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
-    const title = (infos.publisher_metadata ? (infos.publisher_metadata.release_title || infos.publisher_metadata.album_title) : '') || (infos.title.replace(/"/g, '') || 'SoundCloud');
-    embed = new MessageEmbed()
-      .setTitle(title)
-      .setURL(url)
-      .setColor('#ee4900')
-      .addField(`Artist`, artist, true)
-      .addField('Duration', formatDuration(infos.duration || 0), true)
-      .setThumbnail(infos.artwork_url || infos.user?.avatar_url || null);
-    timeMS = infos.duration || infos.full_duration || 'N/A';
-  } else if (url.includes(TWITCH_BASE_LINK)) {
-    const artist = url.substr(url.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, '');
-    embed = new MessageEmbed()
-      .setTitle(`${artist}'s stream`)
-      .setURL(url)
-      .setColor('#8a2aef')
-      .addField(`Channel`, artist, true)
-      .addField('Duration', 'live', true)
-      .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg');
-  } else {
-    if (!infos) infos = await ytdl.getBasicInfo(url);
-    let duration;
-    let videoDetails = infos.videoDetails;
-    if (!videoDetails) videoDetails = infos;
-    if (videoDetails.isLiveContent || videoDetails.isLive) {
-      duration = 'live';
-      timeMS = 3600000; // set to 1hr
-    } else {
-      if (infos.formats && infos.formats[0]) {
-        timeMS = parseInt(infos.formats[0].approxDurationMs || videoDetails.lengthSeconds * 1000);
-        duration = formatDuration(timeMS || 0);
-      } else {
-        timeMS = videoDetails.durationSec * 1000 || convertYTFormatToMS(videoDetails.duration.split(':'));
-        duration = formatDuration(timeMS);
-      }
-      if (duration === 'NaNm NaNs') {
-        duration = 'N/A';
-        timeMS = 0;
-      }
-    }
-    embed = new MessageEmbed()
-      .setTitle(`${videoDetails.title}`)
-      .setURL(videoDetails.video_url || videoDetails.shortUrl || infos.url)
-      .setColor('#c40d00')
-      .addField('Channel', `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]` +
-        `(${videoDetails.author.url || videoDetails.author.channel_url})`, true)
-      .addField('Duration', duration || videoDetails.duration, true)
-      .setThumbnail(videoDetails.thumbnails[0].url);
-  }
-  return {
-    embed,
-    timeMS,
-    infos
-  };
-}
-
-/**
- * Tries to get a close match of a valid existing key from the word provided.
- * Otherwise, returns false.
- * @param word {string} The word to check.
- * @param cdb {Map<>} A map containing all the keys and their links.
- * @return {string | false} The closest valid assumption or false.
- */
-function getAssumption (word, cdb) {
-  const sObj = runSearchCommand(word, cdb);
-  const ss = sObj.ss;
-  if (sObj.ssi === 1 && ss && word.length > 1 && (ss.length - word.length) < Math.floor((ss.length / 2) + 2)) {
-    return ss;
-  }
-  return false;
-}
-
-/**
- * Sends an updated playback embed with the fields updated. Assumes that a session is ongoing.
- * @param server The server.
- * @returns {Promise<void>}
- */
-async function updateActiveEmbed (server) {
-  try {
-    if (!server.currentEmbed && server.queue[0]?.url) return;
-    let embed = await createEmbed(server.queue[0].url, server.queue[0].infos);
-    server.queue[0].infos = embed.infos;
-    embed = embed.embed;
-    embed.addField('Queue', getQueueText(server), true);
-    server.currentEmbed.edit(embed);
-  } catch (e) {
-    console.log(e);
-  }
-}
-
-/**
  * Returns the queue display status.
  * @param server The server.
  */
@@ -246,38 +140,6 @@ function getQueueText (server) {
   else if (server.queue.length > 0) content = (server.autoplay ? 'smartplay' : '1 / 1');
   else content = 'empty';
   return content;
-}
-
-/**
- * Send a recommendation to a user. EXPERIMENTAL.
- * @param message The message metadata.
- * @param content Optional - text to add to the recommendation.
- * @param url The url to recommend.
- * @param uManager bot.users
- * @returns {Promise<void>}
- */
-async function sendRecommendation (message, content, url, uManager) {
-  if (!isCoreAdmin(message.member.id)) return;
-  if (!url) return;
-  try {
-    let recUser = await uManager.fetch((message.member.id === AD_1 ? AD_2 : AD_1));
-    await recUser.send({
-      content: `**${message.member.user.username}** has a recommendation for you${(content ? `:\n*${content}*` : '')}\n<${url}>`,
-      embed: (await createEmbed(url)).embed
-    });
-    message.channel.send(`*recommendation sent to ${recUser.username}*`);
-  } catch (e) {
-    console.log(e);
-  }
-}
-
-/**
- * If the id is a coreAdmin ID;
- * @param id {string} The id of the user.
- * @return {boolean} If the user is a core admin.
- */
-function isCoreAdmin (id) {
-  return id === AD_1 || id === AD_2;
 }
 
 /**
@@ -363,35 +225,6 @@ function shuffleQueue (queue, message) {
 }
 
 /**
- * Searches a Map for the given key. Provides the keys that contain the given key.
- * @param keyName {string} the key to search for.
- * @param cdb {Map<>} A map containing all the keys and their links.
- * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values.
- */
-function runSearchCommand (keyName, cdb) {
-  const keyNameLen = keyName.length;
-  const keyArray = Array.from(cdb.keys());
-  let ss = '';
-  let ssi = 0;
-  let searchKey;
-  keyName = keyName.toUpperCase();
-  for (let ik = 0; ik < keyArray.length; ik++) {
-    searchKey = keyArray[ik].toUpperCase();
-    if (keyName === searchKey.substr(0, keyNameLen) || (keyNameLen > 1 && searchKey.includes(keyName))) {
-      ssi++;
-      ss += `${keyArray[ik]}, `;
-    }
-  }
-  if (ssi) ss = ss.substring(0, ss.length - 2);
-  return {
-    // the search string
-    ss: ss,
-    // the number of searches found
-    ssi: ssi
-  };
-}
-
-/**
  * Gets the title of a link.
  * @param queueItem The queue item to get the title.
  * @param cutoff {number=} A number representing the cutoff value.
@@ -417,7 +250,7 @@ async function getTitle (queueItem, cutoff) {
     title = 'broken_url';
   }
   if (cutoff && title.length > cutoff) {
-    title = title.substr(0, cutoff) + '...';
+    title = title.substring(0, cutoff) + '...';
   }
   return title;
 }
@@ -599,61 +432,6 @@ const getLinkType = (url) => {
 };
 
 /**
- * Mutates the provided array by moving an element at posA to posB.
- * @param message The message object.
- * @param arr The array.
- * @param posA The first position.
- * @param posB THe second position.
- * @return {void}
- */
-function runMoveItemCommand (message, arr, posA, posB) {
-  if (!botInVC(message)) return;
-  posA = Math.floor(posA);
-  posB = Math.floor(posB);
-  const MIN_POS = 1;
-  const MIN_ARR_SIZE = 3;
-  if (!(posA && posB)) message.channel.send(
-    '*two numbers expected: the position of the item to move and it\'s new position*\n`ex: move 1 5`');
-  else if (arr.length < MIN_ARR_SIZE) message.channel.send('*not enough items in the queue*');
-  else if (posA < MIN_POS || posB < MIN_POS) {
-    message.channel.send(`positions must be greater than ${MIN_POS - 1}`);
-  } else {
-    if (posA > arr.length - 1) posA = arr.length - 1;
-    if (posB > arr.length - 1) posB = arr.length - 1;
-    const item = arr.splice(posA, 1)[0];
-    arr.splice(posB, 0, item);
-    message.channel.send(`*moved item to position ${posB}*`);
-  }
-}
-
-/**
- * Removes an item from the queue. Does not allow for the currently playing item to be removed from the queue (index 0).
- * @param message The message metadata.
- * @param server The server metadata.
- * @param itemPosition The position in the queue to remove from (starting from 1).
- * @return {Promise<*>}
- */
-async function runRemoveCommand (message, server, itemPosition) {
-  if (!message.member.voice?.channel) return message.channel.send('you must be in a voice channel to remove items from the queue');
-  if (server.dictator && message.member.id !== server.dictator.id)
-    return message.channel.send('only the dictator can remove');
-  if (server.voteAdmin.length > 0 && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
-    return message.channel.send('only a dj can remove');
-  if (server.queue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
-  let rNum = parseInt(itemPosition);
-  if (!rNum) {
-    if (server.queue.length === 2) rNum = 1;
-    else return message.channel.send((`Needed a position in the queue to remove (1-${(server.queue.length - 1)})` +
-      `\n***1** is next up in the queue, **${(server.queue.length - 1)}** is the last item in the queue \` Ex: remove 2\`*`));
-  }
-  if (rNum >= server.queue.length) return message.channel.send('*that position is out of bounds, **' +
-    (server.queue.length - 1) + '** is the last item in the queue.*');
-  server.queue.splice(rNum, 1);
-  await updateActiveEmbed(server);
-  message.channel.send('*removed item from queue*');
-}
-
-/**
  * Helper for runInsertCommand. Does some preliminary verification.
  * @param message The message object.
  * @param server The server.
@@ -805,10 +583,9 @@ async function joinVoiceChannelSafe (message, server) {
 }
 
 module.exports = {
-  formatDuration, createEmbed, sendRecommendation, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist,
-  resetSession, convertYTFormatToMS, setSeamless, getQueueText, updateActiveEmbed, initializeServer, runSearchCommand,
-  getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue, createQueueItem, getLinkType,
-  createMemoryEmbed, isAdmin, getTracksWrapper, getAssumption, isCoreAdmin, runMoveItemCommand,
-  insertCommandVerification, convertSeekFormatToSec, runRemoveCommand, removeDBMessage, catchVCJoinError, logError,
-  joinVoiceChannelSafe, pauseComputation, playComputation
+  formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
+  setSeamless, getQueueText, initializeServer, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
+  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, isCoreAdmin,
+  insertCommandVerification, convertSeekFormatToSec, removeDBMessage, catchVCJoinError, logError, joinVoiceChannelSafe,
+  pauseComputation, playComputation
 };
