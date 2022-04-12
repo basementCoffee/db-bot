@@ -37,10 +37,14 @@ function runSearchCommand (keyName, cdb) {
  */
 function getAssumption (word, cdb) {
   const sObj = runSearchCommand(word, cdb);
-  const ss = sObj.ss;
-  if (sObj.ssi === 1 && ss && word.length > 1 && (ss.length - word.length) < Math.floor((ss.length / 2) + 2)) {
-    return ss;
+  let ss = sObj.ss;
+  if (ss){
+    ss = ss.split(',')[0];
+    if (word.length > 1 && (ss.length - word.length) < Math.floor((ss.length / 2) + 2)) {
+      return ss;
+    }
   }
+
   return false;
 }
 

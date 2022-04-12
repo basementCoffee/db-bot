@@ -582,7 +582,7 @@ async function runCommandCases (message) {
     case 'find':
     case 'lookup':
     case 'search':
-      runUniversalSearchCommand(message, server, mgid, (args[1] ? args.join(' ') : server.queue[0]?.url)).then();
+      runUniversalSearchCommand(message, server, mgid, (args[1] ? args[1] : server.queue[0]?.url)).then();
       break;
     case 'mfind':
     case 'mlookup':
@@ -2520,7 +2520,11 @@ async function updateVoiceState (update) {
       server.autoplay = false;
       server.userKeys.clear();
       server.queueHistory.length = 0;
-      if (server.currentEmbed?.reactions) server.collector.stop();
+      if (server.currentEmbed?.reactions) {
+        try {
+          server.collector?.stop();
+        } catch (e) {}
+      }
       server.currentEmbed = null;
       if (server.followUpMessage) {
         server.followUpMessage.delete();

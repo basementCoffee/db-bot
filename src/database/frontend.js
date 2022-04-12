@@ -215,6 +215,7 @@ async function runUniversalSearchCommand (message, server, sheetName, providedSt
       if (obj.link) finalString += `${obj.valueObj.ss}:\n${obj.link}\n`;
     }
     if (finalString === BASE_KEYS_STRING) {
+      if (sheetName[0] !== 'p') return await runUniversalSearchCommand(message, server, `p${message.member.id}`, providedString)
       finalString = 'did not find any exact key matches, ' +
         'try a single search word (instead of multiple) for a more refined search within the keys lists';
     }
