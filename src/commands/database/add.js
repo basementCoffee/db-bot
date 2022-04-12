@@ -1,14 +1,14 @@
-const {gsrun, gsUpdateAdd, gsUpdateOverwrite} = require('../utils/database/database');
+const {gsrun, gsUpdateAdd, gsUpdateOverwrite} = require('./api/api');
 
 /**
- * The command to add a song to a given database.
+ * The command to add a key, value pair to a given database.
  * @param server The server metadata.
- * @param {*} args The command arguments
+ * @param {*} args The command arguments, ignores the first item
  * @param {*} message The message that triggered the command
  * @param {string} sheetName the name of the sheet to add to
  * @param printMsgToChannel whether to print response to channel
  */
-function runAddCommand (server, args, message, sheetName, printMsgToChannel) {
+function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
   let songsAddedInt = 0;
   let z = 1;
   // check duplicates, and initialize sheet for new servers
@@ -65,4 +65,6 @@ function runAddCommand (server, args, message, sheetName, printMsgToChannel) {
   });
 }
 
-module.exports = {runAddCommand}
+
+
+module.exports = {addToDatabase}

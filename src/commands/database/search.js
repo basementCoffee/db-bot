@@ -1,5 +1,5 @@
-const {verifyUrl, verifyPlaylist, botInVC} = require('../../../utils/utils');
-const {getXdb} = require('./utils');
+const {verifyUrl, verifyPlaylist, botInVC} = require('../../utils/utils');
+const {getXdb} = require('./retrieval');
 
 /**
  * Searches a Map for the given key. Provides the keys that contain the given key.

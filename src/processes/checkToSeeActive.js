@@ -3,7 +3,7 @@ const CH = require('../../channel.json');
 const processStats = require('../utils/process/ProcessStats');
 const buildNo = require('../utils/process/BuildNumber');
 const {shutdown} = require('../utils/shutdown');
-const {gsrun} = require('../playback/data/utils/database/database');
+const {gsrun} = require('../commands/database/api/api');
 
 let resHandlerTimeout = null;
 
@@ -25,7 +25,7 @@ function checkToSeeActive () {
 async function responseHandler () {
   resHandlerTimeout = null;
   if (setOfBotsOn.size < 1 && processStats.isInactive) {
-    for (let server in processStats.servers) delete processStats.servers[server];
+    processStats.servers.clear();
     const xdb = await gsrun('A', 'B', 'prefixes');
     for (const [gid, pfx] of xdb.congratsDatabase) {
       processStats.initializeServer(gid);
@@ -54,4 +54,4 @@ async function responseHandler () {
   }
 }
 
-module.exports = {checkToSeeActive}
+module.exports = {checkToSeeActive};

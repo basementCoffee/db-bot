@@ -17,7 +17,11 @@ class ProcessStats {
   // A message for users on first VC join
   startUpMessage;
   // list of server playback metadata
-  servers = new Map();
+  servers;
+  // the interval to view the active process
+  checkActiveInterval;
+  // XDB of the server prefixes (see database/api for XDB reference)
+  serverPrefixes;
 
   constructor () {
     this.activeMS = 0;
@@ -28,7 +32,8 @@ class ProcessStats {
     this.devMode = startupDevMode;
     this.isInactive = !startupDevMode;
     this.startUpMessage = '';
-    this.servers = {};
+    this.servers = new Map();
+    this.serverPrefixes = null;
   }
 
   // adds an active stream

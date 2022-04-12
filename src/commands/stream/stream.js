@@ -19,13 +19,11 @@ const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
 const {MessageEmbed} = require('discord.js');
-const {runPlayCommand} = require('./commands/play');
-const {voteSystem} = require('./commands/dj');
-const {runStopPlayingCommand} = require('./commands/stop');
-const {runPauseCommand} = require('./commands/pause');
-const {getAssumption} = require('../data/utils/search');
-const {getXdb} = require('../data/utils/utils');
+const {getAssumption} = require('../database/search');
+const {getXdb} = require('../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
+const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
+const {runPlayCommand} = require('../play');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -50,7 +48,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
   }
   if (processStats.isInactive) {
     message.channel.send('*db bot has been updated*');
-    return runStopPlayingCommand(message.guild.id, vc, false, server);
+    return stopPlayingUtil(message.guild.id, vc, false, server);
   }
   if (server.voteAdmin.length > 0) {
     server.voteSkipMembersId.length = 0;
@@ -452,10 +450,10 @@ function skipLink (message, voiceChannel, playMessageToChannel, server, noHistor
     } else if (server.autoplay && link) {
       runAutoplayCommand(message, server, voiceChannel, server.queueHistory[server.queueHistory.length - 1]).then();
     } else {
-      runStopPlayingCommand(message.guild.id, voiceChannel, true, server, message, message.member);
+      stopPlayingUtil(message.guild.id, voiceChannel, true, server, message, message.member);
     }
   } else {
-    runStopPlayingCommand(message.guild.id, voiceChannel, true, server, message, message.member);
+    stopPlayingUtil(message.guild.id, voiceChannel, true, server, message, message.member);
   }
   if (server.followUpMessage) {
     server.followUpMessage.delete();
@@ -618,7 +616,7 @@ async function runAutoplayCommand (message, server, vc, queueItem) {
     dispatcherMap[vc.id] = undefined;
   } else {
     message.channel.send(`*smartplay is not supported for this stream type*`);
-    runStopPlayingCommand(message.guild.id, vc, true, server, message, message.member);
+    stopPlayingUtil(message.guild.id, vc, true, server, message, message.member);
   }
 }
 
@@ -785,7 +783,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
             }
           }
         } else {
-          runPauseCommand(sentMsg, tempUser, server, true, false, true);
+          pauseCommandUtil(sentMsg, tempUser, server, true, false, true);
           tempUser = tempUser.nickname;
           if (server.voteAdmin.length < 1 && !server.dictator) {
             if (server.followUpMessage) {
@@ -809,7 +807,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         break;
       case reactions.STOP:
         const mem = sentMsg.member.voice?.channel.members.get(reactionCollector.id);
-        runStopPlayingCommand(mgid, voiceChannel, false, server, sentMsg, mem);
+        stopPlayingUtil(mgid, voiceChannel, false, server, sentMsg, mem);
         if (server.followUpMessage) {
           server.followUpMessage.delete();
           server.followUpMessage = undefined;

@@ -1,11 +1,11 @@
-const {runAddCommand} = require('./commands/add');
-const {verifyUrl, verifyPlaylist, linkFormatter} = require('../../utils/utils');
-const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, botID} = require('../../utils/process/constants');
-const {reactions} = require('../../utils/reactions');
-const {hasDJPermissions} = require('../../utils/permissions');
+const {verifyUrl, verifyPlaylist, linkFormatter} = require('../utils/utils');
+const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, botID} = require('../utils/process/constants');
+const {reactions} = require('../utils/reactions');
+const {hasDJPermissions} = require('../utils/permissions');
+const {addToDatabase} = require('./database/add');
 
 /**
- * Wrapper for the function 'runAddCommand', for the purpose of error checking.
+ * Wrapper for the function 'addToDatabase', for the purpose of error checking.
  * @param message The message that triggered the bot
  * @param args The args that of the message contents
  * @param sheetName The name of the sheet to add to
@@ -42,7 +42,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
           sentMsg.delete();
           if (reaction.emoji.name === reactions.CHECK) {
             server.userKeys.set(sheetName, null);
-            runAddCommand(server, args, message, sheetName, printMsgToChannel);
+            addToDatabase(server, args, message, sheetName, printMsgToChannel);
           } else {
             message.channel.send('*cancelled*');
           }

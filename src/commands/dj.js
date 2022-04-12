@@ -1,6 +1,5 @@
 const {MessageEmbed} = require('discord.js');
-const {formatDuration, botInVC} = require('../../../utils/utils');
-const {botID} = require('../../../utils/process/constants');
+const {formatDuration, botInVC} = require('../utils/utils');
 
 /**
  * Run the command to enable a music mode allowing only one user to control music commands in a server.
@@ -144,46 +143,6 @@ function runDJCommand (message, server) {
   message.channel.send(msgEmbed);
 }
 
-/**
- * A system to manage votes for various bot actions. Used for DJ mode.
- * @param message THe message metadata
- * @param mgid The message guild id
- * @param commandName {string} The action for which the voting is for
- * @param voter The member that is doing the voting
- * @param votes {Array} An array representing the ids of the members who voted for the action
- * @param server The server to use.
- * @returns {Boolean} If there are enough votes to perform the desired action.
- */
-function voteSystem (message, mgid, commandName, voter, votes, server) {
-  if (server.voteAdmin) {
-    const vcMemMembersId = message.guild.voice.channel.members.map(x => x.id);
-    if (vcMemMembersId && vcMemMembersId.includes(voter.id) && vcMemMembersId.includes(botID)) {
-      server.numSinceLastEmbed += 2;
-      const votesNeeded = Math.floor((vcMemMembersId.length - 1) / 2) + 1;
-      let votesNow = votes.length;
-      if (votes.includes(voter.id)) {
-        message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) +
-          ', you already voted to ' + commandName + ' this track* (**votes needed: '
-          + (votesNeeded - votesNow) + '**)');
-        return false;
-      }
-      votes.push(voter.id);
-      votesNow++;
-      message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) + ' voted to ' +
-        commandName + ' (' + votesNow + '/' + votesNeeded + ')*').then(sentMsg => setTimeout(() => sentMsg.delete(), 15000));
-      if (votesNow >= votesNeeded) {
-        message.channel.send(`***${commandName.toUpperCase()}*** *- with ${votesNow} vote${(votesNow > 1) ? 's' : ''}*`);
-        for (let x = 0; x < votesNow; x++) {
-          votes.pop();
-        }
-        return true;
-      }
-    }
-    return false;
-  }
-  return true;
-}
-
 
 
 /**
@@ -219,4 +178,4 @@ function runResignCommand (message, server) {
   }
 }
 
-module.exports = {runDictatorCommand, runDJCommand, voteSystem, clearDJTimer, runResignCommand};
+module.exports = {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand};

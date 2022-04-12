@@ -7,14 +7,14 @@ const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
 const buildNo = require('./utils/process/BuildNumber');
 const processStats = require('./utils/process/ProcessStats');
-const {gsrun, deleteRows, gsUpdateOverwrite} = require('./playback/data/utils/database/database');
+const {gsrun, deleteRows} = require('./commands/database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
   unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage,
   logError, joinVoiceChannelSafe, getTimeActive
 } = require('./utils/utils');
 const {runHelpCommand} = require('./commands/help');
-const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./playback/stream/commands/dj');
+const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
 const {runLyricsCommand} = require('./commands/lyrics');
 let {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
@@ -26,28 +26,28 @@ const {updateActiveEmbed, sendRecommendation} = require('./utils/embed');
 const {runMoveItemCommand} = require('./commands/move');
 const {
   checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand, runKeysCommand
-} = require('./playback/stream/stream');
-const {runPlayCommand} = require('./playback/stream/commands/play');
-const {runWhatsPCommand} = require('./playback/now-playing');
+} = require('./commands/stream/stream');
+const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
-const {runStopPlayingCommand} = require('./playback/stream/commands/stop');
-const {runPauseCommand} = require('./playback/stream/commands/pause');
-const {runDatabasePlayCommand} = require('./playback/databasePlayCommand');
-const {runAddCommandWrapper} = require('./playback/data/add-wrapper');
-const {runRestartCommand} = require('./playback/stream/restart');
-const {playRecommendation} = require('./playback/stream/recommendations');
+const {runDatabasePlayCommand} = require('./commands/databasePlayCommand');
+const {runAddCommandWrapper} = require('./commands/add');
+const {runRestartCommand} = require('./commands/restart');
+const {playRecommendation} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
-const {runRandomToQueue} = require('./playback/runRandomToQueue');
+const {runRandomToQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');
-const {runQueueCommand} = require('./playback/data/generateQueue');
-const {runUniversalSearchCommand} = require('./playback/data/utils/search');
-const {runInsertCommand} = require('./playback/data/commands/insert');
-const {sendListSize, updateServerPrefix} = require('./playback/data/utils/utils');
-const {runDeleteItemCommand} = require('./playback/data/commands/delete');
-const {runAddCommand} = require('./playback/data/commands/add');
+const {runQueueCommand} = require('./commands/generateQueue');
+const {runUniversalSearchCommand} = require('./commands/database/search');
+const {sendListSize, getServerPrefix} = require('./commands/database/retrieval');
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
-const {playFromWord} = require('./playback/playFromWord');
+const {playFromWord} = require('./commands/playFromWord');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
+const {changePrefix} = require('./commands/changePrefix');
+const {runPlayCommand} = require('./commands/play');
+const {runPauseCommand} = require('./commands/pause');
+const {runDeleteCommand} = require('./commands/database/delete');
+const {runStopPlayingCommand} = require('./commands/stop');
+const {runInsertCommand} = require('./commands/insert');
 
 process.setMaxListeners(0);
 
@@ -196,7 +196,7 @@ async function runCommandCases (message) {
   // the server prefix
   let prefixString = server.prefix;
   if (!prefixString) {
-    await updateServerPrefix(server, mgid);
+    await getServerPrefix(server, mgid);
     prefixString = server.prefix;
   }
   const firstWordBegin = message.content.substring(0, 14).trim() + ' ';
@@ -642,74 +642,7 @@ async function runCommandCases (message) {
       runQueueCommand(server, message, mgid, false);
       break;
     case 'changeprefix':
-      if (!message.member.hasPermission('KICK_MEMBERS')) {
-        return message.channel.send('Permissions Error: Only members who can kick other members can change the prefix.');
-      }
-      if (!args[1]) {
-        return message.channel.send('No argument was given. Enter the new prefix after the command.');
-      }
-      if (args[1].length > 1) {
-        return message.channel.send('Prefix length cannot be greater than 1.');
-      }
-      if (args[1] === '+' || args[1] === '=' || args[1] === '\'') {
-        return message.channel.send('Cannot have ' + args[1] + ' as a prefix.');
-      }
-      if (args[1].toUpperCase() !== args[1].toLowerCase() || args[1].charCodeAt(0) > 126) {
-        return message.channel.send("cannot have a letter as a prefix.");
-      }
-      args[2] = args[1];
-      args[1] = mgid;
-      message.channel.send('*changing prefix...*').then(async sentPrefixMsg => {
-        await gsrun('A', 'B', 'prefixes').then(async () => {
-          await runDeleteItemCommand(message, args[1], 'prefixes', false);
-          await runAddCommand(server, args, message, 'prefixes', false);
-          await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
-            await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
-            server.prefix = args[2];
-            message.channel.send(`Prefix successfully changed to ${args[2]}`);
-            prefixString = ('\\' + args[2]).substr(-1, 1);
-            sentPrefixMsg.delete();
-            let name = 'db bot';
-            if (message.guild.me.nickname) {
-              name = message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 1);
-            }
-
-            async function changeNamePrefix () {
-              if (!message.guild.me.nickname) {
-                await message.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
-              } else if (message.guild.me.nickname.indexOf('[') > -1 && message.guild.me.nickname.indexOf(']') > -1) {
-                await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 2));
-              } else {
-                await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname);
-              }
-            }
-
-            if (!message.guild.me.nickname || (message.guild.me.nickname.substring(0, 1) !== '['
-              && message.guild.me.nickname.substr(2, 1) !== ']')) {
-              message.channel.send('----------------------\nWould you like me to update my name to reflect this? (yes or no)\nFrom **' +
-                (message.guild.me.nickname || 'db bot') + '**  -->  **[' + prefixString + '] ' + name + '**').then(() => {
-                const filter = m => message.author.id === m.author.id;
-
-                message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
-                  .then(async messages => {
-                    // message.channel.send(`You've entered: ${messages.first().content}`);
-                    if (messages.first().content.toLowerCase() === 'yes' || messages.first().content.toLowerCase() === 'y') {
-                      await changeNamePrefix();
-                      message.channel.send('name has been updated, prefix is: ' + prefixString);
-                    } else {
-                      message.channel.send('ok, prefix is: ' + prefixString);
-                    }
-                  })
-                  .catch(() => {
-                    message.channel.send('prefix is now: ' + prefixString);
-                  });
-              });
-            } else if (message.guild.me.nickname.substring(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
-              await changeNamePrefix();
-            }
-          });
-        });
-      });
+      changePrefix(message, server, prefixString, args[1]);
       break;
     // list commands for public commands
     case 'h':
@@ -844,7 +777,7 @@ async function runCommandCases (message) {
     case 'del':
     case 'delete':
       server.userKeys.set(mgid, null);
-      runDeleteItemCommand(message, args[1], mgid, true).catch((e) => console.log(e));
+      runDeleteCommand(message, args[1], mgid, true).catch((e) => console.log(e));
       break;
     case 'soundcloud':
       message.channel.send(`*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`);
@@ -865,7 +798,7 @@ async function runCommandCases (message) {
     case 'gdelete':
     case 'gremove':
       server.userKeys.set('entries', null);
-      runDeleteItemCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
+      runDeleteCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
       break;
     // .mrm removes personal database entries
     case 'mrm':
@@ -873,7 +806,7 @@ async function runCommandCases (message) {
     case 'mremove':
     case 'mdelete':
       server.userKeys.set(`p${message.member.id}`, null);
-      runDeleteItemCommand(message, args[1], `p${message.member.id}`, true).catch((e) => console.log(e));
+      runDeleteCommand(message, args[1], `p${message.member.id}`, true).catch((e) => console.log(e));
       break;
     case 'prev':
     case 'previous':
@@ -1125,7 +1058,7 @@ bot.once('ready', () => {
     checkStatusOfYtdl();
     processStats.setProcessInactive();
     bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'}).then();
-    if (!checkActiveInterval) checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
+    if (!processStats.checkActiveInterval) processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
@@ -1154,11 +1087,11 @@ bot.on('message', async (message) => {
             parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))) {
             devUpdateCommand();
           } else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.getBuildNo().substring(0, 6))) {
-            clearInterval(checkActiveInterval);
+            clearInterval(processStats.checkActiveInterval);
             // offset for process timer is 3.5 seconds - 5.9 minutes
             const offset = Math.floor(((Math.random() * 100) + 1) / 17 * 60000);
             // reset the =gzk interval since query was already made by another process
-            checkActiveInterval = setInterval(checkToSeeActive, (checkActiveMS + offset));
+            processStats.checkActiveInterval = setInterval(checkToSeeActive, (checkActiveMS + offset));
           }
         }
       }
@@ -1315,7 +1248,7 @@ async function devProcessCommands (message) {
             } else if (reaction.emoji.name === devR) {
               processStats.devMode = false;
               processStats.setProcessInactive();
-              if (!checkActiveInterval) checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
+              if (!processStats.checkActiveInterval) processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
               if (sentMsg.deletable) updateMessage();
             }
           });
@@ -1361,9 +1294,9 @@ async function devProcessCommands (message) {
       } else if (zargs[1] === process.pid.toString()) {
         processStats.devMode = true;
         processStats.servers[message.guild.id] = null;
-        if (checkActiveInterval) {
-          clearInterval(checkActiveInterval);
-          checkActiveInterval = null;
+        if (processStats.checkActiveInterval) {
+          clearInterval(processStats.checkActiveInterval);
+          processStats.checkActiveInterval = null;
         }
         return message.channel.send(`*demode is on ${process.pid}*`);
       }
@@ -1535,9 +1468,6 @@ process
   .on('SIGTERM', shutdown('SIGTERM'))
   .on('SIGINT', shutdown('SIGINT'))
   .on('uncaughtException', (e) => console.log('uncaughtException: ', e));
-
-// active process interval
-let checkActiveInterval = null;
 
 // The main method
 (async () => {

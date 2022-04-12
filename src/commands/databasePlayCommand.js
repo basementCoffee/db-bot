@@ -1,5 +1,5 @@
-const {getXdb} = require('./data/utils/utils');
-const {getAssumption} = require('./data/utils/search');
+const {getXdb} = require('./database/retrieval');
+const {getAssumption} = require('./database/search');
 const {playLinkToVC} = require('./stream/stream');
 const {
   botInVC, setSeamless, resetSession, verifyPlaylist, createQueueItem, adjustQueueForPlayNow

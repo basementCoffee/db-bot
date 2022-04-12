@@ -1,13 +1,11 @@
+const {verifyUrl, verifyPlaylist, linkFormatter, createQueueItem} = require('../utils/utils');
+const {getXdb} = require('./database/retrieval');
 const {
-  insertCommandVerification, verifyUrl, verifyPlaylist, linkFormatter, createQueueItem
-} = require('../../../utils/utils');
-const {getXdb} = require('../utils/utils');
-const {
-  SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK
-} = require('../../../utils/process/constants');
-const {addPlaylistToQueue} = require('../../../utils/playlist');
+  SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, MAX_QUEUE_S
+} = require('../utils/process/constants');
+const {addPlaylistToQueue} = require('../utils/playlist');
 const ytpl = require('ytpl');
-const {updateActiveEmbed} = require('../../../utils/embed');
+const {updateActiveEmbed} = require('../utils/embed');
 
 /**
  * Inserts a term into position into the queue. Accepts a valid link or key.
@@ -104,4 +102,23 @@ async function runInsertCommand (message, mgid, args, server) {
   return num;
 }
 
-module.exports = {runInsertCommand}
+/**
+ * Helper for runInsertCommand. Does some preliminary verification.
+ * @param message The message object.
+ * @param server The server.
+ * @param args {Array<string>} args[1] being the term, args[2] being the position.
+ * @returns {*} 1 if passed
+ */
+function insertCommandVerification (message, server, args) {
+  if (!message.member.voice?.channel) return message.channel.send('must be in a voice channel');
+  if (server.dictator && message.member.id !== server.dictator.id)
+    return message.channel.send('only the dictator can insert');
+  if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
+    return message.channel.send('the queue is locked: only the dj can insert');
+  if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
+  if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
+  if (!args[1]) return message.channel.send('put a link followed by a position in the queue \`(i.e. insert [link] [num])\`');
+  return 1;
+}
+
+module.exports = {runInsertCommand};

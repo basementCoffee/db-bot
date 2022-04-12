@@ -1,5 +1,5 @@
-const {gsrun, gsUpdateOverwrite, deleteRows} = require('../utils/database/database');
-const {runSearchCommand} = require('../utils/search');
+const {gsrun, gsUpdateOverwrite, deleteRows} = require('./api/api');
+const {runSearchCommand} = require('./search');
 
 /**
  * Deletes an item from the database.
@@ -8,7 +8,7 @@ const {runSearchCommand} = require('../utils/search');
  * @param sheetName the name of the sheet to delete from
  * @param sendMsgToChannel whether to send a response to the channel when looking for track keys
  */
-async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChannel) {
+async function runDeleteCommand (message, keyName, sheetName, sendMsgToChannel) {
   if (keyName) {
     await gsrun('A', 'B', sheetName).then(async (xdb) => {
       let couldNotFindKey = true;
@@ -45,4 +45,4 @@ async function runDeleteItemCommand (message, keyName, sheetName, sendMsgToChann
   }
 }
 
-module.exports = {runDeleteItemCommand}
+module.exports = {runDeleteCommand}

@@ -1,4 +1,4 @@
-const {playLinkToVC} = require('./stream');
+const {playLinkToVC} = require('./stream/stream');
 
 /**
  * Restarts the song playing and what was within an older session.

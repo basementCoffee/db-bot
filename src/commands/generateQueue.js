@@ -1,9 +1,9 @@
-const {botID, MAX_QUEUE_S} = require('../../utils/process/constants');
-const {botInVC, getTitle, createQueueItem} = require('../../utils/utils');
+const {botID, MAX_QUEUE_S} = require('../utils/process/constants');
+const {botInVC, getTitle, createQueueItem} = require('../utils/utils');
 const {MessageEmbed} = require('discord.js');
-const {reactions} = require('../../utils/reactions');
-const {updateActiveEmbed} = require('../../utils/embed');
-const {runInsertCommand} = require('./commands/insert');
+const {reactions} = require('../utils/reactions');
+const {updateActiveEmbed} = require('../utils/embed');
+const {runInsertCommand} = require('./insert');
 
 /**
  * Displays the queue in the channel.

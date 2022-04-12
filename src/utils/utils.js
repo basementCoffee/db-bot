@@ -299,25 +299,6 @@ const getLinkType = (url) => {
 };
 
 /**
- * Helper for runInsertCommand. Does some preliminary verification.
- * @param message The message object.
- * @param server The server.
- * @param args {Array<string>} args[1] being the term, args[2] being the position.
- * @returns {*} 1 if passed
- */
-function insertCommandVerification (message, server, args) {
-  if (!message.member.voice?.channel) return message.channel.send('must be in a voice channel');
-  if (server.dictator && message.member.id !== server.dictator.id)
-    return message.channel.send('only the dictator can insert');
-  if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
-    return message.channel.send('the queue is locked: only the dj can insert');
-  if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
-  if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
-  if (!args[1]) return message.channel.send('put a link followed by a position in the queue \`(i.e. insert [link] [num])\`');
-  return 1;
-}
-
-/**
  * Sets seamless listening on voice channel error. Seamless listening allows the
  * bot to temporarily save a wanted command until voice channel join.
  * @param server The server.
@@ -464,6 +445,6 @@ function getTimeActive () {
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
-  getLinkType, createMemoryEmbed, insertCommandVerification, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
+  getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
   logError, joinVoiceChannelSafe, pauseComputation, playComputation, getTimeActive,
 };

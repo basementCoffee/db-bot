@@ -1,6 +1,6 @@
-const {botInVC} = require('../../../utils/utils');
-const {gsrun, gsUpdateAdd} = require('./database/database');
-
+const {botInVC} = require('../../utils/utils');
+const {gsrun, gsUpdateAdd} = require('./api/api');
+const processStats = require('../../utils/process/ProcessStats');
 
 /**
  * Get the keys and links from the database. Uses local storage if available.
@@ -40,14 +40,16 @@ async function sendListSize (message, server, sheetName) {
  * @param mgid The guild id, used to get the prefix.
  * @return {Promise<void>}
  */
-async function updateServerPrefix (server, mgid) {
+async function getServerPrefix (server, mgid) {
   try {
-    const xdb = await gsrun('A', 'B', 'prefixes');
-    server.prefix = xdb.congratsDatabase.get(mgid);
+    if (!processStats.serverPrefixes) {
+      processStats.serverPrefixes = await gsrun('A', 'B', 'prefixes');
+    }
+    server.prefix = processStats.serverPrefixes.congratsDatabase.get(mgid);
     if (!server.prefix) {
       server.prefix = '.';
       try {
-        gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', xdb.dsInt);
+        gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', processStats.serverPrefixes.dsInt);
       } catch (e) {console.log(e);}
     }
   } catch (e) {
@@ -57,5 +59,5 @@ async function updateServerPrefix (server, mgid) {
   }
 }
 
-module.exports = {getXdb, sendListSize, updateServerPrefix}
+module.exports = {getXdb, sendListSize, getServerPrefix};
 
