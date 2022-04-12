@@ -2,7 +2,6 @@ const {setOfBotsOn, bot} = require('../utils/process/constants');
 const CH = require('../../channel.json');
 const processStats = require('../utils/process/ProcessStats');
 const buildNo = require('../utils/process/BuildNumber');
-const {initializeServer} = require('../utils/utils');
 const {shutdown} = require('../utils/shutdown');
 const {gsrun} = require('../playback/data/utils/database/database');
 
@@ -29,7 +28,7 @@ async function responseHandler () {
     for (let server in processStats.servers) delete processStats.servers[server];
     const xdb = await gsrun('A', 'B', 'prefixes');
     for (const [gid, pfx] of xdb.congratsDatabase) {
-      initializeServer(gid);
+      processStats.initializeServer(gid);
       processStats.servers[gid].prefix = pfx;
     }
     processStats.setProcessActive();
