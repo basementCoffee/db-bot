@@ -1,4 +1,4 @@
-const {botInVC} = require('../../utils/utils');
+const {botInVC} = require('../utils/utils');
 
 /**
  * Mutates the provided array by moving an element at posA to posB.

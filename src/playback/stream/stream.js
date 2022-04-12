@@ -1,11 +1,11 @@
 const {
   botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
   playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, resetSession
-} = require('../utils/utils');
+} = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, dispatcherMap,
-  dispatcherMapStatus, LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID, servers
-} = require('../utils/process/constants');
+  dispatcherMapStatus, LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID
+} = require('../../utils/process/constants');
 const {getData} = require('spotify-url-info');
 const m3u8stream = require('m3u8stream');
 const ytdl_core = require('ytdl-core');
@@ -13,17 +13,19 @@ const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const twitch = require('twitch-m3u8');
 let scdl = require("scdl-core").SoundCloud.create().then(x => scdl = x);
-const {updateActiveEmbed, createEmbed} = require('../utils/embed');
-const processStats = require('../utils/process/ProcessStats');
-const {shutdown} = require('../utils/shutdown');
-const {reactions} = require('../utils/reactions');
-const {getPlaylistItems} = require('../utils/playlist');
+const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
+const processStats = require('../../utils/process/ProcessStats');
+const {shutdown} = require('../../utils/shutdown');
+const {reactions} = require('../../utils/reactions');
+const {getPlaylistItems} = require('../../utils/playlist');
 const {MessageEmbed} = require('discord.js');
-const {runStopPlayingCommand, runPlayCommand, runPauseCommand} = require('./playback-commands/embedCommands');
-const {getXdb} = require('../database/frontend');
-
-const {voteSystem, hasDJPermissions} = require('./playback-commands/dj');
-const {getAssumption} = require('./playback-commands/search');
+const {runPlayCommand} = require('./commands/play');
+const {voteSystem} = require('./commands/dj');
+const {runStopPlayingCommand} = require('./commands/stop');
+const {runPauseCommand} = require('./commands/pause');
+const {getAssumption} = require('../data/utils/search');
+const {getXdb} = require('../data/utils/utils');
+const {hasDJPermissions} = require('../../utils/permissions');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -1039,7 +1041,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       return embedKeysMessage;
     };
     message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {
-      const server = servers[message.guild.id];
+      const server = processStats.servers[message.guild.id];
       sentMsg.react(reactions.QUESTION).then(() => sentMsg.react(reactions.SHUFFLE).then(sentMsg.react(reactions.MIX)));
       const filter = (reaction, user) => {
         return user.id !== botID && [reactions.QUESTION, reactions.MIX, reactions.SHUFFLE].includes(reaction.emoji.name);

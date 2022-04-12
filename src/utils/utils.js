@@ -1,10 +1,10 @@
-const {getData, getTracks} = require('spotify-url-info');
+const {getData} = require('spotify-url-info');
 const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
-  servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S,
-  dispatcherMapStatus, dispatcherMap, LEAVE_VC_TIMEOUT, CORE_ADM
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S, dispatcherMapStatus,
+  dispatcherMap, LEAVE_VC_TIMEOUT
 } = require('./process/constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
@@ -96,41 +96,6 @@ function botInVC (message) {
 }
 
 /**
- * Returns whether a given ID has Admin rights.
- * @param id {string} The id of the member.
- * @return {boolean} True if provided Admin rights.
- */
-function isAdmin (id) {
-  // kzbuu
-  return ['268554823283113985', '443150640823271436', '730350452268597300', '799524729173442620',
-    '434532121244073984'].includes(id);
-}
-
-/**
- * If the id is a coreAdmin ID;
- * @param id {string} The id of the user.
- * @return {boolean} If the user is a core admin.
- */
-function isCoreAdmin (id) {
-  return CORE_ADM.includes(id);
-}
-
-/**
- * A wrapper for getTracks to handle errors regarding Spotify requests.
- * @param playlistUrl {string} The url to get the tracks for.
- * @param retries {number=} Used within the function for error handling.
- * @returns { Promise<Tracks[]> | Tracks[]}
- */
-async function getTracksWrapper (playlistUrl, retries = 0) {
-  try {
-    return await getTracks(playlistUrl);
-  } catch {
-    if (retries < 2) return getTracksWrapper(playlistUrl, ++retries);
-    else return [];
-  }
-}
-
-/**
  * Returns the queue display status.
  * @param server The server.
  */
@@ -207,24 +172,6 @@ function adjustQueueForPlayNow (dsp, server) {
 }
 
 /**
- * Shuffles the queue. If provided a Message object, sends an update to the user regarding its status.
- * @param queue {Array<*>} The queue to shuffle.
- * @param message {Object?} The message object.
- * @returns {*}
- */
-function shuffleQueue (queue, message) {
-  let currentIndex = queue.length, randomIndex; // indices for shuffling
-  // don't include what's actively playing
-  while (currentIndex > 1) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-    // swap current and random index locations
-    [queue[currentIndex], queue[randomIndex]] = [queue[randomIndex], queue[currentIndex]];
-  }
-  if (message) message.channel.send('*your queue has been shuffled*');
-}
-
-/**
  * Gets the title of a link.
  * @param queueItem The queue item to get the title.
  * @param cutoff {number=} A number representing the cutoff value.
@@ -276,87 +223,7 @@ async function createMemoryEmbed () {
       `\nload-avg: ${Math.round(os.loadavg()[1] * 100) / 100}%`);
 }
 
-/**
- * Initializes the server with all the required params.
- * @param mgid The message guild id.
- */
-function initializeServer (mgid) {
-  return servers[mgid] = {
-    // now playing is the first element
-    queue: [],
-    // newest items are pushed
-    queueHistory: [],
-    // continue playing after queue end
-    autoplay: false,
-    // boolean status of looping
-    loop: false,
-    // the number of items sent since embed generation
-    numSinceLastEmbed: 0,
-    // the embed message
-    currentEmbed: undefined,
-    // the collector for the current embed message
-    collector: false,
-    // the playback status message
-    followUpMessage: undefined,
-    // the id of the channel for now-playing embeds
-    currentEmbedChannelId: undefined,
-    // boolean status of verbose mode - save embeds on true
-    verbose: false,
-    // A list of vote admins (members) in a server
-    voteAdmin: [],
-    // the ids of members who voted to skip
-    voteSkipMembersId: [],
-    // the ids of members who voted to rewind
-    voteRewindMembersId: [],
-    // the ids of members who voted to play/pause the link
-    votePlayPauseMembersId: [],
-    // locks the queue for dj mode
-    lockQueue: false,
-    // The member that is the acting dictator
-    dictator: false,
-    // If a start-up message has been sent
-    startUpMessage: false,
-    // the timeout IDs for the bot to leave a VC
-    leaveVCTimeout: false,
-    // the number of consecutive playback errors
-    skipTimes: 0,
-    // properties pertaining to the active stream
-    streamData: {
-      // the StreamType enum
-      type: null,
-      // the readable stream
-      stream: null
-      // urlAlt is added if it's a YT stream
-    },
-    // if a twitch notification was sent
-    twitchNotif: {
-      isSent: false,
-      isTimer: false
-    },
-    // hold a ready-to-go function in case of vc join
-    seamless: {
-      // the name of the type of function
-      function: undefined,
-      // args for the function
-      args: undefined,
-      // optional message to delete
-      message: undefined
-    },
-    userKeys: new Map(),
-    // the server's prefix
-    prefix: undefined,
-    // the timeout for the YT search results
-    searchReactionTimeout: undefined,
-    // the timer for the active DJ
-    djTimer: {
-      timer: false,
-      startTime: false,
-      duration: 1800000
-    },
-    // the last time a DJ tip was sent to a group
-    djMessageDate: false
-  };
-}
+
 
 /**
  * Ends the stream if a configuration for it is available.
@@ -582,10 +449,21 @@ async function joinVoiceChannelSafe (message, server) {
   return false;
 }
 
+/**
+ * Get the amount of time that this process has been active as a formatted string.
+ * @return {string}
+ */
+function getTimeActive () {
+  if (processStats.dateActive) {
+    return formatDuration(processStats.activeMS + Date.now() - processStats.dateActive);
+  } else {
+    return formatDuration(processStats.activeMS);
+  }
+}
+
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
-  setSeamless, getQueueText, initializeServer, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue,
-  shuffleQueue, createQueueItem, getLinkType, createMemoryEmbed, isAdmin, getTracksWrapper, isCoreAdmin,
-  insertCommandVerification, convertSeekFormatToSec, removeDBMessage, catchVCJoinError, logError, joinVoiceChannelSafe,
-  pauseComputation, playComputation
+  setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
+  getLinkType, createMemoryEmbed, insertCommandVerification, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
+  logError, joinVoiceChannelSafe, pauseComputation, playComputation, getTimeActive,
 };

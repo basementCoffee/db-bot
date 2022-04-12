@@ -1,14 +1,14 @@
 const ytdl = require('ytdl-core-discord');
-const {botInVC} = require('../../utils/utils');
+const {botInVC} = require('../utils/utils');
 const {getData} = require('spotify-url-info');
-const {botID, StreamType} = require('../../utils/process/constants');
+const {botID, StreamType} = require('../utils/process/constants');
 // imports for YouTube captions
 const https = require('https');
 const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 // Genius imports
 const Genius = require("genius-lyrics");
-const {reactions} = require('../../utils/reactions');
+const {reactions} = require('../utils/reactions');
 const GeniusClient = new Genius.Client();
 
 /**

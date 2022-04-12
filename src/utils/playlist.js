@@ -1,8 +1,101 @@
-const ytpl = require('ytpl');
 let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
-const {getData} = require('spotify-url-info');
-const {MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, StreamType} = require('./process/constants');
-const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require('./utils');
+const {createQueueItem, getLinkType, linkFormatter, verifyPlaylist} = require('./utils');
+const {
+  StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK
+} = require('./process/constants');
+const {getData, getTracks} = require('spotify-url-info');
+const ytpl = require('ytpl');
+
+/**
+ * Gets the url of the item from the infos.
+ * @param item A single track's metadata.
+ * @param type {string} Either 'sp' 'sc' or 'yt' depending on the source of the infos.
+ * @returns {string} The url.
+ */
+function getUrl (item, type) {
+  switch (type) {
+    case 'sp':
+      return item.external_urls.spotify;
+    case 'yt':
+      if (item.videoId) return `https://youtube.com/watch?v=${item.videoId}`;
+      return item.shortUrl || item.url;
+    case 'sc':
+      return item.permalink_url;
+    default:
+      const errString = `Error: Incorrect type provided, provided ${type}`;
+      console.log(errString);
+      throw errString;
+  }
+}
+
+/**
+ * A wrapper for getTracks to handle errors regarding Spotify requests.
+ * @param playlistUrl {string} The url to get the tracks for.
+ * @param retries {number=} Used within the function for error handling.
+ * @returns { Promise<Tracks[]> | Tracks[]}
+ */
+async function getTracksWrapper (playlistUrl, retries = 0) {
+  try {
+    return await getTracks(playlistUrl);
+  } catch {
+    if (retries < 2) return getTracksWrapper(playlistUrl, ++retries);
+    else return [];
+  }
+}
+
+/**
+ * Un-package the playlist url and pushes each url to the given array.
+ * @param url A Spotify or YouTube playlist link.
+ * @param tempArray The array to push to.
+ * @returns {Promise<number>} The number of items pushed to the array.
+ */
+async function getPlaylistItems (url, tempArray) {
+  const linkType = getLinkType(url);
+  const playlist = await getPlaylistArray(url, linkType);
+  let itemCounter = 0;
+  try {
+    // add all the songs from the playlist to the tempArray
+    for (let j of playlist) {
+      url = getUrl(j, linkType);
+      if (url) {
+        tempArray.push(createQueueItem(url, linkType, j));
+        itemCounter++;
+      }
+    }
+  } catch (e) {
+    console.log(`Error in getPlaylistItems: ${url}\n`, e);
+  }
+  return itemCounter;
+}
+
+/**
+ * Gets the array of playlist items.
+ * @param playlistUrl The playlist URL.
+ * @param type {string} Either 'sp', 'yt' or 'sc' regarding the type of URL.
+ * @returns {Promise<[]>} An Array of link metadata.
+ */
+async function getPlaylistArray (playlistUrl, type) {
+  switch (type) {
+    case StreamType.SPOTIFY:
+      // filter ensures that each element exists
+      const tracks = (await getTracksWrapper(playlistUrl)).filter(track => track);
+      if (tracks[0] && !tracks[0].album) {
+        const firstTrack = await getData(playlistUrl);
+        tracks.map(item => item.album = {images: firstTrack.images});
+      }
+      return tracks;
+    case StreamType.YOUTUBE:
+      const items = (await ytpl(playlistUrl, {pages: 5})).items;
+      // index of -1 means that items will repeat
+      if (items[0].index === -1) items.splice(100);
+      return items;
+    case StreamType.SOUNDCLOUD:
+      return (await scpl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
+    default:
+      console.log(`Error: invalid linkType argument within addPlaylistToQueue`);
+      throw `Error: Incorrect type provided, provided ${type}`;
+  }
+}
 
 /**
  * Adds playlists to the reference array passed in. Can handle Spotify and SoundCloud tracks.
@@ -69,79 +162,33 @@ async function addPlaylistToQueue (message, qArray, numItems, playlistUrl, linkT
 }
 
 /**
- * Gets the array of playlist items.
- * @param playlistUrl The playlist URL.
- * @param type {string} Either 'sp', 'yt' or 'sc' regarding the type of URL.
- * @returns {Promise<[]>} An Array of link metadata.
+ * Adds the link to the queue. Also works for playlist links.
+ * @param url The link to add to the queue.
+ * @param message The message metadata.
+ * @param server The server.
+ * @param mgid The message guild id.
+ * @param addToFront {boolean} If to add to the front.
+ * @param queueFunction {(arr: Array, {type, url, infos})=>void}
+ * A function that adds a given link to the server queue. Used for YT only.
+ * @returns {Promise<Number>} The number of items added.
  */
-async function getPlaylistArray (playlistUrl, type) {
-  switch (type) {
-    case StreamType.SPOTIFY:
-      // filter ensures that each element exists
-      const tracks = (await getTracksWrapper(playlistUrl)).filter(track => track);
-      if (tracks[0] && !tracks[0].album) {
-        const firstTrack = await getData(playlistUrl);
-        tracks.map(item => item.album = {images: firstTrack.images})
-      }
-      return tracks;
-    case StreamType.YOUTUBE:
-      const items = (await ytpl(playlistUrl, {pages: 5})).items;
-      // index of -1 means that items will repeat
-      if (items[0].index === -1) items.splice(100);
-      return items;
-    case StreamType.SOUNDCLOUD:
-      return (await scpl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
-    default:
-      console.log(`Error: invalid linkType argument within addPlaylistToQueue`);
-      throw `Error: Incorrect type provided, provided ${type}`;
-  }
-}
-
-/**
- * Gets the url of the item from the infos.
- * @param item A single track's metadata.
- * @param type {string} Either 'sp' 'sc' or 'yt' depending on the source of the infos.
- * @returns {string} The url.
- */
-function getUrl (item, type) {
-  switch (type) {
-    case 'sp':
-      return item.external_urls.spotify;
-    case 'yt':
-      if (item.videoId) return `https://youtube.com/watch?v=${item.videoId}`;
-      return item.shortUrl || item.url;
-    case 'sc':
-      return item.permalink_url;
-    default:
-      const errString = `Error: Incorrect type provided, provided ${type}`;
-      console.log(errString);
-      throw errString;
-  }
-}
-
-/**
- * Un-package the playlist url and pushes each url to the given array.
- * @param url A Spotify or YouTube playlist link.
- * @param tempArray The array to push to.
- * @returns {Promise<number>} The number of items pushed to the array.
- */
-async function getPlaylistItems (url, tempArray) {
-  const linkType = getLinkType(url);
-  const playlist = await getPlaylistArray(url, linkType);
-  let itemCounter = 0;
-  try {
-    // add all the songs from the playlist to the tempArray
-    for (let j of playlist) {
-      url = getUrl(j, linkType);
-      if (url) {
-        tempArray.push(createQueueItem(url, linkType, j));
-        itemCounter++;
-      }
+async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunction) {
+  if (url.includes(SPOTIFY_BASE_LINK)) {
+    url = linkFormatter(url, SPOTIFY_BASE_LINK);
+    return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SPOTIFY, addToFront);
+  } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
+    url = url.replace(/music.youtube/, 'youtube');
+    return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.YOUTUBE, addToFront);
+  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
+    if (verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
+      url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
+      return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SOUNDCLOUD, addToFront);
     }
-  } catch (e) {
-    console.log(`Error in getPlaylistItems: ${url}\n`, e);
+    queueFunction(server.queue, createQueueItem(url, StreamType.SOUNDCLOUD, null));
+  } else {
+    queueFunction(server.queue, createQueueItem(url, (url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE), null));
   }
-  return itemCounter;
+  return 1;
 }
 
-module.exports = {addPlaylistToQueue, getPlaylistItems};
+module.exports = {getPlaylistItems, addPlaylistToQueue, addLinkToQueue};

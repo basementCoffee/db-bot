@@ -1,4 +1,4 @@
-const {bot, servers} = require('./process/constants');
+const {bot} = require('./process/constants');
 const CH = require('../../channel.json');
 const processStats = require('./process/ProcessStats');
 
@@ -15,9 +15,9 @@ function shutdown (type) {
       console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? 's' : ''}`);
       // noinspection JSUnresolvedFunction
       bot.channels.cache.get(CH.process).send('=gzz ' + process.pid);
-      if (Object.keys(servers).length > 0) {
+      if (Object.keys(processStats.servers).length > 0) {
         bot.voice.connections.forEach(x => {
-          let server = servers[x.channel.guild.id];
+          let server = processStats.servers[x.channel.guild.id];
           let currentEmbed = server.currentEmbed;
           try {
             if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');

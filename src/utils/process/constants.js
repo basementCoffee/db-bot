@@ -1,6 +1,5 @@
 // the max size of the queue
 const {Client} = require('discord.js');
-const servers = {};
 // the db bot instance
 const bot = new Client();
 // the id of the bot
@@ -42,7 +41,6 @@ const StreamType = {
 };
 
 module.exports = {
-  MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode,
-  CORE_ADM
+  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
+  SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM
 };

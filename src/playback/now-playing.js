@@ -1,10 +1,10 @@
-const {servers} = require('../utils/process/constants');
-const {getXdb} = require('../database/frontend');
-const {runSearchCommand} = require('./playback-commands/search');
-const {sendLinkAsEmbed} = require('./playback');
+const {getXdb} = require('./data/utils/utils');
+const {runSearchCommand} = require('./data/utils/search');
+const {sendLinkAsEmbed} = require('./stream/stream');
 
 /**
  * Runs the what's playing command. Can also look up database values if args[2] is present.
+ * @param server The server metadata.
  * @param {*} message the message that activated the bot
  * @param {*} voiceChannel The active voice channel
  * @param keyName Optional - A key to search for to retrieve a link
@@ -12,8 +12,7 @@ const {sendLinkAsEmbed} = require('./playback');
  * @param sheetLetter Required if dbKey is given - a letter enum representing the type of sheet being referenced
  * (server or personal)
  */
-async function runWhatsPCommand (message, voiceChannel, keyName, sheetName, sheetLetter) {
-  const server = servers[message.guild.id];
+async function runWhatsPCommand (server, message, voiceChannel, keyName, sheetName, sheetLetter) {
   if (keyName && sheetName) {
     const xdb = await getXdb(server, sheetName, !!voiceChannel);
     let link = xdb.referenceDatabase.get(keyName.toUpperCase());

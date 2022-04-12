@@ -2,8 +2,9 @@ const {getData} = require('spotify-url-info');
 const {MessageEmbed} = require('discord.js');
 const scdl = require('soundcloud-downloader').default;
 const ytdl = require('ytdl-core-discord');
-const {formatDuration, isCoreAdmin, getQueueText, convertYTFormatToMS} = require('./utils');
+const {formatDuration, getQueueText, convertYTFormatToMS} = require('./utils');
 const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, CORE_ADM} = require('./process/constants');
+const {isCoreAdmin} = require('./permissions');
 
 /**
  * Return an object containing the embed and time based on the data provided.

@@ -5,63 +5,51 @@ const {exec} = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
-const ytdl = require('ytdl-core-discord');
-const ytsr = require('ytsr');
-const ytpl = require('ytpl');
 const buildNo = require('./utils/process/BuildNumber');
 const processStats = require('./utils/process/ProcessStats');
-const {gsrun, deleteRows, gsUpdateOverwrite} = require('./database/backend');
+const {gsrun, deleteRows, gsUpdateOverwrite} = require('./playback/data/utils/database/database');
 const {
-  runAddCommand, runDeleteItemCommand, updateServerPrefix, runUniversalSearchCommand, getXdb, sendListSize
-} = require('./database/frontend');
-const {
-  formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless,
-  initializeServer, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, shuffleQueue, createQueueItem,
-  createMemoryEmbed, isAdmin, isCoreAdmin, insertCommandVerification, convertSeekFormatToSec, removeDBMessage, logError,
-  joinVoiceChannelSafe
+  formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
+  unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage,
+  logError, joinVoiceChannelSafe, getTimeActive
 } = require('./utils/utils');
-const {runHelpCommand, getHelpList} = require('./utils/help');
-const {
-  hasDJPermissions, runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand
-} = require('./playback/playback-commands/dj');
-const {runLyricsCommand} = require('./playback/playback-commands/lyrics');
-const {addPlaylistToQueue} = require('./utils/playlist');
+const {runHelpCommand} = require('./commands/help');
+const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./playback/stream/commands/dj');
+const {runLyricsCommand} = require('./commands/lyrics');
 let {
-  MAX_QUEUE_S, servers, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus,
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType
+  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
+  TWITCH_BASE_LINK, StreamType
 } = require('./utils/process/constants');
 const {reactions} = require('./utils/reactions');
-const {runRemoveCommand} = require('./playback/playback-commands/remove');
-const {getAssumption} = require('./playback/playback-commands/search');
+const {runRemoveCommand} = require('./commands/remove');
 const {updateActiveEmbed, sendRecommendation} = require('./utils/embed');
-const {runMoveItemCommand} = require('./playback/playback-commands/move');
+const {runMoveItemCommand} = require('./commands/move');
 const {
-  checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand, runKeysCommand,
-  addRandomToQueue
-} = require('./playback/playback');
-const {runStopPlayingCommand, runPauseCommand, runPlayCommand} = require('./playback/playback-commands/embedCommands');
+  checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand, runKeysCommand
+} = require('./playback/stream/stream');
+const {runPlayCommand} = require('./playback/stream/commands/play');
 const {runWhatsPCommand} = require('./playback/now-playing');
 const {shutdown} = require('./utils/shutdown');
+const {runStopPlayingCommand} = require('./playback/stream/commands/stop');
+const {runPauseCommand} = require('./playback/stream/commands/pause');
+const {runDatabasePlayCommand} = require('./playback/databasePlayCommand');
+const {runAddCommandWrapper} = require('./playback/data/add-wrapper');
+const {runRestartCommand} = require('./playback/stream/restart');
+const {playRecommendation} = require('./playback/stream/recommendations');
+const {addLinkToQueue} = require('./utils/playlist');
+const {runRandomToQueue} = require('./playback/runRandomToQueue');
+const {checkToSeeActive} = require('./processes/checkToSeeActive');
+const {runQueueCommand} = require('./playback/data/generateQueue');
+const {runUniversalSearchCommand} = require('./playback/data/utils/search');
+const {runInsertCommand} = require('./playback/data/commands/insert');
+const {sendListSize, updateServerPrefix} = require('./playback/data/utils/utils');
+const {runDeleteItemCommand} = require('./playback/data/commands/delete');
+const {runAddCommand} = require('./playback/data/commands/add');
+const {isAdmin, hasDJPermissions} = require('./utils/permissions');
+const {playFromWord} = require('./playback/playFromWord');
+const {dmHandler, sendMessageToUser} = require('./utils/dms');
 
 process.setMaxListeners(0);
-
-/**
- * Determines what to play from a word, dependent on sheetName. The word is provided from args[1].
- * Uses the database if a sheetName is provided, else uses YouTube.
- * @param message The message metadata.
- * @param args The args pertaining the content.
- * @param sheetName Optional - The sheet to reference.
- * @param server The server data.
- * @param mgid The guild id.
- * @param playNow Whether to play now.
- */
-function playFromWord (message, args, sheetName, server, mgid, playNow) {
-  if (sheetName) {
-    runDatabasePlayCommand(args, message, sheetName, playNow, false, server).then();
-  } else {
-    runYoutubeSearch(message, playNow, server, args.map(x => x).splice(1).join('')).then();
-  }
-}
 
 /**
  * Runs the play now command.
@@ -192,61 +180,6 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
 }
 
 /**
- * Adds the link to the queue. Also works for playlist links.
- * @param url The link to add to the queue.
- * @param message The message metadata.
- * @param server The server.
- * @param mgid The message guild id.
- * @param addToFront {boolean} If to add to the front.
- * @param queueFunction {(arr: Array, {type, url, infos})=>void}
- * A function that adds a given link to the server queue. Used for YT only.
- * @returns {Promise<Number>} The number of items added.
- */
-async function addLinkToQueue (url, message, server, mgid, addToFront, queueFunction) {
-  if (url.includes(SPOTIFY_BASE_LINK)) {
-    url = linkFormatter(url, SPOTIFY_BASE_LINK);
-    return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SPOTIFY, addToFront);
-  } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
-    url = url.replace(/music.youtube/, 'youtube');
-    return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.YOUTUBE, addToFront);
-  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
-    if (verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
-      url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
-      return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SOUNDCLOUD, addToFront);
-    }
-    queueFunction(server.queue, createQueueItem(url, StreamType.SOUNDCLOUD, null));
-  } else {
-    queueFunction(server.queue, createQueueItem(url, (url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE), null));
-  }
-  return 1;
-}
-
-/**
- * Restarts the song playing and what was within an older session.
- * @param message The message that triggered the bot.
- * @param mgid The message guild id.
- * @param keyword Enum in string format, being either 'restart' or 'replay'.
- * @param server The server playback metadata.
- * @returns {*}
- */
-async function runRestartCommand (message, mgid, keyword, server) {
-  if (!server.queue[0] && !server.queueHistory) return message.channel.send('must be actively playing to ' + keyword);
-  if (server.dictator && message.member.id !== server.dictator.id)
-    return message.channel.send('only the dictator can ' + keyword);
-  if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member)) {
-    return message.channel.send('as of right now, only the DJ can restart tracks');
-  }
-  if (server.queue[0]) {
-    await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else if (server.queueHistory.length > 0) {
-    server.queue.unshift(server.queueHistory.pop());
-    await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else {
-    message.channel.send('there is nothing to ' + keyword);
-  }
-}
-
-/**
  * The execution for all bot commands
  * @param message the message that triggered the bot
  * @returns {Promise<void>}
@@ -254,8 +187,8 @@ async function runRestartCommand (message, mgid, keyword, server) {
 async function runCommandCases (message) {
   const mgid = message.guild.id;
   // the server guild playback data
-  if (!servers[mgid]) initializeServer(mgid);
-  const server = servers[mgid];
+  if (!processStats.servers[mgid]) processStats.initializeServer(mgid);
+  const server = processStats.servers[mgid];
   if (processStats.devMode) server.prefix = '='; // devmode prefix
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed++;
@@ -618,15 +551,15 @@ async function runCommandCases (message) {
     case 'playing':
     case 'what':
     case 'now':
-      await runWhatsPCommand(message, message.member.voice?.channel, args[1], mgid, '');
+      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], mgid, '');
       break;
     case 'g?':
-      await runWhatsPCommand(message, message.member.voice?.channel, args[1], 'entries', 'g');
+      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
       break;
     case 'm?':
     case 'mnow':
     case 'mwhat':
-      await runWhatsPCommand(message, message.member.voice?.channel, args[1], `p${message.member.id}`, 'm');
+      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], `p${message.member.id}`, 'm');
       break;
     case 'gurl':
     case 'glink':
@@ -637,7 +570,7 @@ async function runCommandCases (message) {
           return message.channel.send('*add a key to get it\'s ' + statement.substr(1) + ' \`(i.e. ' + statement + ' [key])\`*');
         }
       }
-      await runWhatsPCommand(message, message.member.voice?.channel, args[1], 'entries', 'g');
+      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
       break;
     case 'url':
     case 'link':
@@ -648,7 +581,7 @@ async function runCommandCases (message) {
           return message.channel.send('*add a key to get it\'s ' + statement + ' \`(i.e. ' + statement + ' [key])\`*');
         }
       }
-      await runWhatsPCommand(message, message.member.voice?.channel, args[1], mgid, '');
+      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], mgid, '');
       break;
     case 'ping':
       message.channel.send(`latency is ${Math.round(bot.ws.ping)}ms`);
@@ -686,7 +619,7 @@ async function runCommandCases (message) {
           return message.channel.send('*add a key to get it\'s ' + statement.substr(1) + ' \`(i.e. ' + statement + ' [key])\`*');
         }
       }
-      await runWhatsPCommand(message, message.member.voice?.channel, args[1], `p${message.member.id}`, 'm');
+      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], `p${message.member.id}`, 'm');
       break;
     case 'rm':
     case 'remove':
@@ -701,12 +634,12 @@ async function runCommandCases (message) {
       break;
     case 'q':
     case 'que':
-      runQueueCommand(message, mgid, true);
+      runQueueCommand(server, message, mgid, true);
       break;
     case 'list':
     case 'upnext':
     case 'queue':
-      runQueueCommand(message, mgid, false);
+      runQueueCommand(server, message, mgid, false);
       break;
     case 'changeprefix':
       if (!message.member.hasPermission('KICK_MEMBERS')) {
@@ -729,7 +662,7 @@ async function runCommandCases (message) {
       message.channel.send('*changing prefix...*').then(async sentPrefixMsg => {
         await gsrun('A', 'B', 'prefixes').then(async () => {
           await runDeleteItemCommand(message, args[1], 'prefixes', false);
-          await runAddCommand(args, message, 'prefixes', false);
+          await runAddCommand(server, args, message, 'prefixes', false);
           await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
             await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
             server.prefix = args[2];
@@ -1074,7 +1007,7 @@ async function runCommandCases (message) {
           return message.channel.send('start up message is cleared');
         }
         processStats.startUpMessage = message.content.substr(message.content.indexOf(args[1]));
-        Object.values(servers).forEach(x => x.startUpMessage = false);
+        Object.values(processStats.servers).forEach(x => x.startUpMessage = false);
         message.channel.send('new startup message is set');
       } else if (processStats.startUpMessage) {
         message.channel.send(`current start up message:\n\`${processStats.startUpMessage}\`\ntype **gzsm clear** to clear the startup message`);
@@ -1252,160 +1185,6 @@ bot.on('message', async (message) => {
 });
 
 /**
- * Get the amount of time that this process has been active as a formatted string.
- * @return {string}
- */
-function getTimeActive () {
-  if (processStats.dateActive) {
-    return formatDuration(processStats.activeMS + Date.now() - processStats.dateActive);
-  } else {
-    return formatDuration(processStats.activeMS);
-  }
-}
-
-/**
- * Inserts a term into position into the queue. Accepts a valid link or key.
- * @param message The message metadata.
- * @param mgid The message guild id.
- * @param args {string[]} An array of string args to parse, can include multiple terms and a position.
- * @param server The server to use.
- * @returns {Promise<number>} The position to insert or a negative if failed.
- */
-async function runInsertCommand (message, mgid, args, server) {
-  if (!args) return -1;
-  if (insertCommandVerification(message, server, args) !== 1) return -1;
-  let num = args.filter(item => !Number.isNaN(Number(item))).slice(-1)[0];
-  let links;
-  // get position
-  if (num) {
-    links = args.filter(item => item !== num);
-    num = parseInt(num);
-  } else {
-    links = args;
-    if (server.queue.length === 1) num = 1;
-    else {
-      const sentMsg = await message.channel.send('What position would you like to insert? (1-' + server.queue.length + ') [or type \'q\' to quit]');
-      const filter = m => {
-        return (message.author.id === m.author.id);
-      };
-      let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
-      num = messages.first().content.trim();
-      if (num.toLowerCase() === 'q') {
-        message.channel.send('*cancelled*');
-        return -1;
-      } else {
-        num = parseInt(num);
-      }
-      if (!num) {
-        message.channel.send('*cancelled*');
-        return -1;
-      }
-    }
-  }
-  if (num < 1) {
-    if (num === 0) message.channel.send('0 changes what\'s actively playing, use the \'playnow\' command instead.');
-    else message.channel.send('position must be a positive number');
-    return -1;
-  }
-  if (num > server.queue.length) num = server.queue.length;
-  let tempLink;
-  // convert all terms into links
-  let notFoundString = '';
-  for (let i = 0; i < links.length; i++) {
-    tempLink = links[i]?.replace(',', '');
-    if (!verifyUrl(tempLink) && !verifyPlaylist(tempLink)) {
-      let xdb = await getXdb(server, mgid, true);
-      let link = xdb.referenceDatabase.get(tempLink.toUpperCase());
-      if (!link) {
-        xdb = await getXdb(server, `p${message.member.id}`, true);
-        link = xdb.referenceDatabase.get(tempLink.toUpperCase());
-      }
-      if (!link) {
-        notFoundString += `${tempLink}, `;
-        links.splice(i, 1);
-      } else links[i] = link;
-    }
-  }
-  if (notFoundString.length) message.channel.send(`could not find ${notFoundString} in any keys list`);
-  let pNums = 0;
-  let link;
-  let failedLinks = '';
-  // todo - address soundcloud link issues (tested with soundcloud key)
-  while (links.length > 0) {
-    try {
-      link = links.pop();
-      if (link.includes(SPOTIFY_BASE_LINK)) {
-        link = linkFormatter(link, SPOTIFY_BASE_LINK);
-        pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SPOTIFY, false, num);
-      } else if (ytpl.validateID(link)) {
-        pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.YOUTUBE, false, num);
-      } else if (link.includes(SOUNDCLOUD_BASE_LINK)) {
-        link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
-        pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SOUNDCLOUD, false, num);
-      } else {
-        server.queue.splice(num, 0, createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined));
-        pNums++;
-      }
-    } catch (e) {
-      failedLinks += `<${link}>, `;
-    }
-  }
-  if (failedLinks.length) {
-    message.channel.send(`there were issues adding the following: ${failedLinks.substring(0, failedLinks.length - 2)}`);
-  }
-  await message.channel.send(`inserted ${(pNums > 1 ? (pNums + ' links') : 'link')} into position ${num}`);
-  await updateActiveEmbed(server);
-  return num;
-}
-
-/**
- * Sends a message to a shared channel to see all active processes, responds accordingly using responseHandler.
- */
-function checkToSeeActive () {
-  setOfBotsOn.clear();
-  // see if any bots are active
-  // noinspection JSUnresolvedFunction
-  bot.channels.cache.get(CH.process).send('=gzk').then(() => {
-    if (!resHandlerTimeout) resHandlerTimeout = setTimeout(responseHandler, 9000);
-  });
-}
-
-/**
- * Check to see if there was a response. If not then makes the current bot active.
- */
-async function responseHandler () {
-  resHandlerTimeout = null;
-  if (setOfBotsOn.size < 1 && processStats.isInactive) {
-    for (let server in servers) delete servers[server];
-    const xdb = await gsrun('A', 'B', 'prefixes');
-    for (const [gid, pfx] of xdb.congratsDatabase) {
-      initializeServer(gid);
-      servers[gid].prefix = pfx;
-    }
-    processStats.setProcessActive();
-    processStats.devMode = false;
-    // noinspection JSUnresolvedFunction
-    bot.channels.fetch(CH.process)
-      .then(channel => channel.send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString()));
-    setTimeout(() => {
-      if (processStats.isInactive) checkToSeeActive();
-    }, ((Math.floor(Math.random() * 18) + 9) * 1000)); // 9 - 27 seconds
-  } else if (setOfBotsOn.size > 1) {
-    setOfBotsOn.clear();
-    // noinspection JSUnresolvedFunction
-    bot.channels.fetch(CH.process)
-      .then(channel => channel.send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString()));
-    setTimeout(() => {
-      if (processStats.isInactive) checkToSeeActive();
-    }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
-  } else if (process.pid === 4) {
-    if ((new Date()).getHours() === 5 && bot.uptime > 3600000 && bot.voice.connections.size < 1) {
-      shutdown('HOUR(05)');
-    }
-  }
-}
-
-/**
  * Manages a custom or PM2 update command. Does not work with the heroku process.
  * Provided arguments must start with a keyword. If the first argument is 'custom' then processes a custom command.
  * If it is 'all' then restarts both PM2 processes. Providing an invalid first argument would void the update.
@@ -1577,11 +1356,11 @@ async function devProcessCommands (message) {
       if (processStats.devMode && zargs[1] === process.pid.toString()) {
         processStats.devMode = false;
         processStats.setProcessInactive();
-        servers[message.guild.id] = null;
+        processStats.servers[message.guild.id] = null;
         return message.channel.send(`*demode is off ${process.pid}*`);
       } else if (zargs[1] === process.pid.toString()) {
         processStats.devMode = true;
-        servers[message.guild.id] = null;
+        processStats.servers[message.guild.id] = null;
         if (checkActiveInterval) {
           clearInterval(checkActiveInterval);
           checkActiveInterval = null;
@@ -1655,834 +1434,6 @@ bot.on('message', (message) => {
   }
 });
 
-/**
- * Handles message requests.
- * @param message The message metadata.
- * @param messageContent {string} The content of the message.
- * @returns {*}
- */
-function dmHandler (message, messageContent) {
-  // the message content - formatted in lower case
-  let mc = messageContent.toLowerCase().trim() + ' ';
-  if (mc.length < 9) {
-    if (mc.length < 7 && mc.includes('help '))
-      return message.author.send(getHelpList('.', 1, version)[0], version);
-    else if (mc.includes('invite '))
-      return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
-  }
-  const mb = reactions.OUTBOX;
-  // noinspection JSUnresolvedFunction
-  bot.channels.cache.get('870800306655592489')
-    .send('------------------------------------------\n' +
-      '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
-      messageContent + '\n------------------------------------------').then(msg => {
-    msg.react(mb).then();
-    const filter = (reaction, user) => {
-      return user.id !== botID;
-    };
-
-    const collector = msg.createReactionCollector(filter, {time: 86400000});
-
-    collector.on('collect', (reaction, user) => {
-      if (reaction.emoji.name === mb) {
-        sendMessageToUser(msg, message.author.id, user.id);
-        reaction.users.remove(user).then();
-      }
-    });
-    collector.once('end', () => {
-      msg.reactions.cache.get(mb).remove().then();
-    });
-  });
-}
-
-/**
- * Plays a recommendation.
- * NOTE: Is in testing phase - allows only isCoreAdmin() usage.
- * @param message The message metadata.
- * @param server The server metadata.
- * @param args The message content in an array.
- * @return {Promise<void>}
- */
-async function playRecommendation (message, server, args) {
-  if (!isCoreAdmin(message.member.id)) return;
-  if (!message.member.voice?.channel) {
-    const sentMsg = await message.channel.send('must be in a voice channel to play');
-    if (!botInVC(message)) {
-      setSeamless(server, playRecommendation, [message, server, args], sentMsg);
-    }
-    return;
-  }
-  if (!botInVC(message)) resetSession(server);
-  const user = await bot.users.fetch(message.member.id);
-  const channel = await user.createDM();
-  let num = parseInt(args[1]);
-  let isRelevant = () => {}; // will be redefined
-  if (num < 1) {
-    message.channel.send('*provided number must be positive*');
-    return;
-  }
-  if (num) isRelevant = () => num > 0;
-  else {
-    num = 0;
-    // if the message was created in the last 48 hours
-    isRelevant = (m) => Date.now() - m.createdTimestamp < 172800000;
-  }
-  // attempts to get a valid url from a regex.exec or message
-  const getUrl = (res, m) => {
-    if (res && res[1]) return res[1];
-    else if (m.embeds.length > 0) {
-      return m.embeds[0].url;
-    }
-    return undefined;
-  };
-  // links that should be forwarded by default (meet func criteria)
-  let recs = [];
-  // array of messages, the earliest message are in the front
-  const messages = await channel.messages.fetch({limit: 99});
-  const filterUrlArgs = (link) => {
-    if (link.includes(SPOTIFY_BASE_LINK) && link.includes('?si=')) return link.split('?si=')[0];
-    else return link;
-  };
-  // if there are more links available
-  let isMore = false;
-  /**
-   * Determines if a link is within an array.
-   * Expects the queue param to have a '.url' field.
-   * @param queue {Array<Object>} The queue to check.
-   * @param link {string} The link to filter.
-   * @return {Boolean} Returns true if the item exists within the queue.
-   */
-  const isInQueue = (queue, link) => queue.some(val => val.url === link);
-  for (const [, m] of messages) {
-    if (m.author.id !== bot.user.id) continue;
-    const regex = /<(((?!discord).)*)>/g;
-    const res = regex.exec(m.content);
-    let url = getUrl(res, m);
-    if (url) {
-      url = filterUrlArgs(url);
-      if (isInQueue(server.queue, url) || recs.slice(-1)[0] === url) continue;
-      if (isRelevant(m)) {
-        recs.push(url);
-        num--;
-      } else {
-        isMore = true;
-        break;
-      }
-    }
-  }
-  if (recs.length < 1) {
-    if (isMore) {
-      message.channel.send('***no new recommendations***, *provide a number to get a specific number of recs*');
-    } else message.channel.send('*no more recommendations (the queue contains all of them)*');
-    return;
-  }
-  let wasEmpty = !server.queue[0];
-  for (let link of recs) {
-    await addLinkToQueue(link, message, server, message.guild.id, false, pushQueue);
-  }
-  if (!botInVC(message) || wasEmpty) {
-    playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
-  } else {
-    message.channel.send(`*added ${recs.length} recommendation${recs.length > 1 ? 's' : ''} to queue*`);
-    updateActiveEmbed(server);
-  }
-}
-
-/**
- * Prompts the text channel for a response to forward to the given user.
- * @param message The original message that activates the bot.
- * @param userID The ID of the user to send the reply to.
- * @param reactionUserID Optional - The ID of a user who can reply to the prompt besides the message author
- */
-function sendMessageToUser (message, userID, reactionUserID) {
-  const user = bot.users.cache.get(userID);
-  message.channel.send('What would you like me to send to ' + user.username +
-    '? [type \'q\' to not send anything]').then(msg => {
-    const filter = m => {
-      return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== botID);
-    };
-    message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-      .then(messages => {
-        if (messages.first().content && messages.first().content.trim() !== 'q') {
-          user.send(messages.first().content).then(() => {
-            message.channel.send('Message sent to ' + user.username + '.');
-            message.react(reactions.CHECK).then();
-          });
-        } else if (messages.first().content.trim().toLowerCase() === 'q') {
-          message.channel.send('No message sent.');
-        }
-        msg.delete();
-      }).catch(() => {
-      message.channel.send('No message sent.');
-      msg.delete();
-    });
-  });
-}
-
-/**
- * Wrapper for the function 'runAddCommand', for the purpose of error checking.
- * @param message The message that triggered the bot
- * @param args The args that of the message contents
- * @param sheetName The name of the sheet to add to
- * @param printMsgToChannel Whether to print a response to the channel
- * @param prefixString The prefix string
- * @param server The server.
- * @returns {*}
- */
-function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString, server) {
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
-    return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  if (args[1]) {
-    if (args[2]) {
-      if (args[2].substring(0, 1) === '[' && args[2].substr(args[2].length - 1, 1) === ']') {
-        args[2] = args[2].substr(1, args[2].length - 2);
-      }
-      if (!verifyUrl(args[2]) && !verifyPlaylist(args[2]))
-        return message.channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString}add [name] [link]\``);
-      server.userKeys.set(sheetName, null);
-      if (args[2].includes(SPOTIFY_BASE_LINK)) args[2] = linkFormatter(args[2], SPOTIFY_BASE_LINK);
-      else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
-      runAddCommand(args, message, sheetName, printMsgToChannel);
-      return;
-    } else if (message.member.voice?.channel && server.queue[0]) {
-      args[2] = server.queue[0].url;
-      if (args[1].includes('.')) return message.channel.send('cannot add names with \'.\'');
-      message.channel.send('Would you like to add what\'s currently playing as **' + (args[1]) + '**?').then(sentMsg => {
-        sentMsg.react(reactions.CHECK).then(() => sentMsg.react(reactions.X));
-        const filter = (reaction, user) => {
-          return botID !== user.id && [reactions.CHECK, reactions.X].includes(reaction.emoji.name) && message.member.id === user.id;
-        };
-        const collector = sentMsg.createReactionCollector(filter, {time: 60000, dispose: true});
-        collector.once('collect', (reaction) => {
-          sentMsg.delete();
-          if (reaction.emoji.name === reactions.CHECK) {
-            server.userKeys.set(sheetName, null);
-            runAddCommand(args, message, sheetName, printMsgToChannel);
-          } else {
-            message.channel.send('*cancelled*');
-          }
-        });
-        collector.on('end', () => {
-          if (sentMsg.deletable && sentMsg.reactions) {
-            sentMsg.reactions.removeAll().then(() => sentMsg.edit('*cancelled*'));
-          }
-        });
-      });
-      return;
-    }
-  }
-  return message.channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
-    + ' keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + prefixString +
-    args[0].substr(prefixString ? 2 : 1).toLowerCase() + ' [key] [link]\`)*');
-}
-
-/**
- * Displays the queue in the channel.
- * @param message The message that triggered the bot
- * @param mgid The message guild id
- * @param noErrorMsg {Boolean} True if to not send error msg (if not in a voice channel)
- * @returns {Promise<void>|*}
- */
-function runQueueCommand (message, mgid, noErrorMsg) {
-  const server = servers[mgid];
-  if (server.queue < 1 || !message.guild.voice.channel) {
-    if (noErrorMsg && !botInVC(message)) return;
-    return message.channel.send('There is no active queue right now');
-  }
-  // a copy of the queue
-  let serverQueue = server.queue.map((x) => x);
-  let authorName;
-
-  async function generateQueue (startingIndex, notFirstRun, sentMsg, sentMsgArray) {
-    let queueSB = '';
-    const queueMsgEmbed = new MessageEmbed();
-    if (!authorName) {
-      authorName = await getTitle(serverQueue[0], 50);
-    }
-    const n = serverQueue.length - startingIndex - 1;
-    // generating queue message
-    let tempMsg;
-    if (!sentMsg) {
-      let msgTxt = (notFirstRun ? 'generating ' + (n < 11 ? 'remaining ' + n : 'next 10') : 'generating queue') + '...';
-      tempMsg = await message.channel.send(msgTxt);
-    }
-    queueMsgEmbed.setTitle('Up Next')
-      .setAuthor('playing:  ' + authorName)
-      .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
-    let sizeConstraint = 0;
-    const qIterations = Math.min(serverQueue.length, startingIndex + 11);
-    for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length && sizeConstraint < 10); qi++) {
-      const title = (await getTitle(serverQueue[qi]));
-      const url = serverQueue[qi].url;
-      queueSB += qi + '. ' + `[${title}](${url})\n`;
-      sizeConstraint++;
-    }
-    if (queueSB.length === 0) {
-      queueSB = 'queue is empty';
-    }
-    queueMsgEmbed.setDescription(queueSB);
-    if (serverQueue.length > 11) {
-      queueMsgEmbed.setFooter('use \'insert\' & \'remove\' to edit the queue');
-    }
-    if (tempMsg?.deletable) tempMsg.delete();
-    if (sentMsg?.deletable) {
-      await sentMsg.edit(queueMsgEmbed);
-    } else {
-      sentMsg = await message.channel.send(queueMsgEmbed);
-      sentMsgArray.push(sentMsg);
-    }
-    if (sentMsg.reactions.cache.size < 1) {
-      server.numSinceLastEmbed += 10;
-      if (startingIndex + 11 < serverQueue.length) {
-        sentMsg.react(reactions.ARROW_L).then(() => {
-          sentMsg.react(reactions.ARROW_R).then(() => {
-            if (!collector.ended && serverQueue.length < 12)
-              sentMsg.react(reactions.INBOX).then(() => {
-                if (server.queue.length > 0 && !collector.ended)
-                  sentMsg.react(reactions.OUTBOX);
-              });
-          });
-        });
-      } else sentMsg.react(reactions.INBOX).then(() => {if (server.queue.length > 0) sentMsg.react(reactions.OUTBOX);});
-    }
-    const filter = (reaction, user) => {
-      if (message.member.voice?.channel) {
-        for (const mem of message.member.voice.channel.members) {
-          if (user.id === mem[1].id) {
-            return user.id !== botID && [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX, reactions.ARROW_L].includes(reaction.emoji.name);
-          }
-        }
-      }
-      return false;
-    };
-    const collector = sentMsg.createReactionCollector(filter, {time: 300000, dispose: true});
-    const arrowReactionTimeout = setTimeout(() => {
-      sentMsg.reactions.removeAll();
-    }, 300500);
-    collector.on('collect', (reaction, reactionCollector) => {
-      if (reaction.emoji.name === reactions.ARROW_L) {
-        reaction.users.remove(reactionCollector);
-        clearTimeout(arrowReactionTimeout);
-        collector.stop();
-        let newStartingIndex;
-        if (startingIndex <= 0) {
-          const lastDigit = Number(serverQueue.length.toString().slice(-1)[0]);
-          newStartingIndex = serverQueue.length - (lastDigit > 1 ? lastDigit : 10);
-        } else {
-          newStartingIndex = Math.max(0, startingIndex - 10);
-        }
-        generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
-      }
-      if (reaction.emoji.name === reactions.ARROW_R) {
-        reaction.users.remove(reactionCollector);
-        clearTimeout(arrowReactionTimeout);
-        collector.stop();
-        let newStartingIndex = startingIndex + 10;
-        if (newStartingIndex >= serverQueue.length - 1) {
-          newStartingIndex = 0;
-        }
-        generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
-      } else if (reaction.emoji.name === reactions.INBOX) {
-        if (server.dictator && reactionCollector.id !== server.dictator.id)
-          return message.channel.send('only the dictator can insert');
-        if (server.lockQueue && server.voteAdmin.filter(x => x.id === reactionCollector.id).length === 0)
-          return message.channel.send('the queue is locked: only the dj can insert');
-        if (serverQueue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
-        let link;
-        message.channel.send('What link would you like to insert [or type \'q\' to quit]').then(msg => {
-          const filter = m => {
-            return (reactionCollector.id === m.author.id && m.author.id !== botID);
-          };
-          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-            .then(async (messages) => {
-              link = messages.first().content.split(' ')[0].trim();
-              if (link.toLowerCase() === 'q') {
-                return;
-              }
-              if (link) {
-                const num = await runInsertCommand(message, message.guild.id, [link], server);
-                if (num < 0) {
-                  msg.delete();
-                  return;
-                }
-                serverQueue.splice(num, 0, createQueueItem(link, null, null));
-                if (server.queue.length > 0) updateActiveEmbed(server).then();
-                let pageNum;
-                if (num === 11) pageNum = 0;
-                else pageNum = Math.floor((num - 1) / 10);
-                clearTimeout(arrowReactionTimeout);
-                collector.stop();
-                // update the local queue
-                serverQueue = server.queue.map((x) => x);
-                generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray).then();
-              } else {
-                message.channel.send('*cancelled*');
-                msg.delete();
-              }
-            }).catch(() => {
-            message.channel.send('*cancelled*');
-            msg.delete();
-          });
-        });
-      } else if (reaction.emoji.name === reactions.OUTBOX) {
-        if (server.dictator && reactionCollector.id !== server.dictator.id)
-          return message.channel.send('only the dictator can remove from the queue');
-        if (server.voteAdmin.length > 0 && server.voteAdmin.filter(x => x.id === reactionCollector.id).length === 0)
-          return message.channel.send('only a dj can remove from the queue');
-        if (serverQueue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
-        message.channel.send('What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'q\']').then(msg => {
-          const filter = m => {
-            return (reactionCollector.id === m.author.id && m.author.id !== botID);
-          };
-          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-            .then(async messages => {
-              let num = messages.first().content.trim();
-              if (num.toLowerCase() === 'q') {
-                return message.channel.send('*cancelled*');
-              }
-              num = parseInt(num);
-              if (num) {
-                if (server.queue[num] !== serverQueue[num])
-                  return message.channel.send('**queue is out of date:** the positions may not align properly with the embed shown\n*please use the \'queue\' command again*');
-                if (num >= server.queue.length) return message.channel.send('*that position is out of bounds, **' +
-                  (server.queue.length - 1) + '** is the last item in the queue.*');
-                server.queue.splice(num, 1);
-                serverQueue.splice(num, 1);
-                message.channel.send('removed item from queue');
-                if (server.queue.length > 0) updateActiveEmbed(server).then();
-                let pageNum;
-                if (num === 11) pageNum = 0;
-                else pageNum = Math.floor((num - 1) / 10);
-                clearTimeout(arrowReactionTimeout);
-                collector.stop();
-                return generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
-              } else msg.delete();
-            }).catch(() => {
-            message.channel.send('*cancelled*');
-            msg.delete();
-          });
-        });
-      }
-    });
-  }
-
-  return generateQueue(0, false, false, []);
-}
-
-/**
- * Executes play assuming that message args are intended for a database call.
- * The database referenced depends on what is passed in via mgid.
- * @param {*} args the message split by spaces into an array
- * @param {*} message the message that triggered the bot
- * @param {*} sheetName the name of the sheet to reference
- * @param playRightNow bool of whether to play now or now
- * @param printErrorMsg prints error message, should be true unless attempting a followup db run
- * @param server The server playback metadata
- * @returns {Promise<boolean>} whether the play command has been handled accordingly
- */
-async function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg, server) {
-  if (!args[1]) {
-    message.channel.send("*put a key-name after the command to play a specific key*");
-    return true;
-  }
-  const voiceChannel = message.member.voice?.channel;
-  if (!voiceChannel) {
-    const sentMsg = await message.channel.send('must be in a voice channel to play');
-    if (!botInVC(message)) {
-      setSeamless(server, runDatabasePlayCommand, [args, message, sheetName, playRightNow, printErrorMsg, server],
-        sentMsg);
-    }
-    return true;
-  }
-  // in case of force disconnect
-  if (!botInVC(message)) {
-    resetSession(server);
-  } else if (server.queue.length >= MAX_QUEUE_S) {
-    message.channel.send('*max queue size has been reached*');
-    return true;
-  }
-  server.numSinceLastEmbed++;
-  const xdb = await getXdb(server, sheetName, true);
-  let queueWasEmpty = false;
-  // if the queue is empty then play
-  if (server.queue.length < 1) {
-    queueWasEmpty = true;
-  }
-  let tempUrl;
-  let dbAddedToQueue = 0;
-  if (args[2]) {
-    let dbAddInt = 1;
-    let unFoundString = '*could not find: ';
-    let firstUnfoundRan = false;
-    let otherSheet;
-    let first = true;
-    while (args[dbAddInt]) {
-      args[dbAddInt] = args[dbAddInt].replace(/,/, '');
-      tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
-      if (tempUrl) {
-        // push to queue
-        const playlistType = verifyPlaylist(tempUrl);
-        if (playlistType) {
-          dbAddedToQueue += await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-        } else if (playRightNow) {
-          if (first) {
-            server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
-            first = false;
-          } else server.queue.splice(dbAddedToQueue, 0, createQueueItem(tempUrl, playlistType, null));
-          dbAddedToQueue++;
-        } else {
-          server.queue.push(createQueueItem(tempUrl, playlistType, null));
-          dbAddedToQueue++;
-        }
-      } else {
-        // check personal db if applicable
-        if (sheetName.substring(0, 1) !== 'p') {
-          if (!otherSheet) {
-            const xdb = await getXdb(server, `p${message.member.id}`, true);
-            otherSheet = xdb.referenceDatabase;
-          }
-          tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
-          if (tempUrl) {
-            // push to queue
-            const playlistType = verifyPlaylist(tempUrl);
-            if (playlistType) {
-              dbAddedToQueue += await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-            } else if (playRightNow) {
-              if (first) {
-                server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
-                first = false;
-              } else server.queue.splice(dbAddedToQueue, 0, createQueueItem(tempUrl, playlistType, null));
-              dbAddedToQueue++;
-            } else {
-              server.queue.push(createQueueItem(tempUrl, playlistType, null));
-              dbAddedToQueue++;
-            }
-            dbAddInt++;
-            continue;
-          }
-        }
-        if (firstUnfoundRan) {
-          unFoundString = unFoundString.concat(', ');
-        }
-        unFoundString = unFoundString.concat(args[dbAddInt]);
-        firstUnfoundRan = true;
-      }
-      dbAddInt++;
-    }
-    if (firstUnfoundRan) {
-      unFoundString = unFoundString.concat('*');
-      message.channel.send(unFoundString);
-    }
-    if (playRightNow) {
-      playLinkToVC(message, server.queue[0], voiceChannel, server);
-      return true;
-    } else {
-      message.channel.send('*added ' + dbAddedToQueue + ' to queue*');
-      await updateActiveEmbed(server);
-    }
-  } else {
-    tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
-    if (!tempUrl) {
-      const ss = getAssumption(args[1], xdb.congratsDatabase);
-      if (ss) {
-        message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
-        tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
-        const playlistType = verifyPlaylist(tempUrl);
-        if (playRightNow) { // push to queue and play
-          adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
-          if (playlistType) {
-            await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-          } else {
-            server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
-          }
-          playLinkToVC(message, server.queue[0], voiceChannel, server);
-          message.channel.send('*playing now*');
-          return true;
-        } else {
-          if (playlistType) {
-            dbAddedToQueue = await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-          } else {
-            server.queue.push(createQueueItem(tempUrl, playlistType, null));
-          }
-        }
-      } else if (!printErrorMsg) {
-        if (sheetName.includes('p')) {
-          message.channel.send(`*could not find **${args[1]}** in the keys list*`);
-          return true;
-        } else {
-          runDatabasePlayCommand(args, message, `p${message.member.id}`, playRightNow, false, server).then();
-          return true;
-        }
-      } else if (ss?.length > 0) {
-        message.channel.send("*could not find '" + args[1] + "' in database*\n*Did you mean: " + ss + '*');
-        return true;
-      } else {
-        message.channel.send(`*could not find **${args[1]}** in the keys list*`);
-        return true;
-      }
-    } else { // did find in database
-      const playlistType = verifyPlaylist(tempUrl);
-      if (playRightNow) { // push to queue and play
-        adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
-        if (playlistType) {
-          await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-        } else {
-          server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
-        }
-        playLinkToVC(message, server.queue[0], voiceChannel, server);
-        message.channel.send('*playing now*');
-        return true;
-      } else {
-        // push to queue
-        if (playlistType) {
-          await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-        } else {
-          server.queue.push(createQueueItem(tempUrl, playlistType, null));
-        }
-      }
-    }
-    if (!queueWasEmpty) {
-      message.channel.send('*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*');
-      await updateActiveEmbed(server);
-    }
-  }
-  // if queue was empty then play
-  if (queueWasEmpty && server.queue.length > 0) {
-    playLinkToVC(message, server.queue[0], voiceChannel, server);
-  }
-  return true;
-}
-
-/**
- * Function for searching for message contents on YouTube for playback.
- * Does not check for force disconnect.
- * @param message The discord message
- * @param playNow Bool, whether to override the queue
- * @param server The server playback metadata
- * @param searchTerm The specific phrase to search for, required if not provided a search result
- * @param indexToLookup {string | number?} The search index, requires searchResult to be valid
- * @param searchResult {Object?} The search results, used for recursive call with memoization
- * @param playlistMsg {Object?} A message to be used for other YouTube search results
- * @returns {Promise<*|boolean|undefined>}
- */
-async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLookup, searchResult, playlistMsg) {
-  // the number of search results to return
-  const NUM_SEARCH_RES = 5;
-  if (!searchResult) {
-    indexToLookup = 0;
-    searchResult = (await ytsr(searchTerm, {pages: 1})).items.filter(x => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);
-    if (!searchResult[0]) {
-      if (!searchTerm.includes('video')) {
-        return runYoutubeSearch(message, playNow, server, `${searchTerm} video`, indexToLookup, null, playlistMsg);
-      }
-      return message.channel.send('could not find video');
-    }
-  } else {
-    indexToLookup = parseInt(indexToLookup);
-    if (!indexToLookup) indexToLookup = 1;
-    indexToLookup--;
-  }
-  let ytLink;
-  // if we found a video then play it
-  ytLink = searchResult[indexToLookup].url;
-  if (!ytLink) return message.channel.send('could not find video');
-  if (playNow) {
-    adjustQueueForPlayNow(dispatcherMap[message.member.voice?.channel.id], server);
-    server.queue.unshift(createQueueItem(ytLink, StreamType.YOUTUBE, searchResult[indexToLookup]));
-    try {
-      await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-    } catch (e) {
-      console.log(e);
-      return;
-    }
-  } else {
-    const queueItem = createQueueItem(ytLink, StreamType.YOUTUBE, searchResult[indexToLookup]);
-    server.queue.push(queueItem);
-    if (server.queue.length === 1) {
-      try {
-        await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-      } catch (e) {
-        return;
-      }
-    } else {
-      const foundTitle = searchResult[indexToLookup].title;
-      let sentMsg;
-      if (foundTitle.charCodeAt(0) < 120) {
-        sentMsg = await message.channel.send('*added **' + foundTitle.replace(/\*/g, '') + '** to queue*');
-        await updateActiveEmbed(server);
-      } else {
-        let infos = await ytdl.getBasicInfo(ytLink);
-        sentMsg = await message.channel.send('*added **' + infos.videoDetails.title.replace(/\*/g, '') + '** to queue*');
-        await updateActiveEmbed(server);
-      }
-      sentMsg.react(reactions.X).then();
-      const filter = (reaction, user) => {
-        return user.id === message.member.id && [reactions.X].includes(reaction.emoji.name);
-      };
-      const collector = sentMsg.createReactionCollector(filter, {time: 12000, dispose: true});
-      collector.once('collect', () => {
-        if (!collector.ended) collector.stop();
-        const queueStartIndex = server.queue.length - 1;
-        // 5 is the number of items checked from the end of the queue
-        const queueEndIndex = Math.max(queueStartIndex - 5, 0);
-        for (let i = queueStartIndex; i > queueEndIndex; i--) {
-          if (server.queue[i].url === ytLink) {
-            server.queue.splice(i, 1);
-            sentMsg.edit(`~~${sentMsg.content}~~`);
-            break;
-          }
-        }
-        updateActiveEmbed(server);
-      });
-      collector.on('end', () => {
-        if (sentMsg.reactions && sentMsg.deletable) sentMsg.reactions.removeAll();
-      });
-    }
-  }
-  if ((playNow || server.queue.length < 2) && !playlistMsg) {
-    await message.react(reactions.PAGE_C);
-    let collector;
-    if (server.searchReactionTimeout) clearTimeout(server.searchReactionTimeout);
-    server.searchReactionTimeout = setTimeout(() => {
-      if (collector) collector.stop();
-      else {
-        if (playlistMsg && playlistMsg.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
-        message.reactions.removeAll();
-        server.searchReactionTimeout = null;
-      }
-    }, 22000);
-    const filter = (reaction, user) => {
-      if (message.member.voice?.channel) {
-        for (const mem of message.member.voice.channel.members) {
-          if (user.id === mem[1].id) {
-            return user.id !== botID && [reactions.PAGE_C].includes(reaction.emoji.name);
-          }
-        }
-      }
-      return false;
-    };
-    collector = message.createReactionCollector(filter, {time: 100000, dispose: true});
-    let res;
-    let notActive = true;
-    let reactionCollector2;
-    collector.on('collect', async (reaction, reactionCollector) => {
-      clearTimeout(server.searchReactionTimeout);
-      server.searchReactionTimeout = setTimeout(() => {collector.stop();}, 60000);
-      if (!playlistMsg) {
-        res = searchResult.slice(1).map(x => `${x.title}`);
-        let finalString = '';
-        let i = 0;
-        res.forEach(x => {
-          i++;
-          return finalString += i + '. ' + x + '\n';
-        });
-        const playlistEmebed = new MessageEmbed()
-          .setTitle(`Pick a different video`)
-          .setColor('#ffffff')
-          .setDescription(`${finalString}\n***What would you like me to play? (1-${res.length})*** *[or type 'q' to quit]*`);
-        playlistMsg = await message.channel.send(playlistEmebed);
-      }
-      if (notActive) {
-        notActive = false;
-        reactionCollector2 = reactionCollector;
-        const filter = m => {
-          return (m.author.id !== botID && reactionCollector.id === m.author.id);
-        };
-        message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-          .then(messages => {
-            if (!reactionCollector2) return;
-            let playNum = parseInt(messages.first().content && messages.first().content.trim());
-            if (playNum) {
-              if (playNum < 1 || playNum > res.length) {
-                message.channel.send('*invalid number*');
-              } else {
-                server.queueHistory.push(server.queue.shift());
-                runYoutubeSearch(message, true, server, searchTerm, playNum + 1, searchResult, playlistMsg);
-              }
-            }
-            if (playlistMsg?.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;}).catch();
-            clearTimeout(server.searchReactionTimeout);
-            server.searchReactionTimeout = setTimeout(() => {collector.stop();}, 22000);
-            notActive = true;
-          }).catch(() => {
-          if (playlistMsg?.deletable) playlistMsg.delete().catch();
-          notActive = true;
-        });
-      }
-    });
-    collector.on('end', () => {
-      if (playlistMsg?.deletable) playlistMsg.delete().then(() => {playlistMsg = undefined;});
-      if (message.deletable && message.reactions) message.reactions.removeAll();
-      server.searchReactionTimeout = null;
-    });
-    collector.on('remove', (reaction, user) => {
-      if (!notActive && reactionCollector2.id === user.id) {
-        reactionCollector2 = false;
-        if (playlistMsg?.deletable) playlistMsg.delete().catch();
-        notActive = true;
-        playlistMsg = undefined;
-      }
-    });
-  }
-}
-
-/**
- * Runs the checks to add random songs to the queue
- * @param num The number of songs to be added to random, could be string
- * @param message The message that triggered the bot
- * @param sheetName The name of the sheet to reference
- * @param server The server playback metadata
- * @param addToFront Optional - true if to add to the front
- */
-async function runRandomToQueue (num, message, sheetName, server, addToFront = false) {
-  if (!message.member.voice?.channel) {
-    const sentMsg = await message.channel.send('must be in a voice channel to play random');
-    if (!botInVC(message)) setSeamless(server, runRandomToQueue, [num, message, sheetName, server, addToFront], sentMsg);
-    return;
-  }
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
-    return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  if (server.dictator && message.member.id !== server.dictator.id)
-    return message.channel.send('only the dictator can randomize to queue');
-  let isPlaylist;
-  // holds the string
-  const origArg = num;
-  // convert addToFront into a number for addRandomToQueue
-  num = Math.floor(num);
-  if (!num) isPlaylist = true;
-  else if (num < 1) return message.channel.send('*invalid number*');
-  server.numSinceLastEmbed++;
-  // in case of force disconnect
-  if (!botInVC(message)) resetSession(server);
-  else if (server.queue.length >= MAX_QUEUE_S && origArg) {
-    return message.channel.send('*max queue size has been reached*');
-  }
-  // addToFront parameter must be a number for addRandomToQueue
-  if (addToFront) addToFront = 1;
-  // if no arguments, assumes that the active queue should be shuffled
-  if (!origArg) {
-    if (server.queue[0]) {
-      // save the first item to prevent it from being shuffled
-      const firstItem = server.queue.shift();
-      shuffleQueue(server.queue, message);
-      server.queue.unshift(firstItem);
-    } else message.channel.send(`*need a playlist url to shuffle, or a number to use random items from your keys list.*`);
-    return;
-  }
-  if (origArg.toString().includes('.'))
-    return addRandomToQueue(message, origArg, undefined, server, true, addToFront);
-  const xdb = await getXdb(server, sheetName, true);
-  if (isPlaylist) {
-    addRandomToQueue(message, origArg, xdb.congratsDatabase, server, true, addToFront).then();
-  } else {
-    if (num > MAX_QUEUE_S) {
-      message.channel.send('*max limit for random is ' + MAX_QUEUE_S + '*');
-      num = MAX_QUEUE_S;
-    }
-    addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront).then();
-  }
-}
-
 bot.on('voiceStateUpdate', update => {
   if (processStats.isInactive) return;
   updateVoiceState(update).then();
@@ -2493,7 +1444,7 @@ bot.on('voiceStateUpdate', update => {
  * @param update The voice-state update metadata.
  */
 async function updateVoiceState (update) {
-  const server = servers[update.guild.id];
+  const server = processStats.servers[update.guild.id];
   if (!server) return;
   // if bot
   if (update.member.id === botID) {
@@ -2585,7 +1536,6 @@ process
 
 // active process interval
 let checkActiveInterval = null;
-let resHandlerTimeout = null;
 
 // The main method
 (async () => {
