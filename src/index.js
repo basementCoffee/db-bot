@@ -1384,6 +1384,8 @@ async function devProcessCommands (message) {
     case 'z':
       // =gzz
       if (message.author.bot && zargs[1] !== process.pid.toString()) {
+        if (process.pid === 4) await new Promise(res => setTimeout(res, 11000));
+        else await new Promise(res => setTimeout(res, Math.random() * 5000));
         checkToSeeActive();
       }
       break;
