@@ -136,7 +136,7 @@ function stopPlayingUtil (mgid, voiceChannel, stayInVC, server, message, actionU
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
   }
-  const lastPlayed = server.queue[0] || server.queueHistory.splice(-1)[0];
+  const lastPlayed = server.queue[0] || server.queueHistory.slice(-1)[0];
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
       voiceChannel.leave();
