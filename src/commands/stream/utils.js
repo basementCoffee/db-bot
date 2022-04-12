@@ -1,5 +1,6 @@
 const {botID, dispatcherMap} = require('../../utils/process/constants');
 const {pauseComputation, playComputation} = require('../../utils/utils');
+const {createEmbed} = require('../../utils/embed');
 
 /**
  * A system to manage votes for various bot actions. Used for DJ mode.
@@ -135,17 +136,20 @@ function stopPlayingUtil (mgid, voiceChannel, stayInVC, server, message, actionU
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
   }
+  const lastPlayed = server.queue[0] || server.queueHistory.splice(-1)[0];
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
       voiceChannel.leave();
     }, 600);
   } else {
-    if (server.currentEmbed?.reactions) {
-      server.collector.stop();
+    if (server.currentEmbed) {
+      createEmbed(lastPlayed.url, lastPlayed.infos).then(e => {
+        e.embed.addField('Queue', 'empty', true);
+        server.currentEmbed.edit(e.embed);
+        server.collector?.stop();
+      });
     }
     dispatcherMap[voiceChannel.id] = undefined;
-    // if (whatspMap[voiceChannel.id] !== 'https://www.youtube.com/watch?v=oyFQVZ2h0V8')
-    //   sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, false).then();
   }
 }
 

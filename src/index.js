@@ -22,7 +22,7 @@ let {
 } = require('./utils/process/constants');
 const {reactions} = require('./utils/reactions');
 const {runRemoveCommand} = require('./commands/remove');
-const {updateActiveEmbed, sendRecommendation} = require('./utils/embed');
+const {updateActiveEmbed, sendRecommendation, sessionEndEmbed} = require('./utils/embed');
 const {runMoveItemCommand} = require('./commands/move');
 const {
   checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand, runKeysCommand
@@ -1308,7 +1308,7 @@ async function devProcessCommands (message) {
       break;
     case 'q':
       // =gzq
-      if (zargs[1] !== process.pid.toString()) return;
+      if (!processStats.devMode && zargs[1] !== process.pid.toString()) return;
       if (bot.voice.connections.size > 0 && (!zargs[2] || zargs[2] !== 'force'))
         message.channel.send('People are using the bot. Use force as the second argument.').then();
       else message.channel.send("restarting the bot... (may only shutdown)").then(() =>
@@ -1392,36 +1392,34 @@ async function updateVoiceState (update) {
     }
     clearDJTimer(server);
     processStats.removeActiveStream(update.guild.id);
-    await sendLinkAsEmbed(server.currentEmbed, server.queue[0] ||
-      server.queueHistory.slice(-1)[0], update.channel, server, false).then(() => {
-      // end the stream (if applicable)
-      if (server.streamData.stream) endStream(server);
-      server.numSinceLastEmbed = 0;
-      server.silence = false;
-      server.verbose = false;
-      server.loop = false;
-      server.voteAdmin.length = 0;
-      server.lockQueue = false;
-      server.dictator = null;
-      server.autoplay = false;
-      server.userKeys.clear();
-      server.queueHistory.length = 0;
-      if (server.currentEmbed?.reactions) {
-        try {
-          server.collector?.stop();
-        } catch (e) {}
-      }
-      server.currentEmbed = null;
-      if (server.followUpMessage) {
-        server.followUpMessage.delete();
-        server.followUpMessage = undefined;
-      }
-      if (bot.voice.connections.size < 1) {
-        whatspMap.clear();
-        dispatcherMap.clear();
-        dispatcherMapStatus.clear();
-      }
-    });
+    await sessionEndEmbed(server, server.queue[0] || server.queueHistory.slice(-1)[0]);
+    // end the stream (if applicable)
+    if (server.streamData.stream) endStream(server);
+    server.numSinceLastEmbed = 0;
+    server.silence = false;
+    server.verbose = false;
+    server.loop = false;
+    server.voteAdmin.length = 0;
+    server.lockQueue = false;
+    server.dictator = null;
+    server.autoplay = false;
+    server.userKeys.clear();
+    server.queueHistory.length = 0;
+    if (server.currentEmbed?.reactions) {
+      try {
+        server.collector?.stop();
+      } catch (e) {}
+    }
+    server.currentEmbed = null;
+    if (server.followUpMessage) {
+      server.followUpMessage.delete();
+      server.followUpMessage = undefined;
+    }
+    if (bot.voice.connections.size < 1) {
+      whatspMap.clear();
+      dispatcherMap.clear();
+      dispatcherMapStatus.clear();
+    }
   } else if (botInVC(update)) {
     if (update.channel?.members.filter(x => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;

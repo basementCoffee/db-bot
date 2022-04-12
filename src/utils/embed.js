@@ -104,6 +104,26 @@ async function updateActiveEmbed (server) {
 }
 
 /**
+ * Sends a session ended embed.
+ * @param server
+ * @param item queue item
+ * @return {Promise<void>}
+ */
+async function sessionEndEmbed(server, item){
+  try {
+    if (!server.currentEmbed) return;
+    let embed = await createEmbed(item.url, item.infos);
+    embed = embed.embed;
+    server.currentEmbedChannelId = '0';
+    server.numSinceLastEmbed = 0;
+    embed.addField('-', 'Session ended', true);
+    server.currentEmbed.edit(embed);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+/**
  * Send a recommendation to a user. EXPERIMENTAL.
  * @param message The message metadata.
  * @param content Optional - text to add to the recommendation.
@@ -128,4 +148,4 @@ async function sendRecommendation (message, content, url, uManager) {
 
 
 
-module.exports = {updateActiveEmbed, sendRecommendation, createEmbed}
+module.exports = {updateActiveEmbed, sendRecommendation, createEmbed, sessionEndEmbed}

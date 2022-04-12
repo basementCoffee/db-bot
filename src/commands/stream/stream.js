@@ -199,6 +199,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       whatspMap[vc.id] = whatToPlay;
       stream = await m3u8stream(twitchEncoded.url);
       server.streamData.type = StreamType.TWITCH;
+      server.streamData.stream = stream;
     } else if (seekSec) {
       stream = await ytdl_core(urlAlt, {filter: 'audioonly'});
       server.streamData.type = StreamType.YOUTUBE;
@@ -436,6 +437,7 @@ function checkStatusOfYtdl (message) {
  */
 function skipLink (message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
+  if (server.streamData.type === StreamType.TWITCH) endStream(server);
   if (server.queue.length > 0) {
     let link;
     if (noHistory) server.queue.shift();
