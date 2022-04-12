@@ -44,4 +44,5 @@ function getAssumption (word, cdb) {
   return false;
 }
 
+
 module.exports = {runSearchCommand, getAssumption}

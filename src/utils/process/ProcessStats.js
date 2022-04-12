@@ -1,3 +1,4 @@
+const {startupDevMode} = require('./constants');
 
 // process related statistics
 class ProcessStats {
@@ -9,6 +10,12 @@ class ProcessStats {
   totalStreamTime;
   // map of active streams
   activeStreamsMap;
+  // if in developer mode
+  devMode;
+  // if the process is sidelined
+  isInactive;
+  // A message for users on first VC join
+  startUpMessage;
 
   constructor () {
     this.activeMS = 0;
@@ -16,6 +23,9 @@ class ProcessStats {
     this.totalStreamTime = 0;
     // [gid] => Date.now()
     this.activeStreamsMap = new Map();
+    this.devMode = startupDevMode;
+    this.isInactive = !startupDevMode;
+    this.startUpMessage = '';
   }
 
   // adds an active stream
@@ -32,7 +42,7 @@ class ProcessStats {
     }
   }
 
-  getActiveStreamSize(){
+  getActiveStreamSize () {
     return this.activeStreamsMap.size;
   }
 
@@ -48,6 +58,26 @@ class ProcessStats {
     return (this.totalStreamTime + activeTimes);
   }
 
+  /**
+   * Sets the process as inactive.
+   */
+  setProcessInactive () {
+    this.isInactive = true;
+    console.log('-sidelined-');
+    if (this.dateActive) {
+      this.activeMS += Date.now() - this.dateActive;
+      this.dateActive = null;
+    }
+  }
+
+  /**
+   * Sets the process as active.
+   */
+  setProcessActive () {
+    this.isInactive = false;
+    console.log('-active-');
+    this.dateActive = Date.now();
+  }
 }
 
 module.exports = new ProcessStats();

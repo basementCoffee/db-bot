@@ -1,4 +1,4 @@
-const {updateActiveEmbed} = require('../utils/embed');
+const {updateActiveEmbed} = require('../../utils/embed');
 
 /**
  * Removes an item from the queue. Does not allow for the currently playing item to be removed from the queue (index 0).

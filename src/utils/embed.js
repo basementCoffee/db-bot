@@ -1,9 +1,9 @@
-const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, CORE_ADM} = require('./constants');
 const {getData} = require('spotify-url-info');
 const {MessageEmbed} = require('discord.js');
 const scdl = require('soundcloud-downloader').default;
 const ytdl = require('ytdl-core-discord');
 const {formatDuration, isCoreAdmin, getQueueText, convertYTFormatToMS} = require('./utils');
+const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, CORE_ADM} = require('./process/constants');
 
 /**
  * Return an object containing the embed and time based on the data provided.
@@ -84,7 +84,6 @@ async function createEmbed (url, infos) {
   };
 }
 
-
 /**
  * Sends an updated playback embed with the fields updated. Assumes that a session is ongoing.
  * @param server The server.
@@ -102,7 +101,6 @@ async function updateActiveEmbed (server) {
     console.log(e);
   }
 }
-
 
 /**
  * Send a recommendation to a user. EXPERIMENTAL.
@@ -127,4 +125,6 @@ async function sendRecommendation (message, content, url, uManager) {
   }
 }
 
-module.exports = {createEmbed, updateActiveEmbed, sendRecommendation}
+
+
+module.exports = {updateActiveEmbed, sendRecommendation, createEmbed}

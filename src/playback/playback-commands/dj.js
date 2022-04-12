@@ -1,6 +1,6 @@
 const {MessageEmbed} = require('discord.js');
-const {formatDuration, botInVC} = require('../utils/utils');
-const {botID} = require('../utils/constants');
+const {formatDuration, botInVC} = require('../../utils/utils');
+const {botID} = require('../../utils/process/constants');
 
 /**
  * Run the command to enable a music mode allowing only one user to control music commands in a server.

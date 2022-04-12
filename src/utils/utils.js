@@ -5,13 +5,13 @@ const ytpl = require('ytpl');
 const {
   servers, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S,
   dispatcherMapStatus, dispatcherMap, LEAVE_VC_TIMEOUT, CORE_ADM
-} = require('./constants');
+} = require('./process/constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
-const processStats = require('./ProcessStats');
+const processStats = require('./process/ProcessStats');
 
 /**
  * Given a positive duration in ms, returns a formatted string separating

@@ -1,5 +1,5 @@
 const {MessageEmbed} = require('discord.js');
-const {botID} = require('./constants');
+const {botID} = require('./process/constants');
 
 function getPages (prefixString, version) {
   return [

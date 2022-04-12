@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node ./src/index.js",
-    "dev": "node ./src/index.js --dev",
+    "dev": "node --trace-warnings ./src/index.js --dev",
     "test": "jest --detectOpenHandles"
   },
   "engines": {

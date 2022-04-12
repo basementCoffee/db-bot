@@ -1,9 +1,8 @@
-const {getData} = require('spotify-url-info');
 const ytpl = require('ytpl');
-const {MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, StreamType} = require('./constants');
-const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require('./utils');
-// should be completed before first query
 let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
+const {getData} = require('spotify-url-info');
+const {MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, StreamType} = require('./process/constants');
+const {linkFormatter, createQueueItem, getLinkType, getTracksWrapper} = require('./utils');
 
 /**
  * Adds playlists to the reference array passed in. Can handle Spotify and SoundCloud tracks.

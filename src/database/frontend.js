@@ -1,7 +1,7 @@
 const {gsrun, gsUpdateAdd, gsUpdateOverwrite, deleteRows} = require('./backend');
 const {verifyUrl, verifyPlaylist, botInVC} = require('../utils/utils');
-const {servers} = require('../utils/constants');
-const {runSearchCommand} = require('../playback-commands/search');
+const {servers} = require('../utils/process/constants');
+const {runSearchCommand} = require('../playback/playback-commands/search');
 
 /**
  * The command to add a song to a given database.
