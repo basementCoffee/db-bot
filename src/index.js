@@ -1370,16 +1370,22 @@ bot.on('message', (message) => {
 });
 
 bot.on('voiceStateUpdate', update => {
-  if (processStats.isInactive) return;
-  updateVoiceState(update).then();
+  const server = processStats.servers[update.guild.id];
+  if (processStats.isInactive) {
+    try {
+      server.collector.stop();
+    } catch (e) {}
+    return;
+  }
+  updateVoiceState(update, server).then();
 });
 
 /**
  * Updates the bots voice state depending on the update occurring.
  * @param update The voice-state update metadata.
+ * @param server The server metadata.
  */
-async function updateVoiceState (update) {
-  const server = processStats.servers[update.guild.id];
+async function updateVoiceState (update, server) {
   if (!server) return;
   // if bot
   if (update.member.id === botID) {
