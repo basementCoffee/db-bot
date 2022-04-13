@@ -521,9 +521,9 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
     playLinkToVC(message, queueItem, voiceChannel, server);
   } else if (server.queue[0]) {
     playLinkToVC(message, server.queue[0], voiceChannel, server);
-    message.channel.send('*replaying first song*');
+    message.channel.send('*replaying first link*');
   } else {
-    message.channel.send('cannot find previous song');
+    message.channel.send('cannot find previous link');
   }
   if (server.followUpMessage) {
     server.followUpMessage.delete();
@@ -532,13 +532,13 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
 }
 
 /**
- * Function to skip songs once or multiple times.
+ * Function to skip link once or multiple times.
  * Recommended if voice channel is not present.
  * @param message the message that triggered the bot
  * @param voiceChannel The active voice channel
  * @param server The server playback metadata
  * @param skipTimes Optional - the number of times to skip
- * @param sendSkipMsg Whether to send a 'skipped' message when a single song is skipped
+ * @param sendSkipMsg Whether to send a 'skipped' message when a single link is skipped
  * @param forceSkip Optional - If there is a DJ, grants force skip abilities
  * @param mem The user that is completing the action, used for DJ mode
  */
@@ -646,7 +646,7 @@ async function getRecLink (whatToPlay, infos, index = 0) {
  * If no url is provided then returns.
  * @param message {module:"discord.js".Message} The message to send the channel to
  * @param queueItem {Object} the queueItem to generate the embed for
- * @param voiceChannel {module:"discord.js".VoiceChannel} the voice channel that the song is being played in, if playing
+ * @param voiceChannel {module:"discord.js".VoiceChannel} the voice channel that the link is being played in, if playing
  * @param server {Object} The server playback metadata
  * @param forceEmbed {Boolean} Force the embed to be re-sent in the text channel
  * @returns {Promise<void>}
@@ -1062,9 +1062,9 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
           }
           const embed = new MessageEmbed()
             .setTitle('How to add/delete keys from ' + nameToSend + ' list')
-            .setDescription('Add a song by putting a word followed by a link -> \` ' +
+            .setDescription('Add a link by putting a word followed by a link -> \` ' +
               prefixString + cmdType + 'a [key] [link]\`\n' +
-              'Delete a song by putting the name you wish to delete -> \` ' +
+              'Delete a key by typing the name you wish to delete -> \` ' +
               prefixString + cmdType + 'del [key]\`')
             .setFooter(descriptionSuffix);
           message.channel.send(embed);
