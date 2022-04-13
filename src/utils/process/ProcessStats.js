@@ -3,38 +3,27 @@ const {startupDevMode} = require('./constants');
 // process related statistics
 class ProcessStats {
   // total time active in MS
-  activeMS;
+  activeMS = 0;
   // if active, the current Date.now()
   dateActive;
   // total streaming time
-  totalStreamTime;
-  // map of active streams
-  activeStreamsMap;
+  totalStreamTime = 0;
+  // map of active streams [guildId , Date.now()]
+  activeStreamsMap = new Map();
   // if in developer mode
-  devMode;
+  devMode = startupDevMode;
   // if the process is sidelined
-  isInactive;
+  isInactive = !startupDevMode;
   // A message for users on first VC join
-  startUpMessage;
+  startUpMessage = '';
   // list of server playback metadata
-  servers;
+  servers = new Map();
   // the interval to view the active process
   checkActiveInterval;
-  // XDB of the server prefixes (see database/api for XDB reference)
+  // is null | XDB of the server prefixes. (see database/api for XDB reference)
   serverPrefixes;
 
-  constructor () {
-    this.activeMS = 0;
-    this.dateActive = null;
-    this.totalStreamTime = 0;
-    // [gid] => Date.now()
-    this.activeStreamsMap = new Map();
-    this.devMode = startupDevMode;
-    this.isInactive = !startupDevMode;
-    this.startUpMessage = '';
-    this.servers = new Map();
-    this.serverPrefixes = null;
-  }
+  constructor () {}
 
   // adds an active stream
   addActiveStream (gid) {
@@ -71,6 +60,7 @@ class ProcessStats {
    */
   setProcessInactive () {
     this.isInactive = true;
+    this.serverPrefixes = null;
     console.log('-sidelined-');
     if (this.dateActive) {
       this.activeMS += Date.now() - this.dateActive;
@@ -82,6 +72,7 @@ class ProcessStats {
    * Sets the process as active.
    */
   setProcessActive () {
+    this.servers.clear();
     this.isInactive = false;
     console.log('-active-');
     this.dateActive = Date.now();
