@@ -1,5 +1,5 @@
 const ytdl = require('ytdl-core-discord');
-const {botInVC} = require('../utils/utils');
+const {botInVC_Guild} = require('../utils/utils');
 const {getData} = require('spotify-url-info');
 const {botID, StreamType} = require('../utils/process/constants');
 // imports for YouTube captions
@@ -13,30 +13,30 @@ const GeniusClient = new Genius.Client();
 
 /**
  * Returns lyrics for what is currently playing in a server.
- * @param message The message metadata
- * @param mgid The message guild id
+ * @param channel The channel metadata
+ * @param reactionCallback A callback for when the lyrics (text) is sent within the channel.
  * @param args The args with the message content
- * @param server The server playback metadata
+ * @param queueItem The queueItem to get the lyrics of.
+ * @param messageMemberId
  * @returns {*}
  */
-function runLyricsCommand (message, mgid, args, server) {
-  if ((!botInVC(message) || !server.queue[0]) && !args[1]) {
-    return message.channel.send('must be playing a song');
+function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMemberId) {
+  if ((!botInVC_Guild(channel.guild) || !queueItem) && !args[1]) {
+    return channel.send('must be playing a song');
   }
-  message.channel.send('retrieving lyrics...').then(async sentMsg => {
-    server.numSinceLastEmbed += 2;
+  channel.send('retrieving lyrics...').then(async sentMsg => {
     let searchTerm;
     let searchTermRemix;
     let songName;
     let artistName;
-    const lUrl = server.queue[0].url;
+    const lUrl = queueItem.url;
     let infos;
     if (args[1]) {
       args[0] = '';
       searchTerm = args.join(' ').trim();
     } else {
-      if (server.queue[0].type === StreamType.SPOTIFY) {
-        infos = server.queue[0].infos || await getData(lUrl);
+      if (queueItem.type === StreamType.SPOTIFY) {
+        infos = queueItem.infos || await getData(lUrl);
         songName = infos.name.toLowerCase();
         let songNameSubIndex = songName.search('[-]');
         if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
@@ -67,8 +67,8 @@ function runLyricsCommand (message, mgid, args, server) {
               ' remix';
           }
         }
-      } else if (server.queue[0].type === StreamType.YOUTUBE) {
-        infos = server.queue[0].infos || await ytdl.getBasicInfo(lUrl);
+      } else if (queueItem.type === StreamType.YOUTUBE) {
+        infos = queueItem.infos || await ytdl.getBasicInfo(lUrl);
         if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
           // use video metadata
           searchTerm = songName = infos.videoDetails.media.song;
@@ -115,17 +115,16 @@ function runLyricsCommand (message, mgid, args, server) {
               ' remix';
           }
         }
-      } else return message.channel.send('*lyrics command not supported for this stream type*');
+      } else return channel.send('*lyrics command not supported for this stream type*');
     }
-    if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, server, message.member)
-        && !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), server, message.member)
-        && !await sendSongLyrics(sentMsg, searchTerm, server, message.member)) :
-      !await sendSongLyrics(sentMsg, searchTerm, server, message.member)) {
+    if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, messageMemberId, reactionCallback)
+        && !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), messageMemberId, reactionCallback)
+        && !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) :
+      !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
-        getYoutubeSubtitles(sentMsg, lUrl, server, infos);
+        getYoutubeSubtitles(sentMsg, lUrl, infos, reactionCallback);
       } else {
         sentMsg.edit('no results found');
-        server.numSinceLastEmbed--;
       }
     }
   });
@@ -135,11 +134,11 @@ function runLyricsCommand (message, mgid, args, server) {
  * Sends song lyrics based on the search term.
  * @param message The message metadata.
  * @param searchTerm The search term to look for.
- * @param server The server.
- * @param messageMember {module:"discord.js".GuildMember} The member that send the command.
+ * @param messageMemberId {string} The id of the member that send the command.
+ * @param reactionCallback Callback for when the full text is sent.
  * @returns {Promise<Boolean>} The status of if the song lyrics were found and sent.
  */
-async function sendSongLyrics (message, searchTerm, server, messageMember) {
+async function sendSongLyrics (message, searchTerm, messageMemberId, reactionCallback) {
   try {
     const firstSong = (await GeniusClient.songs.search(searchTerm))[0];
     await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
@@ -153,11 +152,11 @@ async function sendSongLyrics (message, searchTerm, server, messageMember) {
         lyrics = await lyrics;
         // send the lyrics text on reaction click
         const sentLyricsMsg = await message.channel.send((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics));
-        server.numSinceLastEmbed += 10;
+        reactionCallback();
         // start reactionCollector for lyrics
         sentLyricsMsg.react(reactions.X).then();
         const lyricsFilter = (reaction, user) => {
-          return user.id === messageMember.id && [reactions.X].includes(reaction.emoji.name);
+          return user.id === messageMemberId && [reactions.X].includes(reaction.emoji.name);
         };
         const lyricsCollector = sentLyricsMsg.createReactionCollector(lyricsFilter, {time: 300000, dispose: true});
         lyricsCollector.once('collect', () => {
@@ -167,7 +166,6 @@ async function sendSongLyrics (message, searchTerm, server, messageMember) {
         lyricsCollector.on('end', () => {
           if (sentMsg.reactions) sentMsg.reactions.removeAll();
         });
-
       });
     });
     return true;
@@ -182,10 +180,10 @@ async function sendSongLyrics (message, searchTerm, server, messageMember) {
  * respective text channel.
  * @param message The message that triggered the bot.
  * @param url The video url to get the subtitles.
- * @param server The server to update.
  * @param infos The ytdl infos.
+ * @param reactionCallback Callback for when the full text is sent.
  */
-function getYoutubeSubtitles (message, url, server, infos) {
+function getYoutubeSubtitles (message, url, infos, reactionCallback) {
   try {
     const player_resp = infos.player_response;
     const tracks = player_resp.captions.playerCaptionsTracklistRenderer.captionTracks;
@@ -227,7 +225,8 @@ function getYoutubeSubtitles (message, url, server, infos) {
                 const collector = sentMsg.createReactionCollector(filter, {time: 600000});
 
                 collector.once('collect', () => {
-                  message.edit(`***Captions from YouTube***\n${finalString}`).then(server.numSinceLastEmbed += 10);
+                  message.edit(`***Captions from YouTube***\n${finalString}`);
+                  reactionCallback();
                 });
               });
             }
@@ -237,7 +236,6 @@ function getYoutubeSubtitles (message, url, server, infos) {
     });
   } catch (e) {
     message.edit('no results found');
-    server.numSinceLastEmbed -= 2;
   }
 }
 

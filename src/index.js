@@ -48,6 +48,7 @@ const {runPauseCommand} = require('./commands/pause');
 const {runDeleteCommand} = require('./commands/database/delete');
 const {runStopPlayingCommand} = require('./commands/stop');
 const {runInsertCommand} = require('./commands/insert');
+const {parent_thread} = require('./threads/parent_thread');
 
 process.setMaxListeners(0);
 
@@ -370,7 +371,7 @@ async function runCommandCases (message) {
       break;
     case 'lyric':
     case 'lyrics':
-      runLyricsCommand(message, mgid, args, server);
+      parent_thread('lyrics', message.id, message.channel.id, [args, server.queue[0], message.member.id]);
       break;
     // test purposes - run database links
     case 'gd':

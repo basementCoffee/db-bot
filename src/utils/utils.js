@@ -95,6 +95,14 @@ function botInVC (message) {
   }
 }
 
+function botInVC_Guild(guild){
+  try {
+    return guild.voice?.channel;
+  } catch (e) {
+    return false;
+  }
+}
+
 /**
  * Returns the queue display status.
  * @param server The server.
@@ -446,5 +454,5 @@ module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
-  logError, joinVoiceChannelSafe, pauseComputation, playComputation, getTimeActive,
+  logError, joinVoiceChannelSafe, pauseComputation, playComputation, getTimeActive, botInVC_Guild
 };
