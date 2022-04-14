@@ -337,7 +337,7 @@ function removeDBMessage (channelID, deleteNum = 1, force) {
             if (firstRun) {
               firstRun = false;
               await item.delete();
-            } else if (item?.member.id === botID || force) {
+            } else if (item?.member?.id === botID || force) {
               await item.delete();
               deleteNum--;
             }
