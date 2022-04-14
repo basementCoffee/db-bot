@@ -95,7 +95,7 @@ function botInVC (message) {
   }
 }
 
-function botInVC_Guild(guild){
+function botInVC_Guild (guild) {
   try {
     return guild.voice?.channel;
   } catch (e) {
@@ -231,8 +231,6 @@ async function createMemoryEmbed () {
       `\nload-avg: ${Math.round(os.loadavg()[1] * 100) / 100}%`);
 }
 
-
-
 /**
  * Ends the stream if a configuration for it is available.
  * @param server The server in which to end the stream.
@@ -339,7 +337,7 @@ function removeDBMessage (channelID, deleteNum = 1, force) {
             if (firstRun) {
               firstRun = false;
               await item.delete();
-            } else if (item.member.id === botID || force) {
+            } else if (item?.member.id === botID || force) {
               await item.delete();
               deleteNum--;
             }

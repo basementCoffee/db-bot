@@ -10,12 +10,11 @@ const processStats = require('./utils/process/ProcessStats');
 const {gsrun, deleteRows} = require('./commands/database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
-  unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage,
-  logError, joinVoiceChannelSafe, getTimeActive
+  unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, joinVoiceChannelSafe,
+  getTimeActive
 } = require('./utils/utils');
 const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
-const {runLyricsCommand} = require('./commands/lyrics');
 let {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
   TWITCH_BASE_LINK, StreamType
@@ -906,7 +905,7 @@ async function runCommandCases (message) {
       message.channel.send(devCEmbed);
       break;
     case 'gznuke':
-      removeDBMessage(message.channel.id, parseInt(args[1]) || 1, args[2] === 'force');
+      parent_thread('gzn', message.id, message.channel.id, [message.channel.id, parseInt(args[1]) || 1, args[2] === 'force']);
       break;
     case 'gzupdate':
       devUpdateCommand(message, args.splice(1));

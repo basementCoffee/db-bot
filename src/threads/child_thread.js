@@ -1,11 +1,13 @@
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 const {bot, botID} = require('../utils/process/constants');
 const {runLyricsCommand} = require('../commands/lyrics');
+const {removeDBMessage} = require('../utils/utils');
 
-process.on('message', async function (m) {
-  try{
-    await bot.login(token);
-    if (bot.user.id !== botID) throw new Error('Invalid botID');
+let loggedIn = false;
+
+process.on('message', async (m) => {
+  if (!loggedIn) await login();
+  try {
     switch (m.content.commandName) {
       case 'lyrics':
         bot.channels.fetch(m.content.channelId).then(channel => {
@@ -23,10 +25,18 @@ process.on('message', async function (m) {
           }
         });
         break;
+      case 'gzn':
+        removeDBMessage(...m.content.commandArgs);
+        break;
       default:
         console.log(`invalid command name: ${m.content.commandName}`);
     }
-  } catch(e){
-
-  }
+  } catch (e) {}
 });
+
+async function login () {
+  await bot.login(token);
+  if (bot.user.id !== botID) throw new Error('Invalid botID');
+  loggedIn = true;
+}
+
