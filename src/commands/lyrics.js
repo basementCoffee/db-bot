@@ -68,8 +68,9 @@ function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMe
           }
         }
       } else if (queueItem.type === StreamType.YOUTUBE) {
-        infos = queueItem.infos || await ytdl.getBasicInfo(lUrl);
-        if (infos.videoDetails.media && infos.videoDetails.title.includes(infos.videoDetails.media.song)) {
+        infos = queueItem.infos || await ytdl.getInfo(lUrl);
+        const title = infos.title || infos.videoDetails.title;
+        if (infos.videoDetails?.media && title.includes(infos.videoDetails.media.song)) {
           // use video metadata
           searchTerm = songName = infos.videoDetails.media.song;
           let songNameSubIndex = songName.search('[(]');
@@ -90,17 +91,17 @@ function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMe
           }
         } else {
           // use title
-          let songNameSubIndex = infos.videoDetails.title.search('[(]');
+          let songNameSubIndex = infos.title.search('[(]');
           if (songNameSubIndex !== -1) {
-            searchTerm = infos.videoDetails.title.substring(0, songNameSubIndex);
+            searchTerm = infos.title.substring(0, songNameSubIndex);
           } else {
-            songNameSubIndex = infos.videoDetails.title.search('[\[]');
-            if (songNameSubIndex !== -1) searchTerm = infos.videoDetails.title.substring(0, songNameSubIndex);
-            else searchTerm = infos.videoDetails.title;
+            songNameSubIndex = infos.title.search('[\[]');
+            if (songNameSubIndex !== -1) searchTerm = infos.title.substring(0, songNameSubIndex);
+            else searchTerm = infos.title;
           }
         }
-        if (infos.videoDetails.title.toLowerCase().includes('remix')) {
-          let remixArgs = infos.videoDetails.title.toLowerCase().split(' ');
+        if (infos.title.toLowerCase().includes('remix')) {
+          let remixArgs = infos.title.toLowerCase().split(' ');
           let wordIndex = 0;
           for (let i of remixArgs) {
             if (i.includes('remix') && wordIndex !== 0) {
