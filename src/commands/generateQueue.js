@@ -14,7 +14,7 @@ const {runInsertCommand} = require('./insert');
  * @returns {Promise<void>|*}
  */
 function runQueueCommand (server, message, mgid, noErrorMsg) {
-  if (server.queue < 1 || !message.guild.voice.channel) {
+  if (server.queue < 1 || !message.guild.voice?.channel) {
     if (noErrorMsg && !botInVC(message)) return;
     return message.channel.send('There is no active queue right now');
   }
