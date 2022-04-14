@@ -86,15 +86,17 @@ async function createEmbed (url, infos) {
 }
 
 /**
- * Sends an updated playback embed with the fields updated. Assumes that a session is ongoing.
+ * Sends an updated playback embed with the fields updated. Verifies that there is a currentEmbed within the server.
+ * Assumes that a session is ongoing.
  * @param server The server.
  * @returns {Promise<void>}
  */
 async function updateActiveEmbed (server) {
+  const queueItem = server.queue[0] || server.queueHistory[server.queueHistory.length-1];
   try {
-    if (!server.currentEmbed && server.queue[0]?.url) return;
-    let embed = await createEmbed(server.queue[0].url, server.queue[0].infos);
-    server.queue[0].infos = embed.infos;
+    if (!server.currentEmbed || !queueItem) return;
+    let embed = await createEmbed(queueItem.url, queueItem.infos);
+    queueItem.infos = embed.infos;
     embed = embed.embed;
     embed.addField('Queue', getQueueText(server), true);
     server.currentEmbed.edit(embed);

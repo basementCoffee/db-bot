@@ -280,6 +280,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
           runAutoplayCommand(message, server, vc, queueItem);
         } else {
           if (server.collector) server.collector.stop();
+          updateActiveEmbed(server);
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), LEAVE_VC_TIMEOUT);
           dispatcherMap[vc.id] = undefined;
           processStats.removeActiveStream(message.guild.id);
