@@ -4,12 +4,13 @@ const processStats = require('./process/ProcessStats');
 
 function shutdown (type) {
   return () => {
+    const wasActive = !processStats.isInactive;
     processStats.setProcessInactive();
     console.log('shutting down...');
     // noinspection JSUnresolvedFunction
     try {
       bot.channels.cache.get(CH.process).send(`shutting down: '${process.pid}' (${type}) ${processStats.devMode ? `(dev)` : ''}`);
-      if (!processStats.devMode) bot.channels.cache.get(CH.process).send(`=gzz`);
+      if (!processStats.devMode && wasActive) bot.channels.cache.get(CH.process).send(`=gzz`);
     } catch (e) {}
     const activeCSize = bot.voice.connections.size;
     if (activeCSize > 0) {
