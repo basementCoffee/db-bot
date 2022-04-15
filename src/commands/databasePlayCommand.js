@@ -61,6 +61,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
       if (tempUrl) {
         // push to queue
         await pushToQueue(message, server, first, playRightNow, tempUrl);
+        dbAddedToQueue++;
         if (first) first = false;
       } else {
         // check personal db if applicable
@@ -75,6 +76,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
             await pushToQueue(message, server, first, playRightNow, tempUrl);
             if (first) first = false;
             dbAddInt++;
+            dbAddedToQueue++;
             continue;
           }
         }
