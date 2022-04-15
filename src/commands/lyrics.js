@@ -91,17 +91,17 @@ function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMe
           }
         } else {
           // use title
-          let songNameSubIndex = infos.title.search('[(]');
+          let songNameSubIndex = title.search('[(]');
           if (songNameSubIndex !== -1) {
-            searchTerm = infos.title.substring(0, songNameSubIndex);
+            searchTerm = title.substring(0, songNameSubIndex);
           } else {
-            songNameSubIndex = infos.title.search('[\[]');
-            if (songNameSubIndex !== -1) searchTerm = infos.title.substring(0, songNameSubIndex);
-            else searchTerm = infos.title;
+            songNameSubIndex = title.search('[\[]');
+            if (songNameSubIndex !== -1) searchTerm = title.substring(0, songNameSubIndex);
+            else searchTerm = title;
           }
         }
-        if (infos.title.toLowerCase().includes('remix')) {
-          let remixArgs = infos.title.toLowerCase().split(' ');
+        if (title.toLowerCase().includes('remix')) {
+          let remixArgs = title.toLowerCase().split(' ');
           let wordIndex = 0;
           for (let i of remixArgs) {
             if (i.includes('remix') && wordIndex !== 0) {
@@ -147,10 +147,14 @@ async function sendSongLyrics (message, searchTerm, messageMemberId, reactionCal
       const filter = (reaction, user) => {
         return user.id !== botID && ['📄'].includes(reaction.emoji.name);
       };
-      let lyrics = firstSong.lyrics();
+      let lyrics;
       const collector = sentMsg.createReactionCollector(filter, {time: 300000});
       collector.once('collect', async () => {
-        lyrics = await lyrics;
+        try {
+          lyrics = await firstSong.lyrics();
+        } catch (e) {
+          lyrics = '*could not retrieve*';
+        }
         // send the lyrics text on reaction click
         const sentLyricsMsg = await message.channel.send((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics));
         reactionCallback();
@@ -202,6 +206,7 @@ function getYoutubeSubtitles (message, url, infos, reactionCallback) {
               let prevDuration = 0;
               let newDuration;
               for (let i of result.transcript.text) {
+                if (!i._) continue;
                 if (i._.trim().substring(0, 1) === '[') {
                   finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
                     i._;
