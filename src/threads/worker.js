@@ -2,10 +2,11 @@ const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 const {bot, botID} = require('../utils/process/constants');
 const {runLyricsCommand} = require('../commands/lyrics');
 const {removeDBMessage} = require('../utils/utils');
+const {parentPort} = require('worker_threads');
 
 let loggedIn = false;
 
-process.on('message', async (m) => {
+parentPort.on('message', async (m) => {
   if (!loggedIn) await login();
   try {
     switch (m.content.commandName) {
@@ -13,7 +14,7 @@ process.on('message', async (m) => {
         bot.channels.fetch(m.content.channelId).then(channel => {
           if (channel) {
             const reactionsCallback = () => {
-              process.send({
+              parentPort.postMessage({
                 content: {
                   commandName: m.content.commandName,
                   guildId: channel.guild.id,
