@@ -50,19 +50,30 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
   let tempUrl;
   let dbAddedToQueue = 0;
   if (args[2]) {
-    let dbAddInt = 1;
+    let dbAddInt;
     let unFoundString = '*could not find: ';
     let firstUnfoundRan = false;
     let otherSheet;
-    let first = true;
-    while (args[dbAddInt]) {
+    let incrementor;
+    let whileExpression;
+    let addQICallback;
+    if (playRightNow) {
+      dbAddInt = args.length - 1;
+      incrementor = () => --dbAddInt;
+      whileExpression = () => dbAddInt;
+      addQICallback = (queueItem) => server.queue.unshift(queueItem);
+    } else {
+      dbAddInt = 1;
+      incrementor = () => ++dbAddInt;
+      whileExpression = () => dbAddInt < args.length;
+      addQICallback = (queueItem) => server.queue.push(queueItem);
+    }
+    while (whileExpression()) {
       args[dbAddInt] = args[dbAddInt].replace(/,/, '');
       tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
       if (tempUrl) {
         // push to queue
-        await pushToQueue(message, server, first, playRightNow, tempUrl);
-        dbAddedToQueue++;
-        if (first) first = false;
+        dbAddedToQueue += await addLinkToQueueSimple(message, server, playRightNow, tempUrl, addQICallback);
       } else {
         // check personal db if applicable
         if (sheetName.substring(0, 1) !== 'p') {
@@ -73,10 +84,8 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
           tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
           if (tempUrl) {
             // push to queue
-            await pushToQueue(message, server, first, playRightNow, tempUrl);
-            if (first) first = false;
-            dbAddInt++;
-            dbAddedToQueue++;
+            dbAddedToQueue += await addLinkToQueueSimple(message, server, playRightNow, tempUrl, addQICallback);
+            incrementor();
             continue;
           }
         }
@@ -86,7 +95,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
         unFoundString = unFoundString.concat(args[dbAddInt]);
         firstUnfoundRan = true;
       }
-      dbAddInt++;
+      incrementor();
     }
     if (firstUnfoundRan) {
       unFoundString = unFoundString.concat('*');
@@ -172,21 +181,25 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
   return true;
 }
 
-async function pushToQueue (message, server, first, playRightNow, tempUrl) {
+/**
+ * Pushes a link to the queue. Will add individual links if valid playlist is provided.
+ * @param message The message object.
+ * @param server The server metadata.
+ * @param addToFront If it should be added to the beginning of the queue.
+ * @param tempUrl The url to add.
+ * @param addQICallback A callback for the generated queueItem.
+ * @return {Promise<number>} The number of links added to the queue.
+ */
+async function addLinkToQueueSimple (message, server, addToFront, tempUrl, addQICallback) {
   let dbAddedToQueue = 0;
   const playlistType = verifyPlaylist(tempUrl);
   if (playlistType) {
-    dbAddedToQueue += await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-  } else if (playRightNow) {
-    if (first) {
-      server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
-    } else server.queue.splice(dbAddedToQueue, 0, createQueueItem(tempUrl, playlistType, null));
-    dbAddedToQueue++;
+    dbAddedToQueue += await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, addToFront);
   } else {
-    server.queue.push(createQueueItem(tempUrl, playlistType, null));
+    addQICallback(createQueueItem(tempUrl, playlistType, null));
     dbAddedToQueue++;
   }
   return dbAddedToQueue;
 }
 
-module.exports = {runDatabasePlayCommand}
+module.exports = {runDatabasePlayCommand};
