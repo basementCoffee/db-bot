@@ -1,7 +1,7 @@
 const token = process.env.TOKEN.replace(/\\n/gm, '\n');
 const {bot, botID} = require('../utils/process/constants');
 const {runLyricsCommand} = require('../commands/lyrics');
-const {removeDBMessage} = require('../utils/utils');
+const {removeDBMessage, logError} = require('../utils/utils');
 const {parentPort} = require('worker_threads');
 
 let loggedIn = false;
@@ -40,4 +40,9 @@ async function login () {
   if (bot.user.id !== botID) throw new Error('Invalid botID');
   loggedIn = true;
 }
+
+process.on('uncaughtException', error => {
+  logError(`(worker process error) ${error.name}: ${error.message}`);
+  console.log(error)
+});
 
