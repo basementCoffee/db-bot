@@ -985,6 +985,8 @@ function updatedQueueMessage (channel, messageText, server) {
  * @param user Optional - username, overrides the message owner's name
  */
 async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user) {
+  const keysMsg = (botInVC(message) ? {edit: (content, embed) => message.channel.send(content || embed)} :
+    await message.channel.send('*getting keys...*'));
   const xdb = await getXdb(server, sheetName, botInVC(message));
   const prefixString = server.prefix;
   const keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
@@ -998,7 +1000,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
     } else {
       emptyDBMessage = 'Your ';
     }
-    message.channel.send('**' + emptyDBMessage + 'saved-links list is empty.**\n*Save a link by putting a word followed by a link.' +
+    keysMsg.edit('**' + emptyDBMessage + 'saved-links list is empty.**\n*Save a link by putting a word followed by a link.' +
       '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
   } else {
     let sortByRecent = true;
@@ -1041,7 +1043,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
         .setColor(keyEmbedColor).setFooter(`play command: ${prefixString + cmdType}d [key]`);
       return embedKeysMessage;
     };
-    message.channel.send(generateKeysEmbed(sortByRecent)).then(async sentMsg => {
+    keysMsg.edit('', generateKeysEmbed(sortByRecent)).then(async sentMsg => {
       const server = processStats.servers[message.guild.id];
       sentMsg.react(reactions.QUESTION).then(() => sentMsg.react(reactions.SHUFFLE).then(sentMsg.react(reactions.MIX)));
       const filter = (reaction, user) => {
