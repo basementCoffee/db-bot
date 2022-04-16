@@ -417,8 +417,10 @@ async function joinVoiceChannelSafe (message, server) {
   let connection = server.connection;
   let vc = message.member?.voice?.channel;
   if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
-    if (connection && dispatcherMap[connection.channel.id]) pauseComputation(connection.channel);
-    dispatcherMap[connection.channel.id] = undefined;
+    if (connection && dispatcherMap[connection.channel.id]) {
+      pauseComputation(connection.channel);
+      dispatcherMap[connection.channel.id] = undefined;
+    }
     resetSession(server);
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
