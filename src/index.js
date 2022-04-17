@@ -1438,11 +1438,6 @@ async function updateVoiceState (update, server) {
       server.leaveVCTimeout = setTimeout(() => {
         server.leaveVCTimeout = null;
         if (update.channel.members.filter(x => !x.user.bot).size < 1) {
-          if (server.seamless.timeout) {
-            clearTimeout(server.seamless.timeout);
-            server.seamless.timeout = null;
-          }
-          server.seamless.function = null;
           update.channel.leave();
         }
       }, leaveVCInt);
