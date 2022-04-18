@@ -3,8 +3,7 @@ const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, MAX_QUEUE_S, dispatcherMapStatus,
-  dispatcherMap, LEAVE_VC_TIMEOUT
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, dispatcherMapStatus, dispatcherMap
 } = require('./process/constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
@@ -407,38 +406,6 @@ function playComputation (voiceChannel, force) {
 }
 
 /**
- * Joins the voice channel of the message member (if applicable).
- * If there is an error upon join attempt then it caught and forwarded to the user.
- * @param message The message metadata.
- * @param server The server object.
- * @return {Promise<boolean>} True upon successful voice channel join.
- */
-async function joinVoiceChannelSafe (message, server) {
-  let connection = server.connection;
-  let vc = message.member?.voice?.channel;
-  if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
-    if (connection && dispatcherMap[connection.channel.id]) {
-      pauseComputation(connection.channel);
-      dispatcherMap[connection.channel.id] = undefined;
-    }
-    resetSession(server);
-    if (server.leaveVCTimeout) {
-      clearTimeout(server.leaveVCTimeout);
-      server.leaveVCTimeout = null;
-    }
-    await server.currentEmbed?.reactions?.removeAll();
-    try {
-      server.connection = await vc.join();
-      server.leaveVCTimeout = setTimeout(() => server.connection.disconnect(), LEAVE_VC_TIMEOUT);
-      return true;
-    } catch (e) {
-      catchVCJoinError(e, message.channel);
-    }
-  }
-  return false;
-}
-
-/**
  * Get the amount of time that this process has been active as a formatted string.
  * @return {string}
  */
@@ -454,5 +421,5 @@ module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
-  logError, joinVoiceChannelSafe, pauseComputation, playComputation, getTimeActive, botInVC_Guild
+  logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild
 };

@@ -10,8 +10,7 @@ const processStats = require('./utils/process/ProcessStats');
 const {gsrun, deleteRows} = require('./commands/database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
-  unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, joinVoiceChannelSafe,
-  getTimeActive
+  unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive
 } = require('./utils/utils');
 const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
@@ -48,6 +47,7 @@ const {runDeleteCommand} = require('./commands/database/delete');
 const {runStopPlayingCommand} = require('./commands/stop');
 const {runInsertCommand} = require('./commands/insert');
 const {parent_thread} = require('./threads/parent_thread');
+const {joinVoiceChannelSafe} = require('./commands/join');
 
 process.setMaxListeners(0);
 
