@@ -107,13 +107,13 @@ async function updateActiveEmbed (server) {
 
 /**
  * Sends a session ended embed.
- * @param server
- * @param item queue item
+ * @param server The server metadata.
+ * @param item The QueueItem to display.
  * @return {Promise<void>}
  */
 async function sessionEndEmbed(server, item){
   try {
-    if (!server.currentEmbed) return;
+    if (!server.currentEmbed || !item) return;
     let embed = await createEmbed(item.url, item.infos);
     embed = embed.embed;
     server.currentEmbedChannelId = '0';
