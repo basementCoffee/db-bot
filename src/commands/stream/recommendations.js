@@ -1,8 +1,9 @@
-const {isCoreAdmin, botInVC, setSeamless, resetSession, pushQueue} = require('../../utils/utils');
+const {botInVC, setSeamless, resetSession, pushQueue} = require('../../utils/utils');
 const {bot, SPOTIFY_BASE_LINK} = require('../../utils/process/constants');
 const {playLinkToVC} = require('./stream');
 const {updateActiveEmbed} = require('../../utils/embed');
 const {addLinkToQueue} = require('../../utils/playlist');
+const {isCoreAdmin} = require('../../utils/permissions');
 
 /**
  * Plays a recommendation.
