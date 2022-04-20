@@ -27,7 +27,7 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
       server.userKeys.set(sheetName, null);
       if (args[2].includes(SPOTIFY_BASE_LINK)) args[2] = linkFormatter(args[2], SPOTIFY_BASE_LINK);
       else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
-      runAddCommand(server, args, message, sheetName, printMsgToChannel);
+      addToDatabase(server, args, message, sheetName, printMsgToChannel);
       return;
     } else if (message.member.voice?.channel && server.queue[0]) {
       args[2] = server.queue[0].url;
