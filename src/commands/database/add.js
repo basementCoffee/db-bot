@@ -18,8 +18,8 @@ function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
       if (linkZ.substring(linkZ.length - 1) === ',') {
         linkZ = linkZ.substring(0, linkZ.length - 1);
       }
-      if (args[z].includes('.') || args[z].includes(',')) {
-        message.channel.send("did not add '" + args[z] + "', names cannot include '.' or ','");
+      if (args[z].includes('.') || args[z].includes(',' || args[z].includes('='))) {
+        message.channel.send(`did not add **${args[z]}** because names cannot include the symbols [ . , = ]`);
         songsAddedInt--;
       } else {
         let alreadyExists = false;
@@ -66,5 +66,4 @@ function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
 }
 
 
-
-module.exports = {addToDatabase}
+module.exports = {addToDatabase};
