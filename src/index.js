@@ -28,7 +28,7 @@ const {
 const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
 const {runDatabasePlayCommand} = require('./commands/databasePlayCommand');
-const {runAddCommandWrapper} = require('./commands/add');
+const {runAddCommandWrapper, runAddCommandWrapper_P} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
@@ -36,14 +36,14 @@ const {runRandomToQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');
 const {runQueueCommand} = require('./commands/generateQueue');
 const {runUniversalSearchCommand} = require('./commands/database/search');
-const {sendListSize, getServerPrefix} = require('./commands/database/retrieval');
+const {sendListSize, getServerPrefix, getXdb2, getSettings, getXdb} = require('./commands/database/retrieval');
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {playFromWord} = require('./commands/playFromWord');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
 const {changePrefix} = require('./commands/changePrefix');
 const {runPlayCommand} = require('./commands/play');
 const {runPauseCommand} = require('./commands/pause');
-const {runDeleteCommand} = require('./commands/database/delete');
+const {runDeleteCommand, runDeleteKeyCommand_P} = require('./commands/database/delete');
 const {runStopPlayingCommand} = require('./commands/stop');
 const {runInsertCommand} = require('./commands/insert');
 const {parent_thread} = require('./threads/parent_thread');
@@ -187,8 +187,8 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
 async function runCommandCases (message) {
   const mgid = message.guild.id;
   // the server guild playback data
-  if (!processStats.servers[mgid]) processStats.initializeServer(mgid);
-  const server = processStats.servers[mgid];
+  if (!processStats.servers.get(mgid)) processStats.initializeServer(mgid);
+  const server = processStats.servers.get(mgid);
   if (processStats.devMode) server.prefix = '='; // devmode prefix
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed++;
@@ -585,6 +585,29 @@ async function runCommandCases (message) {
       break;
     case 'ping':
       message.channel.send(`latency is ${Math.round(bot.ws.ping)}ms`);
+      break;
+    case 't-x':
+      console.log(await getXdb(server, `p${message.member.id}`, true));
+      break;
+    case 't-1':
+      console.log(await getXdb2(server, `p${message.member.id}`, true));
+      break;
+    case 't-2':
+      await getSettings(server, `p${message.member.id}`, false);
+      break;
+    case 't-save':
+      console.log(server.userKeys.get(`p${message.member.id}`));
+      break;
+    case 't-add':
+      runAddCommandWrapper_P(message, args, `p${message.member.id}`, true, 'm', server);
+      // addToDatabase_P(server, ['jane', 'jane-link', 'jane2', 'jane2-link'], message, `p${message.member.id}`);
+      break;
+    case 't-set':
+      console.log(await getSettings(server, `p${message.member.id}`));
+      break;
+    case 't-del':
+      if (!args[1]) return message.channel.send(`*no args provided*`);
+      runDeleteKeyCommand_P(message,args[1], `p${message.member.id}`, server);
       break;
     case 'prec':
     case 'precc':
@@ -1291,11 +1314,11 @@ async function devProcessCommands (message) {
       if (processStats.devMode && zargs[1] === process.pid.toString()) {
         processStats.devMode = false;
         processStats.setProcessInactive();
-        processStats.servers[message.guild.id] = null;
+        processStats.servers.delete(message.guild.id);
         return message.channel.send(`*demode is off ${process.pid}*`);
       } else if (zargs[1] === process.pid.toString()) {
         processStats.devMode = true;
-        processStats.servers[message.guild.id] = null;
+        processStats.servers.delete(message.guild.id);
         if (processStats.checkActiveInterval) {
           clearInterval(processStats.checkActiveInterval);
           processStats.checkActiveInterval = null;
@@ -1372,7 +1395,7 @@ bot.on('message', (message) => {
 });
 
 bot.on('voiceStateUpdate', update => {
-  const server = processStats.servers[update.guild.id];
+  const server = processStats.servers.get(update.guild.id);
   if (processStats.isInactive) {
     try {
       server.collector.stop();

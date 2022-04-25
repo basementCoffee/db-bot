@@ -1,5 +1,5 @@
 const {botInVC} = require('../../utils/utils');
-const {gsrun, gsUpdateAdd} = require('./api/api');
+const {gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite} = require('./api/api');
 const processStats = require('../../utils/process/ProcessStats');
 
 /**
@@ -11,6 +11,27 @@ const processStats = require('../../utils/process/ProcessStats');
  * @returns {Promise<{congratsDatabase: Map<>, referenceDatabase: Map<>, line: Array<>, dsInt: int} | undefined>}
  */
 async function getXdb (server, sheetName, save) {
+  const userSettings = await getSettings(server, sheetName);
+  if (userSettings.isTest) {
+    const xdb = await getXdb_P(server, sheetName, save);
+    const congratsDatabase = new Map();
+    const referenceDatabase = new Map();
+    const line = [];
+    for (let [, key] of xdb.globalKeys){
+      line.push(key.name);
+      congratsDatabase.set(key.name, key.link);
+      referenceDatabase.set(key.name.toUpperCase(), key.link);
+    }
+    const dsInt = xdb.globalKeys.size;
+    return {
+      congratsDatabase, referenceDatabase, line, dsInt
+    }
+  } else {
+    return getOriginalXdb(server, sheetName, save);
+  }
+}
+
+async function getOriginalXdb (server, sheetName, save){
   if (!save) return gsrun('A', 'B', sheetName);
   let xdb = server.userKeys.get(`${sheetName}`);
   if (!xdb) {
@@ -18,6 +39,36 @@ async function getXdb (server, sheetName, save) {
     server.userKeys.set(`${sheetName}`, xdb);
   }
   return xdb;
+}
+
+/**
+ *
+ * @param server
+ * @param sheetName {string}
+ * @param save {any?}
+ * @return {Promise<unknown>}
+ */
+async function getXdb_P (server, sheetName, save) {
+  if (!save) return server.userKeys.get(sheetName) || gsrun_P('E', 'F', sheetName);
+  let xdb = server.userKeys.get(sheetName);
+  if (!xdb) {
+    xdb = await gsrun_P('E', 'F', sheetName);
+    server.userKeys.set(sheetName, xdb);
+  }
+  return xdb;
+}
+
+async function getSettings (server, sheetName) {
+  let xdb = server.userSettings.get(sheetName);
+  if (!xdb) {
+    xdb = await getJSON("H1", sheetName) || {};
+    server.userSettings.set(sheetName, xdb);
+  }
+  return xdb;
+}
+
+async function setSettings (server, sheetName, settingsObj) {
+  gsUpdateOverwrite([settingsObj], sheetName, "H", 1);
 }
 
 /**
@@ -59,5 +110,5 @@ async function getServerPrefix (server, mgid) {
   }
 }
 
-module.exports = {getXdb, sendListSize, getServerPrefix};
+module.exports = {getXdb, sendListSize, getServerPrefix,  getXdb2: getXdb_P, getSettings};
 

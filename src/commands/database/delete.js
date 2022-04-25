@@ -1,5 +1,7 @@
 const {gsrun, gsUpdateOverwrite, deleteRows} = require('./api/api');
 const {runSearchCommand} = require('./search');
+const {getXdb2} = require('./retrieval');
+const {serializeAndUpdate} = require('./utils');
 
 /**
  * Deletes an item from the database.
@@ -45,4 +47,30 @@ async function runDeleteCommand (message, keyName, sheetName, sendMsgToChannel) 
   }
 }
 
-module.exports = {runDeleteCommand}
+async function runDeleteKeyCommand_P(message, keyName, sheetName, server){
+  if (await deleteKey(keyName, sheetName, server)){
+    message.channel.send(`*deleted ${keyName}*`);
+  } else {
+    message.channel.send(`*could not find **${keyName}** within the keys list*`);
+  }
+}
+
+/**
+ * Attempts to delete the key. Returns true if successful.
+ * @param keyName {string}
+ * @param sheetName {string}
+ * @param server
+ * @return {Promise<boolean>} if the key was found
+ */
+async function deleteKey(keyName, sheetName, server){
+  const xdb = await getXdb2(server, sheetName);
+  const keyObj = xdb.globalKeys.get(keyName.toUpperCase());
+  if (!keyObj) return false;
+  let playlistName = keyObj.playlistName;
+  xdb.globalKeys.delete(keyName.toUpperCase());
+  xdb.playlists.get(playlistName.toUpperCase()).delete(keyName.toUpperCase());
+  await serializeAndUpdate(server, sheetName, playlistName, xdb);
+  return true;
+}
+
+module.exports = {runDeleteCommand, runDeleteKeyCommand_P};

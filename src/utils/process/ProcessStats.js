@@ -83,7 +83,7 @@ class ProcessStats {
    * @param mgid The message guild id.
    */
   initializeServer (mgid) {
-    this.servers[mgid] = {
+    this.servers.set(mgid, {
       // now playing is the first element
       queue: [],
       // newest items are pushed
@@ -122,6 +122,8 @@ class ProcessStats {
       leaveVCTimeout: false,
       // the number of consecutive playback errors
       skipTimes: 0,
+      // user settings
+      userSettings: new Map(),
       // properties pertaining to the active stream
       streamData: {
         // the StreamType enum
@@ -157,7 +159,7 @@ class ProcessStats {
       },
       // the last time a DJ tip was sent to a group
       djMessageDate: false
-    };
+    });
   }
 }
 

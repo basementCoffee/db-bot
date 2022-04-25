@@ -32,7 +32,7 @@ function changePrefix(message, server, prefixString, newPrefix){
       await runDeleteCommand(message, newPrefix, 'prefixes', false);
       await addToDatabase(server, [null, message.guild.id, newPrefix], message, 'prefixes', false);
       await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
-        await gsUpdateOverwrite(xdb.congratsDatabase.size + 2, 1, 'prefixes', xdb.dsInt);
+        await gsUpdateOverwrite([xdb.congratsDatabase.size + 3],  'prefixes', xdb.dsInt);
         server.prefix = newPrefix;
         message.channel.send(`Prefix successfully changed to ${newPrefix}`);
         prefixString = ('\\' + newPrefix).substr(-1, 1);
