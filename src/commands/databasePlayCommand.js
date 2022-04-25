@@ -1,4 +1,4 @@
-const {getXdb} = require('./database/retrieval');
+const {getXdb2} = require('./database/retrieval');
 const {getAssumption} = require('./database/search');
 const {playLinkToVC} = require('./stream/stream');
 const {
@@ -41,7 +41,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
     return true;
   }
   server.numSinceLastEmbed++;
-  const xdb = await getXdb(server, sheetName, true);
+  const xdb = await getXdb2(server, sheetName, true);
   let queueWasEmpty = false;
   // if the queue is empty then play
   if (server.queue.length < 1) {
@@ -70,25 +70,11 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
     }
     while (whileExpression()) {
       args[dbAddInt] = args[dbAddInt].replace(/,/, '');
-      tempUrl = xdb.referenceDatabase.get(args[dbAddInt].toUpperCase());
+      tempUrl = xdb.globalKeys.get(args[dbAddInt].toUpperCase())?.link;
       if (tempUrl) {
         // push to queue
         dbAddedToQueue += await addLinkToQueueSimple(message, server, playRightNow, tempUrl, addQICallback);
       } else {
-        // check personal db if applicable
-        if (sheetName.substring(0, 1) !== 'p') {
-          if (!otherSheet) {
-            const xdb = await getXdb(server, `p${message.member.id}`, true);
-            otherSheet = xdb.referenceDatabase;
-          }
-          tempUrl = otherSheet.get(args[dbAddInt].toUpperCase());
-          if (tempUrl) {
-            // push to queue
-            dbAddedToQueue += await addLinkToQueueSimple(message, server, playRightNow, tempUrl, addQICallback);
-            incrementor();
-            continue;
-          }
-        }
         if (firstUnfoundRan) {
           unFoundString = unFoundString.concat(', ');
         }
@@ -109,12 +95,12 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
       await updateActiveEmbed(server);
     }
   } else {
-    tempUrl = xdb.referenceDatabase.get(args[1].toUpperCase());
+    tempUrl = xdb.globalKeys.get(args[1].toUpperCase())?.link;
     if (!tempUrl) {
-      const ss = getAssumption(args[1], xdb.congratsDatabase);
+      const ss = getAssumption(args[1], xdb.globalKeys);
       if (ss) {
         message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
-        tempUrl = xdb.referenceDatabase.get(ss.toUpperCase());
+        tempUrl = xdb.globalKeys.get(ss.toUpperCase())?.link;
         const playlistType = verifyPlaylist(tempUrl);
         if (playRightNow) { // push to queue and play
           adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
@@ -134,13 +120,8 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
           }
         }
       } else if (!printErrorMsg) {
-        if (sheetName.includes('p')) {
-          message.channel.send(`*could not find **${args[1]}** in the keys list*`);
-          return true;
-        } else {
-          runDatabasePlayCommand(args, message, `p${message.member.id}`, playRightNow, false, server).then();
-          return true;
-        }
+        message.channel.send(`*could not find **${args[1]}** in the keys list*`);
+        return true;
       } else if (ss?.length > 0) {
         message.channel.send("*could not find '" + args[1] + "' in database*\n*Did you mean: " + ss + '*');
         return true;

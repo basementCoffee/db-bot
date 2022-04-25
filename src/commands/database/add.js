@@ -67,7 +67,6 @@ function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
   });
 }
 
-
 // args is the list of keys
 async function addToDatabase_P (server, args, message, sheetName, printMsgToChannel, playlistName = 'general', retries) {
   let songsAddedInt = 0;
@@ -79,7 +78,7 @@ async function addToDatabase_P (server, args, message, sheetName, printMsgToChan
       const tempMap = new Map();
       xdb.playlists.set(playlistName.toUpperCase(), tempMap);
       xdb.playlistArray.push(playlistName);
-      gsUpdateOverwrite([xdb.playlistArray.length + 1], sheetName)
+      gsUpdateOverwrite([xdb.playlistArray.length + 1], sheetName);
       return tempMap;
     })();
   while (args[z] && args[z + 1]) {
@@ -94,7 +93,7 @@ async function addToDatabase_P (server, args, message, sheetName, printMsgToChan
       const allkeys = xdb.globalKeys.keys();
       for (const x of allkeys) {
         if (x === args[z].toUpperCase()) {
-          message.channel.send(`*'${x}' is already saved as a key*`);
+          message.channel.send(`*'${xdb.globalKeys.get(x).name}' is already saved as a key*`);
           alreadyExists = true;
           break;
         }

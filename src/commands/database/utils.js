@@ -31,12 +31,12 @@ function serializeData (keysMap, playlistName) {
 }
 
 module.exports = {
-  // serialize and update a single playlist
+  // serialize and update the playlist within the database
   serializeAndUpdate : async (server, sheetName, playlistName, xdb) => {
     const serializedData = serializeData(xdb.playlists.get(playlistName.toUpperCase()), playlistName);
-    let row = xdb.playlistArray.indexOf(playlistName);
+    let row = xdb.playlistArray.indexOf(playlistName.toUpperCase());
     if (row === -1) row = xdb.playlistArray.length;
     await gsUpdateOverwrite([serializedData.keysString, serializedData.valuesString],
-      sheetName, 'E', 10 , "F", row + 2);
+      sheetName, 'E', row + 2 , "F", row + 2);
   }
 }

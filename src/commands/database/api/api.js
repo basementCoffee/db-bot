@@ -122,18 +122,17 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
   }
 
   if (!dsInt) {
-    await gsUpdateOverwrite(['=(COUNTA(E2:E)+2)'], nameOfSheet, 'G', 1);
+    await gsUpdateOverwrite(['=(COUNTA(E2:E))'], nameOfSheet, 'G', 1);
     return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
   }
-
+  const songRange = `${nameOfSheet}!${columnToRun}2:${secondColumn}${dsInt+1}`
   const songObjects = {
     spreadsheetId: stoken,
-    range: nameOfSheet + '!' + columnToRun + '2:' + secondColumn + 'B' + dsInt
+    range: songRange
   };
 
   const dataSO = await gsapi.spreadsheets.values.get(songObjects);
   const arrayOfSpreadsheetValues = dataSO.data.values;
-
   let line;
   // What is returned when searching the db, uses key-name
   const allPlaylists = new Map();
@@ -160,7 +159,12 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
         const values = line[1].split(',');
         // create the keyDataObjects and put in maps
         for (let keyObject of playlistData.ks) {
-          const deserializedKeyObject = {name: keyObject.kn, link: values[incrementor++], timeStamp: keyObject.ts, playlistName: playlistData.pn};
+          const deserializedKeyObject = {
+            name: keyObject.kn,
+            link: values[incrementor++],
+            timeStamp: keyObject.ts,
+            playlistName: playlistData.pn
+          };
           referenceDatabase.set(keyObject.kn.toUpperCase(), deserializedKeyObject);
           globalKeys.set(keyObject.kn.toUpperCase(), deserializedKeyObject);
         }
@@ -198,6 +202,7 @@ const getJSON = async (cellToRun, nameOfSheet) => {
     if (line && line[0]) {
       let parsed;
       try {
+        console.log(line[0]);
         parsed = JSON.parse(line[0]);
       } catch (e) {
         console.log(e);

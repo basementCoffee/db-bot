@@ -69,6 +69,7 @@ async function deleteKey(keyName, sheetName, server){
   let playlistName = keyObj.playlistName;
   xdb.globalKeys.delete(keyName.toUpperCase());
   xdb.playlists.get(playlistName.toUpperCase()).delete(keyName.toUpperCase());
+  server.userKeys.get(sheetName)?.delete(keyName);
   await serializeAndUpdate(server, sheetName, playlistName, xdb);
   return true;
 }

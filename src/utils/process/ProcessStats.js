@@ -146,6 +146,7 @@ class ProcessStats {
         // optional message to delete
         message: undefined
       },
+      // [id, xdb]
       userKeys: new Map(),
       // the server's prefix
       prefix: undefined,

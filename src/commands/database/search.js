@@ -9,7 +9,8 @@ const {getXdb} = require('./retrieval');
  */
 function runSearchCommand (keyName, cdb) {
   const keyNameLen = keyName.length;
-  const keyArray = Array.from(cdb.keys());
+  const keyArray = [];
+  cdb.forEach(value => keyArray.push(value.name));
   let ss = '';
   let ssi = 0;
   let searchKey;

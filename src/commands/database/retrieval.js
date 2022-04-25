@@ -11,7 +11,10 @@ const processStats = require('../../utils/process/ProcessStats');
  * @returns {Promise<{congratsDatabase: Map<>, referenceDatabase: Map<>, line: Array<>, dsInt: int} | undefined>}
  */
 async function getXdb (server, sheetName, save) {
-  const userSettings = await getSettings(server, sheetName);
+  if (!sheetName.includes('p')) {
+    console.log('CALLED SERVER SHEET');
+  }
+  const userSettings = sheetName.includes('p') ? await getSettings(server, sheetName) : {isTest: false};
   if (userSettings.isTest) {
     const xdb = await getXdb_P(server, sheetName, save);
     const congratsDatabase = new Map();
@@ -49,7 +52,7 @@ async function getOriginalXdb (server, sheetName, save){
  * @return {Promise<unknown>}
  */
 async function getXdb_P (server, sheetName, save) {
-  if (!save) return server.userKeys.get(sheetName) || gsrun_P('E', 'F', sheetName);
+  if (!save) return (server.userKeys.get(sheetName) || gsrun_P('E', 'F', sheetName));
   let xdb = server.userKeys.get(sheetName);
   if (!xdb) {
     xdb = await gsrun_P('E', 'F', sheetName);

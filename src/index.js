@@ -386,10 +386,6 @@ async function runCommandCases (message) {
     case 'gknow':
       runDatabasePlayCommand(args, message, 'entries', true, true, server).then();
       break;
-    // .d is the normal play link from database command
-    case 'd':
-      runDatabasePlayCommand(args, message, mgid, false, false, server).then();
-      break;
     case 'know':
     case 'kn':
     case 'dnow':
@@ -398,6 +394,7 @@ async function runCommandCases (message) {
       break;
     // .md is retrieves and plays from the keys list
     case 'md':
+    case 'd':
       runDatabasePlayCommand(args, message, `p${message.member.id}`, false, true, server).then();
       break;
     // .mdnow retrieves and plays from the keys list immediately
@@ -599,15 +596,14 @@ async function runCommandCases (message) {
       console.log(server.userKeys.get(`p${message.member.id}`));
       break;
     case 't-add':
-      runAddCommandWrapper_P(message, args, `p${message.member.id}`, true, 'm', server);
-      // addToDatabase_P(server, ['jane', 'jane-link', 'jane2', 'jane2-link'], message, `p${message.member.id}`);
+      addToDatabase_P(server, ['jane', 'jane-link', 'jane2', 'jane2-link'], message, `p${message.member.id}`);
       break;
     case 't-set':
       console.log(await getSettings(server, `p${message.member.id}`));
       break;
     case 't-del':
       if (!args[1]) return message.channel.send(`*no args provided*`);
-      runDeleteKeyCommand_P(message,args[1], `p${message.member.id}`, server);
+      runDeleteKeyCommand_P(message, args[1], `p${message.member.id}`, server);
       break;
     case 'prec':
     case 'precc':
@@ -786,21 +782,16 @@ async function runCommandCases (message) {
     case 'gadd':
       runAddCommandWrapper(message, args, 'entries', true, 'g', server);
       break;
-    // .a is normal add
-    case 'a':
-    case 'add':
-      runAddCommandWrapper(message, args, mgid, true, '', server);
-      break;
-    // .ma is personal add
+    // .add is personal add
     case 'ma':
-    case 'madd':
-      runAddCommandWrapper(message, args, `p${message.member.id}`, true, 'm', server);
+    case 'add':
+      runAddCommandWrapper_P(message, args, `p${message.member.id}`, true, 'm', server);
       break;
     // .del deletes database entries
     case 'del':
     case 'delete':
-      server.userKeys.set(mgid, null);
-      runDeleteCommand(message, args[1], mgid, true).catch((e) => console.log(e));
+      if (!args[1]) return message.channel.send(`*no args provided*`);
+      runDeleteKeyCommand_P(message, args[1], `p${message.member.id}`, server);
       break;
     case 'soundcloud':
       message.channel.send(`*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`);
@@ -822,14 +813,6 @@ async function runCommandCases (message) {
     case 'gremove':
       server.userKeys.set('entries', null);
       runDeleteCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
-      break;
-    // .mrm removes personal database entries
-    case 'mrm':
-    case 'mdel':
-    case 'mremove':
-    case 'mdelete':
-      server.userKeys.set(`p${message.member.id}`, null);
-      runDeleteCommand(message, args[1], `p${message.member.id}`, true).catch((e) => console.log(e));
       break;
     case 'prev':
     case 'previous':
