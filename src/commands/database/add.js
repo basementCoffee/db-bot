@@ -68,7 +68,7 @@ function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
 }
 
 // args is the list of keys
-async function addToDatabase_P (server, args, message, sheetName, printMsgToChannel, playlistName = 'general', retries) {
+async function addToDatabase_P (server, args, channel, sheetName, printMsgToChannel, playlistName = 'general', retries) {
   let songsAddedInt = 0;
   let z = 0;
   // check duplicates, and initialize sheet for new servers
@@ -87,13 +87,13 @@ async function addToDatabase_P (server, args, message, sheetName, printMsgToChan
       linkZ = linkZ.substring(0, linkZ.length - 1);
     }
     if (args[z].includes('.') || args[z].includes(',')) {
-      message.channel.send("did not add '" + args[z] + "', names cannot include '.' or ','");
+      channel.send("did not add '" + args[z] + "', names cannot include '.' or ','");
     } else {
       let alreadyExists = false;
       const allkeys = xdb.globalKeys.keys();
       for (const x of allkeys) {
         if (x === args[z].toUpperCase()) {
-          message.channel.send(`*'${xdb.globalKeys.get(x).name}' is already saved as a key*`);
+          channel.send(`*'${xdb.globalKeys.get(x).name}' is already saved as a key*`);
           alreadyExists = true;
           break;
         }
@@ -126,11 +126,11 @@ async function addToDatabase_P (server, args, message, sheetName, printMsgToChan
       } else {
         typeString = "the server's";
       }
-      message.channel.send(`*link added to ${typeString} keys list. (use \`${ps}d ${args[0]}\` to play)*`);
+      channel.send(`*link added to ${typeString} keys list. (use \`${ps}d ${args[0]}\` to play)*`);
     } else if (songsAddedInt > 1) {
       await new Promise(res => setTimeout(res, 1000));
       gsUpdateOverwrite(10, sheetName, xdb.dsInt);
-      message.channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + databaseType + "keys')*");
+      channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + databaseType + "keys')*");
     }
   }
 }

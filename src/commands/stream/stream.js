@@ -20,10 +20,11 @@ const {reactions} = require('../../utils/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
 const {MessageEmbed} = require('discord.js');
 const {getAssumption} = require('../database/search');
-const {getXdb} = require('../database/retrieval');
+const {getXdb2} = require('../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
 const {runPlayCommand} = require('../play');
+const {serializeAndUpdate} = require('../database/utils');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -370,17 +371,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
  * @param whatToPlayS The broken link provided as a string
  */
 function searchForBrokenLinkWithinDB (message, server, whatToPlayS) {
-  getXdb(server, message.channel.guild.id, botInVC(message)).then((xdb) => {
-    xdb.congratsDatabase.forEach((value, key) => {
-      if (value === whatToPlayS) {
-        return message.channel.send('*possible broken link within the server db: ' + key + '*');
-      }
-    });
-  });
-  getXdb(server, `p${message.member.id}`, botInVC(message)).then((xdb) => {
-    xdb.congratsDatabase.forEach((value, key) => {
-      if (value === whatToPlayS) {
-        return message.channel.send('*possible broken link within your personal db: ' + key + '*');
+  getXdb2(server, `p${message.member.id}`, botInVC(message)).then((xdb) => {
+    xdb.globalKeys.forEach((value) => {
+      if (value.name === whatToPlayS) {
+        return message.channel.send(`*possible broken link within your ${value.playlistName} playlist: ${value.name}*`);
       }
     });
   });
@@ -835,7 +829,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
  * Adds a number of items from the database to the queue randomly.
  * @param message The message that triggered the bot
  * @param numOfTimes The number of items to add to the queue, or a playlist url if isPlaylist
- * @param cdb {Map}  The database to reference
+ * @param cdb {Map}  The database to reference, should be mapped to keyObjects (see getXdb2)
  * @param server The server playback metadata
  * @param isPlaylist Optional - True if to randomize just a playlist
  * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
@@ -852,12 +846,12 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     // if given a cdb then it is a key-name, else it is a url
     // playlist name is passed from numOfTimes argument
     if (cdb) {
-      playlistUrl = cdb.get(numOfTimes) || (() => {
+      playlistUrl = cdb.get(numOfTimes.toUpperCase()) || (() => {
         // tries to get a close match
         const assumption = getAssumption(numOfTimes, cdb);
         if (assumption) {
           message.channel.send(`could not find '${numOfTimes}'. **Assuming '${assumption}'**`);
-          return cdb.get(assumption);
+          return cdb.get(assumption.toUpperCase());
         }
         return null;
       })();
@@ -866,7 +860,8 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     numOfTimes = 1;
     if (verifyPlaylist(playlistUrl)) sentMsg = message.channel.send('randomizing your playlist...');
   } else {
-    valArray = Array.from(cdb.values());
+    valArray = [];
+    cdb.forEach(value => valArray.push(value.link));
     if (valArray.length < 1) {
       const pf = server.prefix;
       return message.channel.send('Your saved-links list is empty *(Try  `' + pf + 'add` to add to a list)*');
@@ -976,20 +971,59 @@ function updatedQueueMessage (channel, messageText, server) {
 }
 
 /**
+ * Generates the all embed pages
+ * @returns {Array<module:"discord.js".MessageEmbed>}
+ */
+function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb) {
+  let playlistString = '';
+  let counter = 1;
+  const embedPages = [];
+  xdb.playlistArray.forEach(key => playlistString += `${counter++}. ${key}\n`);
+  const embedKeysMessage = new MessageEmbed();
+  embedKeysMessage.setTitle(`${title} playlists`).setDescription(playlistString)
+    .setColor(keyEmbedColor);
+  embedPages.push(embedKeysMessage);
+  let keysString;
+  // iterate over playlists
+  xdb.playlists.forEach((val, key) => {
+    keysString = '';
+    // iterate over a single playlist
+    val.forEach((val) => {
+      keysString += `${val.name}, `;
+    });
+    if (keysString.length) {
+      keysString = keysString.substring(0, keysString.length - 2);
+    } else {
+      keysString = ' *this playlist is empty* ';
+    }
+    embedPages.push((new MessageEmbed()).setTitle(key)
+      .setDescription(keysString)
+      .setColor(keyEmbedColor)
+      .setFooter(`play command: ${prefixString}d [key]`));
+  });
+
+  return embedPages;
+}
+
+/**
  * Grabs all the keys/names from the database.
  * @param {*} message The message trigger
  * @param server The server
  * @param {*} sheetName The name of the sheet to retrieve
  * @param cmdType the prefix to call the keys being displayed
- * @param voiceChannel optional, a specific voice channel to use besides the message's
- * @param user Optional - username, overrides the message owner's name
+ * @param voiceChannel {any?} optional, a specific voice channel to use besides the message's
+ * @param user {any?} Optional - username, overrides the message owner's name
+ * @param all {any?}
  */
-async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user) {
+async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user, all) {
+  if (!user) user = message.member.user;
   const keysMsg = (botInVC(message) ? {edit: (content, embed) => message.channel.send(content || embed)} :
     await message.channel.send('*getting keys...*'));
-  const xdb = await getXdb(server, sheetName, botInVC(message));
+  const xdb = await getXdb2(server, sheetName, botInVC(message));
   const prefixString = server.prefix;
-  const keyArrayUnsorted = Array.from(xdb.congratsDatabase.keys()).reverse();
+  let keyArrayUnsorted = [];
+  xdb.globalKeys.forEach(val => keyArrayUnsorted.push(val.name));
+  keyArrayUnsorted = keyArrayUnsorted.reverse();
   const keyArraySorted = keyArrayUnsorted.map(x => x).sort();
   // the keyArray to generate
   let keyArray = keyArraySorted;
@@ -1004,13 +1038,30 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
   } else {
     let sortByRecent = true;
-    let dbName = '';
+    const keyEmbedColors = ['#cdfc41', '#4192fc', '#fc4182', '#41fc9f', '#47fc41', '#41ecfc'];
+    let keyEmbedColor = keyEmbedColors[Math.floor(Math.random() * keyEmbedColors.length)];
+    let title = '';
+    if (cmdType === 'm') {
+      let name;
+      user ? name = user.username : name = message.member.nickname;
+      if (!name) {
+        name = message.author.username;
+      }
+      if (name) {
+        title += `**${name}'s**`;
+      } else {
+        title += '**Personal keys** ';
+      }
+    } else if (!cmdType) {
+      title += '**Server keys** ';
+      keyEmbedColor = '#90d5cf';
+    }
+    let pageIndex = 0;
     /**
      * Generates the keys list embed
-     * @param sortByRecent True if to return an array sorted by date added
      * @returns {module:"discord.js".MessageEmbed}
      */
-    const generateKeysEmbed = (sortByRecent) => {
+    const generateKeysEmbed = () => {
       if (sortByRecent) keyArray = keyArrayUnsorted;
       else keyArray = keyArraySorted;
       let s = '';
@@ -1018,57 +1069,38 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
         s = `${s}, ${keyArray[key]}`;
       }
       s = s.substring(1);
-      let keysMessage = '';
-      let keyEmbedColor = '#ffa200';
-      if (cmdType === 'm') {
-        let name;
-        user ? name = user.username : name = message.member.nickname;
-        if (!name) {
-          name = message.author.username;
-        }
-        if (name) {
-          keysMessage += '**' + name + "'s keys ** ";
-          dbName = name.toLowerCase() + "'s keys";
-        } else {
-          keysMessage += '** Personal keys ** ';
-          dbName = 'personal keys';
-        }
-      } else if (!cmdType) {
-        keysMessage += '**Server keys ** ';
-        dbName = "server's keys";
-        keyEmbedColor = '#90d5cf';
+      if (all) {
+        const embedKeysMessage = new MessageEmbed();
+        embedKeysMessage.setTitle(`${title} **keys** ${(sortByRecent ? '(recently added)' : '(alphabetical)')}`).setDescription(s)
+          .setColor(keyEmbedColor).setFooter(`play command: ${prefixString}d [key]`);
+        return embedKeysMessage;
       }
-      const embedKeysMessage = new MessageEmbed();
-      embedKeysMessage.setTitle(keysMessage + (sortByRecent ? '(recently added)' : '(alphabetical)')).setDescription(s)
-        .setColor(keyEmbedColor).setFooter(`play command: ${prefixString + cmdType}d [key]`);
-      return embedKeysMessage;
+      // returns an array of embeds
+      const embedPages = createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb);
+      if (pageIndex < 0) pageIndex = embedPages.length - 1;
+      else pageIndex = pageIndex % embedPages.length;
+      return embedPages[pageIndex];
     };
-    keysMsg.edit('', generateKeysEmbed(sortByRecent)).then(async sentMsg => {
-      const server = processStats.servers[message.guild.id];
-      sentMsg.react(reactions.QUESTION).then(() => sentMsg.react(reactions.SHUFFLE).then(sentMsg.react(reactions.MIX)));
+    keysMsg.edit('', generateKeysEmbed()).then(async sentMsg => {
+      const server = processStats.servers.get(message.guild.id);
+      sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() => sentMsg.react(reactions.GEAR));
       const filter = (reaction, user) => {
-        return user.id !== botID && [reactions.QUESTION, reactions.MIX, reactions.SHUFFLE].includes(reaction.emoji.name);
+        return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R, reactions.ARROW_L, reactions.GEAR].includes(reaction.emoji.name);
       };
       const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
         if (reaction.emoji.name === reactions.QUESTION) {
           let nameToSend;
           let descriptionSuffix;
-          if (dbName === "server's keys") {
-            nameToSend = 'the server';
-            descriptionSuffix = 'Each server has it\'s own server keys. ' +
-              '\nThey can be used by any member in the server.';
-          } else {
-            nameToSend = 'your personal';
-            descriptionSuffix = 'Your personal keys are keys that only you can play. ' +
-              '\nThey work for you in any server with the db bot.';
-          }
+          nameToSend = 'your personal';
+          descriptionSuffix = 'Your keys are keys that only you can play. ' +
+            '\nThey work for you in any server with the db bot.';
           const embed = new MessageEmbed()
             .setTitle('How to add/delete keys from ' + nameToSend + ' list')
             .setDescription('Add a link by putting a word followed by a link -> \` ' +
-              prefixString + cmdType + 'a [key] [link]\`\n' +
+              prefixString + 'add [key] [link]\`\n' +
               'Delete a key by typing the name you wish to delete -> \` ' +
-              prefixString + cmdType + 'del [key]\`')
+              prefixString + 'del [key]\`')
             .setFooter(descriptionSuffix);
           message.channel.send(embed);
         } else if (reaction.emoji.name === reactions.SHUFFLE) {
@@ -1088,31 +1120,38 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
             return message.channel.send('only the dictator can perform this action');
           for (const mem of voiceChannel.members) {
             if (reactionCollector.id === mem[1].id) {
-              if (sheetName.includes('p')) {
+              if (reactionCollector.id === user?.id || message.member.id) {
                 if (reactionCollector.username) {
                   message.channel.send('*randomizing from ' + reactionCollector.username + "'s keys...*");
                 } else {
                   message.channel.send('*randomizing...*');
                 }
-                if (reactionCollector.id === user.id) {
-                  addRandomToQueue(message, -1, xdb.congratsDatabase, server, false).then();
-                  return;
-                } else {
-                  const xdb2 = await getXdb(server, `p${reactionCollector.id}`, botInVC(message));
-                  addRandomToQueue(message, -1, xdb2.congratsDatabase, server, false).then();
-                }
+                addRandomToQueue(message, -1, xdb.globalKeys, server, false).then();
+                return;
               } else {
-                message.channel.send('*randomizing from the server keys...*');
-                addRandomToQueue(message, -1, xdb.congratsDatabase, server, false).then();
+                message.channel.send(`*cannot randomize from another user's list*`);
               }
               return;
             }
           }
           return message.channel.send('must be in a voice channel to shuffle play');
-        } else if (reaction.emoji.name === reactions.MIX) {
-          sortByRecent = !sortByRecent;
-          sentMsg.edit(generateKeysEmbed(sortByRecent));
-          reaction.users.remove(reactionCollector.id).then();
+        } else {
+          if (reactionCollector.id === user.id) {
+            if (reaction.emoji.name === reactions.ARROW_R) {
+              pageIndex += 1;
+              sentMsg.edit(generateKeysEmbed());
+              reaction.users.remove(user.id);
+            } else if (reaction.emoji.name === reactions.ARROW_L) {
+              pageIndex -= 1;
+              sentMsg.edit(generateKeysEmbed());
+              reaction.users.remove(user.id);
+            } else if (reaction.emoji.name === reactions.GEAR) {
+              // allow for adding / removal of a playlist / queue
+              if (pageIndex === 0) {
+                await addRemovePlaylistWizard(message.channel, user, server, await getXdb2(server, `p${user.id}`));
+              }
+            }
+          }
         }
       });
       keysButtonCollector.once('end', () => {
@@ -1120,6 +1159,50 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       });
     });
   }
+}
+
+// determines if the user would like to add or remove a playlist or key (depending on the argument 'type')
+async function addRemovePlaylistWizard (channel, user, server, xdb) {
+  if (!user) return;
+  const sentMsg = await channel.send(`Would you like to add or remove a playlist? [or type 'q' to quit]`);
+  const filter = m => {
+    return (user.id === m.author.id);
+  };
+  let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+  let res = messages.first().content.trim();
+  if (res.toLowerCase() === 'q') {
+    channel.send('*cancelled*');
+    return -1;
+  } else if (res.toLowerCase() === 'add') {
+    addPlaylistWizard(channel, user, server, xdb);
+  } else if (res.toLowerCase() === 'remove') {
+
+  } else {
+    channel.send('*cancelled*');
+    return -1;
+  }
+}
+
+async function addPlaylistWizard (channel, user, server, xdb) {
+  const sentMsg = await channel.send(`Type the name of the playlist to add? [or type 'q' to quit]`);
+  const filter = m => {
+    return (user.id === m.author.id);
+  };
+  let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+  let res = messages.first().content.trim();
+  if (res.toLowerCase() === 'q') {
+    channel.send('*cancelled*');
+    return -1;
+  }
+  const existingPlaylist = xdb.playlists.get(res.toUpperCase());
+  if (existingPlaylist) {
+    channel.send('*playlist already exists*');
+    return;
+  }
+  xdb.playlists.set(res.toUpperCase(), new Map());
+  xdb.playlistArray.push(res);
+  serializeAndUpdate(server, `p${user.id}`, res, xdb);
+  channel.send('*added playlist to the sheet*');
 }
 
 module.exports = {

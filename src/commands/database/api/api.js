@@ -125,7 +125,7 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
     await gsUpdateOverwrite(['=(COUNTA(E2:E))'], nameOfSheet, 'G', 1);
     return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
   }
-  const songRange = `${nameOfSheet}!${columnToRun}2:${secondColumn}${dsInt+1}`
+  const songRange = `${nameOfSheet}!${columnToRun}2:${secondColumn}${dsInt + 1}`;
   const songObjects = {
     spreadsheetId: stoken,
     range: songRange
@@ -144,7 +144,7 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
     try {
       line = arrayOfSpreadsheetValues[i];
       // console.log(line);
-      if (line && line[0] && line[1]) {
+      if (line && line[0]) {
         // convert to -------
         // playlistMap [playlist, keysMap]
         // keysMap [upper(key), keyDataObj]
@@ -156,20 +156,22 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
         // Reference for the database, uses uppercase key-name
         const referenceDatabase = new Map();
         let incrementor = 0;
-        const values = line[1].split(',');
+        const values = line[1]?.split(',');
         // create the keyDataObjects and put in maps
-        for (let keyObject of playlistData.ks) {
-          const deserializedKeyObject = {
-            name: keyObject.kn,
-            link: values[incrementor++],
-            timeStamp: keyObject.ts,
-            playlistName: playlistData.pn
-          };
-          referenceDatabase.set(keyObject.kn.toUpperCase(), deserializedKeyObject);
-          globalKeys.set(keyObject.kn.toUpperCase(), deserializedKeyObject);
+        if (values) {
+          for (let keyObject of playlistData.ks) {
+            const deserializedKeyObject = {
+              name: keyObject.kn,
+              link: values[incrementor++],
+              timeStamp: keyObject.ts,
+              playlistName: playlistData.pn
+            };
+            referenceDatabase.set(keyObject.kn.toUpperCase(), deserializedKeyObject);
+            globalKeys.set(keyObject.kn.toUpperCase(), deserializedKeyObject);
+          }
         }
         allPlaylists.set(playlistData.pn.toUpperCase(), referenceDatabase);
-        playlistArray.push(playlistData.pn.toUpperCase());
+        playlistArray.push(playlistData.pn);
       }
     } catch (e) {console.log(e);}
   }

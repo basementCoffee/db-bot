@@ -404,12 +404,6 @@ async function runCommandCases (message) {
     case 'mdn':
       runPlayNowCommand(message, args, mgid, server, `p${message.member.id}`).then();
       break;
-    // .r is a random that works with the normal queue
-    case 'random':
-    case 'rand':
-    case 'r':
-      runRandomToQueue(args[1] || 1, message, mgid, server).then();
-      break;
     case 'shuffle':
       runRandomToQueue(args[1], message, mgid, server).then();
       break;
@@ -473,7 +467,10 @@ async function runCommandCases (message) {
       runRandomToQueue(args[1], message, 'entries', server).then();
       break;
     // .mr is the personal random that works with the normal queue
-    case 'mrand':
+    // .r is a random that works with the normal queue
+    case 'random':
+    case 'rand':
+    case 'r':
     case 'mr':
       runRandomToQueue(args[1] || 1, message, `p${message.member.id}`, server).then();
       break;
@@ -488,19 +485,11 @@ async function runCommandCases (message) {
     case 'mshufflenow':
       runRandomToQueue(args[1], message, `p${message.member.id}`, server, true).then();
       break;
-    // .keys is server keys
-    case 'k':
+    // .keys is personal keys
     case 'key':
     case 'keys':
-      if (args[1]) runDatabasePlayCommand(args, message, mgid, false, false, server).then();
-      else runKeysCommand(message, server, mgid, '', '', '').then();
-      break;
-    // .mkeys is personal keys
-    case 'mk':
-    case 'mkey':
-    case 'mkeys':
       if (args[1]) runDatabasePlayCommand(args, message, `p${message.member.id}`, false, false, server).then();
-      else runKeysCommand(message, server, `p${message.member.id}`, 'm', '', '').then();
+      else runKeysCommand(message, server, `p${message.member.id}`, 'm').then();
       break;
     // test purposes - return keys
     case 'gk':
@@ -512,11 +501,6 @@ async function runCommandCases (message) {
     case 'find':
     case 'lookup':
     case 'search':
-      runUniversalSearchCommand(message, server, mgid, (args[1] ? args[1] : server.queue[0]?.url)).then();
-      break;
-    case 'mfind':
-    case 'mlookup':
-    case 'msearch':
       runUniversalSearchCommand(message, server, `p${message.member.id}`, (args[1] ? args[1] : server.queue[0]?.url)).then();
       break;
     case 'gfind':

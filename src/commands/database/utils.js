@@ -34,9 +34,11 @@ module.exports = {
   // serialize and update the playlist within the database
   serializeAndUpdate : async (server, sheetName, playlistName, xdb) => {
     const serializedData = serializeData(xdb.playlists.get(playlistName.toUpperCase()), playlistName);
-    let row = xdb.playlistArray.indexOf(playlistName.toUpperCase());
+    const playlistArrayUpper = xdb.playlistArray.map(item => item.toUpperCase());
+    let row = playlistArrayUpper.indexOf(playlistName.toUpperCase());
     if (row === -1) row = xdb.playlistArray.length;
     await gsUpdateOverwrite([serializedData.keysString, serializedData.valuesString],
       sheetName, 'E', row + 2 , "F", row + 2);
+    server.userKeys.clear();
   }
 }

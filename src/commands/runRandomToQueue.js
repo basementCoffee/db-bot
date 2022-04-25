@@ -1,5 +1,5 @@
 const {addRandomToQueue} = require('./stream/stream');
-const {getXdb} = require('./database/retrieval');
+const {getXdb, getXdb2} = require('./database/retrieval');
 const {botInVC, setSeamless, resetSession} = require('../utils/utils');
 const {MAX_QUEUE_S} = require('../utils/process/constants');
 const {hasDJPermissions} = require('../utils/permissions');
@@ -49,15 +49,15 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
   }
   if (origArg.toString().includes('.'))
     return addRandomToQueue(message, origArg, undefined, server, true, addToFront);
-  const xdb = await getXdb(server, sheetName, true);
+  const xdb = await getXdb2(server, sheetName, true);
   if (isPlaylist) {
-    addRandomToQueue(message, origArg, xdb.congratsDatabase, server, true, addToFront).then();
+    addRandomToQueue(message, origArg, xdb.globalKeys, server, true, addToFront).then();
   } else {
     if (num > MAX_QUEUE_S) {
       message.channel.send('*max limit for random is ' + MAX_QUEUE_S + '*');
       num = MAX_QUEUE_S;
     }
-    addRandomToQueue(message, num, xdb.congratsDatabase, server, false, addToFront).then();
+    addRandomToQueue(message, num, xdb.globalKeys, server, false, addToFront).then();
   }
 }
 

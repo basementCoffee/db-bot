@@ -84,7 +84,7 @@ function runAddCommandWrapper_P (message, args, sheetName, printMsgToChannel, pr
       server.userKeys.set(sheetName, null);
       if (args[2].includes(SPOTIFY_BASE_LINK)) args[2] = linkFormatter(args[2], SPOTIFY_BASE_LINK);
       else if (args[2].includes(SOUNDCLOUD_BASE_LINK)) args[2] = linkFormatter(args[2], SOUNDCLOUD_BASE_LINK);
-      addToDatabase_P(server, args, message, sheetName, printMsgToChannel);
+      addToDatabase_P(server, args, message.channel, sheetName, printMsgToChannel);
       return;
     } else if (message.member.voice?.channel && server.queue[0]) {
       args[2] = server.queue[0].url;
@@ -99,7 +99,7 @@ function runAddCommandWrapper_P (message, args, sheetName, printMsgToChannel, pr
           sentMsg.delete();
           if (reaction.emoji.name === reactions.CHECK) {
             server.userKeys.set(sheetName, null);
-            addToDatabase_P(server, args, message, sheetName, printMsgToChannel);
+            addToDatabase_P(server, args, message.channel, sheetName, printMsgToChannel);
           } else {
             message.channel.send('*cancelled*');
           }
