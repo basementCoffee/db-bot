@@ -48,7 +48,7 @@ module.exports = {
     if (row === -1) row = xdb.playlistArray.length;
     // delete or serialize the playlist
     if (removePlaylist){
-      deleteRows(sheetName, row + 2)
+      await deleteRows(sheetName, row + 2)
     }
     else {
       serializedData = serializeData(xdb.playlists.get(playlistName.toUpperCase()), playlistName);

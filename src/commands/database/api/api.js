@@ -248,8 +248,8 @@ const deleteRows = async (sheetName, rowNumber) => {
             range: {
               sheetId: sheetId,
               dimension: 'ROWS',
-              startIndex: rowNumber,
-              endIndex: rowNumber + 1
+              startIndex: rowNumber-1,
+              endIndex: rowNumber
             }
           }
         }]
