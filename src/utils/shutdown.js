@@ -16,10 +16,9 @@ function shutdown (type) {
     if (activeCSize > 0) {
       console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? 's' : ''}`);
       // noinspection JSUnresolvedFunction
-      bot.channels.cache.get(CH.process).send('=gzz ' + process.pid);
-      if (Object.keys(processStats.servers).length > 0) {
+      if (processStats.servers.size > 0) {
         bot.voice.connections.forEach(x => {
-          let server = processStats.servers[x.channel.guild.id];
+          let server = processStats.servers.get(x.channel.guild.id);
           let currentEmbed = server.currentEmbed;
           try {
             if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');
@@ -37,4 +36,4 @@ function shutdown (type) {
   };
 }
 
-module.exports = {shutdown}
+module.exports = {shutdown};
