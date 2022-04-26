@@ -1083,9 +1083,9 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
     };
     keysMsg.edit('', generateKeysEmbed()).then(async sentMsg => {
       const server = processStats.servers.get(message.guild.id);
-      sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() => sentMsg.react(reactions.GEAR));
+      sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() => sentMsg.react(reactions.SHUFFLE)).then(() => sentMsg.react(reactions.GEAR));
       const filter = (reaction, user) => {
-        return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R, reactions.ARROW_L, reactions.GEAR].includes(reaction.emoji.name);
+        return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R, reactions.ARROW_L, reactions.GEAR, reactions.SHUFFLE].includes(reaction.emoji.name);
       };
       const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
@@ -1120,13 +1120,18 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
             return message.channel.send('only the dictator can perform this action');
           for (const mem of voiceChannel.members) {
             if (reactionCollector.id === mem[1].id) {
-              if (reactionCollector.id === user?.id || message.member.id) {
-                if (reactionCollector.username) {
-                  message.channel.send('*randomizing from ' + reactionCollector.username + "'s keys...*");
+              if (reactionCollector.id === (user?.id || message.member.id)) {
+                if (pageIndex > 0) {
+                  const playlistName = xdb.playlistArray[pageIndex - 1];
+                  const pl = xdb.playlists.get(playlistName.toUpperCase());
+                  if (pl) {
+                    message.channel.send(`*randomizing from **${playlistName}***`);
+                    addRandomToQueue(message, -1, pl, server, false).then();
+                  }
                 } else {
-                  message.channel.send('*randomizing...*');
+                  message.channel.send('*randomizing from ' + reactionCollector.username + "'s keys...*");
+                  addRandomToQueue(message, -1, xdb.globalKeys, server, false).then();
                 }
-                addRandomToQueue(message, -1, xdb.globalKeys, server, false).then();
                 return;
               } else {
                 message.channel.send(`*cannot randomize from another user's list*`);
