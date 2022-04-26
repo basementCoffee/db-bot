@@ -1125,7 +1125,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
                   const playlistName = xdb.playlistArray[pageIndex - 1];
                   const pl = xdb.playlists.get(playlistName.toUpperCase());
                   if (pl) {
-                    message.channel.send(`*randomizing from **${playlistName}***`);
+                    message.channel.send(`*randomizing from **${playlistName}***...`);
                     addRandomToQueue(message, -1, pl, server, false).then();
                   }
                 } else {
