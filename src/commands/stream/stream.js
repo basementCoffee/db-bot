@@ -985,6 +985,9 @@ function updatedQueueMessage (channel, messageText, server) {
  * @param user Optional - username, overrides the message owner's name
  */
 async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user) {
+  if (!sheetName.includes('p') && sheetName !== 'entries') {
+    message.channel.send(`*\`NOTICE: server keys will be removed in the next major update\`*`);
+  }
   const keysMsg = (botInVC(message) ? {edit: (content, embed) => message.channel.send(content || embed)} :
     await message.channel.send('*getting keys...*'));
   const xdb = await getXdb(server, sheetName, botInVC(message));

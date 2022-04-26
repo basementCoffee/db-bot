@@ -15,6 +15,10 @@ const {addToDatabase} = require('./database/add');
  * @returns {*}
  */
 function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString, server) {
+  if (!sheetName.includes('p') && sheetName !== 'entries') {
+    message.channel.send(`\`adding to server keys is no longer supported (use personal keys instead)\``);
+    return;
+  }
   if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (args[1]) {
@@ -61,4 +65,4 @@ function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, pref
     args[0].substr(prefixString ? 2 : 1).toLowerCase() + ' [key] [link]\`)*');
 }
 
-module.exports = {runAddCommandWrapper}
+module.exports = {runAddCommandWrapper};
