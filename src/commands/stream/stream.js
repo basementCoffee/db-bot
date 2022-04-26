@@ -1147,9 +1147,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
               reaction.users.remove(user.id);
             } else if (reaction.emoji.name === reactions.GEAR) {
               // allow for adding / removal of a playlist / queue
-              if (pageIndex === 0) {
-                await addRemovePlaylistWizard(message.channel, user, server, await getXdb2(server, `p${user.id}`));
-              }
+              await addRemoveWizard(message.channel, user, server, await getXdb2(server, `p${user.id}`), pageIndex);
             }
           }
         }
@@ -1162,9 +1160,10 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
 }
 
 // determines if the user would like to add or remove a playlist or key (depending on the argument 'type')
-async function addRemovePlaylistWizard (channel, user, server, xdb) {
+async function addRemoveWizard (channel, user, server, xdb, pageIndex) {
   if (!user) return;
-  const sentMsg = await channel.send(`Would you like to add or remove a playlist? [or type 'q' to quit]`);
+  const type = pageIndex ? 'key' : 'playlist';
+  const sentMsg = await channel.send(`*Would you like to **add** or **remove** a ${type}? [or type 'q' to quit]*`);
   const filter = m => {
     return (user.id === m.author.id);
   };
@@ -1174,9 +1173,17 @@ async function addRemovePlaylistWizard (channel, user, server, xdb) {
     channel.send('*cancelled*');
     return -1;
   } else if (res.toLowerCase() === 'add') {
-    addPlaylistWizard(channel, user, server, xdb);
+    if (type === 'playlist') {
+      addPlaylistWizard(channel, user, server, xdb);
+    } else {
+      addKeyWizard(channel, user, server, xdb, pageIndex - 1);
+    }
   } else if (res.toLowerCase() === 'remove') {
-
+    if (type === 'playlist') {
+      removePlaylistWizard(channel, user, server, xdb);
+    } else {
+      removeKeyWizard(channel, user, server, xdb, pageIndex - 1);
+    }
   } else {
     channel.send('*cancelled*');
     return -1;
@@ -1184,7 +1191,7 @@ async function addRemovePlaylistWizard (channel, user, server, xdb) {
 }
 
 async function addPlaylistWizard (channel, user, server, xdb) {
-  const sentMsg = await channel.send(`Type the name of the playlist to add? [or type 'q' to quit]`);
+  const sentMsg = await channel.send(`*Type the name of the playlist to add: [or type 'q' to quit]*`);
   const filter = m => {
     return (user.id === m.author.id);
   };
@@ -1203,6 +1210,93 @@ async function addPlaylistWizard (channel, user, server, xdb) {
   xdb.playlistArray.push(res);
   serializeAndUpdate(server, `p${user.id}`, res, xdb);
   channel.send('*added playlist to the sheet*');
+}
+
+async function addKeyWizard (channel, user, server, xdb, playlistIndex) {
+  const sentMsg = await channel.send(`*Type the name of the key to add: [or type 'q' to quit]*`);
+  const filter = m => {
+    return (user.id === m.author.id);
+  };
+  let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+  let res = messages.first().content.trim();
+  if (res.toLowerCase() === 'q') {
+    channel.send('*cancelled*');
+    return -1;
+  }
+  const keyObj = xdb.globalKeys.get(res.toUpperCase());
+  if (keyObj) {
+    channel.send(`*key already exists in ${keyObj.playlistName}*`);
+    return;
+  }
+  const sentMsgLink = await channel.send(`*Type the name of the link to add: [or type 'q' to quit]*`);
+  const filterLink = m => {
+    return (user.id === m.author.id);
+  };
+  let messagesLink = await sentMsgLink.channel.awaitMessages(filterLink, {time: 60000, max: 1, errors: ['time']});
+  let resLink = messagesLink.first().content.trim();
+  if (resLink.toLowerCase() === 'q') {
+    channel.send('*cancelled*');
+    return -1;
+  }
+  let playlistName = xdb.playlistArray[playlistIndex--];
+  const existingPlaylist = xdb.playlists.get(playlistName.toUpperCase());
+  if (!existingPlaylist || !playlistName) {
+    channel.send('*there was an error*');
+  }
+  existingPlaylist.set(res.toUpperCase(), {name: res, link: resLink, playlistName});
+  serializeAndUpdate(server, `p${user.id}`, playlistName, xdb);
+  channel.send('*added key to the playlist*');
+}
+
+async function removeKeyWizard (channel, user, server, xdb, playlistIndex) {
+  const sentMsg = await channel.send(`*Type the name of the key to remove: [or type 'q' to quit]*`);
+  const filter = m => {
+    return (user.id === m.author.id);
+  };
+  let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+  let res = messages.first().content.trim();
+  if (res.toLowerCase() === 'q') {
+    channel.send('*cancelled*');
+    return -1;
+  }
+  const keyObj = xdb.globalKeys.get(res.toUpperCase());
+  if (!keyObj) {
+    channel.send('*key does not exists*');
+    return;
+  }
+  const pl = xdb.playlists.get(keyObj.playlistName.toUpperCase());
+  if (pl) pl.delete(res.toUpperCase());
+
+  serializeAndUpdate(server, `p${user.id}`, keyObj.playlistName, xdb);
+  channel.send('*deleted key to the playlist*');
+}
+
+/**
+ *
+ * @param channel
+ * @param user
+ * @param server
+ * @param xdb {{playlists: Map, playlistArray: Array}}
+ * @return {Promise<number|*>}
+ */
+async function removePlaylistWizard (channel, user, server, xdb) {
+  const sentMsg = await channel.send(`*Type the name of the playlist to remove: [or type 'q' to quit]*`);
+  const filter = m => {
+    return (user.id === m.author.id);
+  };
+  let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+  let res = messages.first().content.trim();
+  if (res.toLowerCase() === 'q') {
+    channel.send('*cancelled*');
+    return -1;
+  }
+  const existingPlaylist = xdb.playlists.get(res.toUpperCase());
+  if (!existingPlaylist) {
+    channel.send('*playlist does not exist*');
+    return;
+  }
+  serializeAndUpdate(server, `p${user.id}`, res, xdb, true);
+  channel.send('*deleted playlist from the sheet*');
 }
 
 module.exports = {
