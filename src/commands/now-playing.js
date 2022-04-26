@@ -1,4 +1,4 @@
-const {getXdb} = require('./database/retrieval');
+const {getXdb, getXdb2} = require('./database/retrieval');
 const {runSearchCommand} = require('./database/search');
 const {sendLinkAsEmbed} = require('./stream/stream');
 
@@ -14,13 +14,13 @@ const {sendLinkAsEmbed} = require('./stream/stream');
  */
 async function runWhatsPCommand (server, message, voiceChannel, keyName, sheetName, sheetLetter) {
   if (keyName && sheetName) {
-    const xdb = await getXdb(server, sheetName, !!voiceChannel);
-    let link = xdb.referenceDatabase.get(keyName.toUpperCase());
+    const xdb = await getXdb2(server, sheetName, !!voiceChannel);
+    let link = xdb.globalKeys.get(keyName.toUpperCase());
     // update link value here
     if (!link) {
-      let sObj = runSearchCommand(keyName, xdb.congratsDatabase);
+      let sObj = runSearchCommand(keyName, xdb.globalKeys);
       if (sObj.ssi === 1 && sObj.ss)
-        link = `Assuming **${sObj.ss}**\n${xdb.referenceDatabase.get(sObj.ss.toUpperCase())}`;
+        link = `Assuming **${sObj.ss}**\n${xdb.globalKeys.get(sObj.ss.toUpperCase())}`;
     }
     if (link) {
       return message.channel.send(link);
@@ -37,4 +37,4 @@ async function runWhatsPCommand (server, message, voiceChannel, keyName, sheetNa
   }
 }
 
-module.exports = {runWhatsPCommand}
+module.exports = {runWhatsPCommand};

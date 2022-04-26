@@ -1,5 +1,5 @@
 const {verifyUrl, verifyPlaylist, botInVC} = require('../../utils/utils');
-const {getXdb} = require('./retrieval');
+const {getXdb, getXdb2} = require('./retrieval');
 
 /**
  * Searches a Map for the given key. Provides the keys that contain the given key.
@@ -41,7 +41,7 @@ function runSearchCommand (keyName, cdb) {
 function getAssumption (word, cdb) {
   const sObj = runSearchCommand(word, cdb);
   let ss = sObj.ss;
-  if (ss){
+  if (ss) {
     ss = ss.split(',')[0];
     if (word.length > 1 && (ss.length - word.length) < Math.floor((ss.length / 2) + 2)) {
       return ss;
@@ -63,18 +63,16 @@ function getAssumption (word, cdb) {
  * @return {Promise<{valueObj: {ss: string, ssi: number}, link, message: string}|{message: string}|*|undefined>}
  */
 async function searchForSingleKey (message, sheetName, providedString, server) {
-  const xdb = await getXdb(server, sheetName, true);
-  const so = runSearchCommand(providedString, xdb.congratsDatabase);
+  const xdb = await getXdb2(server, sheetName, true);
+  const so = runSearchCommand(providedString, xdb.globalKeys);
   if (so.ssi) {
     let link;
-    if (so.ssi === 1) link = xdb.congratsDatabase.get(so.ss);
+    if (so.ssi === 1) link = xdb.globalKeys.get(so.ss.toUpperCase())?.link;
     return {
       valueObj: so,
       link,
       message: `${(sheetName[0] === 'p' ? 'Personal' : 'Server')} keys found: ${so.ss} ${(link ? `\n${link}` : '')}`
     };
-  } else if (sheetName[0] !== 'p') {
-    return searchForSingleKey(message, `p${message.member.id}`, providedString, server);
   } else if (providedString.length < 2) {
     return {
       message: 'Did not find any keys that start with the given letter.'
@@ -131,7 +129,6 @@ async function runUniversalSearchCommand (message, server, sheetName, providedSt
       if (obj.link) finalString += `${obj.valueObj.ss}:\n${obj.link}\n`;
     }
     if (finalString === BASE_KEYS_STRING) {
-      if (sheetName[0] !== 'p') return await runUniversalSearchCommand(message, server, `p${message.member.id}`, providedString)
       finalString = 'did not find any exact key matches, ' +
         'try a single search word (instead of multiple) for a more refined search within the keys lists';
     }
@@ -140,4 +137,4 @@ async function runUniversalSearchCommand (message, server, sheetName, providedSt
   if (botInVC(!message)) server.userKeys.clear();
 }
 
-module.exports = {runSearchCommand, getAssumption, runUniversalSearchCommand}
+module.exports = {runSearchCommand, getAssumption, runUniversalSearchCommand};

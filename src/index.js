@@ -48,6 +48,7 @@ const {runStopPlayingCommand} = require('./commands/stop');
 const {runInsertCommand} = require('./commands/insert');
 const {parent_thread} = require('./threads/parent_thread');
 const {joinVoiceChannelSafe} = require('./commands/join');
+const {addToDatabase_P} = require('./commands/database/add');
 
 process.setMaxListeners(0);
 
@@ -769,7 +770,7 @@ async function runCommandCases (message) {
     // .add is personal add
     case 'ma':
     case 'add':
-      runAddCommandWrapper_P(message, args, `p${message.member.id}`, true, 'm', server);
+      runAddCommandWrapper_P(message, args.slice(1), `p${message.member.id}`, true, 'm', server);
       break;
     // .del deletes database entries
     case 'del':
