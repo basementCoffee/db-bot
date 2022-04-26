@@ -122,7 +122,9 @@ class ProcessStats {
       leaveVCTimeout: false,
       // the number of consecutive playback errors
       skipTimes: 0,
-      // user settings
+      // a map of user ids to messages {message: MessageObject collector: collector }
+      activeUserQuestion: new Map(),
+      // persistent user settings
       userSettings: new Map(),
       // properties pertaining to the active stream
       streamData: {

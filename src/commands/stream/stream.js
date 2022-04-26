@@ -1200,7 +1200,10 @@ async function addPlaylistWizard (channel, user, server, xdb) {
   const filter = m => {
     return (user.id === m.author.id);
   };
-  let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+  let messages;
+  try {
+    messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+  } catch (e) {}
   let res = messages.first().content.trim();
   if (res.toLowerCase() === 'q') {
     channel.send('*cancelled*');
