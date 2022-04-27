@@ -1,6 +1,7 @@
 const {
   botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
-  playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, resetSession
+  playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, resetSession, linkValidator,
+  universalLinkFormatter
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, dispatcherMap,
@@ -1266,9 +1267,14 @@ async function addKeyWizard (channel, user, server, xdb, playlistName) {
     channel.send('*cancelled*');
     return -1;
   }
-  existingPlaylist.set(res.toUpperCase(), {name: res, link: resLink, playlistName});
-  serializeAndUpdate(server, `p${user.id}`, playlistName, xdb);
-  channel.send(`*added key to your ${playlistName} playlist*`);
+  resLink = universalLinkFormatter(resLink);
+  if (linkValidator(server, channel, resLink, false, false)) {
+    existingPlaylist.set(res.toUpperCase(), {name: res, link: resLink, playlistName});
+    serializeAndUpdate(server, `p${user.id}`, playlistName, xdb);
+    channel.send(`*added key to your ${playlistName} playlist*`);
+  } else {
+    channel.send('*invalid link provided*');
+  }
 }
 
 async function removeKeyWizard (channel, user, server, xdb) {

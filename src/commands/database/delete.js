@@ -47,8 +47,8 @@ async function runDeleteCommand (message, keyName, sheetName, sendMsgToChannel) 
   }
 }
 
-async function runDeleteKeyCommand_P(message, keyName, sheetName, server){
-  if (await deleteKey(keyName, sheetName, server)){
+async function runDeleteKeyCommand_P (message, keyName, sheetName, server) {
+  if (await deleteKey(keyName, sheetName, server)) {
     message.channel.send(`*deleted ${keyName}*`);
   } else {
     message.channel.send(`*could not find **${keyName}** within the keys list*`);
@@ -62,14 +62,14 @@ async function runDeleteKeyCommand_P(message, keyName, sheetName, server){
  * @param server
  * @return {Promise<boolean>} if the key was found
  */
-async function deleteKey(keyName, sheetName, server){
+async function deleteKey (keyName, sheetName, server) {
   const xdb = await getXdb2(server, sheetName);
   const keyObj = xdb.globalKeys.get(keyName.toUpperCase());
   if (!keyObj) return false;
   let playlistName = keyObj.playlistName;
   xdb.globalKeys.delete(keyName.toUpperCase());
   xdb.playlists.get(playlistName.toUpperCase()).delete(keyName.toUpperCase());
-  server.userKeys.get(sheetName)?.delete(keyName);
+  server.userKeys.get(sheetName)?.playlists.delete(keyName);
   await serializeAndUpdate(server, sheetName, playlistName, xdb);
   return true;
 }

@@ -27,7 +27,7 @@ const {
 } = require('./commands/stream/stream');
 const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
-const {runDatabasePlayCommand} = require('./commands/databasePlayCommand');
+const {runDatabasePlayCommand, runPlaylistPlayCommand} = require('./commands/databasePlayCommand');
 const {runAddCommandWrapper, runAddCommandWrapper_P} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation} = require('./commands/stream/recommendations');
@@ -392,6 +392,9 @@ async function runCommandCases (message) {
     case 'dnow':
     case 'dn':
       runPlayNowCommand(message, args, mgid, server, mgid).then();
+      break;
+    case 'dd':
+      runPlaylistPlayCommand(args, message, `p${message.member.id}`, false, true, server).then();
       break;
     // .md is retrieves and plays from the keys list
     case 'md':
@@ -770,7 +773,7 @@ async function runCommandCases (message) {
     // .add is personal add
     case 'ma':
     case 'add':
-      runAddCommandWrapper_P(message, args.slice(1), `p${message.member.id}`, true, 'm', server);
+      runAddCommandWrapper_P(message.channel, args.slice(1), `p${message.member.id}`, true, 'm', server, message.member);
       break;
     // .del deletes database entries
     case 'del':

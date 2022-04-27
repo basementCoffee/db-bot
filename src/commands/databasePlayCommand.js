@@ -8,6 +8,34 @@ const {MAX_QUEUE_S, dispatcherMap} = require('../utils/process/constants');
 const {updateActiveEmbed} = require('../utils/embed');
 const {addPlaylistToQueue} = require('../utils/playlist');
 
+async function runPlaylistPlayCommand (args, message, sheetName, playRightNow, printErrorMsg, server) {
+  if (args.length < 1) {
+    message.channel.send("*input playlist names after the command to play a specific playlists*");
+    return;
+  }
+  const xdb = await getXdb2(server, sheetName, true);
+  const keys = ['dd'];
+  let playlistMap;
+  const unfoundPlaylists = [];
+  for (let playlistName of args.splice(1)) {
+    playlistMap = xdb.playlists.get(playlistName.toUpperCase());
+    if (!playlistMap) {
+      unfoundPlaylists.push(playlistName);
+      continue;
+    }
+    playlistMap.forEach(val => keys.push(val.name));
+  }
+  if (unfoundPlaylists.length > 0) {
+    message.channel.send(`*could not find the playlists: ${unfoundPlaylists.join(', ')}*`);
+    if (keys.length < 2) return;
+  }
+  if (keys.length < 2) {
+    message.channel.send('*no keys found in the playlists provided*');
+    return;
+  }
+  runDatabasePlayCommand(keys, message, sheetName, playRightNow, printErrorMsg, server);
+}
+
 /**
  * Executes play assuming that message args are intended for a database call.
  * The database referenced depends on what is passed in via mgid.
@@ -53,7 +81,6 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
     let dbAddInt;
     let unFoundString = '*could not find: ';
     let firstUnfoundRan = false;
-    let otherSheet;
     let incrementor;
     let whileExpression;
     let addQICallback;
@@ -183,4 +210,4 @@ async function addLinkToQueueSimple (message, server, addToFront, tempUrl, addQI
   return dbAddedToQueue;
 }
 
-module.exports = {runDatabasePlayCommand};
+module.exports = {runDatabasePlayCommand, runPlaylistPlayCommand};

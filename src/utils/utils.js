@@ -417,9 +417,30 @@ function getTimeActive () {
   }
 }
 
+// formats links
+function universalLinkFormatter (link) {
+  if (link.substring(0, 1) === '[' && link.substr(link.length - 1, 1) === ']') {
+    link = link.substr(1, link.length - 2);
+  }
+  if (link.includes(SPOTIFY_BASE_LINK)) link = linkFormatter(link, SPOTIFY_BASE_LINK);
+  else if (link.includes(SOUNDCLOUD_BASE_LINK)) link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
+  return link;
+}
+
+// returns true if a valid link is provided
+function linkValidator (server, channel, link, prefixString, sendErrorMsg) {
+  if (!verifyUrl(link) && !verifyPlaylist(link)){
+    if (sendErrorMsg){
+      channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString || ''}add [name] [link]\``);
+    }
+    return false;
+  }
+  return true;
+}
+
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
-  logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild
+  logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild, linkValidator, universalLinkFormatter
 };
