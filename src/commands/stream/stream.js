@@ -1203,7 +1203,7 @@ async function addRemoveWizard (channel, user, server, xdb, pageIndex) {
     selectionMessage = `*\`you are on the ${type} selection page:\`*\n`;
   }
 
-  const sentMsg = await channel.send(`${selectionMessage}*Would you like to __add__ or __remove__ a **${type}**? [or type 'q' to quit]*`);
+  const sentMsg = await channel.send(`${selectionMessage}*Would you like to __add__ or __delete__ a **${type}**? [or type 'q' to quit]*`);
   let res = await getMessageResponse(server, channel, user, sentMsg);
   if (!res) return;
   if (res.toLowerCase() === 'q') {
@@ -1215,7 +1215,7 @@ async function addRemoveWizard (channel, user, server, xdb, pageIndex) {
     return -1;
   } else if (res.toLowerCase() === 'add') {
     addFunction();
-  } else if (res.toLowerCase() === 'remove') {
+  } else if (res.toLowerCase() === 'delete') {
     removeFunction();
   } else {
     channel.send('*cancelled*');
@@ -1278,7 +1278,7 @@ async function addKeyWizard (channel, user, server, xdb, playlistName) {
 }
 
 async function removeKeyWizard (channel, user, server, xdb) {
-  const sentMsg = await channel.send(`*Type the __name__ of the **key** to remove: [or type 'q' to quit]*`);
+  const sentMsg = await channel.send(`*Type the __name__ of the **key** to delete: [or type 'q' to quit]*`);
   let res = await getMessageResponse(server, channel, user, sentMsg);
   if (!res) return;
   if (res.toLowerCase() === 'q') {
@@ -1310,7 +1310,7 @@ async function removeKeyWizard (channel, user, server, xdb) {
  * @return {Promise<number|*>}
  */
 async function removePlaylistWizard (channel, user, server, xdb) {
-  const sentMsg = await channel.send(`*Type the __name__ of the **playlist** to remove: [or type 'q' to quit]*`);
+  const sentMsg = await channel.send(`*Type the __name__ of the **playlist** to delete: [or type 'q' to quit]*`);
   let res = await getMessageResponse(server, channel, user, sentMsg);
   if (!res) return;
   if (res.toLowerCase() === 'q') {
