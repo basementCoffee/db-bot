@@ -734,10 +734,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         if (collector.ended) return;
         sentMsg.react(reactions.STOP).then(() => {
           if (collector.ended) return;
-          sentMsg.react(reactions.KEY).then(() => {
-            if (collector.ended) return;
-            sentMsg.react(reactions.PKEY).then();
-          });
+          sentMsg.react(reactions.BOOK_O);
         });
       });
     });
@@ -745,7 +742,8 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
 
   const filter = (reaction, user) => {
     if (voiceChannel && user.id !== botID) {
-      if (voiceChannel.members.has(user.id)) return [reactions.PPAUSE, reactions.SKIP, reactions.REWIND, reactions.STOP, reactions.KEY, reactions.PKEY].includes(reaction.emoji.name);
+      if (voiceChannel.members.has(user.id))
+        return [reactions.PPAUSE, reactions.SKIP, reactions.REWIND, reactions.STOP, reactions.BOOK_O].includes(reaction.emoji.name);
     }
     return false;
   };
@@ -810,11 +808,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
           server.followUpMessage = undefined;
         }
         break;
-      case reactions.KEY:
-        runKeysCommand(sentMsg, server, mgid, '', voiceChannel, '').then();
-        server.numSinceLastEmbed += 5;
-        break;
-      case reactions.PKEY:
+      case reactions.BOOK_O:
         runKeysCommand(sentMsg, server, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
         server.numSinceLastEmbed += 5;
         break;
@@ -1057,6 +1051,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       keyEmbedColor = '#90d5cf';
     }
     let pageIndex = 0;
+    let embedPages = createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb);
     /**
      * Generates the keys list embed
      * @returns {module:"discord.js".MessageEmbed}
@@ -1064,26 +1059,25 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
     const generateKeysEmbed = () => {
       if (sortByRecent) keyArray = keyArrayUnsorted;
       else keyArray = keyArraySorted;
-      let s = '';
-      for (const key in keyArray) {
-        s = `${s}, ${keyArray[key]}`;
-      }
-      s = s.substring(1);
       if (all) {
+        let s = '';
+        for (const key in keyArray) {
+          s = `${s}, ${keyArray[key]}`;
+        }
+        s = s.substring(1);
         const embedKeysMessage = new MessageEmbed();
         embedKeysMessage.setTitle(`${title} **keys** ${(sortByRecent ? '(recently added)' : '(alphabetical)')}`).setDescription(s)
           .setColor(keyEmbedColor).setFooter(`play command: ${prefixString}d [key]`);
         return embedKeysMessage;
       }
       // returns an array of embeds
-      const embedPages = createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb);
       if (pageIndex < 0) pageIndex = embedPages.length - 1;
       else pageIndex = pageIndex % embedPages.length;
       return embedPages[pageIndex];
     };
     keysMsg.edit('', generateKeysEmbed()).then(async sentMsg => {
       const server = processStats.servers.get(message.guild.id);
-      sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() => sentMsg.react(reactions.SHUFFLE)).then(() => sentMsg.react(reactions.GEAR));
+      sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() => sentMsg.react(reactions.QUESTION)).then(() => sentMsg.react(reactions.GEAR));
       const filter = (reaction, user) => {
         return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R, reactions.ARROW_L, reactions.GEAR, reactions.SHUFFLE].includes(reaction.emoji.name);
       };
@@ -1265,7 +1259,7 @@ async function addKeyWizard (channel, user, server, xdb, playlistName) {
     channel.send(`*key already exists in ${keyObj.playlistName}*`);
     return;
   }
-  const sentMsgLink = await channel.send(`*Input a **url** to save [or type 'q' to quit]*`);
+  const sentMsgLink = await channel.send(`*Enter a __url__ to save [or type 'q' to quit]*`);
   let resLink = await getMessageResponse(server, channel, user, sentMsgLink);
   if (!resLink) return;
   if (resLink.toLowerCase() === 'q') {
@@ -1274,7 +1268,7 @@ async function addKeyWizard (channel, user, server, xdb, playlistName) {
   }
   existingPlaylist.set(res.toUpperCase(), {name: res, link: resLink, playlistName});
   serializeAndUpdate(server, `p${user.id}`, playlistName, xdb);
-  channel.send('*added key to the playlist*');
+  channel.send(`*added key to your ${playlistName} playlist*`);
 }
 
 async function removeKeyWizard (channel, user, server, xdb) {

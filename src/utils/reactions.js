@@ -35,7 +35,9 @@ const reactions = {
   // gear icon
   GEAR: '⚙️',
   // orange diamond
-  O_DIAMOND: '🔸'
+  O_DIAMOND: '🔸',
+  // orange book
+  BOOK_O: '📙'
 };
 
 module.exports = {reactions};
