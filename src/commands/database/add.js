@@ -120,13 +120,7 @@ async function addToDatabase_P (server, args, channel, sheetName, printMsgToChan
       databaseType = '';
     }
     if (songsAddedInt === 1) {
-      let typeString;
-      if (databaseType === 'm') {
-        typeString = 'your personal';
-      } else {
-        typeString = "the server's";
-      }
-      channel.send(`*link added to ${typeString} keys list. (use \`${ps}d ${args[0]}\` to play)*`);
+      channel.send(`*link added to your **${playlistName}** playlist. (use \`${ps}d ${args[0]}\` to play)*`);
     } else if (songsAddedInt > 1) {
       await new Promise(res => setTimeout(res, 1000));
       gsUpdateOverwrite(10, sheetName, xdb.dsInt);
