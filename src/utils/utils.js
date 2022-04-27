@@ -363,13 +363,12 @@ function logError (msgTxt) {
  * @param textChannel The text channel to notify.
  */
 function catchVCJoinError (error, textChannel) {
-  const eMsg = error.toString();
-  if (eMsg.includes('it is full')) textChannel.send('\`error: cannot join voice channel, it is full\`');
+  let eMsg = error.toString();
+  if (eMsg.includes('it is full')) textChannel.send('\`error: cannot join voice channel; it is full\`');
   else if (eMsg.includes('VOICE_JOIN_CHANNEL')) textChannel.send('\`permissions error: cannot join voice channel\`');
   else {
-    textChannel.send('db bot ran into this error:\n`' + eMsg + '`');
-    logError(`voice channel join error:\n ${eMsg}`);
-    console.log(error);
+    textChannel.send('error when joining your VC:\n`' + error.message + '`');
+    logError(`voice channel join error:\n\`${error.message}\``);
   }
 }
 
@@ -429,8 +428,8 @@ function universalLinkFormatter (link) {
 
 // returns true if a valid link is provided
 function linkValidator (server, channel, link, prefixString, sendErrorMsg) {
-  if (!verifyUrl(link) && !verifyPlaylist(link)){
-    if (sendErrorMsg){
+  if (!verifyUrl(link) && !verifyPlaylist(link)) {
+    if (sendErrorMsg) {
       channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString || ''}add [name] [link]\``);
     }
     return false;
