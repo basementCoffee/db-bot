@@ -118,12 +118,12 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
     // dataSize.set(nameOfSheet, dataSizeFromSheets.data.values);
   } catch (e) {
     await createSheetNoMessage(nameOfSheet);
-    return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
+    return gsrun_P(columnToRun, secondColumn, nameOfSheet, ++numOfRuns);
   }
 
   if (!dsInt) {
-    await gsUpdateOverwrite(['=(COUNTA(E2:E))'], nameOfSheet, 'G', 1);
-    return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
+    await gsUpdateOverwrite(['=(COUNTA(E2:E)+1)'], nameOfSheet, 'G', 1);
+    return gsrun_P(columnToRun, secondColumn, nameOfSheet, ++numOfRuns);
   }
   const songRange = `${nameOfSheet}!${columnToRun}2:${secondColumn}${dsInt + 1}`;
   const songObjects = {
@@ -248,7 +248,7 @@ const deleteRows = async (sheetName, rowNumber) => {
             range: {
               sheetId: sheetId,
               dimension: 'ROWS',
-              startIndex: rowNumber-1,
+              startIndex: rowNumber - 1,
               endIndex: rowNumber
             }
           }

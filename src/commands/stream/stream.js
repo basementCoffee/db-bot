@@ -21,11 +21,12 @@ const {reactions} = require('../../utils/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
 const {MessageEmbed} = require('discord.js');
 const {getAssumption} = require('../database/search');
-const {getXdb2} = require('../database/retrieval');
+const {getXdb2, getSettings} = require('../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
 const {runPlayCommand} = require('../play');
 const {serializeAndUpdate} = require('../database/utils');
+const {renameKey, renamePlaylist} = require('../rename');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -850,6 +851,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
         }
         return null;
       })();
+      if (playlistUrl) playlistUrl = playlistUrl.link;
     } else playlistUrl = numOfTimes;
     if (!playlistUrl) return message.channel.send(`*could not find **${numOfTimes}** in the keys list*`);
     numOfTimes = 1;
@@ -969,14 +971,17 @@ function updatedQueueMessage (channel, messageText, server) {
  * Generates the all embed pages
  * @returns {Array<module:"discord.js".MessageEmbed>}
  */
-function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb) {
+async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, server, sheetName) {
   let playlistString = '';
   let counter = 1;
   const embedPages = [];
   xdb.playlistArray.forEach(key => playlistString += `${counter++}. ${key}\n`);
+  const settings = await getSettings(server, sheetName);
   const embedKeysMessage = new MessageEmbed();
-  embedKeysMessage.setTitle(`${title} playlists`).setDescription(playlistString)
-    .setColor(keyEmbedColor);
+  await embedKeysMessage.setTitle(`----- ${title} playlists -----`).setDescription(playlistString)
+    .setColor(keyEmbedColor)
+    .setFooter('click on the arrow keys!')
+    .setThumbnail(settings.splash);
   embedPages.push(embedKeysMessage);
   let keysString;
   // iterate over playlists
@@ -1008,9 +1013,9 @@ function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb) {
  * @param cmdType the prefix to call the keys being displayed
  * @param voiceChannel {any?} optional, a specific voice channel to use besides the message's
  * @param user {any?} Optional - username, overrides the message owner's name
- * @param all {any?}
+ * @param specificPage {any?}
  */
-async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user, all) {
+async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user, specificPage) {
   if (!user) user = message.member.user;
   const keysMsg = (botInVC(message) ? {edit: (content, embed) => message.channel.send(content || embed)} :
     await message.channel.send('*getting keys...*'));
@@ -1052,7 +1057,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       keyEmbedColor = '#90d5cf';
     }
     let pageIndex = 0;
-    let embedPages = createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb);
+    let embedPages = await createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, server, sheetName);
     /**
      * Generates the keys list embed
      * @returns {module:"discord.js".MessageEmbed}
@@ -1060,20 +1065,21 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
     const generateKeysEmbed = () => {
       if (sortByRecent) keyArray = keyArrayUnsorted;
       else keyArray = keyArraySorted;
-      if (all) {
-        let s = '';
-        for (const key in keyArray) {
-          s = `${s}, ${keyArray[key]}`;
-        }
-        s = s.substring(1);
-        const embedKeysMessage = new MessageEmbed();
-        embedKeysMessage.setTitle(`${title} **keys** ${(sortByRecent ? '(recently added)' : '(alphabetical)')}`).setDescription(s)
-          .setColor(keyEmbedColor).setFooter(`play command: ${prefixString}d [key]`);
-        return embedKeysMessage;
-      }
       // returns an array of embeds
       if (pageIndex < 0) pageIndex = embedPages.length - 1;
       else pageIndex = pageIndex % embedPages.length;
+      if (specificPage) {
+        const pArrayUpper = xdb.playlistArray.map(i => i.toUpperCase());
+        let index = pArrayUpper.indexOf(specificPage.toUpperCase());
+        if (index === -1) {
+          const ss = getAssumption(specificPage, null, Array.from(xdb.playlists, ([name, value]) => name));
+          // ss should be uppercase since Map has names in uppercase
+          if (ss) index = pArrayUpper.indexOf(ss);
+        }
+        if (index !== -1) {
+          pageIndex = index + 1;
+        }
+      }
       return embedPages[pageIndex];
     };
     keysMsg.edit('', generateKeysEmbed()).then(async sentMsg => {
@@ -1147,7 +1153,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
               reaction.users.remove(user.id);
             } else if (reaction.emoji.name === reactions.GEAR) {
               // allow for adding / removal of a playlist / queue
-              await addRemoveWizard(message.channel, user, server, await getXdb2(server, `p${user.id}`), pageIndex);
+              await addRemoveWizard(message.channel, user, server, await getXdb2(server, sheetName), pageIndex, sheetName);
             }
           }
         }
@@ -1178,27 +1184,30 @@ async function getMessageResponse (server, channel, user, sentMsg) {
 }
 
 // determines if the user would like to add or remove a playlist or key (depending on the argument 'type')
-async function addRemoveWizard (channel, user, server, xdb, pageIndex) {
+async function addRemoveWizard (channel, user, server, xdb, pageIndex, sheetName) {
   if (!user) return;
   let type;
   let addFunction;
   let removeFunction;
   let selectionMessage;
+  let renameFunction;
   if (pageIndex) {
     type = 'key';
     // if 0 then it is the playlist selection page
     let playlistName = xdb.playlistArray[pageIndex - 1];
-    addFunction = () => addKeyWizard(channel, user, server, xdb, playlistName);
-    removeFunction = () => removeKeyWizard(channel, user, server, xdb);
+    addFunction = () => addKeyWizard(channel, user, server, xdb, playlistName, sheetName);
+    removeFunction = () => removeKeyWizard(channel, user, server, xdb, sheetName);
+    renameFunction = (oldName, newName) => renameKey(channel, server, sheetName, oldName, newName);
     selectionMessage = `\`you are on the ${type} selection page (${playlistName.toUpperCase()}):\`\n`;
   } else {
     type = 'playlist';
-    addFunction = () => addPlaylistWizard(channel, user, server, xdb);
-    removeFunction = () => removePlaylistWizard(channel, user, server, xdb);
+    addFunction = () => addPlaylistWizard(channel, user, server, xdb, sheetName);
+    removeFunction = () => removePlaylistWizard(channel, user, server, xdb, sheetName);
+    renameFunction = (oldName, newName) => renamePlaylist(channel, server, sheetName, oldName, newName);
     selectionMessage = `*\`you are on the ${type} selection page:\`*\n`;
   }
 
-  const sentMsg = await channel.send(`${selectionMessage}*Would you like to __add__ or __delete__ a **${type}**? [or type 'q' to quit]*`);
+  const sentMsg = await channel.send(`${selectionMessage}*Would you like to __add__, __delete__, or __rename__ a **${type}**? [or type 'q' to quit]*`);
   let res = await getMessageResponse(server, channel, user, sentMsg);
   if (!res) return;
   if (res.toLowerCase() === 'q') {
@@ -1212,13 +1221,15 @@ async function addRemoveWizard (channel, user, server, xdb, pageIndex) {
     addFunction();
   } else if (res.toLowerCase() === 'delete') {
     removeFunction();
+  } else if (res.toLowerCase() === 'rename') {
+    await renameWizard(channel, user, server, xdb, type, renameFunction);
   } else {
     channel.send('*cancelled*');
     return -1;
   }
 }
 
-async function addPlaylistWizard (channel, user, server, xdb) {
+async function addPlaylistWizard (channel, user, server, xdb, sheetName) {
   const sentMsg = await channel.send(`*Type the __name__ of the **playlist** to add: [or type 'q' to quit]*`);
   let res = await getMessageResponse(server, channel, user, sentMsg);
   if (!res) return;
@@ -1237,11 +1248,11 @@ async function addPlaylistWizard (channel, user, server, xdb) {
   }
   xdb.playlists.set(res.toUpperCase(), new Map());
   xdb.playlistArray.push(res);
-  serializeAndUpdate(server, `p${user.id}`, res, xdb);
+  serializeAndUpdate(server, sheetName, res, xdb);
   channel.send('*added playlist to the sheet*');
 }
 
-async function addKeyWizard (channel, user, server, xdb, playlistName) {
+async function addKeyWizard (channel, user, server, xdb, playlistName, sheetName) {
   const existingPlaylist = xdb.playlists.get(playlistName.toUpperCase());
   if (!existingPlaylist) return;
   const sentMsg = await channel.send(`*Type the __name__ of the **key** to add: [or type 'q' to quit]*`);
@@ -1270,14 +1281,36 @@ async function addKeyWizard (channel, user, server, xdb, playlistName) {
   resLink = universalLinkFormatter(resLink);
   if (linkValidator(server, channel, resLink, false, false)) {
     existingPlaylist.set(res.toUpperCase(), {name: res, link: resLink, playlistName});
-    serializeAndUpdate(server, `p${user.id}`, playlistName, xdb);
+    serializeAndUpdate(server, sheetName, playlistName, xdb);
     channel.send(`*added key to your ${playlistName} playlist*`);
   } else {
     channel.send('*invalid link provided*');
   }
 }
 
-async function removeKeyWizard (channel, user, server, xdb) {
+async function renameWizard (channel, user, server, xdb, type, renameFunction) {
+  const sentMsg = await channel.send(`*Type the __name__ of the **${type}** to rename: [or type 'q' to quit]*`);
+  let res = await getMessageResponse(server, channel, user, sentMsg);
+  if (!res) return;
+  if (res.toLowerCase() === 'q') {
+    try {
+      sentMsg.delete();
+    } catch (e) {
+      channel.send('*cancelled*');
+    }
+    return -1;
+  }
+  const sentMsgLink = await channel.send(`*Type the __new-name__ of the **${type}**: [or type 'q' to quit]*`);
+  let resLink = await getMessageResponse(server, channel, user, sentMsgLink);
+  if (!resLink) return;
+  if (resLink.toLowerCase() === 'q') {
+    channel.send('*cancelled*');
+    return -1;
+  }
+  renameFunction(res, resLink);
+}
+
+async function removeKeyWizard (channel, user, server, xdb, sheetName) {
   const sentMsg = await channel.send(`*Type the __name__ of the **key** to delete: [or type 'q' to quit]*`);
   let res = await getMessageResponse(server, channel, user, sentMsg);
   if (!res) return;
@@ -1297,7 +1330,7 @@ async function removeKeyWizard (channel, user, server, xdb) {
   const pl = xdb.playlists.get(keyObj.playlistName.toUpperCase());
   if (pl) pl.delete(res.toUpperCase());
 
-  serializeAndUpdate(server, `p${user.id}`, keyObj.playlistName, xdb);
+  serializeAndUpdate(server, sheetName, keyObj.playlistName, xdb);
   channel.send('*deleted key to the playlist*');
 }
 
@@ -1307,9 +1340,10 @@ async function removeKeyWizard (channel, user, server, xdb) {
  * @param user
  * @param server
  * @param xdb {{playlists: Map, playlistArray: Array}}
+ * @param sheetName
  * @return {Promise<number|*>}
  */
-async function removePlaylistWizard (channel, user, server, xdb) {
+async function removePlaylistWizard (channel, user, server, xdb, sheetName) {
   const sentMsg = await channel.send(`*Type the __name__ of the **playlist** to delete: [or type 'q' to quit]*`);
   let res = await getMessageResponse(server, channel, user, sentMsg);
   if (!res) return;
@@ -1326,7 +1360,7 @@ async function removePlaylistWizard (channel, user, server, xdb) {
     channel.send('*playlist does not exist*');
     return;
   }
-  serializeAndUpdate(server, `p${user.id}`, res, xdb, true);
+  serializeAndUpdate(server, sheetName, res, xdb, true);
   channel.send('*deleted playlist from the sheet*');
 }
 

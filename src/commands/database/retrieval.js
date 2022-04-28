@@ -20,7 +20,7 @@ async function getXdb (server, sheetName, save) {
     const congratsDatabase = new Map();
     const referenceDatabase = new Map();
     const line = [];
-    for (let [, key] of xdb.globalKeys){
+    for (let [, key] of xdb.globalKeys) {
       line.push(key.name);
       congratsDatabase.set(key.name, key.link);
       referenceDatabase.set(key.name.toUpperCase(), key.link);
@@ -28,13 +28,13 @@ async function getXdb (server, sheetName, save) {
     const dsInt = xdb.globalKeys.size;
     return {
       congratsDatabase, referenceDatabase, line, dsInt
-    }
+    };
   } else {
     return getOriginalXdb(server, sheetName, save);
   }
 }
 
-async function getOriginalXdb (server, sheetName, save){
+async function getOriginalXdb (server, sheetName, save) {
   if (!save) return gsrun('A', 'B', sheetName);
   let xdb = server.userKeys.get(`${sheetName}`);
   if (!xdb) {
@@ -71,7 +71,7 @@ async function getSettings (server, sheetName) {
 }
 
 async function setSettings (server, sheetName, settingsObj) {
-  gsUpdateOverwrite([settingsObj], sheetName, "H", 1);
+  gsUpdateOverwrite([JSON.stringify(settingsObj)], sheetName, "H", 1);
 }
 
 /**
@@ -113,5 +113,5 @@ async function getServerPrefix (server, mgid) {
   }
 }
 
-module.exports = {getXdb, sendListSize, getServerPrefix,  getXdb2: getXdb_P, getSettings};
+module.exports = {getXdb, sendListSize, getServerPrefix, getXdb2: getXdb_P, getSettings, setSettings};
 

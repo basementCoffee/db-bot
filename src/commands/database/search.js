@@ -4,13 +4,11 @@ const {getXdb, getXdb2} = require('./retrieval');
 /**
  * Searches a Map for the given key. Provides the keys that contain the given key.
  * @param keyName {string} the key to search for.
- * @param cdb {Map<>} A map containing all the keys and their links.
+ * @param keyArray {Array<>} An array containing all the valid names.
  * @returns {{ss: string, ssi: number}} ss being the found values, and ssi being the number of found values.
  */
-function runSearchCommand (keyName, cdb) {
+function runSearchCommand (keyName, keyArray) {
   const keyNameLen = keyName.length;
-  const keyArray = [];
-  cdb.forEach(value => keyArray.push(value.name));
   let ss = '';
   let ssi = 0;
   let searchKey;
@@ -36,10 +34,15 @@ function runSearchCommand (keyName, cdb) {
  * Otherwise, returns false.
  * @param word {string} The word to check.
  * @param cdb {Map<>} A map containing all the keys and their links.
+ * @param namesArray {Array?>} Optional - An array containing all the valid names (can be used in place of cdb).
  * @return {string | false} The closest valid assumption or false.
  */
-function getAssumption (word, cdb) {
-  const sObj = runSearchCommand(word, cdb);
+function getAssumption (word, cdb, namesArray) {
+  if (!namesArray) {
+    namesArray = [];
+    cdb.forEach(value => namesArray.push(value.name));
+  }
+  const sObj = runSearchCommand(word, namesArray);
   let ss = sObj.ss;
   if (ss) {
     ss = ss.split(',')[0];

@@ -437,9 +437,18 @@ function linkValidator (server, channel, link, prefixString, sendErrorMsg) {
   return true;
 }
 
+// removes extra formatting from a link
+function removeFormattingLink(link) {
+  if (link[0] === '<' && link[link.length - 1] === '>') {
+    link = link.substr(1, link.length - 2);
+  }
+  return link;
+}
+
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
-  logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild, linkValidator, universalLinkFormatter
+  logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild, linkValidator, universalLinkFormatter,
+  removeFormattingLink
 };

@@ -10,7 +10,8 @@ const processStats = require('./utils/process/ProcessStats');
 const {gsrun, deleteRows} = require('./commands/database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
-  unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive
+  unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
+  removeFormattingLink
 } = require('./utils/utils');
 const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
@@ -36,7 +37,14 @@ const {runRandomToQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');
 const {runQueueCommand} = require('./commands/generateQueue');
 const {runUniversalSearchCommand} = require('./commands/database/search');
-const {sendListSize, getServerPrefix, getXdb2, getSettings, getXdb} = require('./commands/database/retrieval');
+const {
+  sendListSize,
+  getServerPrefix,
+  getXdb2,
+  getSettings,
+  getXdb,
+  setSettings
+} = require('./commands/database/retrieval');
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {playFromWord} = require('./commands/playFromWord');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
@@ -49,6 +57,8 @@ const {runInsertCommand} = require('./commands/insert');
 const {parent_thread} = require('./threads/parent_thread');
 const {joinVoiceChannelSafe} = require('./commands/join');
 const {addToDatabase_P} = require('./commands/database/add');
+const {serializeAndUpdate} = require('./commands/database/utils');
+const {renamePlaylist, renameKey} = require('./commands/rename');
 
 process.setMaxListeners(0);
 
@@ -150,9 +160,7 @@ async function runPlayLinkCommand (message, args, mgid, server, sheetName) {
   if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
   if (args[1].includes('.')) {
-    if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
-      args[1] = args[1].substr(1, args[1].length - 2);
-    }
+    args[1] = removeFormattingLink(args[1]);
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1])))
       return playFromWord(message, args, sheetName, server, mgid, false);
   } else return playFromWord(message, args, sheetName, server, mgid, false);
@@ -354,6 +362,19 @@ async function runCommandCases (message) {
       }
       updateActiveEmbed(server).then();
       break;
+    case 'unloop':
+      if (!botInVC(message)) {
+        // only send error message for 'loop' command
+        if (args[0].length > 1) await message.channel.send('must be actively playing to loop');
+        return;
+      }
+      if (server.loop) {
+        server.loop = false;
+        await message.channel.send('*looping disabled*');
+      } else {
+        await message.channel.send('*looping is already off*');
+      }
+      break;
     case 'l':
     case 'loop':
       if (!botInVC(message)) {
@@ -489,17 +510,54 @@ async function runCommandCases (message) {
     case 'mshufflenow':
       runRandomToQueue(args[1], message, `p${message.member.id}`, server, true).then();
       break;
+    case 'rename-key':
+    case 'rename-keys':
+    case 'r-key':
+    case 'r-keys':
+      if (!args[1] || !args[2]) {
+        message.channel.send(`*expected a key-name and new key-name (i.e. ${args[0]} [A] [B])*`);
+        return;
+      }
+      renameKey(message.channel, server, `p${message.member.id}`, args[1], args[2]);
+      break;
+    case 'rename-playlist':
+    case 'rename-playlists':
+    case 'r-playlist':
+    case 'r-playlists':
+      if (!args[1] || !args[2]) {
+        message.channel.send(`*expected a playlist-name and new playlist-name (i.e. ${args[0]} [A] [B])*`);
+        return;
+      }
+      renamePlaylist(message.channel, server, `p${message.member.id}`, args[1], args[2]);
+      break;
     // .keys is personal keys
     case 'key':
     case 'keys':
-      if (args[1]) runDatabasePlayCommand(args, message, `p${message.member.id}`, false, false, server).then();
-      else runKeysCommand(message, server, `p${message.member.id}`, 'm').then();
+    case 'playlists':
+      runKeysCommand(message, server, `p${message.member.id}`, 'm', null, null, args[1]).then();
       break;
     // test purposes - return keys
     case 'gk':
     case 'gkey':
     case 'gkeys':
-      runKeysCommand(message, server, 'entries', 'g', '', '').then();
+      runKeysCommand(message, server, 'entries', 'g', null, null, args[1]).then();
+      break;
+    case 'splashpage':
+    case 'splashscreen':
+    case 'keys-page':
+    case 'change':
+      if (!args[1]) {
+        message.channel.send('*provide a link to set a splash screen*');
+        return;
+      }
+      args[1] = removeFormattingLink(args[1].trim());
+      if (args[1].substring(args[1].length - 5) === '.gifv') {
+        args[1] = args[1].substring(0, args[1].length - 1);
+      }
+      const userSettings = await getSettings(server, `p${message.member.id}`);
+      userSettings.splash = args[1];
+      await setSettings(server, `p${message.member.id}`, userSettings);
+      message.channel.send('*splashscreen set*');
       break;
     // .search is the search
     case 'find':
@@ -730,6 +788,26 @@ async function runCommandCases (message) {
     case 'res':
     case 'resume':
       runPlayCommand(message, message.member, server);
+      break;
+    case 'gzconvert':
+    case 'gz-convert':
+      // convert old data format into new data format
+      if (!args[1]) return;
+      const oldDB = await getXdb(server, args[1]);
+      let keysObj = {
+        pn: 'general',
+        ks: []
+      };
+      let valStr = '';
+      oldDB.congratsDatabase.forEach((val, key) => {
+        keysObj.ks.push({kn: key});
+        valStr += val + ', ';
+      });
+      if (valStr.length > 1) {
+        valStr = valStr.substring(0, valStr.length - 2);
+      }
+      console.log('K: ', JSON.stringify(keysObj));
+      console.log('V: ', valStr);
       break;
     case 'ts':
     case 'time':
