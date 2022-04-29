@@ -223,7 +223,6 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
       } else {
         message.channel.send(msgTxt);
       }
-      message.channel.send();
       await updateActiveEmbed(server);
     }
   }
