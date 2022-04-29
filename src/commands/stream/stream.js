@@ -27,6 +27,7 @@ const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
 const {runPlayCommand} = require('../play');
 const {serializeAndUpdate} = require('../database/utils');
 const {renameKey, renamePlaylist} = require('../rename');
+const {removePlaylist} = require('../remove');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -1360,13 +1361,7 @@ async function removePlaylistWizard (channel, user, server, xdb, sheetName) {
     }
     return -1;
   }
-  const existingPlaylist = xdb.playlists.get(res.toUpperCase());
-  if (!existingPlaylist) {
-    channel.send('*playlist does not exist*');
-    return;
-  }
-  serializeAndUpdate(server, sheetName, res, xdb, true);
-  channel.send('*deleted playlist from the sheet*');
+  await removePlaylist(server, sheetName, res, xdb, channel);
 }
 
 module.exports = {

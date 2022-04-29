@@ -1,4 +1,5 @@
 const {updateActiveEmbed} = require('../utils/embed');
+const {serializeAndUpdate} = require('./database/utils');
 
 /**
  * Removes an item from the queue. Does not allow for the currently playing item to be removed from the queue (index 0).
@@ -27,4 +28,24 @@ async function runRemoveCommand (message, server, itemPosition) {
   message.channel.send('*removed item from queue*');
 }
 
-module.exports = {runRemoveCommand}
+/**
+ * Removes a playlist. Returns false if playlist could not be found. Sends the response to the channel.
+ * @param server The server metadata.
+ * @param sheetName The sheetname to update.
+ * @param playlistName The playlist to remove.
+ * @param xdb The XDB.
+ * @param channel The channel to send the response to.
+ * @return {Promise<boolean>}
+ */
+async function removePlaylist (server, sheetName, playlistName, xdb, channel) {
+  const existingPlaylist = xdb.playlists.get(playlistName.toUpperCase());
+  if (!existingPlaylist) {
+    channel.send('*playlist does not exist*');
+    return false;
+  }
+  await serializeAndUpdate(server, sheetName, playlistName, xdb, true);
+  channel.send(`*deleted playlist ${playlistName}*`);
+  return true;
+}
+
+module.exports = {runRemoveCommand, removePlaylist};

@@ -1,4 +1,4 @@
-const {gsrun, gsUpdateAdd, gsUpdateOverwrite, gsrun_P} = require('./api/api');
+const {gsrun, gsUpdateAdd, gsUpdateOverwrite} = require('./api/api');
 const {getXdb2} = require('./retrieval');
 const {serializeAndUpdate} = require('./utils');
 
@@ -67,12 +67,22 @@ function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
   });
 }
 
-// args is the list of keys
-async function addToDatabase_P (server, args, channel, sheetName, printMsgToChannel, playlistName = 'general', retries) {
+/**
+ * creates a new playlist if a new playlist-name is provided
+ * @param server {any}
+ * @param keysList {Array<string>} - the list of keys and links (each key should be followed by a link)
+ * @param channel {any}
+ * @param sheetName {string}
+ * @param printMsgToChannel {boolean}
+ * @param playlistName {string}
+ * @param xdb {any?} The XDB.
+ * @return {Promise<void>}
+ */
+async function addToDatabase_P (server, keysList, channel, sheetName, printMsgToChannel, playlistName = 'general', xdb) {
   let songsAddedInt = 0;
   let z = 0;
   // check duplicates, and initialize sheet for new servers
-  const xdb = (await getXdb2(server, sheetName, false));
+  if (!xdb) xdb = await getXdb2(server, sheetName, false);
   let playlist = xdb.playlists.get(playlistName.toUpperCase()) ||
     (() => {
       const tempMap = new Map();
@@ -81,27 +91,27 @@ async function addToDatabase_P (server, args, channel, sheetName, printMsgToChan
       gsUpdateOverwrite([xdb.playlistArray.length + 1], sheetName);
       return tempMap;
     })();
-  while (args[z] && args[z + 1]) {
-    let linkZ = args[z + 1];
+  while (keysList[z] && keysList[z + 1]) {
+    let linkZ = keysList[z + 1];
     if (linkZ.substring(linkZ.length - 1) === ',') {
       linkZ = linkZ.substring(0, linkZ.length - 1);
     }
-    if (args[z].includes('.') || args[z].includes(',')) {
-      channel.send("did not add '" + args[z] + "', names cannot include '.' or ','");
+    if (keysList[z].includes('.') || keysList[z].includes(',')) {
+      channel.send("did not add '" + keysList[z] + "', names cannot include '.' or ','");
     } else {
       let alreadyExists = false;
       const allkeys = xdb.globalKeys.keys();
       for (const x of allkeys) {
-        if (x === args[z].toUpperCase()) {
+        if (x === keysList[z].toUpperCase()) {
           channel.send(`*'${xdb.globalKeys.get(x).name}' is already saved as a key*`);
           alreadyExists = true;
           break;
         }
       }
       if (!alreadyExists) {
-        playlist.set(args[z].toUpperCase(), {
-          name: args[z],
-          link: args[z + 1],
+        playlist.set(keysList[z].toUpperCase(), {
+          name: keysList[z],
+          link: keysList[z + 1],
           timeStamp: ''
         });
         songsAddedInt += 1;
@@ -109,22 +119,15 @@ async function addToDatabase_P (server, args, channel, sheetName, printMsgToChan
     }
     z = z + 2;
   }
-  if (songsAddedInt) {
-    await serializeAndUpdate(server, sheetName, playlistName, xdb);
-  }
+  await serializeAndUpdate(server, sheetName, playlistName, xdb);
   if (printMsgToChannel) {
     const ps = server.prefix;
-    // the specific database user-access character
-    let databaseType = args[0].substr(1, 1).toLowerCase();
-    if (databaseType === 'a') {
-      databaseType = '';
-    }
     if (songsAddedInt === 1) {
-      channel.send(`*link added to your **${playlistName}** playlist. (use \`${ps}d ${args[0]}\` to play)*`);
+      channel.send(`*link added to your **${playlistName}** playlist. (use \`${ps}d ${keysList[0]}\` to play)*`);
     } else if (songsAddedInt > 1) {
       await new Promise(res => setTimeout(res, 1000));
       gsUpdateOverwrite(10, sheetName, xdb.dsInt);
-      channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + databaseType + "keys')*");
+      channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + "keys')*");
     }
   }
 }

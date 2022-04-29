@@ -20,7 +20,7 @@ let {
   TWITCH_BASE_LINK, StreamType
 } = require('./utils/process/constants');
 const {reactions} = require('./utils/reactions');
-const {runRemoveCommand} = require('./commands/remove');
+const {runRemoveCommand, removePlaylist} = require('./commands/remove');
 const {updateActiveEmbed, sendRecommendation, sessionEndEmbed} = require('./utils/embed');
 const {runMoveItemCommand} = require('./commands/move');
 const {
@@ -29,7 +29,7 @@ const {
 const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
 const {runDatabasePlayCommand, playPlaylistDB} = require('./commands/databasePlayCommand');
-const {runAddCommandWrapper, runAddCommandWrapper_P} = require('./commands/add');
+const {runAddCommandWrapper, runAddCommandWrapper_P, addNewPlaylist} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
@@ -37,7 +37,14 @@ const {runRandomToQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');
 const {runQueueCommand} = require('./commands/generateQueue');
 const {runUniversalSearchCommand} = require('./commands/database/search');
-const {sendListSize, getServerPrefix, getSettings, getXdb, setSettings} = require('./commands/database/retrieval');
+const {
+  sendListSize,
+  getServerPrefix,
+  getSettings,
+  getXdb,
+  setSettings,
+  getXdb2
+} = require('./commands/database/retrieval');
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {playFromWord} = require('./commands/playFromWord');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
@@ -530,6 +537,7 @@ async function runCommandCases (message) {
     // .keys is personal keys
     case 'key':
     case 'keys':
+    case 'playlist':
     case 'playlists':
       runKeysCommand(message, server, `p${message.member.id}`, 'm', null, null, args[1]).then();
       break;
@@ -752,7 +760,6 @@ async function runCommandCases (message) {
       runResignCommand(message, server);
       break;
     // !pa
-    case 'pa':
     case 'stop':
     case 'pause':
       runPauseCommand(message, message.member, server);
@@ -823,15 +830,48 @@ async function runCommandCases (message) {
       runAddCommandWrapper(message, args, 'entries', true, 'g', server);
       break;
     // .add is personal add
-    case 'ma':
     case 'add':
       runAddCommandWrapper_P(message.channel, args.slice(1), `p${message.member.id}`, true, 'm', server, message.member);
+      break;
+    case 'playlist-add':
+    case 'add-playlist':
+      if (!args[1]) {
+        message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
+        return;
+      }
+      addNewPlaylist(server, message.channel, `p${message.member.id}`, args[1]);
+      break;
+    case 'gadd-playlist':
+    case 'gplaylist-add':
+      if (!args[1]) {
+        message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
+        return;
+      }
+      addNewPlaylist(server, message.channel, `entries`, pl);
+      break;
+    case 'delete-playlist':
+    case 'remove-playlist':
+    case 'del-playlist':
+    case 'playlist-del':
+      removePlaylist(server, `p${message.member.id}`, args[1], (await getXdb2(server, `p${message.member.id}`)), message.channel);
+      break;
+    case 'gdelete-playlist':
+    case 'gremove-playlist':
+    case 'gplaylist-delete':
+      removePlaylist(server, `p${message.member.id}`, args[1], (await getXdb2(server, `p${message.member.id}`)), message.channel);
       break;
     // .del deletes database entries
     case 'del':
     case 'delete':
       if (!args[1]) return message.channel.send(`*no args provided*`);
       runDeleteKeyCommand_P(message, args[1], `p${message.member.id}`, server);
+      break;
+    // test remove database entries
+    case 'grm':
+    case 'gdel':
+    case 'gdelete':
+    case 'gremove':
+      runDeleteKeyCommand_P(message, args[1], `entries`, server);
       break;
     case 'soundcloud':
       message.channel.send(`*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`);
@@ -845,14 +885,6 @@ async function runCommandCases (message) {
       } else {
         message.channel.send('*must be in a voice channel*');
       }
-      break;
-    // test remove database entries
-    case 'grm':
-    case 'gdel':
-    case 'gdelete':
-    case 'gremove':
-      server.userKeys.set('entries', null);
-      runDeleteCommand(message, args[1], 'entries', true).catch((e) => console.log(e));
       break;
     case 'prev':
     case 'previous':

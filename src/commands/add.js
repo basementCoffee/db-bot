@@ -2,6 +2,7 @@ const {botID, MAX_KEY_LENGTH} = require('../utils/process/constants');
 const {reactions} = require('../utils/reactions');
 const {addToDatabase_P} = require('./database/add');
 const {universalLinkFormatter, linkValidator} = require('../utils/utils');
+const {getXdb2} = require('./database/retrieval');
 
 /**
  * Wrapper for the function 'addToDatabase', for the purpose of error checking.
@@ -22,8 +23,22 @@ function lengthErrorString (type, itemName, maxLength) {
   return `*error: ${type}-name **${itemName}** exceeds max character limit of ${maxLength}*`;
 }
 
+async function addNewPlaylist (server, channel, sheetName, playlistName) {
+  if (playlistName.length > MAX_KEY_LENGTH) {
+    channel.send(lengthErrorString('playlist', playlistName, MAX_KEY_LENGTH));
+    return;
+  }
+  const xdb = await getXdb2(server, sheetName, false);
+  if (xdb.playlists.get(playlistName.toUpperCase())) {
+    channel.send(`*playlist **${playlistName}** already exists*`);
+    return;
+  }
+  await addToDatabase_P(server, [], channel, sheetName, false, playlistName);
+  channel.send(`*added **${playlistName}** as a playlist*`);
+}
+
 /**
- * Wrapper for the function 'addToDatabase', for the purpose of error checking.
+ * Wrapper for the function 'addToDatabase', for the purpose of error checking. Expects the provided playlist to exist.
  * @param channel The channel that triggered the bot
  * @param args The args that of the message contents
  * @param sheetName The name of the sheet to add to
@@ -33,22 +48,27 @@ function lengthErrorString (type, itemName, maxLength) {
  * @param member The member that is requesting the add.
  * @returns {*}
  */
-function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, prefixString, server, member) {
+async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, prefixString, server, member) {
   let playlistName;
   let keyName;
   let link;
+  let xdb;
   if (args.length === 3) {
     playlistName = args[0];
     keyName = args[1];
     link = args[2];
-    if (playlistName.length > MAX_KEY_LENGTH) {
-      channel.send(lengthErrorString('playlist', playlistName, MAX_KEY_LENGTH));
+    xdb = await getXdb2(server, sheetName, false);
+    if (!xdb.playlists.get(playlistName.toUpperCase())) {
+      channel.send(`*playlist **${playlistName}** does not exist: add a new playlist using the \`add-playlist\` command*`);
       return;
     }
   } else if (args.length === 2) {
     keyName = args[0];
     link = args[1];
-  } else {
+  } else if (args.length === 0){
+
+  }
+  else {
     channel.send('*incorrect number of args provided*');
     return;
   }
@@ -61,7 +81,7 @@ function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, pr
       link = universalLinkFormatter(link);
       if (linkValidator(server, channel, link, prefixString, true)) {
         server.userKeys.set(sheetName, null);
-        addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName);
+        addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb);
       }
       return;
     } else if (member.voice?.channel && server.queue[0]) {
@@ -77,7 +97,7 @@ function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, pr
           sentMsg.delete();
           if (reaction.emoji.name === reactions.CHECK) {
             server.userKeys.set(sheetName, null);
-            addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel);
+            addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb);
           } else {
             channel.send('*cancelled*');
           }
@@ -95,4 +115,4 @@ function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, pr
     + ' keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + prefixString + 'add [key] [link]\`)*');
 }
 
-module.exports = {runAddCommandWrapper, runAddCommandWrapper_P};
+module.exports = {runAddCommandWrapper, runAddCommandWrapper_P, addNewPlaylist};
