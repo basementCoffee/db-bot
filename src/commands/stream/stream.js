@@ -22,7 +22,7 @@ const {getPlaylistItems} = require('../../utils/playlist');
 const {MessageEmbed} = require('discord.js');
 const {getAssumption} = require('../database/search');
 const {getXdb2, getSettings} = require('../database/retrieval');
-const {hasDJPermissions} = require('../../utils/permissions');
+const {hasDJPermissions, isCoreAdmin} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
 const {runPlayCommand} = require('../play');
 const {serializeAndUpdate} = require('../database/utils');
@@ -1153,17 +1153,18 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
           }
           return message.channel.send('must be in a voice channel to shuffle play');
         } else {
-          if (reactionCollector.id === user.id) {
+          if (reactionCollector.id === user.id || (sheetName[0] !== 'p' && isCoreAdmin(user.id))) {
             if (reaction.emoji.name === reactions.ARROW_R) {
               pageIndex += 1;
               sentMsg.edit(generateKeysEmbed());
-              reaction.users.remove(user.id);
+              await reaction.users.remove(user.id);
             } else if (reaction.emoji.name === reactions.ARROW_L) {
               pageIndex -= 1;
               sentMsg.edit(generateKeysEmbed());
-              reaction.users.remove(user.id);
+              await reaction.users.remove(user.id);
             } else if (reaction.emoji.name === reactions.GEAR) {
               // allow for adding / removal of a playlist / queue
+              await reaction.users.remove(user.id);
               await addRemoveWizard(message.channel, user, server, await getXdb2(server, sheetName), pageIndex, sheetName);
             }
           }
