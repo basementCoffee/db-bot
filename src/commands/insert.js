@@ -1,5 +1,5 @@
 const {verifyUrl, verifyPlaylist, linkFormatter, createQueueItem} = require('../utils/utils');
-const {getXdb} = require('./database/retrieval');
+const {getXdb2} = require('./database/retrieval');
 const {
   SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, MAX_QUEUE_S
 } = require('../utils/process/constants');
@@ -58,11 +58,11 @@ async function runInsertCommand (message, mgid, args, server) {
   for (let i = 0; i < links.length; i++) {
     tempLink = links[i]?.replace(',', '');
     if (!verifyUrl(tempLink) && !verifyPlaylist(tempLink)) {
-      let xdb = await getXdb(server, mgid, true);
-      let link = xdb.referenceDatabase.get(tempLink.toUpperCase());
+      let xdb = await getXdb2(server, mgid, true);
+      let link = xdb.globalKeys.get(tempLink.toUpperCase())?.link;
       if (!link) {
-        xdb = await getXdb(server, `p${message.member.id}`, true);
-        link = xdb.referenceDatabase.get(tempLink.toUpperCase());
+        xdb = await getXdb2(server, `p${message.member.id}`, true);
+        link = xdb.globalKeys.get(tempLink.toUpperCase())?.link;
       }
       if (!link) {
         notFoundString += `${tempLink}, `;
