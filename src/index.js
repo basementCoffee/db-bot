@@ -548,8 +548,6 @@ async function runCommandCases (message) {
       runKeysCommand(message, server, 'entries', 'g', null, null, args[1]).then();
       break;
     case 'splash':
-    case 'splashscreen':
-    case 'keys-page':
       if (!args[1]) {
         message.channel.send(`*provide an icon URL to set a splash screen for your playlists \`${args[0]} [url]\`*`);
         return;
@@ -596,7 +594,6 @@ async function runCommandCases (message) {
     case 'np':
     case 'nowplaying':
     case 'playing':
-    case 'what':
     case 'now':
       await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], mgid, '');
       break;
