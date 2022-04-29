@@ -84,7 +84,7 @@ function convertSeekFormatToSec (seekString) {
 /**
  * Returns whether the bot is in a voice channel within the guild.
  * @param message The message that triggered the bot.
- * @returns {Boolean} True if the bot is in a voice channel.
+ * @returns {Object} The voice channel if the bot is in a voice channel.
  */
 function botInVC (message) {
   try {
