@@ -1,7 +1,7 @@
 const {botID, MAX_KEY_LENGTH} = require('../utils/process/constants');
 const {reactions} = require('../utils/reactions');
 const {addToDatabase_P} = require('./database/add');
-const {universalLinkFormatter, linkValidator} = require('../utils/utils');
+const {universalLinkFormatter, linkValidator, botInVC_Guild} = require('../utils/utils');
 const {getXdb2} = require('./database/retrieval');
 
 /**
@@ -50,8 +50,8 @@ async function addNewPlaylist (server, channel, sheetName, playlistName) {
  */
 async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, prefixString, server, member) {
   let playlistName;
-  let keyName;
-  let link;
+  let keyName = args[0];
+  let link = args[1];
   let xdb;
   if (args.length === 3) {
     playlistName = args[0];
@@ -62,21 +62,12 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
       channel.send(`*playlist **${playlistName}** does not exist: add a new playlist using the \`add-playlist\` command*`);
       return;
     }
-  } else if (args.length === 2) {
-    keyName = args[0];
-    link = args[1];
-  } else if (args.length === 0){
-
-  }
-  else {
-    channel.send('*incorrect number of args provided*');
-    return;
-  }
-  if (keyName.length > MAX_KEY_LENGTH) {
-    channel.send(lengthErrorString('key', keyName, MAX_KEY_LENGTH));
-    return;
   }
   if (keyName) {
+    if (keyName.length > MAX_KEY_LENGTH) {
+      channel.send(lengthErrorString('key', keyName, MAX_KEY_LENGTH));
+      return;
+    }
     if (link) {
       link = universalLinkFormatter(link);
       if (linkValidator(server, channel, link, prefixString, true)) {
@@ -111,7 +102,8 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
       return;
     }
   }
-  return channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
+  if (botInVC_Guild(channel.guild) && server.queue[0]) channel.send('*error: expected a key-name to add*');
+  else channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
     + ' keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + prefixString + 'add [key] [link]\`)*');
 }
 
