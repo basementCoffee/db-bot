@@ -974,8 +974,14 @@ const TIPS = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-sp
   `${prefixS}dd plays playlists`];
 
 /**
- * Generates the all embed pages
- * @returns {Array<module:"discord.js".MessageEmbed>}
+ * Generates the full keys-list embed pages.
+ * @param title
+ * @param keyEmbedColor
+ * @param prefixString
+ * @param xdb
+ * @param server
+ * @param sheetName
+ * @return {Promise<*[]>}
  */
 async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, server, sheetName) {
   let playlistString = '';
@@ -995,7 +1001,7 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
     keysString = '';
     // iterate over a single playlist
     val.forEach((val) => {
-      keysString += `${val.name}, `;
+      keysString = `${val.name}, ${keysString}`;
     });
     if (keysString.length) {
       keysString = keysString.substring(0, keysString.length - 2);
@@ -1007,7 +1013,6 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
       .setColor(keyEmbedColor)
       .setFooter(`play command: ${prefixString}d [key]`));
   });
-
   return embedPages;
 }
 
@@ -1078,7 +1083,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
         const pArrayUpper = xdb.playlistArray.map(i => i.toUpperCase());
         let index = pArrayUpper.indexOf(specificPage.toUpperCase());
         if (index === -1) {
-          const ss = getAssumption(specificPage, null, Array.from(xdb.playlists, ([name, value]) => name));
+          const ss = getAssumption(specificPage, Array.from(xdb.playlists, ([name, value]) => name));
           // ss should be uppercase since Map has names in uppercase
           if (ss) index = pArrayUpper.indexOf(ss);
         }
