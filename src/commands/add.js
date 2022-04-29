@@ -1,4 +1,4 @@
-const {botID} = require('../utils/process/constants');
+const {botID, MAX_KEY_LENGTH} = require('../utils/process/constants');
 const {reactions} = require('../utils/reactions');
 const {addToDatabase_P} = require('./database/add');
 const {universalLinkFormatter, linkValidator} = require('../utils/utils');
@@ -15,6 +15,11 @@ const {universalLinkFormatter, linkValidator} = require('../utils/utils');
  */
 function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString, server) {
   throw Error('INCORRECT COMMAND USED');
+}
+
+// create a string that warns the user that the itemName of type 'type' is exceeding a maximum length.
+function lengthErrorString (type, itemName, maxLength) {
+  return `*error: ${type}-name **${itemName}** exceeds max character limit of ${maxLength}*`;
 }
 
 /**
@@ -36,11 +41,20 @@ function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, pr
     playlistName = args[0];
     keyName = args[1];
     link = args[2];
+    if (playlistName.length > MAX_KEY_LENGTH) {
+      channel.send(lengthErrorString('playlist', playlistName, MAX_KEY_LENGTH));
+      return;
+    }
   } else if (args.length === 2) {
     keyName = args[0];
     link = args[1];
   } else {
     channel.send('*incorrect number of args provided*');
+    return;
+  }
+  if (keyName.length > MAX_KEY_LENGTH) {
+    channel.send(lengthErrorString('key', keyName, MAX_KEY_LENGTH));
+    return;
   }
   if (keyName) {
     if (link) {

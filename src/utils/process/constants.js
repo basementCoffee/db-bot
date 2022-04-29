@@ -8,6 +8,8 @@ const botID = '730350452268597300';
 let startupDevMode = process.argv[2] === '--dev';
 // max queue size
 const MAX_QUEUE_S = 500;
+// max key length
+const MAX_KEY_LENGTH = 30;
 // active process interval (9min)
 const checkActiveMS = 540000;
 // number of active processes
@@ -42,5 +44,6 @@ const StreamType = {
 
 module.exports = {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
-  SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM
+  SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM,
+  MAX_KEY_LENGTH
 };

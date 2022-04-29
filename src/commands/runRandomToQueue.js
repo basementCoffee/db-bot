@@ -1,5 +1,5 @@
 const {addRandomToQueue} = require('./stream/stream');
-const {getXdb, getXdb2} = require('./database/retrieval');
+const {getXdb2} = require('./database/retrieval');
 const {botInVC, setSeamless, resetSession} = require('../utils/utils');
 const {MAX_QUEUE_S} = require('../utils/process/constants');
 const {hasDJPermissions} = require('../utils/permissions');
@@ -79,4 +79,4 @@ function shuffleQueue (queue, message) {
   if (message) message.channel.send('*your queue has been shuffled*');
 }
 
-module.exports = {runRandomToQueue}
+module.exports = {runRandomToQueue, shuffleQueue}

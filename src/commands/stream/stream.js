@@ -844,7 +844,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     if (cdb) {
       playlistUrl = cdb.get(numOfTimes.toUpperCase()) || (() => {
         // tries to get a close match
-        const assumption = getAssumption(numOfTimes, cdb);
+        const assumption = getAssumption(numOfTimes, [...cdb.values()].map(item => item.name));
         if (assumption) {
           message.channel.send(`could not find '${numOfTimes}'. **Assuming '${assumption}'**`);
           return cdb.get(assumption.toUpperCase());
@@ -967,6 +967,11 @@ function updatedQueueMessage (channel, messageText, server) {
   updateActiveEmbed(server).then();
 }
 
+// returns an array of tips
+const TIPS = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-specific',
+  `add an icon using ${prefixS}splash`, `${prefixS}dds shuffles playlists`,
+  `${prefixS}dd plays playlists`];
+
 /**
  * Generates the all embed pages
  * @returns {Array<module:"discord.js".MessageEmbed>}
@@ -980,7 +985,7 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
   const embedKeysMessage = new MessageEmbed();
   await embedKeysMessage.setTitle(`----- ${title} playlists -----`).setDescription(playlistString)
     .setColor(keyEmbedColor)
-    .setFooter('click on the arrow keys!')
+    .setFooter(`${TIPS(prefixString)[Math.floor(Math.random() * TIPS().length)]}`)
     .setThumbnail(settings.splash);
   embedPages.push(embedKeysMessage);
   let keysString;

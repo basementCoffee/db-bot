@@ -33,15 +33,10 @@ function runSearchCommand (keyName, keyArray) {
  * Tries to get a close match of a valid existing key from the word provided.
  * Otherwise, returns false.
  * @param word {string} The word to check.
- * @param cdb {Map<>} A map containing all the keys and their links.
- * @param namesArray {Array?>} Optional - An array containing all the valid names (can be used in place of cdb).
+ * @param namesArray An array containing all the valid names.
  * @return {string | false} The closest valid assumption or false.
  */
-function getAssumption (word, cdb, namesArray) {
-  if (!namesArray) {
-    namesArray = [];
-    cdb.forEach(value => namesArray.push(value.name));
-  }
+function getAssumption (word, namesArray) {
   const sObj = runSearchCommand(word, namesArray);
   let ss = sObj.ss;
   if (ss) {

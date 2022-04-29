@@ -28,7 +28,7 @@ const {
 } = require('./commands/stream/stream');
 const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
-const {runDatabasePlayCommand, runPlaylistPlayCommand} = require('./commands/databasePlayCommand');
+const {runDatabasePlayCommand, playPlaylistDB} = require('./commands/databasePlayCommand');
 const {runAddCommandWrapper, runAddCommandWrapper_P} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation} = require('./commands/stream/recommendations');
@@ -57,7 +57,6 @@ const {runInsertCommand} = require('./commands/insert');
 const {parent_thread} = require('./threads/parent_thread');
 const {joinVoiceChannelSafe} = require('./commands/join');
 const {addToDatabase_P} = require('./commands/database/add');
-const {serializeAndUpdate} = require('./commands/database/utils');
 const {renamePlaylist, renameKey} = require('./commands/rename');
 
 process.setMaxListeners(0);
@@ -415,7 +414,11 @@ async function runCommandCases (message) {
       runPlayNowCommand(message, args, mgid, server, mgid).then();
       break;
     case 'dd':
-      runPlaylistPlayCommand(args, message, `p${message.member.id}`, false, true, server).then();
+      playPlaylistDB(args, message, `p${message.member.id}`, false, true, server).then();
+      break;
+    case 'dds':
+    case 'ddshuffle':
+      playPlaylistDB(args, message, `p${message.member.id}`, false, true, server, true).then();
       break;
     // .md is retrieves and plays from the keys list
     case 'md':
@@ -495,6 +498,7 @@ async function runCommandCases (message) {
     // .r is a random that works with the normal queue
     case 'random':
     case 'rand':
+    case 'ds':
     case 'r':
     case 'mr':
       runRandomToQueue(args[1] || 1, message, `p${message.member.id}`, server).then();
@@ -542,12 +546,11 @@ async function runCommandCases (message) {
     case 'gkeys':
       runKeysCommand(message, server, 'entries', 'g', null, null, args[1]).then();
       break;
-    case 'splashpage':
+    case 'splash':
     case 'splashscreen':
     case 'keys-page':
-    case 'change':
       if (!args[1]) {
-        message.channel.send('*provide a link to set a splash screen*');
+        message.channel.send(`*provide an icon URL to set a splash screen for your playlists \`${args[0]} [url]\`*`);
         return;
       }
       args[1] = removeFormattingLink(args[1].trim());
@@ -628,28 +631,6 @@ async function runCommandCases (message) {
       break;
     case 'ping':
       message.channel.send(`latency is ${Math.round(bot.ws.ping)}ms`);
-      break;
-    case 't-x':
-      console.log(await getXdb(server, `p${message.member.id}`, true));
-      break;
-    case 't-1':
-      console.log(await getXdb2(server, `p${message.member.id}`, true));
-      break;
-    case 't-2':
-      await getSettings(server, `p${message.member.id}`, false);
-      break;
-    case 't-save':
-      console.log(server.userKeys.get(`p${message.member.id}`));
-      break;
-    case 't-add':
-      addToDatabase_P(server, ['jane', 'jane-link', 'jane2', 'jane2-link'], message, `p${message.member.id}`);
-      break;
-    case 't-set':
-      console.log(await getSettings(server, `p${message.member.id}`));
-      break;
-    case 't-del':
-      if (!args[1]) return message.channel.send(`*no args provided*`);
-      runDeleteKeyCommand_P(message, args[1], `p${message.member.id}`, server);
       break;
     case 'prec':
     case 'precc':

@@ -204,7 +204,6 @@ const getJSON = async (cellToRun, nameOfSheet) => {
     if (line && line[0]) {
       let parsed;
       try {
-        console.log(line[0]);
         parsed = JSON.parse(line[0]);
       } catch (e) {
         console.log(e);
