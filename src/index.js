@@ -37,14 +37,7 @@ const {runRandomToQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');
 const {runQueueCommand} = require('./commands/generateQueue');
 const {runUniversalSearchCommand} = require('./commands/database/search');
-const {
-  sendListSize,
-  getServerPrefix,
-  getXdb2,
-  getSettings,
-  getXdb,
-  setSettings
-} = require('./commands/database/retrieval');
+const {sendListSize, getServerPrefix, getSettings, getXdb, setSettings} = require('./commands/database/retrieval');
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {playFromWord} = require('./commands/playFromWord');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
