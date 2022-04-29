@@ -4,20 +4,6 @@ const {addToDatabase_P} = require('./database/add');
 const {universalLinkFormatter, linkValidator, botInVC_Guild} = require('../utils/utils');
 const {getXdb2} = require('./database/retrieval');
 
-/**
- * Wrapper for the function 'addToDatabase', for the purpose of error checking.
- * @param message The message that triggered the bot
- * @param args The args that of the message contents
- * @param sheetName The name of the sheet to add to
- * @param printMsgToChannel Whether to print a response to the channel
- * @param prefixString The prefix string
- * @param server The server.
- * @returns {*}
- */
-function runAddCommandWrapper (message, args, sheetName, printMsgToChannel, prefixString, server) {
-  throw Error('INCORRECT COMMAND USED');
-}
-
 // create a string that warns the user that the itemName of type 'type' is exceeding a maximum length.
 function lengthErrorString (type, itemName, maxLength) {
   return `*error: ${type}-name **${itemName}** exceeds max character limit of ${maxLength}*`;
@@ -107,4 +93,4 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
     + ' keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + prefixString + 'add [key] [link]\`)*');
 }
 
-module.exports = {runAddCommandWrapper, runAddCommandWrapper_P, addNewPlaylist};
+module.exports = {runAddCommandWrapper_P, addNewPlaylist};

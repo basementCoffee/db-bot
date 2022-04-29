@@ -22,14 +22,14 @@ let {
 const {reactions} = require('./utils/reactions');
 const {runRemoveCommand, removePlaylist} = require('./commands/remove');
 const {updateActiveEmbed, sendRecommendation, sessionEndEmbed} = require('./utils/embed');
-const {runMoveItemCommand} = require('./commands/move');
+const {runMoveItemCommand, moveKeysWrapper} = require('./commands/move');
 const {
   checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand, runKeysCommand
 } = require('./commands/stream/stream');
 const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
 const {runDatabasePlayCommand, playPlaylistDB} = require('./commands/databasePlayCommand');
-const {runAddCommandWrapper, runAddCommandWrapper_P, addNewPlaylist} = require('./commands/add');
+const {runAddCommandWrapper_P, addNewPlaylist} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
@@ -824,7 +824,7 @@ async function runCommandCases (message) {
     // .ga adds to the test database
     case 'ga':
     case 'gadd':
-      runAddCommandWrapper(message, args, 'entries', true, 'g', server);
+      runAddCommandWrapper_P(message.channel, args.slice(1), `entries`, true, 'm', server, message.member);
       break;
     // .add is personal add
     case 'add':
@@ -869,6 +869,13 @@ async function runCommandCases (message) {
     case 'gdelete':
     case 'gremove':
       runDeleteKeyCommand_P(message, args[1], `entries`, server);
+      break;
+    // allow ma in voice channel to accept two arguments (if 1 is provided then it is put in playlist general -> if 2 is provided then it looks for a playlist name in the mix)
+    case 'mk':
+    case 'move-key':
+    case 'move-keys':
+      if (!args[1] && statement === 'mk') return;
+      moveKeysWrapper(server, message.channel, `p${message.member.id}`, (await getXdb2(server, `p${message.member.id}`)), args.splice(1));
       break;
     case 'soundcloud':
       message.channel.send(`*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`);

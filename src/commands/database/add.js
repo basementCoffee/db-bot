@@ -100,13 +100,16 @@ async function addToDatabase_P (server, keysList, channel, sheetName, printMsgTo
       channel.send("did not add '" + keysList[z] + "', names cannot include '.' or ','");
     } else {
       let alreadyExists = false;
-      const allkeys = xdb.globalKeys.keys();
-      for (const x of allkeys) {
-        if (x === keysList[z].toUpperCase()) {
-          channel.send(`*'${xdb.globalKeys.get(x).name}' is already saved as a key*`);
-          alreadyExists = true;
-          break;
-        }
+      const existingKeyObj = xdb.globalKeys.get(keysList[z].toUpperCase());
+      const existingPlaylist = xdb.playlists.get(keysList[z].toUpperCase());
+      if (existingKeyObj) {
+        channel.send(`*'${existingKeyObj.name}' is already saved as a key*`);
+        alreadyExists = true;
+        break;
+      } else if (existingPlaylist) {
+        channel.send(`*'${keysList[z]}' cannot be used because it is a playlist*`);
+        alreadyExists = true;
+        break;
       }
       if (!alreadyExists) {
         playlist.set(keysList[z].toUpperCase(), {

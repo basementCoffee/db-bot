@@ -1,4 +1,5 @@
 const {botInVC} = require('../utils/utils');
+const {serializeAndUpdate} = require('./database/utils');
 
 /**
  * Mutates the provided array by moving an element at posA to posB.
@@ -28,4 +29,98 @@ function runMoveItemCommand (message, arr, posA, posB) {
   }
 }
 
-module.exports = {runMoveItemCommand};
+/**
+ *
+ * @param server
+ * @param channel
+ * @param sheetName
+ * @param xdb
+ * @param args A list of keys and single playlist (the playlist should be the one to move the keys into).
+ */
+function moveKeysWrapper (server, channel, sheetName, xdb, args) {
+  let playlist;
+  let playlistName;
+  args = args.join(' ').split(/,|, | /).filter(i => i);
+  for (let i = args.length - 1; i > -1; i--) {
+    playlist = xdb.playlists.get(args[i].toUpperCase());
+    if (playlist) {
+      playlistName = args[i];
+      args.splice(i, 1);
+      break;
+    }
+  }
+  if (!playlist) {
+    channel.send('*error: expected a playlist-name to move the key to (i.e. move-key [key] [playlist])*');
+    return;
+  }
+  moveKeysCommand(server, channel, sheetName, xdb, args, playlistName);
+}
+
+// move keys from one playlist to another
+/**
+ *
+ * @param server {any}
+ * @param channel {any}
+ * @param sheetName {string}
+ * @param xdb {any}
+ * @param listOfKeys {Array<string>}
+ * @param playlistNameTo {string}
+ */
+async function moveKeysCommand (server, channel, sheetName, xdb, listOfKeys, playlistNameTo) {
+  const insertPlaylist = xdb.playlists.get(playlistNameTo.toUpperCase());
+  if (!insertPlaylist) {
+    channel.send(`*could not find playlist ${playlistNameTo}*`);
+    return;
+  }
+  let unknownKeys = [];
+  let errorKeys = [];
+  // set of playlists names where keys were removed from
+  let removedPlaylistsSet = new Set();
+  let keyObj;
+  let keyName;
+  const playlistArray = xdb.playlistArray;
+  const playlistArrayUpper = playlistArray.map(val => val.toUpperCase());
+  const index = playlistArrayUpper.indexOf(playlistNameTo.toUpperCase());
+  const insertPlaylistName = playlistArray[index];
+  for (keyName of listOfKeys) {
+    keyObj = xdb.globalKeys.get(keyName.toUpperCase());
+    if (!keyObj) {
+      unknownKeys.push(keyName);
+      continue;
+    }
+    const fromPlaylist = xdb.playlists.get(keyObj.playlistName.toUpperCase());
+    const fromPlaylistName = keyObj.playlistName;
+    if (fromPlaylist && index !== -1) {
+      insertPlaylist.set(keyName.toUpperCase(), keyObj);
+      keyObj.name = keyName;
+      keyObj.playlistName = insertPlaylistName;
+      if (fromPlaylistName.toUpperCase() !== insertPlaylistName.toUpperCase()) {
+        fromPlaylist.delete(keyName.toUpperCase());
+        removedPlaylistsSet.add(fromPlaylistName);
+      }
+    } else {
+      errorKeys.push(keyName);
+    }
+  }
+  if (errorKeys.length > 0) {
+    const errorKeysStr = errorKeys.join(', ');
+    channel.send(`there was an error with the keys: ${errorKeysStr.substring(0, errorKeysStr.length - 2)}`);
+  }
+  if (unknownKeys.length > 0) {
+    const unfoundKeysStr = errorKeys.join(', ');
+    console.log(unknownKeys);
+    channel.send(`could not find the keys: ${unfoundKeysStr.substring(0, unfoundKeysStr.length - 2)}`);
+  }
+  // insert new data first
+  await serializeAndUpdate(server, sheetName, playlistNameTo, xdb);
+  // remove old data
+  for (let updatedPlaylist of removedPlaylistsSet) {
+    await serializeAndUpdate(server, sheetName, updatedPlaylist, xdb);
+  }
+  if ((errorKeys.length + unknownKeys.length) < listOfKeys.length) {
+    channel.send(`*moved keys to ${playlistNameTo}*`);
+  }
+}
+
+
+module.exports = {runMoveItemCommand, moveKeysWrapper};
