@@ -70,7 +70,7 @@ async function searchForSingleKey (message, sheetName, providedString, server) {
     return {
       valueObj: so,
       link,
-      message: `${(sheetName[0] === 'p' ? 'Personal' : 'Server')} keys found: ${so.ss} ${(link ? `\n${link}` : '')}`
+      message: `keys found: ${so.ss} ${(link ? `\n${link}` : '')}`
     };
   } else if (providedString.length < 2) {
     return {
@@ -100,8 +100,7 @@ async function runLookupLink (message, sheetName, link, server) {
       return true;
     }
   }
-  if (sheetName[0] === 'p') message.channel.send(`could not find any keys matching the given link`);
-  else runLookupLink(message, `p${message.member.id}`, link, server);
+  message.channel.send(`could not find any keys matching the given link`);
   return true;
 }
 

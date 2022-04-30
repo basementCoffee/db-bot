@@ -1,5 +1,5 @@
 const {botID, MAX_QUEUE_S} = require('../utils/process/constants');
-const {botInVC, getTitle, createQueueItem} = require('../utils/utils');
+const {botInVC, getTitle, createQueueItem, getSheetName} = require('../utils/utils');
 const {MessageEmbed} = require('discord.js');
 const {reactions} = require('../utils/reactions');
 const {updateActiveEmbed} = require('../utils/embed');
@@ -129,7 +129,7 @@ function runQueueCommand (server, message, mgid, noErrorMsg) {
                 return;
               }
               if (link) {
-                const num = await runInsertCommand(message, message.guild.id, [link], server);
+                const num = await runInsertCommand(message, message.guild.id, [link], server, getSheetName(message.member.id));
                 if (num < 0) {
                   msg.delete();
                   return;

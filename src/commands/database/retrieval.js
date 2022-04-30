@@ -1,4 +1,4 @@
-const {botInVC} = require('../../utils/utils');
+const {botInVC, isPersonalSheet} = require('../../utils/utils');
 const {gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite} = require('./api/api');
 const processStats = require('../../utils/process/ProcessStats');
 
@@ -11,30 +11,7 @@ const processStats = require('../../utils/process/ProcessStats');
  * @returns {Promise<{congratsDatabase: Map<>, referenceDatabase: Map<>, line: Array<>, dsInt: int} | undefined>}
  */
 async function getXdb (server, sheetName, save) {
-  if (!sheetName.includes('p')) {
-    console.log('CALLED SERVER SHEET');
-  }
-  const userSettings = sheetName.includes('p') ? await getSettings(server, sheetName) : {isTest: false};
-  if (userSettings.isTest) {
-    const xdb = await getXdb_P(server, sheetName, save);
-    const congratsDatabase = new Map();
-    const referenceDatabase = new Map();
-    const line = [];
-    for (let [, key] of xdb.globalKeys) {
-      line.push(key.name);
-      congratsDatabase.set(key.name, key.link);
-      referenceDatabase.set(key.name.toUpperCase(), key.link);
-    }
-    const dsInt = xdb.globalKeys.size;
-    return {
-      congratsDatabase, referenceDatabase, line, dsInt
-    };
-  } else {
-    return getOriginalXdb(server, sheetName, save);
-  }
-}
-
-async function getOriginalXdb (server, sheetName, save) {
+  console.log('CALLED DEPRECIATED XDB FUNC');
   if (!save) return gsrun('A', 'B', sheetName);
   let xdb = server.userKeys.get(`${sheetName}`);
   if (!xdb) {
@@ -83,7 +60,7 @@ async function setSettings (server, sheetName, settingsObj) {
  */
 async function sendListSize (message, server, sheetName) {
   const xdb = await getXdb(server, sheetName, botInVC(message));
-  const str = `${(sheetName[0] === 'p' ? 'Personal' : 'Server')} list size: ${(xdb?.congratsDatabase.size)}`;
+  const str = `${(isPersonalSheet(sheetName) ? 'Personal' : 'Server')} list size: ${(xdb?.congratsDatabase.size)}`;
   message.channel.send(str);
 }
 

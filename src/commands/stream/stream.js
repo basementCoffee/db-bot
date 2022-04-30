@@ -1,7 +1,7 @@
 const {
   botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
   playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, resetSession, linkValidator,
-  universalLinkFormatter
+  universalLinkFormatter, getSheetName, isPersonalSheet
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, dispatcherMap,
@@ -374,7 +374,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
  * @param whatToPlayS The broken link provided as a string
  */
 function searchForBrokenLinkWithinDB (message, server, whatToPlayS) {
-  getXdb2(server, `p${message.member.id}`, botInVC(message)).then((xdb) => {
+  getXdb2(server, getSheetName(message.member.id), botInVC(message)).then((xdb) => {
     xdb.globalKeys.forEach((value) => {
       if (value.name === whatToPlayS) {
         return message.channel.send(`*possible broken link within your ${value.playlistName} playlist: ${value.name}*`);
@@ -812,7 +812,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         }
         break;
       case reactions.BOOK_O:
-        runKeysCommand(sentMsg, server, `p${reactionCollector.id}`, 'm', voiceChannel, reactionCollector).then();
+        runKeysCommand(sentMsg, server, getSheetName(reactionCollector.id), 'm', voiceChannel, reactionCollector).then();
         server.numSinceLastEmbed += 5;
         break;
     }
@@ -1153,7 +1153,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
           }
           return message.channel.send('must be in a voice channel to shuffle play');
         } else {
-          if (reactionCollector.id === user.id || (sheetName[0] !== 'p' && isCoreAdmin(user.id))) {
+          if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isCoreAdmin(user.id))) {
             if (reaction.emoji.name === reactions.ARROW_R) {
               pageIndex += 1;
               sentMsg.edit(generateKeysEmbed());

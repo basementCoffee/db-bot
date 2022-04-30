@@ -2,6 +2,7 @@ const {gsrun, gsUpdateOverwrite, deleteRows} = require('./api/api');
 const {runSearchCommand} = require('./search');
 const {getXdb2} = require('./retrieval');
 const {serializeAndUpdate} = require('./utils');
+const {isPersonalSheet} = require('../../utils/utils');
 
 /**
  * Deletes an item from the database.
@@ -23,7 +24,7 @@ async function runDeleteCommand (message, keyName, sheetName, sendMsgToChannel) 
           await deleteRows(sheetName, i);
           if (sendMsgToChannel) {
             message.channel.send('deleted \'' + itemToCheck + '\' from ' +
-              (sheetName.substring(0, 1) === 'p' ? 'your' : 'the server\'s') + ' keys');
+              (isPersonalSheet(sheetName) ? 'your' : 'the server\'s') + ' keys');
           }
         }
       }

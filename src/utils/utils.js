@@ -445,10 +445,28 @@ function removeFormattingLink(link) {
   return link;
 }
 
+/**
+ * Returns the sheetname for the user id.
+ * @param userId {string}
+ * @return {string} The sheetname.
+ */
+function getSheetName(userId){
+  return `u${userId}`;
+}
+
+/**
+ * Determines if the provided sheetName is a user sheet.
+ * @param sheetName {string} A sheet name.
+ * @return {boolean} True if is a user sheet.
+ */
+function isPersonalSheet(sheetName){
+  return sheetName[0] === 'u';
+}
+
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
   logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild, linkValidator, universalLinkFormatter,
-  removeFormattingLink
+  removeFormattingLink, getSheetName, isPersonalSheet
 };

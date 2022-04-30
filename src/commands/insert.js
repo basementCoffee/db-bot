@@ -13,9 +13,10 @@ const {updateActiveEmbed} = require('../utils/embed');
  * @param mgid The message guild id.
  * @param args {string[]} An array of string args to parse, can include multiple terms and a position.
  * @param server The server to use.
+ * @param sheetName {string} The sheet name to use.
  * @returns {Promise<number>} The position to insert or a negative if failed.
  */
-async function runInsertCommand (message, mgid, args, server) {
+async function runInsertCommand (message, mgid, args, server, sheetName) {
   if (!args) return -1;
   if (insertCommandVerification(message, server, args) !== 1) return -1;
   let num = args.filter(item => !Number.isNaN(Number(item))).slice(-1)[0];
@@ -61,7 +62,7 @@ async function runInsertCommand (message, mgid, args, server) {
       let xdb = await getXdb2(server, mgid, true);
       let link = xdb.globalKeys.get(tempLink.toUpperCase())?.link;
       if (!link) {
-        xdb = await getXdb2(server, `p${message.member.id}`, true);
+        xdb = await getXdb2(server, sheetName, true);
         link = xdb.globalKeys.get(tempLink.toUpperCase())?.link;
       }
       if (!link) {
