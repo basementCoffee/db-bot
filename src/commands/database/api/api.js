@@ -52,6 +52,7 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
     // dataSize.set(nameOfSheet, dataSizeFromSheets.data.values);
   } catch (e) {
     await createSheetNoMessage(nameOfSheet);
+    await gsUpdateAdd2(1, 'D', nameOfSheet);
     return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
   }
 
@@ -109,7 +110,7 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
   };
   let dataSizeFromSheets;
   let dsInt;
-  if (numOfRuns > 2) return;
+  if (numOfRuns > 3) return;
   try {
     dataSizeFromSheets = await gsapi.spreadsheets.values.get(
       spreadsheetSizeObjects
@@ -118,12 +119,12 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
     // dataSize.set(nameOfSheet, dataSizeFromSheets.data.values);
   } catch (e) {
     await createSheetNoMessage(nameOfSheet);
-    return gsrun_P(columnToRun, secondColumn, nameOfSheet, ++numOfRuns);
+    return await gsrun_P(columnToRun, secondColumn, nameOfSheet, ++numOfRuns);
   }
 
   if (!dsInt) {
     await gsUpdateOverwrite(['=(COUNTA(E2:E)+1)'], nameOfSheet, 'G', 1);
-    return gsrun_P(columnToRun, secondColumn, nameOfSheet, ++numOfRuns);
+    return await gsrun_P(columnToRun, secondColumn, nameOfSheet, ++numOfRuns);
   }
   const songRange = `${nameOfSheet}!${columnToRun}2:${secondColumn}${dsInt + 1}`;
   const songObjects = {
@@ -173,7 +174,9 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
         allPlaylists.set(playlistData.pn.toUpperCase(), referenceDatabase);
         playlistArray.push(playlistData.pn);
       }
-    } catch (e) {console.log(e);}
+    } catch (e) {
+
+    }
   }
   if (playlistArray.length < 1) {
     // if no playlist data is in sheets - add general
@@ -286,7 +289,7 @@ const createSheetNoMessage = async (nameOfSheet) => {
     async function (err, response) {
       if (err) {
       } else {
-        await gsUpdateAdd2(1, 'D', nameOfSheet);
+        await gsUpdateOverwrite(['=(COUNTA(E2:E)+1)'], nameOfSheet, 'G', 1);
       }
       return response;
     }
