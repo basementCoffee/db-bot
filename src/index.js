@@ -414,11 +414,11 @@ async function runCommandCases (message) {
       break;
     case 'pd':
     case 'dd':
-      playPlaylistDB(args, message, getSheetName(message.member.id), false, true, server).then();
+      playPlaylistDB(args.splice(1), message, getSheetName(message.member.id), false, true, server).then();
       break;
     case 'ps':
     case 'pshuffle':
-      playPlaylistDB(args, message, getSheetName(message.member.id), false, true, server, true).then();
+      playPlaylistDB(args.splice(1), message, getSheetName(message.member.id), false, true, server, true).then();
       break;
     // .md is retrieves and plays from the keys list
     case 'md':

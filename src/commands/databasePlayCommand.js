@@ -11,7 +11,7 @@ const {shuffleQueue} = require('./runRandomToQueue');
 
 /**
  *
- * @param args
+ * @param args {Array<string>} The array of playlists to play.
  * @param message
  * @param sheetName
  * @param playRightNow
@@ -26,11 +26,12 @@ async function playPlaylistDB (args, message, sheetName, playRightNow, printErro
     return;
   }
   const xdb = await getXdb2(server, sheetName, true);
-  const keys = ['dd'];
+  args.reverse();
+  const keys = [];
   let playlistMap;
   let assumptionList = [];
   const unfoundPlaylists = [];
-  for (let playlistName of args.splice(1)) {
+  for (let playlistName of args) {
     playlistMap = xdb.playlists.get(playlistName.toUpperCase());
     if (!playlistMap) {
       const assumption = getAssumption(playlistName, xdb.playlistArray);
@@ -44,6 +45,8 @@ async function playPlaylistDB (args, message, sheetName, playRightNow, printErro
     }
     playlistMap.forEach(val => keys.push(val.name));
   }
+  keys.reverse();
+  keys.unshift('dd');
   if (unfoundPlaylists.length > 0) {
     message.channel.send(`*could not find the playlists: ${unfoundPlaylists.join(', ')}*`);
     if (keys.length < 2) return;
