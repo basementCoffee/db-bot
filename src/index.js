@@ -622,12 +622,12 @@ async function runCommandCases (message) {
     case 'link':
       if (!args[1]) {
         if (server.queue[0] && message.member.voice?.channel) {
-          return message.channel.send(server.queue[0].url);
+          return message.channel.send(server.queue[0]);
         } else {
-          return message.channel.send('*add a key to get it\'s ' + statement + ' \`(i.e. ' + statement + ' [key])\`*');
+          return message.channel.send('*add a key to get it\'s ' + statement.substr(1) + ' \`(i.e. ' + statement + ' [key])\`*');
         }
       }
-      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], mgid, '');
+      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], getSheetName(message.member.id), 'm');
       break;
     case 'ping':
       message.channel.send(`latency is ${Math.round(bot.ws.ping)}ms`);
@@ -655,17 +655,6 @@ async function runCommandCases (message) {
         args[args.length - 1] = '';
       }
       sendRecommendation(message, args.join(' ').trim(), rUrl, bot.users).then();
-      break;
-    case 'murl':
-    case 'mlink':
-      if (!args[1]) {
-        if (server.queue[0] && message.member.voice?.channel) {
-          return message.channel.send(server.queue[0]);
-        } else {
-          return message.channel.send('*add a key to get it\'s ' + statement.substr(1) + ' \`(i.e. ' + statement + ' [key])\`*');
-        }
-      }
-      await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], getSheetName(message.member.id), 'm');
       break;
     case 'rm':
     case 'remove':

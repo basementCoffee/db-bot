@@ -15,7 +15,7 @@ const {sendLinkAsEmbed} = require('./stream/stream');
 async function runWhatsPCommand (server, message, voiceChannel, keyName, sheetName, sheetLetter) {
   if (keyName && sheetName) {
     const xdb = await getXdb2(server, sheetName, !!voiceChannel);
-    let link = xdb.globalKeys.get(keyName.toUpperCase());
+    let link = xdb.globalKeys.get(keyName.toUpperCase()).link;
     // update link value here
     if (!link) {
       let sObj = runSearchCommand(keyName, xdb.globalKeys);
