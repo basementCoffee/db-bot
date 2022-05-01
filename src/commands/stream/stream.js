@@ -1046,7 +1046,7 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       emptyDBMessage = 'Your ';
     }
     keysMsg.edit('**' + emptyDBMessage + 'saved-links list is empty.**\n*Save a link by putting a word followed by a link.' +
-      '\nEx:* \` ' + prefixString + cmdType + 'a [key] [link] \`');
+      '\nEx:* \` ' + prefixString + 'add [key] [link] \`');
   } else {
     let sortByRecent = true;
     const keyEmbedColors = ['#cdfc41', '#4192fc', '#fc4182', '#41fc9f', '#47fc41', '#41ecfc'];
