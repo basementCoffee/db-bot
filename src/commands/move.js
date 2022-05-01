@@ -118,7 +118,7 @@ async function moveKeysCommand (server, channel, sheetName, xdb, listOfKeys, pla
     await serializeAndUpdate(server, sheetName, updatedPlaylist, xdb);
   }
   if ((errorKeys.length + unknownKeys.length) < listOfKeys.length) {
-    channel.send(`*moved keys to ${playlistNameTo}*`);
+    channel.send(`*moved keys to **${playlistNameTo}***`);
   }
 }
 
