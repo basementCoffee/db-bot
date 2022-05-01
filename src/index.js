@@ -1384,7 +1384,7 @@ async function devProcessCommands (message) {
         processStats.devMode = false;
         processStats.setProcessInactive();
         processStats.servers.delete(message.guild.id);
-        return message.channel.send(`*demode is off ${process.pid}*`);
+        return message.channel.send(`*devmode is off ${process.pid}*`);
       } else if (zargs[1] === process.pid.toString()) {
         processStats.devMode = true;
         processStats.servers.delete(message.guild.id);
@@ -1392,7 +1392,7 @@ async function devProcessCommands (message) {
           clearInterval(processStats.checkActiveInterval);
           processStats.checkActiveInterval = null;
         }
-        return message.channel.send(`*demode is on ${process.pid}*`);
+        return message.channel.send(`*devmode is on ${process.pid}*`);
       }
       break;
     case 'l':
