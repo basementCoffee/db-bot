@@ -412,11 +412,12 @@ async function runCommandCases (message) {
     case 'dn':
       runPlayNowCommand(message, args, mgid, server, mgid).then();
       break;
+    case 'pd':
     case 'dd':
       playPlaylistDB(args, message, getSheetName(message.member.id), false, true, server).then();
       break;
-    case 'dds':
-    case 'ddshuffle':
+    case 'ps':
+    case 'pshuffle':
       playPlaylistDB(args, message, getSheetName(message.member.id), false, true, server, true).then();
       break;
     // .md is retrieves and plays from the keys list
@@ -498,6 +499,7 @@ async function runCommandCases (message) {
     case 'random':
     case 'rand':
     case 'ds':
+    case 's':
     case 'r':
     case 'mr':
       runRandomToQueue(args[1] || 1, message, getSheetName(message.member.id), server).then();
@@ -535,6 +537,7 @@ async function runCommandCases (message) {
       break;
     // .keys is personal keys
     case 'key':
+    case 'k':
     case 'keys':
     case 'playlist':
     case 'playlists':
@@ -830,6 +833,7 @@ async function runCommandCases (message) {
       runAddCommandWrapper_P(message.channel, args.slice(1), getSheetName(message.member.id), true, 'm', server, message.member);
       break;
     case 'playlist-add':
+    case 'p-add':
     case 'add-playlist':
       if (!args[1]) {
         message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
@@ -846,15 +850,16 @@ async function runCommandCases (message) {
       addNewPlaylist(server, message.channel, `entries`, args[1]);
       break;
     case 'delete-playlist':
-    case 'remove-playlist':
     case 'del-playlist':
     case 'playlist-del':
+    case 'p-del':
       removePlaylist(server, getSheetName(message.member.id), args[1], (await getXdb2(server, getSheetName(message.member.id))), message.channel);
       break;
     case 'gdelete-playlist':
-    case 'gremove-playlist':
-    case 'gplaylist-delete':
-      removePlaylist(server, getSheetName(message.member.id), args[1], (await getXdb2(server, getSheetName(message.member.id))), message.channel);
+    case 'gdel-playlist':
+    case 'gplaylist-del':
+    case 'gp-del':
+      removePlaylist(server, `entries`, args[1], (await getXdb2(server, `entries`)), message.channel);
       break;
     // .del deletes database entries
     case 'del':
@@ -875,6 +880,12 @@ async function runCommandCases (message) {
     case 'move-keys':
       if (!args[1] && statement === 'mk') return;
       moveKeysWrapper(server, message.channel, getSheetName(message.member.id), (await getXdb2(server, getSheetName(message.member.id))), args.splice(1));
+      break;
+    case 'gmk':
+    case 'gmove-key':
+    case 'gmove-keys':
+      if (!args[1] && statement === 'mk') return;
+      moveKeysWrapper(server, message.channel, 'entries', (await getXdb2(server, 'entries')), args.splice(1));
       break;
     case 'soundcloud':
       message.channel.send(`*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`);

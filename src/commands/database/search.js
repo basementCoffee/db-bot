@@ -63,7 +63,6 @@ function getAssumption (word, namesArray) {
 async function searchForSingleKey (message, sheetName, providedString, server) {
   const xdb = await getXdb2(server, sheetName, true);
   const so = runSearchCommand(providedString, Array.from(xdb.globalKeys.values()).map(item => item.name));
-  console.log(so);
   if (so.ssi) {
     let link;
     if (so.ssi === 1) link = xdb.globalKeys.get(so.ss.toUpperCase())?.link;

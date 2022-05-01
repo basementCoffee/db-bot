@@ -438,7 +438,7 @@ function linkValidator (server, channel, link, prefixString, sendErrorMsg) {
 }
 
 // removes extra formatting from a link
-function removeFormattingLink(link) {
+function removeFormattingLink (link) {
   if (link[0] === '<' && link[link.length - 1] === '>') {
     link = link.substr(1, link.length - 2);
   }
@@ -450,8 +450,8 @@ function removeFormattingLink(link) {
  * @param userId {string}
  * @return {string} The sheetname.
  */
-function getSheetName(userId){
-  return `u${userId}`;
+function getSheetName (userId) {
+  return `p${userId}`;
 }
 
 /**
@@ -459,8 +459,8 @@ function getSheetName(userId){
  * @param sheetName {string} A sheet name.
  * @return {boolean} True if is a user sheet.
  */
-function isPersonalSheet(sheetName){
-  return sheetName[0] === 'u';
+function isPersonalSheet (sheetName) {
+  return sheetName[0] === 'p';
 }
 
 module.exports = {

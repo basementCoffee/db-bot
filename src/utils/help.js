@@ -1,85 +1,56 @@
 const {MessageEmbed} = require('discord.js');
 
-function getPages (prefixString, version) {
+function getPages (ps, version) {
   return [
     // PAGE 1
-    '***[NEW]** - added seek command (March 2022)*\n\n' +
-    '--------------  **Music Commands** --------------\n\`' +
-    prefixString +
-    'play [word] \` Searches YouTube and plays *[p]* \n\`' +
-    prefixString +
-    'play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n\`' +
-    prefixString +
-    'playnow [word/link] \` Plays now, overrides queue *[pn]*\n\`' +
-    prefixString +
-    'playnow [link] [time] \` Begin at a specific timestamp\n\`' +
-    prefixString +
-    'pause \` Pause *[pa]*\n\`' +
-    prefixString +
-    'resume \` Resume if paused *[res]* \n\`' +
-    prefixString +
-    'skip [# times] \` Skip the current link *[sk]*\n\`' +
-    prefixString +
-    'rewind [# times] \` Rewind to play previous links *[rw]*\n\`' +
-    prefixString +
-    'end \` Stops playing and ends session  *[e]*\n\`' +
-    prefixString +
-    'now \` See now playing *[np]*\n\`' +
-    prefixString +
-    'loop \` Loops songs on finish *[l]*\n\`' +
-    prefixString +
-    'queue \` Displays the queue *[q]*\n\`' +
-    prefixString +
-    'seek [link] [duration]\` Seek to a certain timestamp' +
-    '\n\n-----------  **Advanced Music Commands**  -----------\n\`' +
-    prefixString +
-    'smartplay \` Autoplay when there is nothing next to play\n\`' +
-    prefixString +
-    'lyrics \` Get lyrics of what\'s currently playing\n\`' +
-    prefixString +
-    'shuffle [link] \` Shuffle a playlist before playing\n\`' +
-    prefixString +
-    'dj \` DJ mode, members have to vote to skip tracks\n\`' +
-    prefixString +
-    'dictator \` Dictator mode, one member controls all music commands\n\`' +
-    prefixString +
-    'verbose \` Keep all song embeds during a session\n\`' +
-    prefixString +
-    'silence \` Silence/hide the now-playing embed \n'
-    , // PAGE 2
+    '***[NEW]** - revamped playlists (May 2022)*\n\n' +
+    '--------------  **Music Commands** --------------\n' +
+    `\`${ps}play [word] \` Searches YouTube and plays *[p]* \n` +
+    `\`${ps}play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n` +
+    `\`${ps}playnow [word/link] \` Plays now, overrides queue *[pn]*\n` +
+    `\`${ps}playnow [link] [time] \` Begin at a specific timestamp\n` +
+    `\`${ps}pause \` Pause *[pa]*\n` +
+    `\`${ps}resume \` Resume if paused *[res]* \n` +
+    `\`${ps}skip [# times] \` Skip the current link *[sk]*\n` +
+    `\`${ps}rewind [# times] \` Rewind to play previous links *[rw]*\n` +
+    `\`${ps}end \` Stops playing and ends session  *[e]*\n` +
+    `\`${ps}now \` See now playing *[np]*\n` +
+    `\`${ps}loop \` Loops songs on finish *[l]*\n` +
+    `\`${ps}queue \` Displays the queue *[q]*\n` +
+    `\`${ps}seek [link] [duration]\` Seek to a certain timestamp` +
+    '\n\n-----------  **Advanced Music Commands**  -----------\n' +
+    `\`${ps}shuffle \` Shuffle the queue\n` +
+    `\`${ps}smartplay \` Autoplay when there is nothing next to play\n` +
+    `\`${ps}lyrics \` Get lyrics of what\'s currently playing\n` +
+    `\`${ps}dj \` DJ mode, members have to vote to skip tracks\n` +
+    `\`${ps}dictator \` Dictator mode, one member controls all music commands\n` +
+    `\`${ps}verbose \` Keep all song embeds during a session\n` +
+    `\`${ps}silence \` Silence/hide the now-playing embed \n`
+    ,
+    // PAGE 2
     '-----------  **Keys**  -----------\n' +
     '*Keys are ways to save your favorite links as words.*\n' +
-    '*There are two types of keys: Server Keys & Personal Keys*\n\n' +
-    '-----------  **Server Keys**  -----------\`\n' +
-    prefixString +
-    "keys \` See all of the server's keys *[k]*\n\`" +
-    prefixString +
-    'd [key] \` Play a song from the server keys \n\`' +
-    prefixString +
-    'dnow [key] \` Play immediately, overrides queue *[kn]* \n\`' +
-    prefixString +
-    'add [key] [url] \` Add a link to the server keys  *[a]*\n\`' +
-    prefixString +
-    'delete [key] \` Deletes a link from the server keys  *[del]*\n\`' +
-    prefixString +
-    'shuffle [# times] \` Play a random song from server keys  *[r]*\n\`' +
-    prefixString +
-    'find [key / link] \` See if a link/key is in the keys-list *[s]*\n\`' +
-    prefixString +
-    'link [key] \` Get the full link of a specific key  *[url]*\n' +
-    '\n-----------  **Personal Keys**  -----------\n' +
-    "*Prepend 'm' to each command above to access your personal keys list*\nex: \`" + prefixString + "mkeys \`\n" +
-    '\n--------------  **Other Commands**  -----------------\n\`' +
-    prefixString +
-    'guess \` Random roll for the number of people in the voice channel \n\`' +
-    prefixString +
-    'changeprefix [new prefix] \` Changes the prefix for all commands \n\`' +
-    prefixString +
-    'insert [link] \` Insert a link anywhere within the queue\n\`' +
-    prefixString +
-    'remove [num] \` Remove a link from the queue\n\`' +
-    prefixString +
-    'ticket [message] \` contact the developers, request a feature \n' +
+    '*Keys are saved within playlists*\n' +
+    `\`${ps}keys \` See all of your keys / playlists *[k]*\n` +
+    `\`${ps}d [key] \` Play any of your keys \n` +
+    `\`${ps}dnow [key] \` Play key immediately, overrides queue *[kn]* \n` +
+    `\`${ps}s [# of keys] \` shuffle and play random keys  *[r]*\n` +
+    `\`${ps}add [playlist] [key] [url] \` Add a key to a playlist (or general) *[a]*\n` +
+    `\`${ps}delete [key] \` Deletes a link from the keys  *[del]*\n` +
+    `\`${ps}find [key / link] \` See if a link/key is in the keys-list *[s]*\n` +
+    `\`${ps}link [key] \` Get the full link of a specific key  *[url]*\n` +
+    `\`${ps}move-keys [keys] [playlist] \` move keys to a different playlist *[mk]*\n` +
+    '\n-----------  **Playlists**  -----------\n' +
+    `\`${ps}pd [playlist] \` Play an entire playlist\n` +
+    `\`${ps}ps [playlist] \` Shuffle and play a playlist\n` +
+    `\`${ps}add-playlist [playlist] \` Add a new playlist  *[p-add]*\n` +
+    `\`${ps}delete-playlist [playlist] \` Delete a playlist and its contents *[p-del]*\n` +
+    '\n--------------  **Other Commands**  -----------------\n' +
+    `\`${ps}guess \` Random roll for the number of people in the voice channel \n` +
+    `\`${ps}changeprefix [new prefix] \` Changes the prefix for all commands \n` +
+    `\`${ps}insert [link] \` Insert a link anywhere within the queue\n` +
+    `\`${ps}remove [num] \` Remove a link from the queue\n` +
+    `\`${ps}ticket [message] \` contact the developers, request a feature \n` +
     `\n*version ${version}*`
     ,
     `
@@ -96,7 +67,7 @@ function getPages (prefixString, version) {
      - [*view updates here*](https://github.com/basementCoffee/db-bot/commits/master)
      
      What if there is an issue with the db bot?
-     - use the command \`${prefixString}ticket\`.
+     - use the command \`${ps}ticket\`.
      We will promptly look into fixing any issues experienced! 
      
      [support us](https://top.gg/bot/730350452268597300)
