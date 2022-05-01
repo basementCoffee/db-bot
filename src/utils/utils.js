@@ -416,17 +416,31 @@ function getTimeActive () {
   }
 }
 
-// formats links
+/**
+ * Removes <> and [] from links. If provided a spotify or soundcloud link then properly formats those as well.
+ * @param link {string} The link to format.
+ * @return {string} The formatted link.
+ */
 function universalLinkFormatter (link) {
-  if (link.substring(0, 1) === '[' && link.substr(link.length - 1, 1) === ']') {
-    link = link.substr(1, link.length - 2);
+  if (link[0] === '[' && link[link.length - 1] === ']') {
+    link = link.substring(1, link.length - 1);
+  } else if (link[0] === '<' && link[link.length - 1] === '>') {
+    link = link.substring(1, link.length - 1);
   }
   if (link.includes(SPOTIFY_BASE_LINK)) link = linkFormatter(link, SPOTIFY_BASE_LINK);
   else if (link.includes(SOUNDCLOUD_BASE_LINK)) link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
   return link;
 }
 
-// returns true if a valid link is provided
+/**
+ * Returns true if the link is a valid playable link (includes playlists).
+ * @param server {any} The server metadata.
+ * @param channel {any} The channel object.
+ * @param link {string} The link to validate.
+ * @param prefixString {string} The prefix used by the error message.
+ * @param sendErrorMsg {boolean} If to send an error message to the channel
+ * @return {boolean} If the link is a valid, playable link.
+ */
 function linkValidator (server, channel, link, prefixString, sendErrorMsg) {
   if (!verifyUrl(link) && !verifyPlaylist(link)) {
     if (sendErrorMsg) {
@@ -437,18 +451,22 @@ function linkValidator (server, channel, link, prefixString, sendErrorMsg) {
   return true;
 }
 
-// removes extra formatting from a link
+/**
+ * Removes extra formatting from a link (< and >).
+ * @param link {string} The link to format.
+ * @return {string} The formatted link.
+ */
 function removeFormattingLink (link) {
   if (link[0] === '<' && link[link.length - 1] === '>') {
-    link = link.substr(1, link.length - 2);
+    link = link.substring(1, link.length - 1);
   }
   return link;
 }
 
 /**
- * Returns the sheetname for the user id.
+ * Returns the sheet name for the user id.
  * @param userId {string}
- * @return {string} The sheetname.
+ * @return {string} The sheet name.
  */
 function getSheetName (userId) {
   return `p${userId}`;

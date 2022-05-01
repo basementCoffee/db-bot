@@ -550,7 +550,7 @@ async function runCommandCases (message) {
       runKeysCommand(message, server, 'entries', 'g', null, null, args[1]).then();
       break;
     case 'splash':
-      if (!args[1]) {
+      if (!args[1] || !args[1].includes('.')) {
         message.channel.send(`*provide an icon URL to set a splash screen for your playlists \`${args[0]} [url]\`*`);
         return;
       }
