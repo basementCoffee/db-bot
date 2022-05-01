@@ -45,6 +45,7 @@ function getPages (ps, version) {
     `\`${ps}ps [playlist] \` Shuffle and play a playlist\n` +
     `\`${ps}add-playlist [playlist] \` Add a new playlist  *[p-add]*\n` +
     `\`${ps}delete-playlist [playlist] \` Delete a playlist and its contents *[p-del]*\n` +
+    `\`${ps}splash [url] \` Add a custom image to your keys page\n` +
     '\n--------------  **Other Commands**  -----------------\n' +
     `\`${ps}guess \` Random roll for the number of people in the voice channel \n` +
     `\`${ps}changeprefix [new prefix] \` Changes the prefix for all commands \n` +
@@ -104,4 +105,4 @@ function getHelpList (prefixString, numOfPages, version) {
   return embedPages;
 }
 
-module.exports = {getHelpList}
+module.exports = {getHelpList};

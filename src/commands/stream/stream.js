@@ -970,8 +970,8 @@ function updatedQueueMessage (channel, messageText, server) {
 
 // returns an array of tips
 const TIPS = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-specific',
-  `add an icon using ${prefixS}splash`, `${prefixS}dds shuffles playlists`,
-  `${prefixS}dd plays playlists`];
+  `add an icon using ${prefixS}splash [url]`, `${prefixS}ps [playlist] shuffle plays a playlist`,
+  `${prefixS}s [num] plays random keys`, `${prefixS}pd [playlist] plays a playlist`];
 
 /**
  * Generates the full keys-list embed pages.
@@ -1102,18 +1102,21 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
         if (reaction.emoji.name === reactions.QUESTION) {
-          let nameToSend;
-          let descriptionSuffix;
-          nameToSend = 'your personal';
-          descriptionSuffix = 'Your keys are keys that only you can play. ' +
-            '\nThey work for you in any server with the db bot.';
           const embed = new MessageEmbed()
-            .setTitle('How to add/delete keys from ' + nameToSend + ' list')
-            .setDescription('Add a link by putting a word followed by a link -> \` ' +
-              prefixString + 'add [key] [link]\`\n' +
-              'Delete a key by typing the name you wish to delete -> \` ' +
-              prefixString + 'del [key]\`')
-            .setFooter(descriptionSuffix);
+            .setTitle('How to add/delete')
+            .setDescription(
+              `*Keys allow you to save a link as a playable word* \n` +
+              `Create a key -> \` ${prefixString}add [playlist] [key] [link]\`\n` +
+              `Delete a key (from any playlist) -> \` ${prefixString}del [key]\`\n` +
+              `Move a key -> \` ${prefixString}move [keys] [playlists]\`\n` +
+              `Rename a key -> \` ${prefixString}rename-key [old-name] [new]\`\n\n` +
+              `Create a playlist -> \` ${prefixString}add-playlist [playlist]\`\n` +
+              `Delete a playlist -> \` ${prefixString}del-playlist [playlist]\`\n` +
+              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n`
+            ).setFooter(
+              `play a key ->  ${prefixString}d [key]\n` +
+              `play a playlist -> ${prefixString}pd [playlist]`
+            );
           message.channel.send(embed);
         } else if (reaction.emoji.name === reactions.SHUFFLE) {
           if (!voiceChannel) {
