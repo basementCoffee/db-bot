@@ -812,7 +812,8 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         }
         break;
       case reactions.BOOK_O:
-        runKeysCommand(sentMsg, server, getSheetName(reactionCollector.id), 'm', voiceChannel, reactionCollector).then();
+        const tempUserBook = sentMsg.guild.members.cache.get(reactionCollector.id);
+        runKeysCommand(sentMsg, server, getSheetName(reactionCollector.id), 'm', voiceChannel, reactionCollector, null, tempUserBook.nickname).then();
         server.numSinceLastEmbed += 5;
         break;
     }
@@ -1025,8 +1026,9 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
  * @param voiceChannel {any?} optional, a specific voice channel to use besides the message's
  * @param user {any?} Optional - username, overrides the message owner's name
  * @param specificPage {any?}
+ * @param overrideName {string?} overrides the name displayed for the keys list.
  */
-async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user, specificPage) {
+async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user, specificPage, overrideName) {
   if (!user) user = message.member.user;
   const keysMsg = (botInVC(message) ? {edit: (content, embed) => message.channel.send(content || embed)} :
     await message.channel.send('*getting keys...*'));
@@ -1051,9 +1053,13 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
     let title = '';
     if (cmdType === 'm') {
       let name;
-      user ? name = user.username : name = message.member.nickname;
-      if (!name) {
-        name = message.author.username;
+      if (overrideName) {
+        name = overrideName;
+      } else {
+        user ? name = user.username : name = message.member.nickname;
+        if (!name) {
+          name = message.author.username;
+        }
       }
       if (name) {
         title += `**${name}'s**`;

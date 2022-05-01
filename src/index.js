@@ -541,7 +541,7 @@ async function runCommandCases (message) {
     case 'keys':
     case 'playlist':
     case 'playlists':
-      runKeysCommand(message, server, getSheetName(message.member.id), 'm', null, null, args[1]).then();
+      runKeysCommand(message, server, getSheetName(message.member.id), 'm', null, null, args[1], message.member.nickname).then();
       break;
     // test purposes - return keys
     case 'gk':
