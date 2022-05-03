@@ -423,7 +423,7 @@ async function runCommandCases (message) {
     case 'kn':
     case 'dnow':
     case 'dn':
-      runPlayNowCommand(message, args, mgid, server, mgid).then();
+      runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
       break;
     case 'pd':
     case 'dd':
