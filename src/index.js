@@ -11,7 +11,7 @@ const {gsrun, deleteRows} = require('./commands/database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
   unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
-  removeFormattingLink, getSheetName
+  removeFormattingLink, getSheetName, linkValidator
 } = require('./utils/utils');
 const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
@@ -67,8 +67,10 @@ process.setMaxListeners(0);
  * @param mgid the message guild id
  * @param server The server playback metadata
  * @param sheetName the name of the sheet to reference
+ * @param seekSec {number?} Optional - The amount of time to seek in seconds
+ * @param adjustQueue {boolean?} Whether to adjust the queue (is true by default).
  */
-async function runPlayNowCommand (message, args, mgid, server, sheetName) {
+async function runPlayNowCommand (message, args, mgid, server, sheetName, seekSec, adjustQueue = true) {
   const voiceChannel = message.member.voice?.channel;
   if (!voiceChannel) {
     const sentMsg = await message.channel.send('must be in a voice channel to play');
@@ -97,14 +99,6 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
     server.followUpMessage = undefined;
   }
   server.numSinceLastEmbed += 2;
-  let seekAmt;
-  if (args.length === 3) {
-    seekAmt = convertSeekFormatToSec(args[2]);
-    if (seekAmt) {
-      args.pop();
-      server.numSinceLastEmbed -= 2;
-    }
-  }
   if (args[1].includes('.')) {
     if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
       args[1] = args[1].substr(1, args[1].length - 2);
@@ -113,18 +107,20 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName) {
       return playFromWord(message, args, sheetName, server, mgid, true);
   } else return playFromWord(message, args, sheetName, server, mgid, true);
   // places the currently playing into the queue history if played long enough
-  adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
+  if (adjustQueue) adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
   // the number of added links
   let pNums = 0;
   // counter to iterate over all args - excluding args[0]
   let linkItem = args.length - 1;
-  while (linkItem > 0) {
-    let url = args[linkItem];
-    if (url[url.length - 1] === ',') url = url.replace(/,/, '');
-    pNums += await addLinkToQueue(url, message, server, mgid, true, unshiftQueue);
-    linkItem--;
+  if (adjustQueue) {
+    while (linkItem > 0) {
+      let url = args[linkItem];
+      if (url[url.length - 1] === ',') url = url.replace(/,/, '');
+      pNums += await addLinkToQueue(url, message, server, mgid, true, unshiftQueue);
+      linkItem--;
+    }
   }
-  playLinkToVC(message, server.queue[0], voiceChannel, server, 0, seekAmt);
+  playLinkToVC(message, server.queue[0], voiceChannel, server, 0, seekSec);
 }
 
 /**
@@ -317,19 +313,36 @@ async function runCommandCases (message) {
       break;
     // allows seeking of YouTube and Spotify links
     case 'seek':
-      const SEEK_ERR_MSG = '*provide a link followed by the seek timestamp (ex: seek [link] 5m32s)*';
-      if (args.length === 2) {
-        if (!server.queue[0]) return message.channel.send(SEEK_ERR_MSG);
-        // continues if only one argument was provided
-        let numSeconds = convertSeekFormatToSec(args[1]);
-        if (numSeconds) {
-          args.splice(1, 1, server.queue[0].url, numSeconds);
-          server.queue.shift();
-        } else return message.channel.send(SEEK_ERR_MSG);
-      } else if (!args[1]) {
-        return message.channel.send(SEEK_ERR_MSG);
+      const SEEK_ERR_MSG = '*provide a seek timestamp (ex: seek 5m32s)*';
+      if (args[1]) {
+        if (args[2]) {
+          // assume exactly two arguments is provided
+          const validLink = linkValidator(server, message.channel, args[1], null, false);
+          const numSeconds = convertSeekFormatToSec(args[2]);
+          if (validLink && numSeconds) {
+            server.numSinceLastEmbed -= 2;
+            args.splice(2, args.length - 1);
+            await runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id), numSeconds, true);
+            if (numSeconds > 1200) message.channel.send('*seeking...*');
+            return;
+          }
+        } else {
+          // provided one argument
+          if (!server.queue[0]) return message.channel.send(`*provide a seek link and timestamp (ex: ${args[0]} [link] 5m32s)*`);
+          // continues if only one argument was provided
+          const numSeconds = convertSeekFormatToSec(args[1]);
+          if (numSeconds) {
+            server.numSinceLastEmbed -= 2;
+            args.splice(1, 1);
+            args.push(server.queue[0].url);
+            await runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id), numSeconds, false);
+            if (numSeconds > 1200) message.channel.send('*seeking...*');
+            return;
+          }
+        }
       }
-      runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
+      // if successful then execution should not reach here
+      message.channel.send(SEEK_ERR_MSG);
       break;
     case 'join':
       joinVoiceChannelSafe(message, server);
