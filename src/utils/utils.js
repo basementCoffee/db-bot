@@ -268,9 +268,9 @@ function unshiftQueue (queue, queueItem) {
 
 /**
  * Creates a queue item.
- * @param url The URL to add.
- * @param type? The type of URL. Provided as a StreamType.
- * @param infos? The infos of the URL.
+ * @param url {string} The URL to add.
+ * @param type {any?} The type of URL. Provided as a StreamType.
+ * @param infos {any?} The infos of the URL.
  * @returns {{type, url, infos}}
  */
 function createQueueItem (url, type, infos) {
