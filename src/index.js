@@ -24,7 +24,7 @@ const {runRemoveCommand, removePlaylist} = require('./commands/remove');
 const {updateActiveEmbed, sendRecommendation, sessionEndEmbed} = require('./utils/embed');
 const {runMoveItemCommand, moveKeysWrapper} = require('./commands/move');
 const {
-  checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand, runKeysCommand
+  checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand
 } = require('./commands/stream/stream');
 const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
@@ -57,6 +57,7 @@ const {runInsertCommand} = require('./commands/insert');
 const {parent_thread} = require('./threads/parent_thread');
 const {joinVoiceChannelSafe} = require('./commands/join');
 const {renamePlaylist, renameKey} = require('./commands/rename');
+const {runKeysCommand} = require('./utils/keys');
 
 process.setMaxListeners(0);
 
