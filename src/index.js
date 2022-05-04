@@ -38,12 +38,7 @@ const {checkToSeeActive} = require('./processes/checkToSeeActive');
 const {runQueueCommand} = require('./commands/generateQueue');
 const {runUniversalSearchCommand} = require('./commands/database/search');
 const {
-  sendListSize,
-  getServerPrefix,
-  getSettings,
-  getXdb,
-  setSettings,
-  getXdb2
+  sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2
 } = require('./commands/database/retrieval');
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {playFromWord} = require('./commands/playFromWord');
@@ -57,7 +52,7 @@ const {runInsertCommand} = require('./commands/insert');
 const {parent_thread} = require('./threads/parent_thread');
 const {joinVoiceChannelSafe} = require('./commands/join');
 const {renamePlaylist, renameKey} = require('./commands/rename');
-const {runKeysCommand} = require('./utils/keys');
+const {runKeysCommand} = require('./commands/keys');
 
 process.setMaxListeners(0);
 

@@ -1,14 +1,14 @@
-const {botInVC, isPersonalSheet, universalLinkFormatter, linkValidator} = require('./utils');
-const {getXdb2, getSettings} = require('../commands/database/retrieval');
-const {getAssumption} = require('../commands/database/search');
-const processStats = require('./process/ProcessStats');
-const {reactions} = require('./reactions');
-const {botID} = require('./process/constants');
+const {botInVC, isPersonalSheet, universalLinkFormatter, linkValidator} = require('../utils/utils');
+const {getXdb2, getSettings} = require('./database/retrieval');
+const {getAssumption} = require('./database/search');
+const processStats = require('../utils/process/ProcessStats');
+const {reactions} = require('../utils/reactions');
+const {botID} = require('../utils/process/constants');
 const {MessageEmbed} = require('discord.js');
-const {isCoreAdmin} = require('./permissions');
-const {renameKey, renamePlaylist} = require('../commands/rename');
-const {serializeAndUpdate} = require('../commands/database/utils');
-const {removePlaylist} = require('../commands/remove');
+const {isCoreAdmin} = require('../utils/permissions');
+const {renameKey, renamePlaylist} = require('./rename');
+const {serializeAndUpdate} = require('./database/utils');
+const {removePlaylist} = require('./remove');
 
 // returns an array of tips
 const TIPS = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-specific',

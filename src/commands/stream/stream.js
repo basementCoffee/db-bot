@@ -24,7 +24,7 @@ const {getXdb2} = require('../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
 const {runPlayCommand} = require('../play');
-const {runKeysCommand} = require('../../utils/keys');
+const {runKeysCommand} = require('../keys');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
