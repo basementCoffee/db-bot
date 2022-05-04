@@ -1,7 +1,6 @@
 const {botInVC, isPersonalSheet, universalLinkFormatter, linkValidator} = require('../utils/utils');
 const {getXdb2, getSettings} = require('./database/retrieval');
 const {getAssumption} = require('./database/search');
-const processStats = require('../utils/process/ProcessStats');
 const {reactions} = require('../utils/reactions');
 const {botID} = require('../utils/process/constants');
 const {MessageEmbed} = require('discord.js');
@@ -60,16 +59,14 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
 
 /**
  * Grabs all the keys/names from the database.
- * @param {*} message The message trigger
+ * @param message {any} The message trigger
  * @param server The server
- * @param {*} sheetName The name of the sheet to retrieve
- * @param cmdType the prefix to call the keys being displayed
- * @param voiceChannel {any?} optional, a specific voice channel to use besides the message's
+ * @param sheetName {string} The name of the sheet to retrieve
  * @param user {any?} Optional - username, overrides the message owner's name
  * @param specificPage {string?} The name of the page to display (to show instead of the playlist-page).
  * @param overrideName {string?} overrides the name displayed for the keys list.
  */
-async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel, user, specificPage, overrideName) {
+async function runKeysCommand (message, server, sheetName, user, specificPage, overrideName) {
   if (!user) user = message.member.user;
   const keysMsg = (botInVC(message) ? {edit: (content, embed) => message.channel.send(content || embed)} :
     await message.channel.send('*getting keys...*'));
@@ -80,36 +77,27 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
   keyArray.reverse();
   // the keyArray to generate
   if (keyArray.length < 1) {
-    let emptyDBMessage;
-    if (!cmdType) {
-      emptyDBMessage = "The server's ";
-    } else {
-      emptyDBMessage = 'Your ';
-    }
-    keysMsg.edit('**' + emptyDBMessage + 'saved-links list is empty.**\n*Save a link by putting a word followed by a link.' +
+    keysMsg.edit('**Your saved-links list is empty.**\n*Save a link by putting a word followed by a link.' +
       '\nEx:* \` ' + prefixString + 'add [key] [link] \`');
   } else {
-    const keyEmbedColors = ['#cdfc41', '#4192fc', '#fc4182', '#41fc9f', '#47fc41', '#41ecfc'];
-    let keyEmbedColor = keyEmbedColors[Math.floor(Math.random() * keyEmbedColors.length)];
+    const keyEmbedColors = ['#cdfc41', '#4192fc', '#fc4182', '#41fc9f', '#47fc41', '#41ecfc', '#90d5cf'];
+    const keyEmbedColor = keyEmbedColors[Math.floor(Math.random() * keyEmbedColors.length)];
     let title = '';
-    if (cmdType === 'm') {
-      let name;
-      if (overrideName) {
-        name = overrideName;
-      } else {
-        user ? name = user.username : name = message.member.nickname;
-        if (!name) {
-          name = message.author.username;
-        }
+    let name;
+    if (overrideName) {
+      name = overrideName;
+    } else {
+      user ? name = user.username : name = message.member.nickname;
+      if (!name) {
+        name = message.author.username;
       }
-      if (name) {
-        title += `**${name}'s**`;
-      } else {
-        title += '**Personal keys** ';
-      }
-    } else if (!cmdType) {
-      title += '**Server keys** ';
-      keyEmbedColor = '#90d5cf';
+    }
+    if (!isPersonalSheet(sheetName)) {
+      title += `**Server**`;
+    } else if (name) {
+      title += `**${name}'s**`;
+    } else {
+      title += '**Personal** ';
     }
     let pageIndex = 0;
     let embedPages = await createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, server, sheetName);
@@ -143,7 +131,6 @@ async function runKeysCommand (message, server, sheetName, cmdType, voiceChannel
       return embedPages[pageIndex];
     };
     keysMsg.edit('', await generateKeysEmbed()).then(async sentMsg => {
-      const server = processStats.servers.get(message.guild.id);
       sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() => sentMsg.react(reactions.QUESTION)).then(() => sentMsg.react(reactions.GEAR));
       const filter = (reaction, user) => {
         return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R, reactions.ARROW_L, reactions.GEAR, reactions.SHUFFLE].includes(reaction.emoji.name);

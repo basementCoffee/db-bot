@@ -810,7 +810,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         break;
       case reactions.BOOK_O:
         const tempUserBook = sentMsg.guild.members.cache.get(reactionCollector.id);
-        runKeysCommand(sentMsg, server, getSheetName(reactionCollector.id), 'm', voiceChannel, reactionCollector, null, tempUserBook.nickname).then();
+        runKeysCommand(sentMsg, server, getSheetName(reactionCollector.id), reactionCollector, undefined, tempUserBook.nickname).then();
         server.numSinceLastEmbed += 5;
         break;
     }

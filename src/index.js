@@ -550,13 +550,13 @@ async function runCommandCases (message) {
     case 'keys':
     case 'playlist':
     case 'playlists':
-      runKeysCommand(message, server, getSheetName(message.member.id), 'm', null, null, args[1], message.member.nickname).then();
+      runKeysCommand(message, server, getSheetName(message.member.id), null, args[1], message.member.nickname).then();
       break;
     // test purposes - return keys
     case 'gk':
     case 'gkey':
     case 'gkeys':
-      runKeysCommand(message, server, 'entries', 'g', null, null, args[1]).then();
+      runKeysCommand(message, server, 'entries', null, args[1]).then();
       break;
     case 'splash':
       if (!args[1] || !args[1].includes('.')) {
