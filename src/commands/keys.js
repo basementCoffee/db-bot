@@ -121,6 +121,7 @@ async function runKeysCommand (message, server, sheetName, user, specificPage, o
         if (index !== -1) {
           pageIndex = index + 1;
         }
+        specificPage = undefined;
       } else if (requiresUpdate) {
         xdb = await getXdb2(server, sheetName, botInVC(message));
         keyArray.length = 0;
