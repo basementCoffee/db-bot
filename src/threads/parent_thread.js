@@ -26,7 +26,7 @@ function initialize () {
   worker.on('message', function (m) {
     switch (m.content.commandName) {
       case 'lyrics':
-        const server = processStats.servers[m.content.guildId];
+        const server = processStats.servers.get(m.content.guildId);
         if (server) server.numSinceLastEmbed = 10;
         break;
     }
