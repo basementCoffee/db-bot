@@ -29,7 +29,7 @@ async function responseHandler () {
     const xdb = await gsrun('A', 'B', 'prefixes');
     for (const [gid, pfx] of xdb.congratsDatabase) {
       processStats.initializeServer(gid);
-      processStats.servers[gid].prefix = pfx;
+      processStats.servers.get(gid).prefix = pfx;
     }
     processStats.setProcessActive();
     processStats.devMode = false;
