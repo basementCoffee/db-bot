@@ -976,7 +976,7 @@ async function runCommandCases (message) {
           '\n' + prefixString + 'gzs - statistics for the active bot' +
           '\n' + prefixString + 'gzmem - see the process\'s memory usage' +
           '\n' + prefixString + 'gzc - view commands stats' +
-          '\n' + prefixString + 'gznuke [num] - deletes [num] recent db bot messages' +
+          '\n' + prefixString + 'gznuke [num] [\'db\'?] - deletes [num] recent messages (or db only)' +
           '\n\n**calibrate the active bot**' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n' + prefixString + 'gzupdate - updates the (active) pi instance of the bot' +
@@ -995,7 +995,7 @@ async function runCommandCases (message) {
       message.channel.send(devCEmbed);
       break;
     case 'gznuke':
-      parent_thread('gzn', message.id, message.channel.id, [message.channel.id, parseInt(args[1]) || 1, args[2] === 'force']);
+      parent_thread('gzn', message.id, message.channel.id, [message.channel.id, parseInt(args[1]) || 1, args[2] === 'db']);
       break;
     case 'gzupdate':
       devUpdateCommand(message, args.splice(1));

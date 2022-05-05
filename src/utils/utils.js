@@ -324,24 +324,24 @@ function setSeamless (server, fName, args, message) {
  * Also removes the command message if possible.
  * @param channelID {string} The channel id to search within.
  * @param deleteNum {number} The number of recent db bot messages to remove.
- * @param force {boolean} True if to delete non db bot messages as well.
+ * @param onlyDB {boolean} True if to delete only db bot messages.
  */
-function removeDBMessage (channelID, deleteNum = 1, force) {
+function removeDBMessage (channelID, deleteNum = 1, onlyDB) {
+  let firstRun = true;
   try {
     bot.channels.fetch(channelID).then(x =>
       x.messages.fetch(30).then(async x => {
-        let firstRun = true;
         for (let [, item] of x) {
           if (item.deletable) {
             if (firstRun) {
               firstRun = false;
               await item.delete();
-            } else if (item?.member?.id === botID || force) {
+            } else if (!onlyDB || item?.member?.id === botID) {
               await item.delete();
               deleteNum--;
             }
+            if (!deleteNum) break;
           }
-          if (!deleteNum) break;
         }
       }));
   } catch (e) {}
