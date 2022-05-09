@@ -824,11 +824,11 @@ async function runCommandCases (message) {
     // .ga adds to the test database
     case 'ga':
     case 'gadd':
-      runAddCommandWrapper_P(message.channel, args.slice(1), `entries`, true, 'm', server, message.member);
+      runAddCommandWrapper_P(message.channel, args.slice(1), `entries`, true, server, message.member);
       break;
     // .add is personal add
     case 'add':
-      runAddCommandWrapper_P(message.channel, args.slice(1), getSheetName(message.member.id), true, 'm', server, message.member);
+      runAddCommandWrapper_P(message.channel, args.slice(1), getSheetName(message.member.id), true, server, message.member);
       break;
     case 'playlist-add':
     case 'p-add':

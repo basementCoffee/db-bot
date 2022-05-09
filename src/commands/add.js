@@ -29,12 +29,11 @@ async function addNewPlaylist (server, channel, sheetName, playlistName) {
  * @param args The args that of the message contents
  * @param sheetName The name of the sheet to add to
  * @param printMsgToChannel Whether to print a response to the channel
- * @param prefixString The prefix string
  * @param server The server.
  * @param member The member that is requesting the add.
  * @returns {*}
  */
-async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, prefixString, server, member) {
+async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, server, member) {
   let playlistName;
   let keyName = args[0];
   let link = args[1];
@@ -56,7 +55,7 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
     }
     if (link) {
       link = universalLinkFormatter(link);
-      if (linkValidator(server, channel, link, prefixString, true)) {
+      if (linkValidator(server, channel, link, server.prefix, true)) {
         server.userKeys.set(sheetName, null);
         addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb);
       }
@@ -88,9 +87,8 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
       return;
     }
   }
-  if (botInVC_Guild(channel.guild) && server.queue[0]) channel.send('*error: expected a key-name to add*');
-  else channel.send('Could not add to ' + (prefixString === 'm' ? 'your' : 'the server\'s')
-    + ' keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + prefixString + 'add [key] [link]\`)*');
+  if (member.voice?.channel && server.queue[0]) channel.send('*error: expected a key-name to add*');
+  else channel.send('Could not add to your keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + 'add [key] [link]\`)*');
 }
 
 module.exports = {runAddCommandWrapper_P, addNewPlaylist};
