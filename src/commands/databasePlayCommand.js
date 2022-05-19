@@ -21,7 +21,7 @@ const {shuffleQueue} = require('./runRandomToQueue');
  * @return {Promise<void>}
  */
 async function playPlaylistDB (args, message, sheetName, playRightNow, printErrorMsg, server, shuffle) {
-  if (args.length < 2) {
+  if (args.length < 1) {
     message.channel.send("*input playlist names after the command to play a specific playlists*");
     return;
   }
