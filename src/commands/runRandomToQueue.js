@@ -71,7 +71,7 @@ function shuffleQueue (queue, message) {
   let currentIndex = queue.length, randomIndex; // indices for shuffling
   // don't include what's actively playing
   while (currentIndex > 1) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
+    randomIndex = Math.floor(Math.random() * currentIndex) + 1;
     currentIndex--;
     // swap current and random index locations
     [queue[currentIndex], queue[randomIndex]] = [queue[randomIndex], queue[currentIndex]];
