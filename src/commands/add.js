@@ -1,7 +1,7 @@
 const {botID, MAX_KEY_LENGTH} = require('../utils/process/constants');
 const {reactions} = require('../utils/reactions');
 const {addToDatabase_P} = require('./database/add');
-const {universalLinkFormatter, linkValidator} = require('../utils/utils');
+const {universalLinkFormatter, linkValidator, botInVC, botInVC_Guild} = require('../utils/utils');
 const {getXdb2} = require('./database/retrieval');
 
 // create a string that warns the user that the itemName of type 'type' is exceeding a maximum length.
@@ -58,14 +58,21 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
       if (linkValidator(link)) {
         server.userKeys.set(sheetName, null);
         addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb);
-      } else {
-        channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${server.prefix || ''}add [name] [link]\``);
+        return;
       }
-      return;
-    } else if (member.voice?.channel && server.queue[0]) {
+      xdb = await getXdb2(server, sheetName, false);
+      const playlistArray = Array.from(xdb.playlists.keys());
+      if (playlistArray.includes(link.toUpperCase())) {
+        playlistName = link;
+      } else if (playlistArray.includes(keyName.toUpperCase())) {
+        playlistName = keyName;
+        keyName = link;
+      }
+    }
+    if (member.voice?.channel && server.queue[0]) {
       link = server.queue[0].url;
       if (keyName.includes('.') || keyName.includes(',')) return channel.send('cannot add names with \'.\' or \',\'');
-      channel.send('Would you like to add what\'s currently playing as **' + (keyName) + '**?').then(sentMsg => {
+      channel.send(`Would you like to add what's currently playing as **${keyName}**? ${playlistName ? `*[to ${playlistName}]*` : ''}`).then(sentMsg => {
         sentMsg.react(reactions.CHECK).then(() => sentMsg.react(reactions.X));
         const filter = (reaction, user) => {
           return botID !== user.id && [reactions.CHECK, reactions.X].includes(reaction.emoji.name) && member.id === user.id;
@@ -86,6 +93,9 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
           }
         });
       });
+      return;
+    } else {
+      channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${server.prefix || ''}add [name] [link]\``);
       return;
     }
   }
