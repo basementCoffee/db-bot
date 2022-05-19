@@ -280,7 +280,7 @@ async function addKeyWizard (channel, user, server, xdb, playlistName, sheetName
     return -1;
   }
   resLink = universalLinkFormatter(resLink);
-  if (linkValidator(server, channel, resLink, undefined, false)) {
+  if (linkValidator(resLink)) {
     existingPlaylist.set(res.toUpperCase(), {name: res, link: resLink, playlistName});
     await serializeAndUpdate(server, sheetName, playlistName, xdb);
     channel.send(`*added key to your **${playlistName}** playlist*`);

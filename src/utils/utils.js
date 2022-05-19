@@ -434,21 +434,11 @@ function universalLinkFormatter (link) {
 
 /**
  * Returns true if the link is a valid playable link (includes playlists).
- * @param server {any} The server metadata.
- * @param channel {any} The channel object.
  * @param link {string} The link to validate.
- * @param prefixString {string} The prefix used by the error message.
- * @param sendErrorMsg {boolean} If to send an error message to the channel
  * @return {boolean} If the link is a valid, playable link.
  */
-function linkValidator (server, channel, link, prefixString, sendErrorMsg) {
-  if (!verifyUrl(link) && !verifyPlaylist(link)) {
-    if (sendErrorMsg) {
-      channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${prefixString || ''}add [name] [link]\``);
-    }
-    return false;
-  }
-  return true;
+function linkValidator (link) {
+  return verifyUrl(link) || verifyPlaylist(link);
 }
 
 /**

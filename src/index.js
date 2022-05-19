@@ -313,7 +313,7 @@ async function runCommandCases (message) {
       if (args[1]) {
         if (args[2]) {
           // assume exactly two arguments is provided
-          const validLink = linkValidator(server, message.channel, args[1], null, false);
+          const validLink = linkValidator(args[1]);
           const numSeconds = convertSeekFormatToSec(args[2]);
           if (validLink && numSeconds) {
             server.numSinceLastEmbed -= 2;

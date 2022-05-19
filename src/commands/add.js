@@ -1,7 +1,7 @@
 const {botID, MAX_KEY_LENGTH} = require('../utils/process/constants');
 const {reactions} = require('../utils/reactions');
 const {addToDatabase_P} = require('./database/add');
-const {universalLinkFormatter, linkValidator, botInVC_Guild} = require('../utils/utils');
+const {universalLinkFormatter, linkValidator} = require('../utils/utils');
 const {getXdb2} = require('./database/retrieval');
 
 // create a string that warns the user that the itemName of type 'type' is exceeding a maximum length.
@@ -26,7 +26,7 @@ async function addNewPlaylist (server, channel, sheetName, playlistName) {
 /**
  * Wrapper for the function 'addToDatabase', for the purpose of error checking. Expects the provided playlist to exist.
  * @param channel The channel that triggered the bot
- * @param args The args that of the message contents
+ * @param args The arguments provided to the command
  * @param sheetName The name of the sheet to add to
  * @param printMsgToChannel Whether to print a response to the channel
  * @param server The server.
@@ -55,14 +55,16 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
     }
     if (link) {
       link = universalLinkFormatter(link);
-      if (linkValidator(server, channel, link, server.prefix, true)) {
+      if (linkValidator(link)) {
         server.userKeys.set(sheetName, null);
         addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb);
+      } else {
+        channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${server.prefix || ''}add [name] [link]\``);
       }
       return;
     } else if (member.voice?.channel && server.queue[0]) {
       link = server.queue[0].url;
-      if (keyName.includes('.')) return channel.send('cannot add names with \'.\'');
+      if (keyName.includes('.') || keyName.includes(',')) return channel.send('cannot add names with \'.\' or \',\'');
       channel.send('Would you like to add what\'s currently playing as **' + (keyName) + '**?').then(sentMsg => {
         sentMsg.react(reactions.CHECK).then(() => sentMsg.react(reactions.X));
         const filter = (reaction, user) => {
