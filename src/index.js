@@ -1152,8 +1152,8 @@ bot.once('ready', () => {
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
-    bot.channels.cache.get(CH.process).send(`starting: ${process.pid} [${buildNo.getBuildNo()}]`)
-      .then(() => {checkToSeeActive();});
+    (async () => (await bot.channels.fetch(CH.process)).send(`starting: ${process.pid} [${buildNo.getBuildNo()}]`)
+      .then(() => {checkToSeeActive();}))();
   }
 });
 
