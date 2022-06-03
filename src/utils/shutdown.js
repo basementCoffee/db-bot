@@ -9,8 +9,8 @@ function shutdown (type) {
     console.log('shutting down...');
     // noinspection JSUnresolvedFunction
     try {
-      bot.channels.cache.get(CH.process).send(`shutting down: '${process.pid}' (${type}) ${processStats.devMode ? `(dev)` : ''}`);
-      if (!processStats.devMode && wasActive) bot.channels.cache.get(CH.process).send(`=gzz`);
+      bot.channels.fetch(CH.process).then(channel => channel.send(`shutting down: '${process.pid}' (${type}) ${processStats.devMode ? `(dev)` : ''}`));
+      if (!processStats.devMode && wasActive) bot.channels.fetch(CH.process).then(channel => channel.send(`=gzz`));
     } catch (e) {}
     const activeCSize = bot.voice.connections.size;
     if (activeCSize > 0) {

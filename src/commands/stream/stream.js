@@ -752,7 +752,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
   const collector = sentMsg.createReactionCollector(filter, {time: timeMS, dispose: true});
   server.collector = collector;
 
-  collector.on('collect', (reaction, reactionCollector) => {
+  collector.on('collect', async (reaction, reactionCollector) => {
     if (!dispatcherMap[voiceChannel.id] || !voiceChannel) return;
     switch (reaction.emoji.name) {
       case reactions.SKIP:
@@ -809,7 +809,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         }
         break;
       case reactions.BOOK_O:
-        const tempUserBook = sentMsg.guild.members.cache.get(reactionCollector.id);
+        const tempUserBook = await sentMsg.guild.members.fetch(reactionCollector.id);
         runKeysCommand(sentMsg, server, getSheetName(reactionCollector.id), reactionCollector, undefined, tempUserBook.nickname).then();
         server.numSinceLastEmbed += 5;
         break;
