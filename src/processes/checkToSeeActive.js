@@ -14,9 +14,9 @@ function checkToSeeActive () {
   setOfBotsOn.clear();
   // see if any bots are active
   // noinspection JSUnresolvedFunction
-  bot.channels.cache.get(CH.process).send('=gzk').then(() => {
+  bot.channels.fetch(CH.process).then(channel => channel.send('=gzk').then(() => {
     if (!resHandlerTimeout) resHandlerTimeout = setTimeout(responseHandler, 9000);
-  });
+  }));
 }
 
 /**
