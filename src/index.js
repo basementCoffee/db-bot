@@ -1558,7 +1558,19 @@ process.on('error', (e) => {
 process
   .on('SIGTERM', shutdown('SIGTERM'))
   .on('SIGINT', shutdown('SIGINT'))
-  .on('uncaughtException', (e) => console.log('uncaughtException: ', e));
+  .on('uncaughtException', uncaughtExceptionAction);
+
+/**
+ * The action to be performed if there is an uncaughtExceptionError.
+ * @param e {Error} The Error Object.
+ */
+function uncaughtExceptionAction (e) {
+  console.log('uncaughtException: ', e);
+  console.log('message: ', e.message);
+  if (e.toString().includes('Cannot read properties of undefined')) {
+    exec('git stash && git pull && npm upgrade && pm2 restart index');
+  }
+}
 
 // The main method
 (async () => {
