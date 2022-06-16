@@ -1567,7 +1567,7 @@ process
 function uncaughtExceptionAction (e) {
   console.log('uncaughtException: ', e);
   console.log('message: ', e.message);
-  if (e.toString().includes('Cannot read properties of undefined')) {
+  if (!processStats.devMode && e.toString().includes('Cannot read properties of undefined')) {
     exec('git stash && git pull && npm upgrade && pm2 restart index');
   }
 }
