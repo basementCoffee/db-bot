@@ -1,6 +1,6 @@
 'use strict';
 require('dotenv').config();
-const token = process.env.TOKEN.replace(/\\n/gm, '\n');
+const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
 const {exec} = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
@@ -931,7 +931,7 @@ async function runCommandCases (message) {
       break;
     case 'inv':
     case 'invite':
-      message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>");
+      message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot>");
       break;
     case 'hide':
     case 'silence':
@@ -1047,9 +1047,9 @@ async function runCommandCases (message) {
           `\nstream time: ${formatDuration(processStats.getTotalStreamTime())}` +
           `\nup since: ${bot.readyAt.toString().substring(0, 21)}` +
           `\nnumber of streams: ${processStats.getActiveStreamSize()}` +
-          `\nactive voice channels: ${bot.voice.connections.size}`
+          `\nactive voice channels: ${bot.voice.adapters.size}`
         );
-      message.channel.send(embed);
+      message.channel.send({embeds:[embed]});
       break;
     case 'gzr':
       if (!args[1] || !parseInt(args[1])) return;
@@ -1158,7 +1158,7 @@ bot.once('ready', () => {
 });
 
 // calibrate on startup
-bot.on('message', async (message) => {
+bot.on('messageCreate', async (message) => {
   if (processStats.devMode) return;
   if (message.channel.id !== CH.process) return;
   // ~db-process (standard)[11] | -on [3] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
@@ -1449,7 +1449,7 @@ async function devProcessCommands (message) {
 }
 
 // parses message, provides a response
-bot.on('message', (message) => {
+bot.on('messageCreate', (message) => {
   if (message.content.substring(0, 3) === '=gz' && isAdmin(message.member.id)) {
     return devProcessCommands(message);
   }
@@ -1567,7 +1567,7 @@ process
 function uncaughtExceptionAction (e) {
   console.log('uncaughtException: ', e);
   console.log('message: ', e.message);
-  if (e.toString().includes('Cannot read properties of undefined')) {
+  if (!processStats.devMode && e.toString().includes('Cannot read properties of undefined')) {
     exec('git stash && git pull && npm upgrade && pm2 restart index');
   }
 }

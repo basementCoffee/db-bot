@@ -1,9 +1,12 @@
 // the max size of the queue
-const {Client} = require('discord.js');
+const {Client, Intents} = require('discord.js');
 // the db bot instance
-const bot = new Client();
+const bot = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+    Intents.FLAGS.GUILD_INVITES, Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS,
+    Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES, Intents.FLAGS.GUILD_PRESENCES,
+    Intents.FLAGS.GUILD_INTEGRATIONS, Intents.FLAGS.GUILD_MESSAGES],});
 // the id of the bot
-const botID = '730350452268597300';
+const botID = '987108278486065283';
 // boolean for dev process - used for debugging, default is false
 let startupDevMode = process.argv[2] === '--dev';
 // max queue size
