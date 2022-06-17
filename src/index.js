@@ -962,7 +962,7 @@ async function runCommandCases (message) {
     case 'version':
       const vEmbed = new MessageEmbed();
       vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
-      message.channel.send(vEmbed);
+      message.channel.send({embeds: [vEmbed]});
       break;
     case 'gzmem':
       message.channel.send(await createMemoryEmbed());
@@ -992,7 +992,7 @@ async function runCommandCases (message) {
           '\ndevadd - access the database'
         )
         .setFooter('version: ' + version);
-      message.channel.send(devCEmbed);
+      message.channel.send({embeds: [devCEmbed]});
       break;
     case 'gznuke':
       parent_thread('gzn', message.id, message.channel.id, [message.channel.id, parseInt(args[1]) || 1, args[2] === 'db']);
@@ -1013,10 +1013,10 @@ async function runCommandCases (message) {
         commandsMapString += val[1] + ' - ' + val[0] + '\n';
       });
       commandsMapEmbed.setTitle('Commands Usage - Stats').setDescription(commandsMapString);
-      message.channel.send(commandsMapEmbed);
+      message.channel.send({embeds: [commandsMapEmbed]});
       break;
     case 'gzq':
-      if (bot.voice.connections.size > 0 && args[1] !== 'force')
+      if (bot.voice.adapters.size > 0 && args[1] !== 'force')
         message.channel.send('People are using the bot. Use this command again with \'force\' to restart the bot');
       else message.channel.send("restarting the bot... (may only shutdown)").then(() => {shutdown('USER')();});
       break;
@@ -1057,13 +1057,13 @@ async function runCommandCases (message) {
       break;
     case 'gzm' :
       if (!args[1]) {
-        message.channel.send('active process #' + process.pid.toString() + ' is in ' + bot.voice.connections.size + ' servers.');
+        message.channel.send('active process #' + process.pid.toString() + ' is in ' + bot.voice.adapters.size + ' servers.');
         break;
       } else if (args[1] === 'update') {
         if (process.pid === 4 || (args[2] && args[2] === 'force')) {
           // noinspection JSUnresolvedFunction
-          bot.voice.connections.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
-          message.channel.send('Update message sent to ' + bot.voice.connections.size + ' channels.');
+          bot.voice.adapters.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
+          message.channel.send('Update message sent to ' + bot.voice.adapters.size + ' channels.');
         } else {
           message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
             'To still send out an update use \'gzm update force\'');
@@ -1072,7 +1072,7 @@ async function runCommandCases (message) {
         let gx = '';
         let tgx;
         const tempSet = new Set();
-        bot.voice.connections.forEach(x => {
+        bot.voice.adapters.forEach(x => {
           tgx = '';
           tempSet.clear();
           x.channel.guild.voice.channel.members.map(y => tempSet.add(y.user.username));
@@ -1221,7 +1221,7 @@ function devUpdateCommand (message, args = []) {
     return;
   }
   let response = 'updating process...';
-  if (bot.voice.connections.size > 0) {
+  if (bot.voice.adapters.size > 0) {
     if (args[0] === 'force') {
       args.splice(0, 1);
     } else {
@@ -1255,7 +1255,7 @@ async function devProcessCommands (message) {
       // =gzk
       if (message.member.id === botID) {
         if (!processStats.isInactive && !processStats.devMode) {
-          return message.channel.send(`~db-process-on${Math.min(bot.voice.connections.size, 9)}${buildNo.getBuildNo()}ver${process.pid}`);
+          return message.channel.send(`~db-process-on${Math.min(bot.voice.adapters.size, 9)}${buildNo.getBuildNo()}ver${process.pid}`);
         }
         return;
       }
@@ -1264,7 +1264,7 @@ async function devProcessCommands (message) {
         if (processStats.devMode) {
           dm = ' (dev mode)';
         } else {
-          dm = bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : '';
+          dm = bot.voice.adapters.size ? ' (VCs: ' + bot.voice.adapters.size + ')' : '';
         }
         message.channel.send((processStats.isInactive ? 'sidelined: ' : processStats.devMode ? 'active: ' : '**active: **') + process.pid +
           ' (' + version + ')' + dm).then(sentMsg => {
@@ -1284,7 +1284,7 @@ async function devProcessCommands (message) {
             if (processStats.devMode) {
               dm = ' (dev mode)';
             } else {
-              dm = bot.voice.connections.size ? ' (VCs: ' + bot.voice.connections.size + ')' : '';
+              dm = bot.voice.adapters.size ? ' (VCs: ' + bot.voice.adapters.size + ')' : '';
             }
             try {
               sentMsg.edit((processStats.isInactive ? 'sidelined: ' : (processStats.devMode ? 'active: ' : '**active: **')) + process.pid +
@@ -1293,13 +1293,13 @@ async function devProcessCommands (message) {
               message.channel.send('*db bot ' + process.pid + (processStats.isInactive ? ' has been sidelined*' : ' is now active*'));
             }
           };
-          const collector = sentMsg.createReactionCollector(filter, {time: 30000});
-          let prevVCSize = bot.voice.connections.size;
+          const collector = sentMsg.createReactionCollector({filter, time: 30000});
+          let prevVCSize = bot.voice.adapters.size;
           let prevStatus = processStats.isInactive;
           let prevDevMode = processStats.devMode;
           const statusInterval = setInterval(() => {
-            if (!(bot.voice.connections.size === prevVCSize && prevStatus === processStats.isInactive && prevDevMode === processStats.devMode)) {
-              prevVCSize = bot.voice.connections.size;
+            if (!(bot.voice.adapters.size === prevVCSize && prevStatus === processStats.isInactive && prevDevMode === processStats.devMode)) {
+              prevVCSize = bot.voice.adapters.size;
               prevDevMode = processStats.devMode;
               prevStatus = processStats.isInactive;
               if (sentMsg.deletable) updateMessage();
@@ -1309,10 +1309,10 @@ async function devProcessCommands (message) {
 
           collector.on('collect', (reaction, user) => {
             if (reaction.emoji.name === reactions.GEAR) {
-              if (!processStats.isInactive && bot.voice.connections.size > 0) {
+              if (!processStats.isInactive && bot.voice.adapters.size > 0) {
                 let hasDeveloper = false;
-                if (bot.voice.connections.size === 1) {
-                  bot.voice.connections.forEach(x => {
+                if (bot.voice.adapters.size === 1) {
+                  bot.voice.adapters.forEach(x => {
                     if (x.channel.members.get('443150640823271436') || x.channel.members.get('268554823283113985')) {
                       hasDeveloper = true;
                       x.disconnect();
@@ -1322,7 +1322,7 @@ async function devProcessCommands (message) {
                 }
                 if (!hasDeveloper) {
                   message.channel.send('***' + process.pid + ' - button is disabled***\n*This process should not be ' +
-                    'sidelined because it has active members using it (VCs: ' + bot.voice.connections.size + ')*\n' +
+                    'sidelined because it has active members using it (VCs: ' + bot.voice.adapters.size + ')*\n' +
                     '*If you just activated another process, please deactivate it.*');
                   return;
                 }
@@ -1401,7 +1401,7 @@ async function devProcessCommands (message) {
     case 'q':
       // =gzq
       if (!processStats.devMode && zargs[1] !== process.pid.toString()) return;
-      if (bot.voice.connections.size > 0 && (!zargs[2] || zargs[2] !== 'force'))
+      if (bot.voice.adapters.size > 0 && (!zargs[2] || zargs[2] !== 'force'))
         message.channel.send('People are using the bot. Use force as the second argument.').then();
       else message.channel.send("restarting the bot... (may only shutdown)").then(() =>
         setTimeout(() => {process.exit();}, 2000));
@@ -1513,7 +1513,7 @@ async function updateVoiceState (update, server) {
       server.followUpMessage.delete();
       server.followUpMessage = undefined;
     }
-    if (bot.voice.connections.size < 1) {
+    if (bot.voice.adapters.size < 1) {
       whatspMap.clear();
       dispatcherMap.clear();
       dispatcherMapStatus.clear();

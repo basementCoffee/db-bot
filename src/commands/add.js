@@ -77,7 +77,7 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
         const filter = (reaction, user) => {
           return botID !== user.id && [reactions.CHECK, reactions.X].includes(reaction.emoji.name) && member.id === user.id;
         };
-        const collector = sentMsg.createReactionCollector(filter, {time: 60000, dispose: true});
+        const collector = sentMsg.createReactionCollector({filter, time: 60000, dispose: true});
         collector.once('collect', (reaction) => {
           sentMsg.delete();
           if (reaction.emoji.name === reactions.CHECK) {

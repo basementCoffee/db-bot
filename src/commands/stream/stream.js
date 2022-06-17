@@ -25,6 +25,12 @@ const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
 const {runPlayCommand} = require('../play');
 const {runKeysCommand} = require('../keys');
+const {
+  joinVoiceChannel,
+  createAudioResource,
+  createAudioPlayer,
+  NoSubscriberBehavior,
+} = require('@discordjs/voice');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -36,6 +42,7 @@ const {runKeysCommand} = require('../keys');
  * @param seekSec {number} The amount to seek in seconds
  * @returns {Promise<void>}
  */
+
 async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSec) {
   let whatToPlay = queueItem?.url;
   if (!whatToPlay) {
@@ -61,7 +68,11 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
   let connection = server.connection;
   if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
     try {
-      connection = await vc.join();
+      connection = joinVoiceChannel({
+        channelId: message.member.voice.channel.id,
+        guildId: message.guild.id,
+        adapterCreator: message.guild.voiceAdapterCreator
+      });
       await new Promise(res => setTimeout(res, 300));
     } catch (e) {
       catchVCJoinError(e, message.channel);
@@ -72,7 +83,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       message.channel.send(processStats.startUpMessage);
     }
     server.connection = connection;
-    connection.voice.setSelfDeaf(true).then();
+    // connection.voice.setSelfDeaf(true).then();
   }
   if (server.leaveVCTimeout) {
     clearTimeout(server.leaveVCTimeout);
@@ -215,12 +226,17 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       queueItem.urlAlt = urlAlt;
     }
     server.streamData.stream = stream;
-    dispatcher = connection.play(stream, (seekSec ? {seek: seekSec} : {
-        type: encoderType,
-        volume: false,
-        highWaterMark: streamHWM
+    let resource = createAudioResource(stream);
+
+    let player = createAudioPlayer({
+      behaviors: {
+        noSubscriber: NoSubscriberBehavior.Play
       }
-    ));
+    });
+
+    player.play(resource);
+    connection.subscribe(player);
+
     dispatcherMap[vc.id] = dispatcher;
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
       pauseComputation(vc, true);
@@ -241,6 +257,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     processStats.removeActiveStream(message.guild.id);
     processStats.addActiveStream(message.guild.id);
     server.skipTimes = 0;
+    return;
     dispatcher.on('error', async (e) => {
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
@@ -749,7 +766,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
   };
 
   timeMS += 7200000;
-  const collector = sentMsg.createReactionCollector(filter, {time: timeMS, dispose: true});
+  const collector = sentMsg.createReactionCollector({filter, time: timeMS, dispose: true});
   server.collector = collector;
 
   collector.on('collect', async (reaction, reactionCollector) => {

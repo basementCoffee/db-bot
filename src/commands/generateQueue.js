@@ -57,7 +57,7 @@ function runQueueCommand (server, message, mgid, noErrorMsg) {
     if (sentMsg?.deletable) {
       await sentMsg.edit(queueMsgEmbed);
     } else {
-      sentMsg = await message.channel.send(queueMsgEmbed);
+      sentMsg = await message.channel.send({embeds: [queueMsgEmbed]});
       sentMsgArray.push(sentMsg);
     }
     if (sentMsg.reactions.cache.size < 1) {
@@ -84,7 +84,7 @@ function runQueueCommand (server, message, mgid, noErrorMsg) {
       }
       return false;
     };
-    const collector = sentMsg.createReactionCollector(filter, {time: 300000, dispose: true});
+    const collector = sentMsg.createReactionCollector({filter, time: 300000, dispose: true});
     const arrowReactionTimeout = setTimeout(() => {
       sentMsg.reactions.removeAll();
     }, 300500);

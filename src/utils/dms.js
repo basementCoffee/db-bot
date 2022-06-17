@@ -29,7 +29,7 @@ function dmHandler (message, messageContent) {
       return user.id !== botID;
     };
 
-    const collector = msg.createReactionCollector(filter, {time: 86400000});
+    const collector = msg.createReactionCollector({filter, time: 86400000});
 
     collector.on('collect', (reaction, user) => {
       if (reaction.emoji.name === mb) {
@@ -74,4 +74,4 @@ function sendMessageToUser (message, userID, reactionUserID) {
   });
 }
 
-module.exports = {dmHandler, sendMessageToUser}
+module.exports = {dmHandler, sendMessageToUser};

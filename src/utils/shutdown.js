@@ -12,12 +12,12 @@ function shutdown (type) {
       bot.channels.fetch(CH.process).then(channel => channel.send(`shutting down: '${process.pid}' (${type}) ${processStats.devMode ? `(dev)` : ''}`));
       if (!processStats.devMode && wasActive) bot.channels.fetch(CH.process).then(channel => channel.send(`=gzz`));
     } catch (e) {}
-    const activeCSize = bot.voice.connections.size;
+    const activeCSize = bot.voice.adapters.size;
     if (activeCSize > 0) {
       console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? 's' : ''}`);
       // noinspection JSUnresolvedFunction
       if (processStats.servers.size > 0) {
-        bot.voice.connections.forEach(x => {
+        bot.voice.adapters.forEach(x => {
           let server = processStats.servers.get(x.channel.guild.id);
           let currentEmbed = server.currentEmbed;
           try {

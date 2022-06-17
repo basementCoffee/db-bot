@@ -72,7 +72,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
       const filter = (reaction, user) => {
         return user.id === message.member.id && [reactions.X].includes(reaction.emoji.name);
       };
-      const collector = sentMsg.createReactionCollector(filter, {time: 12000, dispose: true});
+      const collector = sentMsg.createReactionCollector({filter, time: 12000, dispose: true});
       collector.once('collect', () => {
         if (!collector.ended) collector.stop();
         const queueStartIndex = server.queue.length - 1;
@@ -114,7 +114,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
       }
       return false;
     };
-    collector = message.createReactionCollector(filter, {time: 100000, dispose: true});
+    collector = message.createReactionCollector({filter, time: 100000, dispose: true});
     let res;
     let notActive = true;
     let reactionCollector2;

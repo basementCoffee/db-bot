@@ -33,7 +33,7 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
   const embedKeysMessage = new MessageEmbed();
   await embedKeysMessage.setTitle(`----- ${title} playlists -----`).setDescription(playlistString)
     .setColor(keyEmbedColor)
-    .setFooter(`${TIPS(prefixString)[Math.floor(Math.random() * TIPS().length)]}`)
+    .setFooter({text: `${TIPS(prefixString)[Math.floor(Math.random() * TIPS().length)]}`})
     .setThumbnail(settings.splash);
   embedPages.push(embedKeysMessage);
   let keysString;
@@ -52,7 +52,7 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
     embedPages.push((new MessageEmbed()).setTitle(key)
       .setDescription(keysString)
       .setColor(keyEmbedColor)
-      .setFooter(`play command: ${prefixString}d [key]`));
+      .setFooter({text: `play command: ${prefixString}d [key]`}));
   });
   return embedPages;
 }
@@ -104,7 +104,7 @@ async function runKeysCommand (message, server, sheetName, user, specificPage, o
     /**
      * Generates the keys list embed.
      * @param requiresUpdate {boolean?} If to grab new data for the embed.
-     * @return {Promise<module:"discord.js".MessageEmbed>}
+     * @return {Promise<MessageEmbed>}
      */
     const generateKeysEmbed = async (requiresUpdate) => {
       // returns an array of embeds
@@ -131,12 +131,12 @@ async function runKeysCommand (message, server, sheetName, user, specificPage, o
       }
       return embedPages[pageIndex];
     };
-    keysMsg.edit('', await generateKeysEmbed()).then(async sentMsg => {
+    keysMsg.edit({embeds: [await generateKeysEmbed()]}).then(async sentMsg => {
       sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() => sentMsg.react(reactions.QUESTION)).then(() => sentMsg.react(reactions.GEAR));
       const filter = (reaction, user) => {
         return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R, reactions.ARROW_L, reactions.GEAR, reactions.SHUFFLE].includes(reaction.emoji.name);
       };
-      const keysButtonCollector = sentMsg.createReactionCollector(filter, {time: 1200000});
+      const keysButtonCollector = sentMsg.createReactionCollector({filter, time: 1200000});
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
         if (reaction.emoji.name === reactions.QUESTION) {
           const embed = new MessageEmbed()
@@ -159,11 +159,11 @@ async function runKeysCommand (message, server, sheetName, user, specificPage, o
           if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isCoreAdmin(user.id))) {
             if (reaction.emoji.name === reactions.ARROW_R) {
               pageIndex += 1;
-              sentMsg.edit(await generateKeysEmbed());
+              sentMsg.edit({embeds: [await generateKeysEmbed()]});
               await reaction.users.remove(user.id);
             } else if (reaction.emoji.name === reactions.ARROW_L) {
               pageIndex -= 1;
-              sentMsg.edit(await generateKeysEmbed());
+              sentMsg.edit({embeds: [await generateKeysEmbed()]});
               await reaction.users.remove(user.id);
             } else if (reaction.emoji.name === reactions.GEAR) {
               // allow for adding / removal of a playlist / queue

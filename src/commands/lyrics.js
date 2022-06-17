@@ -148,7 +148,7 @@ async function sendSongLyrics (message, searchTerm, messageMemberId, reactionCal
         return user.id !== botID && ['📄'].includes(reaction.emoji.name);
       };
       let lyrics;
-      const collector = sentMsg.createReactionCollector(filter, {time: 300000});
+      const collector = sentMsg.createReactionCollector({filter, time: 300000});
       collector.once('collect', async () => {
         try {
           lyrics = await firstSong.lyrics();
@@ -228,7 +228,7 @@ function getYoutubeSubtitles (message, url, infos, reactionCallback) {
                   return user.id !== botID && [mb].includes(reaction.emoji.name);
                 };
 
-                const collector = sentMsg.createReactionCollector(filter, {time: 600000});
+                const collector = sentMsg.createReactionCollector({filter, time: 600000});
 
                 collector.once('collect', () => {
                   message.edit(`***Captions from YouTube***\n${finalString}`);

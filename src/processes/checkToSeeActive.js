@@ -48,7 +48,7 @@ async function responseHandler () {
       if (processStats.isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
   } else if (process.pid === 4) {
-    if ((new Date()).getHours() === 5 && bot.uptime > 3600000 && bot.voice.connections.size < 1) {
+    if ((new Date()).getHours() === 5 && bot.uptime > 3600000 && bot.voice.adapters.size < 1) {
       shutdown('HOUR(05)');
     }
   }

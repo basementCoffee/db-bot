@@ -98,7 +98,7 @@ function getHelpList (prefixString, numOfPages, version) {
     helpListEmbed
       .setTitle(titleArray[i] || titleArray.slice(-1)[0])
       .setDescription(pages[i])
-      .setFooter(`(${i + 1}/${numOfPages})`);
+      .setFooter({text: `(${i + 1}/${numOfPages})`});
     embedPages.push(helpListEmbed);
   }
 
