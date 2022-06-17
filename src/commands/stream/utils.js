@@ -1,6 +1,7 @@
 const {botID, dispatcherMap} = require('../../utils/process/constants');
 const {pauseComputation, playComputation} = require('../../utils/utils');
 const {createEmbed} = require('../../utils/embed');
+const {getVoiceConnection} = require('@discordjs/voice');
 
 /**
  * A system to manage votes for various bot actions. Used for DJ mode.
@@ -139,7 +140,7 @@ function stopPlayingUtil (mgid, voiceChannel, stayInVC, server, message, actionU
   const lastPlayed = server.queue[0] || server.queueHistory.slice(-1)[0];
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
-      voiceChannel.leave();
+      getVoiceConnection(mgid).disconnect();
     }, 600);
   } else {
     if (server.currentEmbed) {

@@ -1049,7 +1049,7 @@ async function runCommandCases (message) {
           `\nnumber of streams: ${processStats.getActiveStreamSize()}` +
           `\nactive voice channels: ${bot.voice.adapters.size}`
         );
-      message.channel.send({embeds:[embed]});
+      message.channel.send({embeds: [embed]});
       break;
     case 'gzr':
       if (!args[1] || !parseInt(args[1])) return;

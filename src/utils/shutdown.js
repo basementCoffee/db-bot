@@ -17,17 +17,20 @@ function shutdown (type) {
       console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? 's' : ''}`);
       // noinspection JSUnresolvedFunction
       if (processStats.servers.size > 0) {
-        bot.voice.adapters.forEach(x => {
-          let server = processStats.servers.get(x.channel.guild.id);
-          let currentEmbed = server.currentEmbed;
-          try {
-            if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');
-            else if (server.queue[0]) x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
-          } catch (e) {
-            x.channel.guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
-          }
+        bot.voice.adapters.forEach((x, guildId) => {
+          let server = processStats.servers.get(guildId);
+          bot.guilds.fetch(guildId).then((guild)=> {
+            let currentEmbed = server.currentEmbed;
+            try {
+              if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');
+              else if (server.queue[0]) guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
+            } catch (e) {
+              guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
+            }
+          })
+
           if (server.collector) server.collector.stop();
-          x.disconnect();
+          x.destroy();
         });
       }
       setTimeout(() => process.exit(), 4500);

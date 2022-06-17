@@ -30,6 +30,7 @@ const {
   createAudioResource,
   createAudioPlayer,
   NoSubscriberBehavior,
+  StreamType: VoiceStreamType
 } = require('@discordjs/voice');
 
 /**
@@ -73,6 +74,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         guildId: message.guild.id,
         adapterCreator: message.guild.voiceAdapterCreator
       });
+
       await new Promise(res => setTimeout(res, 300));
     } catch (e) {
       catchVCJoinError(e, message.channel);
@@ -226,18 +228,12 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       queueItem.urlAlt = urlAlt;
     }
     server.streamData.stream = stream;
-    let resource = createAudioResource(stream);
 
-    let player = createAudioPlayer({
-      behaviors: {
-        noSubscriber: NoSubscriberBehavior.Play
-      }
-    });
-
-    player.play(resource);
+    let player = createAudioPlayer();
+    let resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus});
     connection.subscribe(player);
-
-    dispatcherMap[vc.id] = dispatcher;
+    player.play(resource);
+    dispatcherMap[vc.id] = player;
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
       pauseComputation(vc, true);
       await new Promise(res => setTimeout(() => {
@@ -257,8 +253,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     processStats.removeActiveStream(message.guild.id);
     processStats.addActiveStream(message.guild.id);
     server.skipTimes = 0;
-    return;
-    dispatcher.on('error', async (e) => {
+    player.on('error', async (e) => {
       if (dispatcher.streamTime < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
@@ -273,7 +268,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       );
       console.log('dispatcher error: ', e);
     });
-    dispatcher.once('finish', () => {
+    player.once('idle', () => {
       if (whatToPlay !== whatspMap[vc.id]) {
         const errString = `There was a mismatch -----------\n old url: ${whatToPlay}\n current url: ${whatspMap[vc.id]}`;
         console.log(errString);
@@ -656,9 +651,9 @@ async function getRecLink (whatToPlay, infos, index = 0) {
  * Sends an embed to the channel depending on the given link.
  * If not given a voice channel then playback buttons will not appear. This is the main playabck embed.
  * If no url is provided then returns.
- * @param message {module:"discord.js".Message} The message to send the channel to
+ * @param message {any} The message to send the channel to
  * @param queueItem {Object} the queueItem to generate the embed for
- * @param voiceChannel {module:"discord.js".VoiceChannel} the voice channel that the link is being played in, if playing
+ * @param voiceChannel {any} the voice channel that the link is being played in, if playing
  * @param server {Object} The server playback metadata
  * @param forceEmbed {Boolean} Force the embed to be re-sent in the text channel
  * @returns {Promise<void>}
@@ -728,7 +723,7 @@ async function sendEmbedUpdate (channel, server, forceEmbed, embed) {
     }
   }
   // noinspection JSUnresolvedFunction
-  const sentMsg = await channel.send(embed);
+  const sentMsg = await channel.send({embeds: [embed]});
   server.currentEmbed = sentMsg;
   return sentMsg;
 }
