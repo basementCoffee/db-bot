@@ -29,7 +29,6 @@ const {
   joinVoiceChannel,
   createAudioResource,
   createAudioPlayer,
-  NoSubscriberBehavior,
   StreamType: VoiceStreamType
 } = require('@discordjs/voice');
 
@@ -67,14 +66,14 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
   // the alternative url to play
   let urlAlt = whatToPlay;
   let connection = server.connection;
-  if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
+  if (!botInVC(message) || !connection || (server.activeVoiceChannelId !== vc.id)) {
     try {
       connection = joinVoiceChannel({
-        channelId: message.member.voice.channel.id,
+        channelId: vc.id,
         guildId: message.guild.id,
         adapterCreator: message.guild.voiceAdapterCreator
       });
-
+      server.activeVoiceChannelId = vc.id;
       await new Promise(res => setTimeout(res, 300));
     } catch (e) {
       catchVCJoinError(e, message.channel);

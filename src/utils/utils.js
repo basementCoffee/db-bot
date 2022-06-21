@@ -88,7 +88,7 @@ function convertSeekFormatToSec (seekString) {
  */
 function botInVC (message) {
   try {
-    return message.guild.voice?.channel;
+    return bot.voice.adapters.get(message.guild.id);
   } catch (e) {
     return false;
   }
@@ -96,7 +96,7 @@ function botInVC (message) {
 
 function botInVC_Guild (guild) {
   try {
-    return guild.voice?.channel;
+    return bot.voice.adapters.get(guild.id);
   } catch (e) {
     return false;
   }

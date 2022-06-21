@@ -126,6 +126,8 @@ class ProcessStats {
       activeUserQuestion: new Map(),
       // persistent user settings
       userSettings: new Map(),
+      // the id of the active voice channel
+      activeVoiceChannelId: undefined,
       // properties pertaining to the active stream
       streamData: {
         // the StreamType enum
