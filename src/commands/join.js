@@ -1,4 +1,4 @@
-const {dispatcherMap, LEAVE_VC_TIMEOUT} = require('../utils/process/constants');
+const {LEAVE_VC_TIMEOUT} = require('../utils/process/constants');
 const {sessionEndEmbed} = require('../utils/embed');
 const {resetSession, pauseComputation, botInVC, catchVCJoinError} = require('../utils/utils');
 
@@ -10,12 +10,12 @@ const {resetSession, pauseComputation, botInVC, catchVCJoinError} = require('../
  * @return {Promise<boolean>} True upon successful voice channel join.
  */
 async function joinVoiceChannelSafe (message, server) {
-  let connection = server.connection;
+  let connection = server.audio.connection;
   let vc = message.member?.voice?.channel;
-  if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
-    if (connection && dispatcherMap[connection.channel.id]) {
+  if (vc && (!botInVC(message) || !connection || (server.audio.voiceChannelId !== vc.id))) {
+    if (connection) {
       pauseComputation(connection.channel);
-      dispatcherMap[connection.channel.id] = undefined;
+      server.audio.reset();
     }
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
@@ -27,7 +27,7 @@ async function joinVoiceChannelSafe (message, server) {
     }
     resetSession(server);
     try {
-      server.connection = await vc.join();
+      server.audio.joinVoiceChannel(message.guild, vc.id);
       server.leaveVCTimeout = setTimeout(() => server.connection.disconnect(), LEAVE_VC_TIMEOUT);
       return true;
     } catch (e) {

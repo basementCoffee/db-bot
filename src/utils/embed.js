@@ -99,7 +99,7 @@ async function updateActiveEmbed (server) {
     queueItem.infos = embed.infos;
     embed = embed.embed;
     embed.addField('Queue', getQueueText(server), true);
-    server.currentEmbed.edit(embed);
+    server.currentEmbed.edit({embeds: [embed]});
   } catch (e) {
     console.log(e);
   }
@@ -119,7 +119,7 @@ async function sessionEndEmbed(server, item){
     server.currentEmbedChannelId = '0';
     server.numSinceLastEmbed = 0;
     embed.addField('-', 'Session ended', true);
-    server.currentEmbed.edit(embed);
+    server.currentEmbed.edit({embeds: [embed]});
   } catch (e) {
     console.log(e);
   }

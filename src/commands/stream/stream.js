@@ -3,8 +3,8 @@ const {
   playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, getSheetName
 } = require('../../utils/utils');
 const {
-  StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, dispatcherMap,
-  dispatcherMapStatus, LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID
+  StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
+  LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID
 } = require('../../utils/process/constants');
 const {getData} = require('spotify-url-info');
 const m3u8stream = require('m3u8stream');
@@ -26,7 +26,6 @@ const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
 const {runPlayCommand} = require('../play');
 const {runKeysCommand} = require('../keys');
 const {
-  joinVoiceChannel,
   createAudioResource,
   createAudioPlayer,
   StreamType: VoiceStreamType
@@ -65,14 +64,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
   }
   // the alternative url to play
   let urlAlt = whatToPlay;
-  let connection = server.connection;
+  let connection = server.audio.connection;
   if (!botInVC(message) || !connection || (server.activeVoiceChannelId !== vc.id)) {
     try {
-      connection = joinVoiceChannel({
-        channelId: vc.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator
-      });
+      connection = server.audio.joinVoiceChannel(message.guild, vc.id);
       server.activeVoiceChannelId = vc.id;
       await new Promise(res => setTimeout(res, 300));
     } catch (e) {
@@ -83,7 +78,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       server.startUpMessage = true;
       message.channel.send(processStats.startUpMessage);
     }
-    server.connection = connection;
     // connection.voice.setSelfDeaf(true).then();
   }
   if (server.leaveVCTimeout) {
@@ -163,7 +157,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
   if (server.streamData.type === StreamType.YOUTUBE) await server.streamData.stream.destroy();
   else if (server.streamData.stream) endStream(server);
   if (whatToPlay !== whatspMap[vc.id]) return;
-  let dispatcher;
   try {
     let playbackTimeout;
     let stream;
@@ -232,14 +225,15 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     let resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus});
     connection.subscribe(player);
     player.play(resource);
-    dispatcherMap[vc.id] = player;
+    server.audio.resource = resource;
+    server.audio.player = player;
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
       pauseComputation(vc, true);
       await new Promise(res => setTimeout(() => {
         if (whatToPlay === whatspMap[vc.id]) playComputation(vc, true);
         res();
       }, 3000));
-    } else dispatcherMapStatus[vc.id] = false;
+    } else server.audio.status = true;
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
       if (server.currentEmbed) {
@@ -247,13 +241,13 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         server.currentEmbed = null;
       }
     } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
-      await sendLinkAsEmbed(message, queueItem, vc, server, false).then(() => dispatcher.setVolume(0.5));
+      await sendLinkAsEmbed(message, queueItem, vc, server, false);
     }
     processStats.removeActiveStream(message.guild.id);
     processStats.addActiveStream(message.guild.id);
     server.skipTimes = 0;
     player.on('error', async (e) => {
-      if (dispatcher.streamTime < 1000 && retries < 4) {
+      if (resource.playbackDuration < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise(res => setTimeout(res, 500));
         if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
@@ -263,7 +257,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       // noinspection JSUnresolvedFunction
       logError(
         (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
-        timestamp: ${formatDuration(dispatcher.streamTime)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)
+        timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)
       );
       console.log('dispatcher error: ', e);
     });
@@ -280,7 +274,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       }
       if (vc.members.size < 2) {
         connection.disconnect();
-        dispatcherMap[vc.id] = undefined;
+        server.audio.reset();
         processStats.removeActiveStream(message.guild.id);
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
@@ -294,7 +288,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
           if (server.collector) server.collector.stop();
           updateActiveEmbed(server);
           server.leaveVCTimeout = setTimeout(() => connection.disconnect(), LEAVE_VC_TIMEOUT);
-          dispatcherMap[vc.id] = undefined;
+          server.audio.reset();
           processStats.removeActiveStream(message.guild.id);
         }
       }
@@ -305,7 +299,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     });
     if (!retries) {
       playbackTimeout = setTimeout(() => {
-        if (server.queue[0]?.url === whatToPlay && botInVC(message) && dispatcher.streamTime < 1) {
+        if (server.queue[0]?.url === whatToPlay && botInVC(message) && resource.playbackDuration < 1) {
           playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
         }
       }, 2000);
@@ -394,22 +388,25 @@ function searchForBrokenLinkWithinDB (message, server, whatToPlayS) {
 /**
  * Checks the status of ytdl-core-discord and exits the active process if the test link is unplayable.
  * @param message The message metadata to send a response to the appropriate channel
+ * @param server The server metadata.
  */
-function checkStatusOfYtdl (message) {
+async function checkStatusOfYtdl (message, server) {
   // noinspection JSUnresolvedFunction
-  bot.channels.fetch('839643770986561607').then(channel =>
-    channel.join().then(async (connection) => {
+    const connection = server.audio.joinVoiceChannel(message.guild, '839643770986561607');
+    const stream = await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
+      filter: () => ['251'],
+      highWaterMark: 1 << 25
+    });
+  let player = createAudioPlayer();
+  let resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus, metadata: {
+      type: 'opus',
+      volume: false,
+      highWaterMark: 1 << 25
+    }});
       await new Promise(res => setTimeout(res, 500));
       try {
         // noinspection JSCheckFunctionSignatures
-        connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
-          filter: () => ['251'],
-          highWaterMark: 1 << 25
-        }), {
-          type: 'opus',
-          volume: false,
-          highWaterMark: 1 << 25
-        });
+        player.play(resource);
       } catch (e) {
         console.log(e);
         // noinspection JSUnresolvedFunction
@@ -428,8 +425,6 @@ function checkStatusOfYtdl (message) {
         connection.disconnect();
         if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
       }, 6000);
-    })
-  );
 }
 
 /**
@@ -564,7 +559,7 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
       sendSkipMsg = false;
     } else return;
   }
-  if (dispatcherMap[voiceChannel.id]) dispatcherMap[voiceChannel.id].pause();
+  if (server.audio.player) server.audio.player.pause();
   if (skipTimes) {
     try {
       skipTimes = parseInt(skipTimes);
@@ -621,7 +616,7 @@ async function runAutoplayCommand (message, server, vc, queueItem) {
     } catch (e) {}
     message.channel.send('*could not find a video to play*');
     server.collector.stop();
-    dispatcherMap[vc.id] = undefined;
+    server.audio.reset();
   } else {
     message.channel.send(`*smartplay is not supported for this stream type*`);
     stopPlayingUtil(message.guild.id, vc, true, server, message, message.member);
@@ -690,14 +685,14 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
     queueItem.infos = embedData.infos;
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed?.deletable) {
       try {
-        const sentMsg = await server.currentEmbed.edit(embed);
-        if (sentMsg.reactions.cache.size < 1 && showButtons && dispatcherMap[voiceChannel.id])
+        const sentMsg = await server.currentEmbed.edit({embeds: [embed]});
+        if (sentMsg.reactions.cache.size < 1 && showButtons && server.audio.player)
           generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
         return;
       } catch (e) {}
     }
     await sendEmbedUpdate(message.channel, server, forceEmbed, embed).then(sentMsg => {
-      if (showButtons && dispatcherMap[voiceChannel.id])
+      if (showButtons && server.audio.player)
         generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
     });
   }
@@ -705,12 +700,12 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
 
 /**
  * Sends a new message embed to the channel. Is a helper for sendLinkAsEmbed.
- * @param channel {module:"discord.js".TextChannel | module:"discord.js".DMChannel | module:"discord.js".NewsChannel}
+ * @param channel {import(discord.js).TextChannel | import(discord.js).DMChannel | import(discord.js).NewsChannel}
  * Discord's Channel object. Used for sending the new embed.
  * @param server The server.
  * @param forceEmbed {Boolean} If to keep the old embed and send a new one.
  * @param embed The embed to send.
- * @returns {Promise<Message>} The new message that was sent.
+ * @returns {Promise<import(discord.js).Message>} The new message that was sent.
  */
 async function sendEmbedUpdate (channel, server, forceEmbed, embed) {
   server.numSinceLastEmbed = 0;
@@ -764,7 +759,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
   server.collector = collector;
 
   collector.on('collect', async (reaction, reactionCollector) => {
-    if (!dispatcherMap[voiceChannel.id] || !voiceChannel) return;
+    if (!server.audio.player || !voiceChannel) return;
     switch (reaction.emoji.name) {
       case reactions.SKIP:
         runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice?.channel.members.get(reactionCollector.id));
@@ -776,7 +771,7 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
         break;
       case reactions.PPAUSE:
         let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-        if (dispatcherMapStatus[voiceChannel.id]) {
+        if (!server.audio.status) {
           runPlayCommand(sentMsg, tempUser, server, true, false, true);
           if (server.voteAdmin.length < 1 && !server.dictator) {
             tempUser = tempUser.nickname;

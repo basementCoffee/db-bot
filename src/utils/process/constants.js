@@ -20,10 +20,6 @@ const setOfBotsOn = new Set();
 const commandsMap = new Map();
 // What's playing, uses voice channel id
 const whatspMap = new Map();
-// The video stream, uses voice channel id
-const dispatcherMap = new Map();
-// The status of a dispatcher, either true for paused or false for playing
-const dispatcherMapStatus = new Map();
 // open.spotify.com
 const SPOTIFY_BASE_LINK = 'open.spotify.com';
 // soundcloud.com
@@ -45,7 +41,6 @@ const StreamType = {
 };
 
 module.exports = {
-  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
-  SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM,
-  MAX_KEY_LENGTH
+  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK,
+  TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM, MAX_KEY_LENGTH
 };

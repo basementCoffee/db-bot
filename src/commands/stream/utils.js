@@ -1,5 +1,5 @@
-const {botID, dispatcherMap} = require('../../utils/process/constants');
-const {pauseComputation, playComputation} = require('../../utils/utils');
+const {botID} = require('../../utils/process/constants');
+const {pauseComputation, playComputation, botInVC} = require('../../utils/utils');
 const {createEmbed} = require('../../utils/embed');
 const {getVoiceConnection} = require('@discordjs/voice');
 
@@ -54,7 +54,7 @@ function voteSystem (message, mgid, commandName, voter, votes, server) {
  * @returns boolean if successful
  */
 function pauseCommandUtil (message, actionUser, server, noErrorMsg, force, noPrintMsg) {
-  if (actionUser.voice && message.guild.voice?.channel && dispatcherMap[actionUser.voice.channel.id]) {
+  if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
     if (server.dictator && actionUser.id !== server.dictator.id)
       return message.channel.send('only the dictator can pause');
     if (server.voteAdmin.length > 0) {
@@ -65,7 +65,7 @@ function pauseCommandUtil (message, actionUser, server, noErrorMsg, force, noPri
         else return false;
       }
     }
-    pauseComputation(actionUser.voice.channel);
+    pauseComputation(server);
     if (noPrintMsg) return true;
     if (server.followUpMessage) {
       server.followUpMessage.delete();
@@ -90,7 +90,7 @@ function pauseCommandUtil (message, actionUser, server, noErrorMsg, force, noPri
  * @returns boolean
  */
 function playCommandUtil (message, actionUser, server, noErrorMsg, force, noPrintMsg) {
-  if (actionUser.voice && message.guild.voice?.channel && dispatcherMap[actionUser.voice.channel.id]) {
+  if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
     if (server.dictator && actionUser.id !== server.dictator.id)
       return message.channel.send('only the dictator can play');
     if (server.voteAdmin.length > 0) {
@@ -101,7 +101,7 @@ function playCommandUtil (message, actionUser, server, noErrorMsg, force, noPrin
         else return false;
       }
     }
-    playComputation(actionUser.voice.channel);
+    playComputation(server);
     if (noPrintMsg) return true;
     if (server.followUpMessage) {
       server.followUpMessage.delete();
@@ -132,7 +132,6 @@ function stopPlayingUtil (mgid, voiceChannel, stayInVC, server, message, actionU
     !server.voteAdmin.map(x => x.id).includes(actionUser.id) && server.queue.length > 0) {
     return message.channel.send('*only the DJ can end the session*');
   }
-  dispatcherMap[voiceChannel.id]?.pause();
   if (server.followUpMessage) {
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
@@ -150,7 +149,7 @@ function stopPlayingUtil (mgid, voiceChannel, stayInVC, server, message, actionU
         server.collector?.stop();
       });
     }
-    dispatcherMap[voiceChannel.id] = undefined;
+    server.audio.reset();
   }
 }
 

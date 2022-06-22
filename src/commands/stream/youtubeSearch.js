@@ -2,7 +2,7 @@ const ytsr = require('ytsr');
 const {playLinkToVC} = require('./stream');
 const {MessageEmbed} = require('discord.js');
 const {adjustQueueForPlayNow, createQueueItem} = require('../../utils/utils');
-const {dispatcherMap, StreamType, botID} = require('../../utils/process/constants');
+const {StreamType, botID} = require('../../utils/process/constants');
 const {updateActiveEmbed} = require('../../utils/embed');
 const {reactions} = require('../../utils/reactions');
 /**
@@ -40,7 +40,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
   ytLink = searchResult[indexToLookup].url;
   if (!ytLink) return message.channel.send('could not find video');
   if (playNow) {
-    adjustQueueForPlayNow(dispatcherMap[message.member.voice?.channel.id], server);
+    adjustQueueForPlayNow(server.audio.resource, server);
     server.queue.unshift(createQueueItem(ytLink, StreamType.YOUTUBE, searchResult[indexToLookup]));
     try {
       await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);

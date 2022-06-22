@@ -1,4 +1,5 @@
 const {startupDevMode} = require('./constants');
+const {AudioImpl} = require('./AudioImpl');
 
 // process related statistics
 class ProcessStats {
@@ -84,6 +85,7 @@ class ProcessStats {
    */
   initializeServer (mgid) {
     this.servers.set(mgid, {
+      guildId: mgid,
       // now playing is the first element
       queue: [],
       // newest items are pushed
@@ -128,6 +130,7 @@ class ProcessStats {
       userSettings: new Map(),
       // the id of the active voice channel
       activeVoiceChannelId: undefined,
+      audio: new AudioImpl(),
       // properties pertaining to the active stream
       streamData: {
         // the StreamType enum

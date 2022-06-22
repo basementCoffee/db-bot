@@ -3,7 +3,7 @@ const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, dispatcherMapStatus, dispatcherMap
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot
 } = require('./process/constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
@@ -169,11 +169,11 @@ function resetSession (server) {
 
 /**
  * Adjusts the queue for play now depending on the stream time.
- * @param dsp The dispatcher to reference.
+ * @param dsp {import('@discordjs/voice').AudioResource} The dispatcher to reference.
  * @param server The server to use.
  */
 function adjustQueueForPlayNow (dsp, server) {
-  if (server.queue[0] && dsp?.streamTime && (dsp.streamTime > 21000)) {
+  if (server.queue[0] && dsp?.playbackDuration && (dsp.playbackDuration > 21000)) {
     server.queueHistory.push(server.queue.shift());
   }
 }
@@ -374,33 +374,29 @@ function catchVCJoinError (error, textChannel) {
 
 /**
  * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param voiceChannel The voice channel that the dispatcher is playing in.
+ * @param server The server metadata.
  * @param force {boolean=} Ignores the status of the dispatcher.
  */
-function pauseComputation (voiceChannel, force = false) {
-  if (!dispatcherMap[voiceChannel.id]) return;
-  if (!dispatcherMapStatus[voiceChannel.id] || force) {
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMapStatus[voiceChannel.id] = true;
-    processStats.removeActiveStream(voiceChannel.guild.id);
+function pauseComputation (server, force = false) {
+  if (!server.audio.player) return;
+  if (server.audio.status || force) {
+    server.audio.player.pause();
+    server.audio.status = false;
+    processStats.removeActiveStream(server.guildId);
   }
 }
 
 /**
  * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param voiceChannel The voice channel that the dispatcher is playing in.
+ * @param server The server metadata.
  * @param force {boolean=} Ignores the status of the dispatcher.
  */
-function playComputation (voiceChannel, force) {
-  if (!dispatcherMap[voiceChannel.id]) return;
-  if (dispatcherMapStatus[voiceChannel.id] || force) {
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMapStatus[voiceChannel.id] = false;
-    processStats.addActiveStream(voiceChannel.guild.id);
+function playComputation (server, force) {
+  if (!server.audio.player) return;
+  if (!server.audio.status || force) {
+    server.audio.player.unpause();
+    server.audio.status = true;
+    processStats.addActiveStream(server.guildId);
   }
 }
 

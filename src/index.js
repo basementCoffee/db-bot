@@ -16,8 +16,7 @@ const {
 const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
 let {
-  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
-  TWITCH_BASE_LINK, StreamType
+  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType
 } = require('./utils/process/constants');
 const {reactions} = require('./utils/reactions');
 const {runRemoveCommand, removePlaylist} = require('./commands/remove');
@@ -104,7 +103,7 @@ async function runPlayNowCommand (message, args, mgid, server, sheetName, seekSe
       return playFromWord(message, args, sheetName, server, mgid, true);
   } else return playFromWord(message, args, sheetName, server, mgid, true);
   // places the currently playing into the queue history if played long enough
-  if (adjustQueue) adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
+  if (adjustQueue) adjustQueueForPlayNow(server.audio.resource, server);
   // the number of added links
   let pNums = 0;
   // counter to iterate over all args - excluding args[0]
@@ -262,11 +261,11 @@ async function runCommandCases (message) {
       if (message.member.voice?.channel) {
         const vc = message.member.voice.channel;
         setTimeout(() => {
-          if (whatspMap[vc.id] === congratsLink && parseInt(dispatcherMap[vc.id].streamTime) > 18000)
+          if (whatspMap[vc.id] === congratsLink) {
             skipLink(message, vc, false, server, true);
+          }
           const item = server.queueHistory.findIndex((val) => val.url === congratsLink);
-          if (item !== -1)
-            server.queueHistory.splice(item, 1);
+          if (item !== -1) server.queueHistory.splice(item, 1);
         }, 20000);
         const embedStatus = server.silence;
         server.silence = true;
@@ -452,9 +451,8 @@ async function runCommandCases (message) {
       break;
     case 'sync':
       // assume that there is something playing
-      if (message.member.voice?.channel) {
-        const syncVCId = message.member.voice.channel.id;
-        if (dispatcherMap[syncVCId] && botInVC(message)) {
+      if (botInVC(message)) {
+        if (server.audio.isVoiceChannelMember(message.member)) {
           const MIN_SYNC_SECONDS = 7;
           const MAX_SYNC_SECONDS = 60;
           let seconds = MIN_SYNC_SECONDS;
@@ -465,7 +463,7 @@ async function runCommandCases (message) {
           }
           const playArgs = [message, message.member, server, true, false, true];
           runPauseCommand(...playArgs);
-          const streamTime = dispatcherMap[syncVCId].streamTime;
+          const streamTime = server.audio.resource.playbackDuration;
           if (!streamTime) return message.channel.send('*could not find a valid stream time*');
           // the seconds shown to the user
           let streamTimeSeconds = (streamTime / 1000) % 60 + 1; // add 1 to get user ahead of actual stream
@@ -481,7 +479,7 @@ async function runCommandCases (message) {
             `\naudio will resume when I say 'now' (~${seconds} seconds)`
           );
           setTimeout(async () => {
-            if (dispatcherMapStatus[syncVCId]) {
+            if (!server.audio.status) {
               const newMsgStr = `timestamp is **${vals.join(' ')}**` + '\n***---now---***';
               if (isClose) await syncMsg.edit(newMsgStr);
               else syncMsg.edit(newMsgStr);
@@ -792,8 +790,8 @@ async function runCommandCases (message) {
     case 'time':
     case 'timestamp':
       if (!message.member.voice?.channel) message.channel.send('must be in a voice channel');
-      else if (dispatcherMap[message.member.voice?.channel.id])
-        message.channel.send('timestamp: ' + formatDuration(dispatcherMap[message.member.voice?.channel.id].streamTime));
+      else if (server.audio.isVoiceChannelMember(message.member))
+        message.channel.send('timestamp: ' + formatDuration(server.audio.playbackDuration));
       else message.channel.send('nothing is playing right now');
       break;
     case 'verbose':
@@ -955,7 +953,7 @@ async function runCommandCases (message) {
       }
       server.silence = false;
       message.channel.send('*song notifications enabled*');
-      if (dispatcherMap[message.member.voice?.channel.id]) {
+      if (server.audio.isVoiceChannelMember(message.member)) {
         sendLinkAsEmbed(message, server.queue[0], message.member.voice?.channel, server, false).then();
       }
       break;
@@ -1148,7 +1146,7 @@ bot.once('ready', () => {
   } else {
     checkStatusOfYtdl();
     processStats.setProcessInactive();
-    bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'}).then();
+    bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'});
     if (!processStats.checkActiveInterval) processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
@@ -1222,6 +1220,7 @@ function devUpdateCommand (message, args = []) {
     return;
   }
   let response = 'updating process...';
+  console.log(response);
   if (bot.voice.adapters.size > 0) {
     if (args[0] === 'force') {
       args.splice(0, 1);
@@ -1520,20 +1519,19 @@ async function updateVoiceState (oldState, newState, server) {
     }
     if (bot.voice.adapters.size < 1) {
       whatspMap.clear();
-      dispatcherMap.clear();
-      dispatcherMapStatus.clear();
+      server.audio.reset();
     }
-  } else if (botInVC(oldState)) {
+  } else if (botInVC(newState)) {
     if (oldState.channel?.members.filter(x => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
-      if (dispatcherMap[oldState.channel.id]) leaveVCInt = 420000;
+      if (server.audio.resource) leaveVCInt = 420000;
       // clear if timeout exists, set new timeout
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
         server.leaveVCTimeout = null;
         if (oldState.channel.members.filter(x => !x.user.bot).size < 1) {
-          oldState.channel.leave();
+          getVoiceConnection(newState.guild.id).disconnect();
         }
       }, leaveVCInt);
     }

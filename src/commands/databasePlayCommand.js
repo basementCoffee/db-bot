@@ -4,7 +4,7 @@ const {playLinkToVC} = require('./stream/stream');
 const {
   botInVC, setSeamless, resetSession, verifyPlaylist, createQueueItem, adjustQueueForPlayNow
 } = require('../utils/utils');
-const {MAX_QUEUE_S, dispatcherMap} = require('../utils/process/constants');
+const {MAX_QUEUE_S} = require('../utils/process/constants');
 const {updateActiveEmbed} = require('../utils/embed');
 const {addPlaylistToQueue} = require('../utils/playlist');
 const {shuffleQueue} = require('./runRandomToQueue');
@@ -172,7 +172,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
         tempUrl = xdb.globalKeys.get(ss.toUpperCase())?.link;
         const playlistType = verifyPlaylist(tempUrl);
         if (playRightNow) { // push to queue and play
-          adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
+          adjustQueueForPlayNow(server.audio.resource, server);
           if (playlistType) {
             await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
           } else {
@@ -201,7 +201,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
     } else { // did find in database
       const playlistType = verifyPlaylist(tempUrl);
       if (playRightNow) { // push to queue and play
-        await adjustQueueForPlayNow(dispatcherMap[voiceChannel.id], server);
+        await adjustQueueForPlayNow(server.audio.resource, server);
         if (playlistType) {
           await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
         } else {
