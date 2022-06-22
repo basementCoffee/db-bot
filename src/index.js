@@ -53,6 +53,7 @@ const {parent_thread} = require('./threads/parent_thread');
 const {joinVoiceChannelSafe} = require('./commands/join');
 const {renamePlaylist, renameKey} = require('./commands/rename');
 const {runKeysCommand} = require('./commands/keys');
+const {getVoiceConnection} = require('@discordjs/voice');
 
 process.setMaxListeners(0);
 
@@ -1461,35 +1462,39 @@ bot.on('messageCreate', (message) => {
   }
 });
 
-bot.on('voiceStateUpdate', update => {
-  const server = processStats.servers.get(update.guild.id);
+bot.on('voiceStateUpdate', (oldState, newState) => {
+  const server = processStats.servers.get(oldState.guild.id);
   if (processStats.isInactive) {
     try {
       server.collector.stop();
     } catch (e) {}
     return;
   }
-  updateVoiceState(update, server).then();
+  updateVoiceState(oldState, newState, server).then();
 });
 
 /**
  * Updates the bots voice state depending on the update occurring.
- * @param update The voice-state update metadata.
+ * @param oldState The old voice-state update metadata.
+ * @param newState The new voice-state update metadata.
  * @param server The server metadata.
  */
-async function updateVoiceState (update, server) {
+async function updateVoiceState (oldState, newState, server) {
   if (!server) return;
   // if bot
-  if (update.member.id === botID) {
+  if (oldState.member.id === botID) {
     // if the bot joined then ignore
-    if (update.connection) return;
+    if (newState.channel?.members.get(botID)) return;
     // clear timers first
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = null;
     }
     clearDJTimer(server);
-    processStats.removeActiveStream(update.guild.id);
+    // disconnect and delete the voice adapter
+    getVoiceConnection(newState.guild.id)?.disconnect();
+    bot.voice.adapters.get(oldState.guild.id)?.destroy();
+    processStats.removeActiveStream(oldState.guild.id);
     await sessionEndEmbed(server, server.queue[0] || server.queueHistory.slice(-1)[0]);
     // end the stream (if applicable)
     if (server.streamData.stream) endStream(server);
@@ -1518,21 +1523,21 @@ async function updateVoiceState (update, server) {
       dispatcherMap.clear();
       dispatcherMapStatus.clear();
     }
-  } else if (botInVC(update)) {
-    if (update.channel?.members.filter(x => !x.user.bot).size < 1) {
+  } else if (botInVC(oldState)) {
+    if (oldState.channel?.members.filter(x => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
-      if (dispatcherMap[update.channel.id]) leaveVCInt = 420000;
+      if (dispatcherMap[oldState.channel.id]) leaveVCInt = 420000;
       // clear if timeout exists, set new timeout
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
         server.leaveVCTimeout = null;
-        if (update.channel.members.filter(x => !x.user.bot).size < 1) {
-          update.channel.leave();
+        if (oldState.channel.members.filter(x => !x.user.bot).size < 1) {
+          oldState.channel.leave();
         }
       }, leaveVCInt);
     }
-  } else if (server.seamless.function && !update.member.user.bot) {
+  } else if (server.seamless.function && !oldState.member.user.bot) {
     if (server.seamless.timeout) {
       clearTimeout(server.seamless.timeout);
       server.seamless.timeout = null;
