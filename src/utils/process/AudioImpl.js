@@ -30,7 +30,7 @@ class AudioImpl {
    * Joins a voice channel.
    * @param guild
    * @param voiceChannelId
-   * @return {import('discord.js').VoiceChannel}
+   * @return {import('discord.js').VoiceConnection}
    */
   joinVoiceChannel (guild, voiceChannelId) {
     this.voiceChannelId = voiceChannelId;
