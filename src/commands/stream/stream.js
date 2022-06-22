@@ -28,8 +28,9 @@ const {runKeysCommand} = require('../keys');
 const {
   createAudioResource,
   createAudioPlayer,
-  StreamType: VoiceStreamType
+  StreamType: VoiceStreamType, getVoiceConnection
 } = require('@discordjs/voice');
+const CH = require('../../../channel.json');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -311,7 +312,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       else {
         server.skipTimes++;
         if (server.skipTimes < 4) {
-          if (server.skipTimes === 2) checkStatusOfYtdl(message);
+          if (server.skipTimes === 2) checkStatusOfYtdl(server, message);
           message.channel.send(
             '***error code 404:*** *this video may contain a restriction preventing it from being played.*'
             + (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
@@ -350,7 +351,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       connection.disconnect();
       processStats.removeActiveStream(message.guild.id);
       message.channel.send('***db bot is facing some issues, may restart***');
-      checkStatusOfYtdl(message);
+      checkStatusOfYtdl(server, message);
       return;
     } else {
       server.skipTimes++;
@@ -387,44 +388,44 @@ function searchForBrokenLinkWithinDB (message, server, whatToPlayS) {
 
 /**
  * Checks the status of ytdl-core-discord and exits the active process if the test link is unplayable.
- * @param message The message metadata to send a response to the appropriate channel
  * @param server The server metadata.
+ * @param message The message metadata to send a response to the appropriate channel
  */
-async function checkStatusOfYtdl (message, server) {
+async function checkStatusOfYtdl (server, message) {
   // noinspection JSUnresolvedFunction
-    const connection = server.audio.joinVoiceChannel(message.guild, '839643770986561607');
-    const stream = await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
-      filter: () => ['251'],
-      highWaterMark: 1 << 25
-    });
+  const connection = await server.audio.joinVoiceChannel((await bot.guilds.fetch(CH['check-in-guild'])), CH['check-in-voice']);
+
+  const stream = await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
+    filter: () => ['251'],
+    highWaterMark: 1 << 25
+  });
   let player = createAudioPlayer();
-  let resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus, metadata: {
-      type: 'opus',
-      volume: false,
-      highWaterMark: 1 << 25
-    }});
-      await new Promise(res => setTimeout(res, 500));
-      try {
-        // noinspection JSCheckFunctionSignatures
-        player.play(resource);
-      } catch (e) {
-        console.log(e);
-        // noinspection JSUnresolvedFunction
-        if (message) {
-          const diagnosisStr = '*self-diagnosis complete: db bot will be restarting*';
-          if (message.deletable) message.edit(diagnosisStr);
-          else message.channel.send(diagnosisStr);
-        }
-        logError('ytdl status is unhealthy, shutting off bot');
-        connection.disconnect();
-        if (processStats.isInactive) setTimeout(() => process.exit(0), 2000);
-        else shutdown('YTDL-POOR')();
-        return;
-      }
-      setTimeout(() => {
-        connection.disconnect();
-        if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
-      }, 6000);
+  let resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus});
+
+  await new Promise(res => setTimeout(res, 500));
+  try {
+    connection.subscribe(player);
+    player.play(resource);
+  } catch (e) {
+    console.log(e);
+    if (message) {
+      const diagnosisStr = '*self-diagnosis complete: db bot will be restarting*';
+      if (message.deletable) message.edit(diagnosisStr);
+      else message.channel.send(diagnosisStr);
+    }
+    logError('ytdl status is unhealthy, shutting off bot');
+    connection.disconnect();
+    if (processStats.isInactive) setTimeout(() => process.exit(0), 2000);
+    else shutdown('YTDL-POOR')();
+    return;
+  }
+  setTimeout(() => {
+    connection.disconnect();
+    getVoiceConnection(server.guildId)?.disconnect();
+    bot.voice.adapters.get(server.guildId)?.destroy();
+    console.log(bot.voice.adapters.size);
+    if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
+  }, 6000);
 }
 
 /**

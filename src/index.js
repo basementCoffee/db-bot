@@ -1144,7 +1144,8 @@ bot.once('ready', () => {
     console.log('-devmode enabled-');
     processStats.setProcessActive();
   } else {
-    checkStatusOfYtdl();
+    processStats.initializeServer(CH['check-in-guild'])
+    checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
     processStats.setProcessInactive();
     bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'});
     if (!processStats.checkActiveInterval) processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
@@ -1569,10 +1570,7 @@ process
  */
 function uncaughtExceptionAction (e) {
   console.log('uncaughtException: ', e);
-  console.log('message: ', e.message);
-  if (!processStats.devMode && e.toString().includes('Cannot read properties of undefined')) {
-    exec('git stash && git pull && npm upgrade && pm2 restart index');
-  }
+  console.log('error message: ', e.message);
 }
 
 // The main method
