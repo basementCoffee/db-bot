@@ -14,8 +14,8 @@ const {runInsertCommand} = require('./insert');
  * @returns {Promise<void>|*}
  */
 function runQueueCommand (server, message, mgid, noErrorMsg) {
-  if (server.queue < 1 || !message.guild.voice?.channel) {
-    if (noErrorMsg && !botInVC(message)) return;
+  if (server.queue < 1 || !botInVC(message) || !server.audio.isVoiceChannelMember(message.member)) {
+    if (noErrorMsg) return;
     return message.channel.send('There is no active queue right now');
   }
   // a copy of the queue
@@ -55,7 +55,7 @@ function runQueueCommand (server, message, mgid, noErrorMsg) {
     }
     if (tempMsg?.deletable) tempMsg.delete();
     if (sentMsg?.deletable) {
-      await sentMsg.edit(queueMsgEmbed);
+      await sentMsg.edit({embeds: [queueMsgEmbed]});
     } else {
       sentMsg = await message.channel.send({embeds: [queueMsgEmbed]});
       sentMsgArray.push(sentMsg);
