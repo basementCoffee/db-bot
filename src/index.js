@@ -1231,7 +1231,7 @@ function devUpdateCommand (message, args = []) {
     }
   }
   if (!args[0]) {
-    exec('git stash && git pull && npm upgrade && pm2 restart index');
+    exec('git stash && git pull && npm upgrade && pm2 restart vibe');
     processStats.setProcessInactive();
   } else if (args[0] === 'all') {
     exec('git stash && git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
