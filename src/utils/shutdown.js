@@ -1,6 +1,7 @@
 const {bot} = require('./process/constants');
 const CH = require('../../channel.json');
 const processStats = require('./process/ProcessStats');
+const {getVoiceConnection} = require('@discordjs/voice');
 
 function shutdown (type) {
   return () => {
@@ -23,6 +24,8 @@ function shutdown (type) {
           let server = processStats.servers.get(guildId);
           bot.guilds.fetch(guildId).then((guild) => {
             let currentEmbed = server.currentEmbed;
+            getVoiceConnection(guildId)?.disconnect();
+            x.destroy();
             try {
               if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');
               else if (server.queue[0]) guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
@@ -33,7 +36,6 @@ function shutdown (type) {
           });
 
           if (server.collector) server.collector.stop();
-          x.destroy();
         });
       }
       setTimeout(() => process.exit(), 4500);
