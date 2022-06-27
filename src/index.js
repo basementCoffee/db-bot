@@ -1231,10 +1231,10 @@ function devUpdateCommand (message, args = []) {
     }
   }
   if (!args[0]) {
-    exec('git stash && git pull && npm upgrade && pm2 restart vibe');
+    exec('git stash && git pull && npm upgrade && npm ci && pm2 restart vibe');
     processStats.setProcessInactive();
   } else if (args[0] === 'all') {
-    exec('git stash && git pull && npm upgrade && pm2 restart 0 && pm2 restart 1');
+    exec('git stash && git pull && npm upgrade && npm ci && pm2 restart 0 && pm2 restart 1');
     processStats.setProcessInactive();
   } else if (args[0] === 'custom' && args[1]) {
     exec(args.slice(1).join(' '));
