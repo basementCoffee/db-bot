@@ -371,7 +371,7 @@ async function getMessageResponse (server, channel, user, sentMsg) {
   try {
     server.activeUserQuestion.get(user.id)?.delete();
     server.activeUserQuestion.set(user.id, sentMsg);
-    const messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+    const messages = await sentMsg.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']});
     res = messages.first().content.trim();
   } catch (e) {
     server.activeUserQuestion.get(user.id)?.delete();

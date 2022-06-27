@@ -56,7 +56,7 @@ function sendMessageToUser (message, userID, reactionUserID) {
     const filter = m => {
       return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== botID);
     };
-    message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+    message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
       .then(messages => {
         if (messages.first().content && messages.first().content.trim() !== 'q') {
           user.send(messages.first().content).then(() => {

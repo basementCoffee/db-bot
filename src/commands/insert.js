@@ -33,7 +33,7 @@ async function runInsertCommand (message, mgid, args, server, sheetName) {
       const filter = m => {
         return (message.author.id === m.author.id);
       };
-      let messages = await sentMsg.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']});
+      let messages = await sentMsg.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']});
       num = messages.first().content.trim();
       if (num.toLowerCase() === 'q') {
         message.channel.send('*cancelled*');

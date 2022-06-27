@@ -141,7 +141,7 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
         const filter = m => {
           return (m.author.id !== botID && reactionCollector.id === m.author.id);
         };
-        message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+        message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
           .then(messages => {
             if (!reactionCollector2) return;
             let playNum = parseInt(messages.first().content && messages.first().content.trim());

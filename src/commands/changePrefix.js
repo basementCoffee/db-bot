@@ -10,7 +10,7 @@ const {addToDatabase} = require('./database/add');
  * @param newPrefix The new prefix.
  * @returns {*}
  */
-function changePrefix(message, server, prefixString, newPrefix){
+function changePrefix (message, server, prefixString, newPrefix) {
   if (!message.member.hasPermission('KICK_MEMBERS')) {
     return message.channel.send('Permissions Error: Only members who can kick other members can change the prefix.');
   }
@@ -32,7 +32,7 @@ function changePrefix(message, server, prefixString, newPrefix){
       await runDeleteCommand(message, newPrefix, 'prefixes', false);
       await addToDatabase(server, [null, message.guild.id, newPrefix], message, 'prefixes', false);
       await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
-        await gsUpdateOverwrite([xdb.congratsDatabase.size + 3],  'prefixes', xdb.dsInt);
+        await gsUpdateOverwrite([xdb.congratsDatabase.size + 3], 'prefixes', xdb.dsInt);
         server.prefix = newPrefix;
         message.channel.send(`Prefix successfully changed to ${newPrefix}`);
         prefixString = ('\\' + newPrefix).substr(-1, 1);
@@ -58,7 +58,7 @@ function changePrefix(message, server, prefixString, newPrefix){
             (message.guild.me.nickname || 'db bot') + '**  -->  **[' + prefixString + '] ' + name + '**').then(() => {
             const filter = m => message.author.id === m.author.id;
 
-            message.channel.awaitMessages(filter, {time: 30000, max: 1, errors: ['time']})
+            message.channel.awaitMessages({filter, time: 30000, max: 1, errors: ['time']})
               .then(async messages => {
                 // message.channel.send(`You've entered: ${messages.first().content}`);
                 if (messages.first().content.toLowerCase() === 'yes' || messages.first().content.toLowerCase() === 'y') {
@@ -80,4 +80,4 @@ function changePrefix(message, server, prefixString, newPrefix){
   });
 }
 
-module.exports = {changePrefix}
+module.exports = {changePrefix};

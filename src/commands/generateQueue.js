@@ -122,7 +122,7 @@ function runQueueCommand (server, message, mgid, noErrorMsg) {
           const filter = m => {
             return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
-          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+          message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
             .then(async (messages) => {
               link = messages.first().content.split(' ')[0].trim();
               if (link.toLowerCase() === 'q') {
@@ -163,7 +163,7 @@ function runQueueCommand (server, message, mgid, noErrorMsg) {
           const filter = m => {
             return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
-          message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
+          message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
             .then(async messages => {
               let num = messages.first().content.trim();
               if (num.toLowerCase() === 'q') {
