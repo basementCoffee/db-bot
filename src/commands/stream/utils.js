@@ -145,7 +145,7 @@ function stopPlayingUtil (mgid, voiceChannel, stayInVC, server, message, actionU
     if (server.currentEmbed) {
       createEmbed(lastPlayed.url, lastPlayed.infos).then(e => {
         e.embed.addField('Queue', 'empty', true);
-        server.currentEmbed.edit(e.embed);
+        server.currentEmbed.edit({embeds: [e.embed]});
         server.collector?.stop();
       });
     }

@@ -36,11 +36,11 @@ function runDictatorCommand (message, mgid, prefixString, server) {
     message.channel.send('***' + (message.member.nickname ?
       message.member.nickname : message.member.user.username) + ', you are the dictator.***');
   }
-  const dicEmbed = new MessageEmbed();
-  dicEmbed.setTitle('Dictator Commands')
+  const dictatorEmbed = new MessageEmbed();
+  dictatorEmbed.setTitle('Dictator Commands')
     .setDescription('\`resign\` - forfeit being dictator')
     .setFooter('The dictator has control over all music commands for the session. Enjoy!');
-  message.channel.send(dicEmbed);
+  message.channel.send({embeds: [dictatorEmbed]});
 }
 
 /**
@@ -140,7 +140,7 @@ function runDJCommand (message, server) {
     '\`resign\` - forfeit DJ permissions')
     .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
       'The DJ can override voting by using the force commands above.');
-  message.channel.send(msgEmbed);
+  message.channel.send({embeds: [msgEmbed]});
 }
 
 

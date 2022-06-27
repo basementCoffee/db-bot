@@ -132,8 +132,8 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
         const playlistEmebed = new MessageEmbed()
           .setTitle(`Pick a different video`)
           .setColor('#ffffff')
-          .setDescription(`${finalString}\n***What would you like me to play? (1-${res.length})*** *[or type 'q' to quit]*`);
-        playlistMsg = await message.channel.send(playlistEmebed);
+          .setDescription(`${finalString}\n***What would you like me to play? (1-${res.length})*** [or type 'q' to quit]`);
+        playlistMsg = await message.channel.send({embeds: [playlistEmebed]});
       }
       if (notActive) {
         notActive = false;

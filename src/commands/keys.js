@@ -68,7 +68,7 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
  */
 async function runKeysCommand (message, server, sheetName, user, specificPage, overrideName) {
   if (!user) user = message.member.user;
-  const keysMsg = (botInVC(message) ? {edit: (content, embed) => message.channel.send(content || embed)} :
+  const keysMsg = (botInVC(message) ? {edit: (editOptions) => message.channel.send(editOptions)} :
     await message.channel.send('*getting keys...*'));
   let xdb = await getXdb2(server, sheetName, botInVC(message));
   const prefixString = server.prefix;
@@ -154,7 +154,7 @@ async function runKeysCommand (message, server, sheetName, user, specificPage, o
               `play a key ->  ${prefixString}d [key]\n` +
               `play a playlist -> ${prefixString}pd [playlist]`
             );
-          message.channel.send(embed);
+          message.channel.send({embeds: [embed]});
         } else {
           if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isCoreAdmin(user.id))) {
             if (reaction.emoji.name === reactions.ARROW_R) {
