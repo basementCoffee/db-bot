@@ -423,7 +423,6 @@ async function checkStatusOfYtdl (server, message) {
     connection.disconnect();
     getVoiceConnection(server.guildId)?.disconnect();
     bot.voice.adapters.get(server.guildId)?.destroy();
-    console.log(bot.voice.adapters.size);
     if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
   }, 6000);
 }
