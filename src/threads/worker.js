@@ -1,4 +1,4 @@
-const token = process.env.TOKEN.replace(/\\n/gm, '\n');
+const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
 const {bot, botID} = require('../utils/process/constants');
 const {runLyricsCommand} = require('../commands/lyrics');
 const {removeDBMessage, logError} = require('../utils/utils');
@@ -43,6 +43,6 @@ async function login () {
 
 process.on('uncaughtException', error => {
   logError(`(worker process error) ${error.name}: ${error.message}`);
-  console.log(error)
+  console.log(error);
 });
 

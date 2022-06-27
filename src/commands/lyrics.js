@@ -1,5 +1,4 @@
 const ytdl = require('ytdl-core-discord');
-const {botInVC_Guild} = require('../utils/utils');
 const {getData} = require('spotify-url-info');
 const {botID, StreamType} = require('../utils/process/constants');
 // imports for YouTube captions
@@ -21,7 +20,7 @@ const GeniusClient = new Genius.Client();
  * @returns {*}
  */
 function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMemberId) {
-  if ((!botInVC_Guild(channel.guild) || !queueItem) && !args[1]) {
+  if (!queueItem) {
     return channel.send('must be playing a song');
   }
   channel.send('retrieving lyrics...').then(async sentMsg => {
