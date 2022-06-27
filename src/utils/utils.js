@@ -1,4 +1,5 @@
-const {getData} = require('spotify-url-info');
+const fetch = require('isomorphic-unfetch');
+const {getData} = require('spotify-url-info')(fetch);
 const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');

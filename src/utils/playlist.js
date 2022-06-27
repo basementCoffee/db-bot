@@ -3,7 +3,8 @@ const {createQueueItem, getLinkType, linkFormatter, verifyPlaylist} = require('.
 const {
   StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK
 } = require('./process/constants');
-const {getData, getTracks} = require('spotify-url-info');
+const fetch = require('isomorphic-unfetch');
+const {getData, getTracks} = require('spotify-url-info')(fetch);
 const ytpl = require('ytpl');
 
 /**

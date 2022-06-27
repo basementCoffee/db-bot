@@ -1,5 +1,6 @@
 const ytdl = require('ytdl-core-discord');
-const {getData} = require('spotify-url-info');
+const fetch = require('isomorphic-unfetch');
+const {getData} = require('spotify-url-info')(fetch);
 const {botID, StreamType} = require('../utils/process/constants');
 // imports for YouTube captions
 const https = require('https');
