@@ -1144,7 +1144,7 @@ bot.once('ready', () => {
     console.log('-devmode enabled-');
     processStats.setProcessActive();
   } else {
-    processStats.initializeServer(CH['check-in-guild'])
+    processStats.initializeServer(CH['check-in-guild']);
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
     processStats.setProcessInactive();
     bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'});

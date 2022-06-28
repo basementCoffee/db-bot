@@ -38,3 +38,4 @@ async function joinVoiceChannelSafe (message, server) {
 }
 
 module.exports = {joinVoiceChannelSafe};
+

@@ -98,4 +98,4 @@ async function playRecommendation (message, server, args) {
   }
 }
 
-module.exports = {playRecommendation}
+module.exports = {playRecommendation};

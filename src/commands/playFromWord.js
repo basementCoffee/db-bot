@@ -19,4 +19,4 @@ function playFromWord (message, args, sheetName, server, mgid, playNow) {
   }
 }
 
-module.exports = {playFromWord}
+module.exports = {playFromWord};

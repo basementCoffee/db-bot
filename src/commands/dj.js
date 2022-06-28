@@ -143,8 +143,6 @@ function runDJCommand (message, server) {
   message.channel.send({embeds: [msgEmbed]});
 }
 
-
-
 /**
  * Resigns the active DJ. Uses message.member.
  * @param message The message metadata.

@@ -198,4 +198,4 @@ function runQueueCommand (server, message, mgid, noErrorMsg) {
   return generateQueue(0, false, false, []);
 }
 
-module.exports = {runQueueCommand}
+module.exports = {runQueueCommand};

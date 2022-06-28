@@ -91,4 +91,3 @@ async function getServerPrefix (server, mgid) {
 }
 
 module.exports = {getXdb, sendListSize, getServerPrefix, getXdb2: getXdb_P, getSettings, setSettings};
-

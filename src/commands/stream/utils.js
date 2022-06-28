@@ -153,4 +153,4 @@ function stopPlayingUtil (mgid, voiceChannel, stayInVC, server, message, actionU
   }
 }
 
-module.exports = {voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil}
+module.exports = {voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil};

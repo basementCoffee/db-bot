@@ -5,6 +5,7 @@ const {adjustQueueForPlayNow, createQueueItem} = require('../../utils/utils');
 const {StreamType, botID} = require('../../utils/process/constants');
 const {updateActiveEmbed} = require('../../utils/embed');
 const {reactions} = require('../../utils/reactions');
+
 /**
  * Function for searching for message contents on YouTube for playback.
  * Does not check for force disconnect.
@@ -179,4 +180,4 @@ async function runYoutubeSearch (message, playNow, server, searchTerm, indexToLo
   }
 }
 
-module.exports = {runYoutubeSearch}
+module.exports = {runYoutubeSearch};

@@ -93,7 +93,7 @@ async function createEmbed (url, infos) {
  * @returns {Promise<void>}
  */
 async function updateActiveEmbed (server) {
-  const queueItem = server.queue[0] || server.queueHistory[server.queueHistory.length-1];
+  const queueItem = server.queue[0] || server.queueHistory[server.queueHistory.length - 1];
   try {
     if (!server.currentEmbed || !queueItem) return;
     let embed = await createEmbed(queueItem.url, queueItem.infos);
@@ -112,7 +112,7 @@ async function updateActiveEmbed (server) {
  * @param item The QueueItem to display.
  * @return {Promise<void>}
  */
-async function sessionEndEmbed(server, item){
+async function sessionEndEmbed (server, item) {
   try {
     if (!server.currentEmbed || !item) return;
     let embed = await createEmbed(item.url, item.infos);
@@ -149,6 +149,4 @@ async function sendRecommendation (message, content, url, uManager) {
   }
 }
 
-
-
-module.exports = {updateActiveEmbed, sendRecommendation, createEmbed, sessionEndEmbed}
+module.exports = {updateActiveEmbed, sendRecommendation, createEmbed, sessionEndEmbed};

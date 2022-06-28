@@ -122,5 +122,4 @@ async function moveKeysCommand (server, channel, sheetName, xdb, listOfKeys, pla
   }
 }
 
-
 module.exports = {runMoveItemCommand, moveKeysWrapper};

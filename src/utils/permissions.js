@@ -37,4 +37,4 @@ function hasDJPermissions (message, memberID, printErrMsg, voteAdminList) {
   return false;
 }
 
-module.exports = {isAdmin, isCoreAdmin, hasDJPermissions}
+module.exports = {isAdmin, isCoreAdmin, hasDJPermissions};

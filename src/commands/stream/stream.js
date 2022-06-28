@@ -6,7 +6,7 @@ const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
   LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID
 } = require('../../utils/process/constants');
-const fetch = require('isomorphic-unfetch')
+const fetch = require('isomorphic-unfetch');
 const {getData} = require('spotify-url-info')(fetch);
 const m3u8stream = require('m3u8stream');
 const ytdl_core = require('ytdl-core');

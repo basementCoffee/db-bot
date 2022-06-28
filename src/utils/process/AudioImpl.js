@@ -46,7 +46,7 @@ class AudioImpl {
    * Determine if the voice channel is active.
    * @param voiceChannelId
    */
-  isActiveVoiceChannel(voiceChannelId){
+  isActiveVoiceChannel (voiceChannelId) {
     return this.voiceChannelId && this.voiceChannelId === voiceChannelId;
   }
 
@@ -55,7 +55,7 @@ class AudioImpl {
    * @param member {import('discord.js').GuildMember} The member object
    * @return {boolean} If the member is in the active voice channel
    */
-  isVoiceChannelMember(member){
+  isVoiceChannelMember (member) {
     return member.voice.channel && member.voice.channel.id === this.voiceChannelId;
   }
 

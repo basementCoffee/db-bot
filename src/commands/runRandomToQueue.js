@@ -79,4 +79,4 @@ function shuffleQueue (queue, message) {
   if (message) message.channel.send('*your queue has been shuffled*');
 }
 
-module.exports = {runRandomToQueue, shuffleQueue}
+module.exports = {runRandomToQueue, shuffleQueue};

@@ -25,4 +25,4 @@ async function runRestartCommand (message, mgid, keyword, server) {
   }
 }
 
-module.exports = {runRestartCommand}
+module.exports = {runRestartCommand};

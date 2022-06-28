@@ -14,4 +14,4 @@ function runPauseCommand (message, actionUser, server, noErrorMsg, force, noPrin
   return pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg);
 }
 
-module.exports = {runPauseCommand}
+module.exports = {runPauseCommand};
