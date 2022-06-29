@@ -49,8 +49,8 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
   let whatToPlay = queueItem?.url;
   if (!whatToPlay) {
     queueItem = server.queue[0];
-    whatToPlay = queueItem.url;
     if (!queueItem || !queueItem.url) return;
+    whatToPlay = queueItem.url;
   }
   if (!vc) {
     vc = message.member.voice?.channel;
