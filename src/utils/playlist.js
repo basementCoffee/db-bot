@@ -1,4 +1,5 @@
-let scpl = require("scdl-core").SoundCloud.create().then(x => scpl = x);
+const { SoundCloud: scdl } = require("scdl-core");
+scdl.connect();
 const {createQueueItem, getLinkType, linkFormatter, verifyPlaylist} = require('./utils');
 const {
   StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK
@@ -90,7 +91,7 @@ async function getPlaylistArray (playlistUrl, type) {
       if (items[0].index === -1) items.splice(100);
       return items;
     case StreamType.SOUNDCLOUD:
-      return (await scpl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
+      return (await scdl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
     default:
       console.log(`Error: invalid linkType argument within addPlaylistToQueue`);
       throw `Error: Incorrect type provided, provided ${type}`;
