@@ -1,6 +1,6 @@
 const {version} = require('../../package.json');
 const {reactions} = require('./reactions');
-const {bot, botID} = require('./process/constants');
+const {bot, botID, INVITE_MSG} = require('./process/constants');
 const {getHelpList} = require('./help');
 
 /**
@@ -16,7 +16,7 @@ function dmHandler (message, messageContent) {
     if (mc.length < 7 && mc.includes('help '))
       return message.author.send(getHelpList('.', 1, version)[0], version);
     else if (mc.includes('invite '))
-      return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
+      return message.channel.send(INVITE_MSG);
   }
   const mb = reactions.OUTBOX;
   // noinspection JSUnresolvedFunction
