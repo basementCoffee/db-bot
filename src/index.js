@@ -16,7 +16,7 @@ const {
 const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
 let {
-  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType
+  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG
 } = require('./utils/process/constants');
 const {reactions} = require('./utils/reactions');
 const {runRemoveCommand, removePlaylist} = require('./commands/remove');
@@ -930,7 +930,7 @@ async function runCommandCases (message) {
       break;
     case 'inv':
     case 'invite':
-      message.channel.send("Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot>");
+      message.channel.send(INVITE_MSG);
       break;
     case 'hide':
     case 'silence':
@@ -1060,24 +1060,32 @@ async function runCommandCases (message) {
         break;
       } else if (args[1] === 'update') {
         if (process.pid === 4 || (args[2] && args[2] === 'force')) {
-          // noinspection JSUnresolvedFunction
-          bot.voice.adapters.map(x => bot.channels.cache.get(x.channel.guild.systemChannelID).send('db bot is about to be updated. This may lead to a temporary interruption.'));
-          message.channel.send('Update message sent to ' + bot.voice.adapters.size + ' channels.');
+          const updateMsg = 'db bot is about to be updated. This may lead to a temporary interruption.';
+          bot.voice.adapters.forEach((x, g) => {
+            try {
+              const guildToUpdate = bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).guild;
+              const currentEmbedChannelId = processStats.servers.get(guildToUpdate.id).currentEmbedChannelId;
+              if (currentEmbedChannelId && bot.channels.cache.get(currentEmbedChannelId)) {
+                bot.channels.cache.get(currentEmbedChannelId).send(updateMsg);
+              } else {
+                bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).guild.systemChannel.send(updateMsg);
+              }
+            } catch (e) {}
+          });
+          message.channel.send('*update message sent to ' + bot.voice.adapters.size + ' channels*');
         } else {
           message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
             'To still send out an update use \'gzm update force\'');
         }
       } else if (args[1] === 'listu') {
         let gx = '';
-        let tgx;
-        const tempSet = new Set();
-        bot.voice.adapters.forEach(x => {
-          tgx = '';
-          tempSet.clear();
-          x.channel.guild.voice.channel.members.map(y => tempSet.add(y.user.username));
-          tempSet.forEach(z => tgx += z + ', ');
-          tgx = tgx.substring(0, tgx.length - 2);
-          gx += x.channel.guild.name + ': *' + tgx + '*\n';
+        bot.voice.adapters.forEach((x, g) => {
+          try {
+            const gmArray = Array.from(bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).members);
+            gx += `${gmArray[0][1].guild.name}: *`;
+            gmArray.map(item => item[1].user.username).forEach(x => gx += `${x}, `);
+            gx = `${gx.substring(0, gx.length - 2)}*\n`;
+          } catch (e) {}
         });
         if (gx) message.channel.send(gx);
         else message.channel.send('none found');
