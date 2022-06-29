@@ -14,7 +14,7 @@ async function joinVoiceChannelSafe (message, server) {
   let vc = message.member?.voice?.channel;
   if (vc && (!botInVC(message) || !connection || (server.audio.voiceChannelId !== vc.id))) {
     if (connection) {
-      pauseComputation(connection.channel);
+      pauseComputation(server, connection.channel);
       server.audio.reset();
     }
     if (server.leaveVCTimeout) {

@@ -13,7 +13,7 @@ const ytdl_core = require('ytdl-core');
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const twitch = require('twitch-m3u8');
-const { SoundCloud: scdl } = require("scdl-core");
+const {SoundCloud: scdl} = require("scdl-core");
 scdl.connect();
 const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
 const processStats = require('../../utils/process/ProcessStats');
@@ -163,8 +163,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
   try {
     let playbackTimeout;
     let stream;
-    let encoderType;
-    let streamHWM;
+    let audioResourceOptions;
     // noinspection JSCheckFunctionSignatures
     if (queueItem.type === StreamType.SOUNDCLOUD) {
       commandsMap.set('SOUNDCLOUD', (commandsMap.get('SOUNDCLOUD') || 0) + 1);
@@ -172,7 +171,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       // add formatted link to whatspMap
       whatspMap[vc.id] = whatToPlay;
       stream = await scdl.download(whatToPlay, {highWaterMark: 1 << 25});
-      streamHWM = 1 << 25;
       server.streamData.type = StreamType.SOUNDCLOUD;
     } else if (queueItem.type === StreamType.TWITCH) {
       let twitchEncoded;
@@ -218,22 +216,21 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         filter: (retries % 2 === 0 ? () => ['251'] : ''),
         highWaterMark: 1 << 25
       });
-      streamHWM = 1 << 25;
-      encoderType = 'opus';
+      audioResourceOptions = {inputType: VoiceStreamType.Opus};
       queueItem.urlAlt = urlAlt;
     }
     server.streamData.stream = stream;
 
     let player = createAudioPlayer();
-    let resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus});
+    let resource = createAudioResource(stream, audioResourceOptions);
     connection.subscribe(player);
     player.play(resource);
     server.audio.resource = resource;
     server.audio.player = player;
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
-      pauseComputation(vc, true);
+      pauseComputation(server, true);
       await new Promise(res => setTimeout(() => {
-        if (whatToPlay === whatspMap[vc.id]) playComputation(vc, true);
+        if (whatToPlay === whatspMap[vc.id]) playComputation(server, true);
         res();
       }, 3000));
     } else server.audio.status = true;
