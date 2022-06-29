@@ -53,6 +53,7 @@ const {joinVoiceChannelSafe} = require('./commands/join');
 const {renamePlaylist, renameKey} = require('./commands/rename');
 const {runKeysCommand} = require('./commands/keys');
 const {getVoiceConnection} = require('@discordjs/voice');
+const {getJoke} = require('./commands/joke');
 
 process.setMaxListeners(0);
 
@@ -275,6 +276,11 @@ async function runCommandCases (message) {
         if (item !== -1) server.queueHistory.splice(item, 1);
         return;
       }
+      break;
+    // tell the user a joke
+    case 'joke':
+      const joke = await getJoke();
+      message.channel.send(joke);
       break;
     // the normal play command
     case 'play':
@@ -1456,6 +1462,8 @@ async function devProcessCommands (message) {
       break;
   }
 }
+
+
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
