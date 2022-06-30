@@ -11,8 +11,8 @@ const {removePlaylist} = require('./remove');
 
 // returns an array of tips
 const TIPS = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-specific',
-  `add an icon using ${prefixS}splash [url]`, `${prefixS}ps [playlist] shuffle plays a playlist`,
-  `${prefixS}s [num] plays random keys`, `${prefixS}pd [playlist] plays a playlist`];
+  `add an icon using ${prefixS}splash [url]`, `${prefixS}ps [playlist] -> is the playlist shuffle command`,
+  `${prefixS}random [num] -> plays random keys`, `${prefixS}pd [playlist] -> plays a playlist`];
 
 /**
  * Generates the full keys-list embed pages.
@@ -20,11 +20,12 @@ const TIPS = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-sp
  * @param keyEmbedColor
  * @param prefixString
  * @param xdb
- * @param server
+ * @param server 
  * @param sheetName
+ * @param iconUrl Optional - An icon to display alongside the key embed.
  * @return {Promise<*[]>}
  */
-async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, server, sheetName) {
+async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, server, sheetName, iconUrl) {
   let playlistString = '';
   let counter = 1;
   const embedPages = [];
@@ -33,7 +34,7 @@ async function createKeyEmbedPages (title, keyEmbedColor, prefixString, xdb, ser
   const embedKeysMessage = new MessageEmbed();
   await embedKeysMessage.setTitle(`----- ${title} playlists -----`).setDescription(playlistString)
     .setColor(keyEmbedColor)
-    .setFooter({text: `${TIPS(prefixString)[Math.floor(Math.random() * TIPS().length)]}`})
+    .setFooter({text: `${TIPS(prefixString)[Math.floor(Math.random() * TIPS().length)]}`, iconURL: iconUrl})
     .setThumbnail(settings.splash);
   embedPages.push(embedKeysMessage);
   let keysString;
