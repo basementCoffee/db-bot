@@ -13,7 +13,8 @@ function getJoke() {
           // parse html 
           const $ = cheerio.load(body);
           let val = $('p').text();
-          val = val.substring(0, val.indexOf('\n'));
+          console.log(val);
+          val = val.substring(0, val.indexOf('icanhazdadjoke.com'));
           resolve(val);
   
         }
