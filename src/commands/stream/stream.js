@@ -36,7 +36,7 @@ const CH = require('../../../channel.json');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
- * @param {*} message The message that triggered the bot.
+ * @param message {import('discord.js').Message} The message that triggered the bot.
  * @param queueItem The queue item to play (see createQueueItem).
  * @param vc The voice channel to play the song in.
  * @param server The server playback metadata.
@@ -81,7 +81,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       server.startUpMessage = true;
       message.channel.send(processStats.startUpMessage);
     }
-    // connection.voice.setSelfDeaf(true).then();
   }
   if (server.leaveVCTimeout) {
     clearTimeout(server.leaveVCTimeout);

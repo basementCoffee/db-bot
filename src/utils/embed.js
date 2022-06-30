@@ -11,12 +11,12 @@ const {isCoreAdmin} = require('./permissions');
  * Return an object containing the embed and time based on the data provided.
  * @param url {string} The url to create the embed for.
  * @param infos {Object?} Optional - the info metadata to use.
- * @return {Promise<{embed: module:"discord.js".MessageEmbed, infos: {formats}, timeMS: number}>}
+ * @return {Promise<{embed: import("discord.js").MessageEmbed, infos: {formats}, timeMS: number}>}
  */
 async function createEmbed (url, infos) {
   let timeMS;
   let embed;
-  if (url.toString().includes(SPOTIFY_BASE_LINK)) {
+  if (url.includes(SPOTIFY_BASE_LINK)) {
     if (!infos) infos = await getData(url);
     let artists = '';
     infos.artists.forEach(x => artists ? artists += ', ' + x.name : artists += x.name);
