@@ -972,6 +972,20 @@ async function runCommandCases (message) {
     case 'gzmem':
       message.channel.send(await createMemoryEmbed());
       break;
+     case 'congratulate':
+      // congratulate a friend 
+      if (!args[1]) return message.channel.send('*no friend provided*');
+      const friend = message.mentions.users.first();
+      if (!friend) return message.channel.send('*no friend provided*');
+      const friendName = friend.username;
+      const friendAvatar = friend.avatarURL();
+      const friendEmbed = new MessageEmbed();
+      friendEmbed.setTitle('Congrats!').setDescription(`${friendName} has been congratulated!`);
+      friendEmbed.setThumbnail(friendAvatar);
+      friendEmbed.setColor('#00ff00');
+      friendEmbed.setFooter(`By ${message.author.username}`, message.author.avatarURL());
+      message.channel.send({embeds: [friendEmbed]});
+      break;
     // dev commands for testing purposes
     case 'gzh':
       const devCEmbed = new MessageEmbed()
