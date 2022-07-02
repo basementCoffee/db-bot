@@ -1,35 +1,33 @@
 /**
- * Class to set and end timers for debugging.
+ * Class to set and end a stopwatch. Is for debugging purposes.
  */
-class TestTime {
-  timerMap;
+class StopwatchTest {
+  stopwatchMap;
 
   constructor () {
-    this.timerMap = new Map();
+    this.stopwatchMap = new Map();
   }
 
-  startTimer (id) {
+  startStopwatch (id) {
     if (!id) {
       throw new Error('invalid id');
     }
-    if (this.timerMap.get(id)) {
-      console.log(`timer already started for [${id}]\nrestarting timer...`);
+    if (this.stopwatchMap.get(id)) {
+      console.log(`stopwatch already started for [${id}]\nrestarting stopwatch...`);
     }
     const currentDate = Date.now();
-    this.timerMap.set(id, currentDate);
+    this.stopwatchMap.set(id, currentDate);
     return currentDate;
   }
 
-  endTimer (id) {
-    if (!id || !this.timerMap.get(id)) throw new Error('invalid id');
-    const timeElapsed = Date.now() - this.timerMap.get(id);
+  endStopwatch (id) {
+    if (!id || !this.stopwatchMap.get(id)) throw new Error('invalid id');
+    const timeElapsed = Date.now() - this.stopwatchMap.get(id);
     console.log(`time for [${id}]: ${timeElapsed} `);
-    this.timerMap.delete(id);
+    this.stopwatchMap.delete(id);
     return timeElapsed;
   }
 
 }
 
-const tt = new TestTime();
-
-module.exports = tt;
+module.exports = new StopwatchTest();
