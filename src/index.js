@@ -1111,7 +1111,7 @@ async function runCommandCases (message) {
         else message.channel.send('none found');
       }
       break;
-    // !rand
+    // guess a member in a voice channel
     case 'guess':
       if (args[1]) {
         const numToCheck = parseInt(args[1]);
@@ -1119,18 +1119,18 @@ async function runCommandCases (message) {
           return message.channel.send('Number has to be positive.');
         }
         const randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-        message.channel.send('Assuming ' + numToCheck + ' in total. Your number is ' + randomInt2 + '.');
+        message.channel.send(`*guessing from 1-${numToCheck}... chosen: **${randomInt2}***`);
       } else {
         if (message.member?.voice?.channel) {
-          const numToCheck = message.member.voice.channel.members.size;
-          if (numToCheck < 1) {
-            return message.channel.send('Need at least 1 person in a voice channel.');
-          }
-          const randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-          const person = message.member.voice.channel.members.array()[randomInt2 - 1];
-          message.channel.send(
-            '**Voice channel size: ' + numToCheck + '**\nRandom number: \`' + randomInt2 + '\`\n' +
-            'Random person: \`' + (person.nickname ? person.nickname : person.user.username) + '\`');
+          try {
+            let gmArray = Array.from(bot.channels.cache.get(message.member.voice.channel.id).members);
+            gmArray = gmArray.map(item => item[1].nickname || item[1].user.username);
+            if (gmArray < 1) {
+              return message.channel.send('Need at least 1 person in a voice channel.');
+            }
+            const randomInt = Math.floor(Math.random() * gmArray.length) + 1;
+            message.channel.send(`*chosen voice channel member: **${gmArray[randomInt - 1]}***`);
+          } catch (e) {}
         } else {
           message.channel.send('need to be in a voice channel for this command');
         }
