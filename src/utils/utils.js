@@ -354,7 +354,7 @@ function removeDBMessage (channelID, deleteNum = 1, onlyDB) {
  */
 function logError (msgTxt) {
   bot.channels.fetch(CH.err)
-    .then((channel) => channel.send(msgTxt))
+    .then((channel) => channel?.send(msgTxt))
     .catch((e) => console.log('Failed sending error message: ', e));
 }
 
