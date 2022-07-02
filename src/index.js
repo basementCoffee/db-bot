@@ -972,7 +972,7 @@ async function runCommandCases (message) {
     case 'gzmem':
       message.channel.send(await createMemoryEmbed());
       break;
-     case 'congratulate':
+    case 'congratulate':
       // congratulate a friend 
       if (!args[1]) return message.channel.send('*no friend provided*');
       const friend = message.mentions.users.first();
@@ -1010,7 +1010,7 @@ async function runCommandCases (message) {
           '\n' + prefixString + 'gzid - guild, bot, and member id' +
           '\ndevadd - access the database'
         )
-        .setFooter('version: ' + version);
+        .setFooter({text: `version: ${version}`});
       message.channel.send({embeds: [devCEmbed]});
       break;
     case 'gznuke':
@@ -1050,9 +1050,9 @@ async function runCommandCases (message) {
         }
         processStats.startUpMessage = message.content.substr(message.content.indexOf(args[1]));
         Object.values(processStats.servers).forEach(x => x.startUpMessage = false);
-        message.channel.send('new startup message is set');
+        message.channel.send('*new startup message is set*');
       } else if (processStats.startUpMessage) {
-        message.channel.send(`current start up message:\n\`${processStats.startUpMessage}\`\ntype **gzsm clear** to clear the startup message`);
+        message.channel.send(`***current start up message:***\n${processStats.startUpMessage}\n*type **gzsm clear** to clear the startup message*`);
       } else message.channel.send('*there is no startup message right now*');
       break;
     case 'gzs':
@@ -1476,8 +1476,6 @@ async function devProcessCommands (message) {
       break;
   }
 }
-
-
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
