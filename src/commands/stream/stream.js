@@ -33,6 +33,7 @@ const {
   StreamType: VoiceStreamType, getVoiceConnection
 } = require('@discordjs/voice');
 const CH = require('../../../channel.json');
+const fluentFfmpeg = require('fluent-ffmpeg');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -157,8 +158,11 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     server.currentEmbed.delete();
     server.currentEmbed = null;
   }
-  if (server.streamData.type === StreamType.YOUTUBE) await server.streamData.stream.destroy();
-  else if (server.streamData.stream) endStream(server);
+  if (server.streamData.type === StreamType.YOUTUBE) {
+    try {
+      await server.streamData.stream.destroy();
+    } catch (e) {}
+  } else if (server.streamData.stream) endStream(server);
   if (whatToPlay !== whatspMap[vc.id]) return;
   try {
     let playbackTimeout;
@@ -209,6 +213,8 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       server.streamData.stream = stream;
     } else if (seekSec) {
       stream = await ytdl_core(urlAlt, {filter: 'audioonly'});
+      // set the video start time
+      stream = fluentFfmpeg({source: stream}).toFormat('mp3').setStartTime(Math.ceil(seekSec));
       server.streamData.type = StreamType.YOUTUBE;
       queueItem.urlAlt = urlAlt;
     } else {
