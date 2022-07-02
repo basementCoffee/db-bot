@@ -106,6 +106,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         }
       }
       let artists = '';
+      const queueItemNameLower = queueItem.infos.name.toLowerCase();
       if (queueItem.infos.artists) {
         queueItem.infos.artists.forEach(x => artists += x.name + ' ');
         artists = artists.trim();
@@ -135,10 +136,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
           (Math.abs(spotifyDuration - (convertYTFormatToMS(search.items[itemIndex2].duration.split(':')))) + 1000)) {
           itemIndex = itemIndex2;
         }
-      } else if (queueItem.infos.name.includes('feat')) {
-        search = await ytsr(queueItem.infos.name + ' lyrics', {pages: 1});
+      } else if (queueItemNameLower.includes('feat') || queueItemNameLower.includes('remix')) {
+        search = await ytsr(`${queueItem.infos.name} lyrics`, {pages: 1});
       } else {
-        search = await ytsr(queueItem.infos.name + ' ' + artists.split(' ')[0] + ' lyrics', {pages: 1});
+        search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0]} lyrics`, {pages: 1});
       }
       if (search.items[itemIndex]) queueItem.urlAlt = urlAlt = search.items[itemIndex].url;
       else {
