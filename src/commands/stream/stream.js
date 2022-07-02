@@ -256,8 +256,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       skipLink(message, vc, false, server, false);
       // noinspection JSUnresolvedFunction
       logError(
-        (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
-        timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)
+        {
+          embeds: [(new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
+        timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)]
+        }
       );
       console.log('dispatcher error: ', e);
     });

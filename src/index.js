@@ -970,7 +970,7 @@ async function runCommandCases (message) {
       message.channel.send({embeds: [vEmbed]});
       break;
     case 'gzmem':
-      message.channel.send(await createMemoryEmbed());
+      message.channel.send({embeds: [await createMemoryEmbed()]});
       break;
     case 'congratulate':
       // congratulate a friend 
