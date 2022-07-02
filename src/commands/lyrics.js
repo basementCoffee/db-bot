@@ -9,6 +9,7 @@ const parser = new xml2js.Parser();
 // Genius imports
 const Genius = require("genius-lyrics");
 const {reactions} = require('../utils/reactions');
+const {MessageEmbed} = require('discord.js');
 const GeniusClient = new Genius.Client();
 
 /**
@@ -156,14 +157,18 @@ async function sendSongLyrics (message, searchTerm, messageMemberId, reactionCal
           lyrics = '*could not retrieve*';
         }
         // send the lyrics text on reaction click
-        const sentLyricsMsg = await message.channel.send((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics));
+        const lyricsEmbed = new MessageEmbed();
+        lyricsEmbed.setDescription((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics));
+        const sentLyricsMsg = await message.channel.send({embeds: [lyricsEmbed]});
         reactionCallback();
         // start reactionCollector for lyrics
         sentLyricsMsg.react(reactions.X).then();
         const lyricsFilter = (reaction, user) => {
           return user.id === messageMemberId && [reactions.X].includes(reaction.emoji.name);
         };
-        const lyricsCollector = sentLyricsMsg.createReactionCollector(lyricsFilter, {time: 300000, dispose: true});
+        const lyricsCollector = sentLyricsMsg.createReactionCollector({
+          filter: lyricsFilter, time: 300000, dispose: true
+        });
         lyricsCollector.once('collect', () => {
           if (sentLyricsMsg.deletable) sentLyricsMsg.delete();
           lyricsCollector.stop();
