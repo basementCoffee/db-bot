@@ -350,7 +350,7 @@ function removeDBMessage (channelID, deleteNum = 1, onlyDB) {
 
 /**
  * Logs an error to a channel.
- * @param msgTxt {string} The message to send.
+ * @param msgTxt {string || Object} The message to send.
  */
 function logError (msgTxt) {
   bot.channels.fetch(CH.err)
