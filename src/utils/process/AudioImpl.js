@@ -1,6 +1,6 @@
-// Audio Implementation
 const {joinVoiceChannel} = require('@discordjs/voice');
 
+// Audio Implementation
 class AudioImpl {
   // the player for the server
   player;
@@ -19,6 +19,12 @@ class AudioImpl {
 
   // reset all property values
   reset () {
+    if (this.connection){
+      try {
+        this.connection.destroy();
+        this.connection.disconnect();
+      } catch (e) {}
+    }
     this.player = undefined;
     this.resource = undefined;
     this.status = false;
