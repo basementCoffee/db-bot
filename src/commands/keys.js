@@ -132,7 +132,7 @@ async function runKeysCommand (message, server, sheetName, user, specificPage, o
       }
       return embedPages[pageIndex];
     };
-    keysMsg.edit({embeds: [await generateKeysEmbed()]}).then(async sentMsg => {
+    keysMsg.edit({content: ' ', embeds: [await generateKeysEmbed()]}).then(async sentMsg => {
       sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() => sentMsg.react(reactions.QUESTION)).then(() => sentMsg.react(reactions.GEAR));
       const filter = (reaction, user) => {
         return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R, reactions.ARROW_L, reactions.GEAR, reactions.SHUFFLE].includes(reaction.emoji.name);
