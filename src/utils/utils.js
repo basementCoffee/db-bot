@@ -12,6 +12,7 @@ const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
 const processStats = require('./process/ProcessStats');
+const {getVoiceConnection} = require('@discordjs/voice');
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -88,16 +89,14 @@ function convertSeekFormatToSec (seekString) {
  * @returns {Object} The voice channel if the bot is in a voice channel.
  */
 function botInVC (message) {
-  try {
-    return bot.voice.adapters.get(message.guild.id);
-  } catch (e) {
-    return false;
-  }
+  return botInVC_Guild(message.guild);
 }
+
 
 function botInVC_Guild (guild) {
   try {
-    return bot.voice.adapters.get(guild.id);
+    const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId)?.members;
+    return (bot.voice.adapters.get(guild.id) && members && members.has(bot.user.id) && (()=> {console.log('is in vc'); return true;})()) || (()=> {console.log('is not in vc'); return false;})();
   } catch (e) {
     return false;
   }
@@ -166,6 +165,7 @@ function resetSession (server) {
   server.queue = [];
   server.queueHistory = [];
   server.loop = false;
+  server.audio.reset();
 }
 
 /**

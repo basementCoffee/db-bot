@@ -1,6 +1,6 @@
 const {
   botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
-  playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, getSheetName
+  playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, getSheetName, resetSession
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
@@ -74,7 +74,17 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       connection = server.audio.joinVoiceChannel(message.guild, vc.id);
       server.activeVoiceChannelId = vc.id;
       await new Promise(res => setTimeout(res, 300));
+      if (!botInVC(message)) {
+        await new Promise((res, rej) => setTimeout((()=> {
+          if (botInVC){
+            res();
+          } else {
+            rej('VOICE_JOIN_CHANNEL');
+          }
+        })), 300);
+      }
     } catch (e) {
+      resetSession(server);
       catchVCJoinError(e, message.channel);
       return;
     }
