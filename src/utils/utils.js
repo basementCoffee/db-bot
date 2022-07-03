@@ -96,7 +96,7 @@ function botInVC (message) {
 function botInVC_Guild (guild) {
   try {
     const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId)?.members;
-    return (bot.voice.adapters.get(guild.id) && members && members.has(bot.user.id) && (()=> {console.log('is in vc'); return true;})()) || (()=> {console.log('is not in vc'); return false;})();
+    return bot.voice.adapters.get(guild.id) && members && members.has(bot.user.id);
   } catch (e) {
     return false;
   }
