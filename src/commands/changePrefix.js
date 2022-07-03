@@ -11,6 +11,8 @@ const {addToDatabase} = require('./database/add');
  * @returns {*}
  */
 function changePrefix (message, server, prefixString, newPrefix) {
+  message.channel.send('command is currently not supported');
+  return; // todo - update implementation to djs 13. 
   if (!message.member.hasPermission('KICK_MEMBERS')) {
     return message.channel.send('Permissions Error: Only members who can kick other members can change the prefix.');
   }
@@ -26,7 +28,6 @@ function changePrefix (message, server, prefixString, newPrefix) {
   if (newPrefix.toUpperCase() !== newPrefix.toLowerCase() || newPrefix.charCodeAt(0) > 126) {
     return message.channel.send("cannot have a letter as a prefix.");
   }
-  newPrefix = message.guild.id;
   message.channel.send('*changing prefix...*').then(async sentPrefixMsg => {
     await gsrun('A', 'B', 'prefixes').then(async () => {
       await runDeleteCommand(message, newPrefix, 'prefixes', false);
