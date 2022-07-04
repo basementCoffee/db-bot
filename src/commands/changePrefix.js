@@ -4,15 +4,15 @@ const {addToDatabase} = require('./database/add');
 
 /**
  * Changes the server's prefix.
- * @param message
- * @param server
+ * @param message The message content metadata
+ * @param server The server playback metadata
  * @param prefixString The old prefix.
  * @param newPrefix The new prefix.
  * @returns {*}
  */
-function changePrefix (message, server, prefixString, newPrefix) {
+function changePrefix(message, server, prefixString, newPrefix) {
   message.channel.send('command is currently not supported');
-  return; // todo - update implementation to djs 13. 
+  return; // todo - update implementation to djs 13.
   if (!message.member.hasPermission('KICK_MEMBERS')) {
     return message.channel.send('Permissions Error: Only members who can kick other members can change the prefix.');
   }
@@ -26,9 +26,9 @@ function changePrefix (message, server, prefixString, newPrefix) {
     return message.channel.send('Cannot have ' + newPrefix + ' as a prefix.');
   }
   if (newPrefix.toUpperCase() !== newPrefix.toLowerCase() || newPrefix.charCodeAt(0) > 126) {
-    return message.channel.send("cannot have a letter as a prefix.");
+    return message.channel.send('cannot have a letter as a prefix.');
   }
-  message.channel.send('*changing prefix...*').then(async sentPrefixMsg => {
+  message.channel.send('*changing prefix...*').then(async (sentPrefixMsg) => {
     await gsrun('A', 'B', 'prefixes').then(async () => {
       await runDeleteCommand(message, newPrefix, 'prefixes', false);
       await addToDatabase(server, [null, message.guild.id, newPrefix], message, 'prefixes', false);
@@ -42,10 +42,12 @@ function changePrefix (message, server, prefixString, newPrefix) {
         if (message.guild.me.nickname) {
           name = message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 1);
         }
-
-        async function changeNamePrefix () {
+        /**
+         * Changes the prefix of the bot.
+         */
+        async function changeNamePrefix() {
           if (!message.guild.me.nickname) {
-            await message.guild.me.setNickname('[' + prefixString + '] ' + "db bot");
+            await message.guild.me.setNickname('[' + prefixString + '] ' + 'db bot');
           } else if (message.guild.me.nickname.indexOf('[') > -1 && message.guild.me.nickname.indexOf(']') > -1) {
             await message.guild.me.setNickname('[' + prefixString + '] ' + message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 2));
           } else {
@@ -53,14 +55,14 @@ function changePrefix (message, server, prefixString, newPrefix) {
           }
         }
 
-        if (!message.guild.me.nickname || (message.guild.me.nickname.substring(0, 1) !== '['
-          && message.guild.me.nickname.substr(2, 1) !== ']')) {
+        if (!message.guild.me.nickname || (message.guild.me.nickname.substring(0, 1) !== '[' &&
+          message.guild.me.nickname.substr(2, 1) !== ']')) {
           message.channel.send('----------------------\nWould you like me to update my name to reflect this? (yes or no)\nFrom **' +
             (message.guild.me.nickname || 'db bot') + '**  -->  **[' + prefixString + '] ' + name + '**').then(() => {
-            const filter = m => message.author.id === m.author.id;
+            const filter = (m) => message.author.id === m.author.id;
 
             message.channel.awaitMessages({filter, time: 30000, max: 1, errors: ['time']})
-              .then(async messages => {
+              .then(async (messages) => {
                 // message.channel.send(`You've entered: ${messages.first().content}`);
                 if (messages.first().content.toLowerCase() === 'yes' || messages.first().content.toLowerCase() === 'y') {
                   await changeNamePrefix();

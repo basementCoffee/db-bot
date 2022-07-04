@@ -8,9 +8,9 @@ const {reactions} = require('../utils/reactions');
  * @param server The server.
  * @param version {string} The version.
  */
-function runHelpCommand (message, server, version) {
+function runHelpCommand(message, server, version) {
   server.numSinceLastEmbed += 10;
-  let helpPages = getHelpList(server.prefix, 2, version);
+  const helpPages = getHelpList(server.prefix, 2, version);
   message.channel.send({embeds: [helpPages[0]]}).then((sentMsg) => {
     let currentHelp = 0;
 

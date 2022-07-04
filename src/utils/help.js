@@ -1,6 +1,12 @@
 const {MessageEmbed} = require('discord.js');
 
-function getPages (ps, version) {
+/**
+ * Full description of the help list.
+ * @param {*} ps the prefix in string format.
+ * @param {*} version the current version of the db bot.
+ * @returns {Array<string>} an array of strings representing the help list.
+ */
+function getPages(ps, version) {
   return [
     // PAGE 1
     '***[NEW]** - revamped playlists (May 2022)*\n\n' +
@@ -25,8 +31,7 @@ function getPages (ps, version) {
     `\`${ps}dj \` DJ mode, members have to vote to skip tracks\n` +
     `\`${ps}dictator \` Dictator mode, one member controls all music commands\n` +
     `\`${ps}verbose \` Keep all song embeds during a session\n` +
-    `\`${ps}silence \` Silence/hide the now-playing embed \n`
-    ,
+    `\`${ps}silence \` Silence/hide the now-playing embed \n`,
     // PAGE 2
     '-----------  **Keys**  -----------\n' +
     '*Keys are ways to save your favorite links as words.*\n' +
@@ -52,8 +57,7 @@ function getPages (ps, version) {
     `\`${ps}insert [link] \` Insert a link anywhere within the queue\n` +
     `\`${ps}remove [num] \` Remove a link from the queue\n` +
     `\`${ps}ticket [message] \` contact the developers, request a feature \n` +
-    `\n*version ${version}*`
-    ,
+    `\n*version ${version}*`,
     `
     Why isn't the db bot verified?
     - *discord no longer allows music bots to become verified.*
@@ -72,13 +76,16 @@ function getPages (ps, version) {
      We will promptly look into fixing any issues experienced! 
      
      [support us](https://top.gg/bot/730350452268597300)
-   `
+   `,
   ];
 }
-
-function getTitleArray () {
+/**
+ * List of titles for the help list.
+ * @returns {Array<string>} an array of strings representing respective titles for the help list.
+ */
+function getTitleArray() {
   return [
-    'Help List  *[short-command]*', 'Help List  *[short-command]*', 'FAQs'
+    'Help List  *[short-command]*', 'Help List  *[short-command]*', 'FAQs',
   ];
 }
 
@@ -87,8 +94,9 @@ function getTitleArray () {
  * @param {string} prefixString the prefix in string format
  * @param numOfPages {number} optional - the number of embeds to generate
  * @param version {string} the current version of the db bot
+ * @returns {Array<Discord.MessageEmbed>} an array of embeds representing the help list.
  */
-function getHelpList (prefixString, numOfPages, version) {
+function getHelpList(prefixString, numOfPages, version) {
   const pages = getPages(prefixString, version);
   const embedPages = [];
   const titleArray = getTitleArray();

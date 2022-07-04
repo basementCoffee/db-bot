@@ -2,7 +2,7 @@ const {getXdb2} = require('./database/retrieval');
 const {getAssumption} = require('./database/search');
 const {playLinkToVC} = require('./stream/stream');
 const {
-  botInVC, setSeamless, resetSession, verifyPlaylist, createQueueItem, adjustQueueForPlayNow
+  botInVC, setSeamless, resetSession, verifyPlaylist, createQueueItem, adjustQueueForPlayNow,
 } = require('../utils/utils');
 const {MAX_QUEUE_S} = require('../utils/process/constants');
 const {updateActiveEmbed} = require('../utils/embed');
@@ -12,26 +12,26 @@ const {shuffleQueue} = require('./runRandomToQueue');
 /**
  *
  * @param args {Array<string>} The array of playlists to play.
- * @param message
- * @param sheetName
- * @param playRightNow
- * @param printErrorMsg
- * @param server
+ * @param message {Message} The message object.
+ * @param sheetName {string} The name of the sheet to reference.
+ * @param playRightNow {boolean} If the playlist should be played right now.
+ * @param printErrorMsg {boolean} If an error message should be printed.
+ * @param server {Server} The server metadata.
  * @param shuffle {boolean?}
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
-async function playPlaylistDB (args, message, sheetName, playRightNow, printErrorMsg, server, shuffle) {
+async function playPlaylistDB(args, message, sheetName, playRightNow, printErrorMsg, server, shuffle) {
   if (args.length < 1) {
-    message.channel.send("*input playlist names after the command to play a specific playlists*");
+    message.channel.send('*input playlist names after the command to play a specific playlists*');
     return;
   }
   const xdb = await getXdb2(server, sheetName, true);
   args.reverse();
   const keys = [];
   let playlistMap;
-  let assumptionList = [];
+  const assumptionList = [];
   const unfoundPlaylists = [];
-  for (let playlistName of args) {
+  for (const playlistName of args) {
     playlistMap = xdb.playlists.get(playlistName.toUpperCase());
     if (!playlistMap) {
       const assumption = getAssumption(playlistName, xdb.playlistArray);
@@ -43,7 +43,7 @@ async function playPlaylistDB (args, message, sheetName, playRightNow, printErro
         continue;
       }
     }
-    playlistMap.forEach(val => keys.push(val.name));
+    playlistMap.forEach((val) => keys.push(val.name));
   }
   keys.reverse();
   keys.unshift('dd');
@@ -78,9 +78,9 @@ async function playPlaylistDB (args, message, sheetName, playRightNow, printErro
  * @param shuffle {boolean?}
  * @returns {Promise<boolean>} whether the play command has been handled accordingly
  */
-async function runDatabasePlayCommand (args, message, sheetName, playRightNow, printErrorMsg, server, shuffle) {
+async function runDatabasePlayCommand(args, message, sheetName, playRightNow, printErrorMsg, server, shuffle) {
   if (!args[1]) {
-    message.channel.send("*put a key-name after the command to play a specific key*");
+    message.channel.send('*put a key-name after the command to play a specific key*');
     return true;
   }
   const voiceChannel = message.member.voice?.channel;
@@ -166,9 +166,9 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
   } else {
     tempUrl = xdb.globalKeys.get(args[1].toUpperCase())?.link;
     if (!tempUrl) {
-      const ss = getAssumption(args[1], [...xdb.globalKeys.values()].map(item => item.name));
+      const ss = getAssumption(args[1], [...xdb.globalKeys.values()].map((item) => item.name));
       if (ss) {
-        message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
+        message.channel.send('could not find \'' + args[1] + '\'. **Assuming \'' + ss + '\'**');
         tempUrl = xdb.globalKeys.get(ss.toUpperCase())?.link;
         const playlistType = verifyPlaylist(tempUrl);
         if (playRightNow) { // push to queue and play
@@ -192,7 +192,7 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
         message.channel.send(`*could not find **${args[1]}** in the keys list*`);
         return true;
       } else if (ss?.length > 0) {
-        message.channel.send("*could not find '" + args[1] + "' in database*\n*Did you mean: " + ss + '*');
+        message.channel.send('*could not find \'' + args[1] + '\' in database*\n*Did you mean: ' + ss + '*');
         return true;
       } else {
         message.channel.send(`*could not find **${args[1]}** in the keys list*`);
@@ -243,9 +243,9 @@ async function runDatabasePlayCommand (args, message, sheetName, playRightNow, p
  * @param addToFront If it should be added to the beginning of the queue.
  * @param tempUrl The url to add.
  * @param addQICallback A callback for the generated queueItem.
- * @return {Promise<number>} The number of links added to the queue.
+ * @returns {Promise<number>} The number of links added to the queue.
  */
-async function addLinkToQueueSimple (message, server, addToFront, tempUrl, addQICallback) {
+async function addLinkToQueueSimple(message, server, addToFront, tempUrl, addQICallback) {
   let dbAddedToQueue = 0;
   const playlistType = verifyPlaylist(tempUrl);
   if (playlistType) {

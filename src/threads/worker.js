@@ -10,38 +10,41 @@ parentPort.on('message', async (m) => {
   if (!loggedIn) await login();
   try {
     switch (m.content.commandName) {
-      case 'lyrics':
-        bot.channels.fetch(m.content.channelId).then(channel => {
-          if (channel) {
-            const reactionsCallback = () => {
-              parentPort.postMessage({
-                content: {
-                  commandName: m.content.commandName,
-                  guildId: channel.guild.id,
-                  pageWasClicked: true
-                }
-              });
-            };
-            runLyricsCommand(channel, reactionsCallback, ...m.content.commandArgs);
-          }
-        });
-        break;
-      case 'gzn':
-        removeDBMessage(...m.content.commandArgs);
-        break;
-      default:
-        console.log(`invalid command name: ${m.content.commandName}`);
+    case 'lyrics':
+      bot.channels.fetch(m.content.channelId).then((channel) => {
+        if (channel) {
+          const reactionsCallback = () => {
+            parentPort.postMessage({
+              content: {
+                commandName: m.content.commandName,
+                guildId: channel.guild.id,
+                pageWasClicked: true,
+              },
+            });
+          };
+          runLyricsCommand(channel, reactionsCallback, ...m.content.commandArgs);
+        }
+      });
+      break;
+    case 'gzn':
+      removeDBMessage(...m.content.commandArgs);
+      break;
+    default:
+      console.log(`invalid command name: ${m.content.commandName}`);
     }
   } catch (e) {}
 });
 
-async function login () {
+/**
+ * Logs in to the bot.
+ */
+async function login() {
   await bot.login(token);
   if (bot.user.id !== botID) throw new Error('Invalid botID');
   loggedIn = true;
 }
 
-process.on('uncaughtException', error => {
+process.on('uncaughtException', (error) => {
   logError(`(worker process error) ${error.name}: ${error.message}`);
   console.log(error);
 });

@@ -9,22 +9,24 @@ const {formatDuration, botInVC} = require('../utils/utils');
  * @param server The server playback metadata
  * @returns {*}
  */
-function runDictatorCommand (message, mgid, prefixString, server) {
-  if (!(botInVC(message) && message.member.voice && message.member.voice.channel))
+function runDictatorCommand(message, mgid, prefixString, server) {
+  if (!(botInVC(message) && message.member.voice && message.member.voice.channel)) {
     return message.channel.send('must be in a voice channel with the db bot for this command');
-  const vcMembersId = message.guild.voice.channel.members.map(x => x.id);
+  }
+  const vcMembersId = message.guild.voice.channel.members.map((x) => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
-  if (server.voteAdmin.length > 0)
+  if (server.voteAdmin.length > 0) {
     return message.channel.send('cannot have a dictator while there is a DJ');
+  }
   if (server.dictator) {
     if (server.dictator === message.member) {
       return message.channel.send('***You are the dictator.*** *If you want to forfeit your powers say \`' + prefixString + 'resign\`*');
     } else {
       const dic = server.dictator;
-      for (let i of vcMembersId) {
+      for (const i of vcMembersId) {
         if (i === dic.id) {
-          return message.channel.send((dic.nickname ? dic.nickname : dic.user.username) + ' is the dictator, and has control over '
-            + (message.guild.me.nickname ? message.guild.me.nickname : message.guild.me.user.username));
+          return message.channel.send((dic.nickname ? dic.nickname : dic.user.username) + ' is the dictator, and has control over ' +
+            (message.guild.me.nickname ? message.guild.me.nickname : message.guild.me.user.username));
         }
       }
       server.dictator = message.member;
@@ -49,12 +51,12 @@ function runDictatorCommand (message, mgid, prefixString, server) {
  * @param server The server info
  * @param duration The duration of the timer
  */
-function createDJTimer (message, server, duration) {
+function createDJTimer(message, server, duration) {
   clearDJTimer(server);
   server.djTimer.timer = setTimeout(() => {
-    let mem = server.voteAdmin[0];
+    const mem = server.voteAdmin[0];
     let resignMsg;
-    if (message.guild.voice.channel.members.map(x => x.id).includes(mem.id)) {
+    if (message.guild.voice.channel.members.map((x) => x.id).includes(mem.id)) {
       resignMsg = '*Time\'s up: ' + (mem.nickname ? mem.nickname : mem.user.username) + ' is no longer the DJ.*\n';
     } else {
       resignMsg = '*No DJ detected.*\n';
@@ -74,7 +76,11 @@ function createDJTimer (message, server, duration) {
   server.djTimer.duration = duration;
 }
 
-function clearDJTimer (server) {
+/**
+ * Clears the DJ timer.
+ * @param {*} server The server object.
+ */
+function clearDJTimer(server) {
   if (server.djTimer.timer) {
     clearTimeout(server.djTimer.timer);
     server.djTimer.timer = false;
@@ -87,7 +93,7 @@ function clearDJTimer (server) {
  * @param startTime The Date.now() representing when the timer began.
  * @returns {string} A string representing a formatted duration of how much time is left.
  */
-function getTimeLeft (duration, startTime) {
+function getTimeLeft(duration, startTime) {
   return formatDuration(Math.abs(Date.now() - startTime - duration));
 }
 
@@ -97,10 +103,11 @@ function getTimeLeft (duration, startTime) {
  * @param server The server playback metadata
  * @returns {*}
  */
-function runDJCommand (message, server) {
-  if (!botInVC(message) || !message.member.voice || !message.member.voice.channel)
+function runDJCommand(message, server) {
+  if (!botInVC(message) || !message.member.voice || !message.member.voice.channel) {
     return message.channel.send('must be in a voice channel with the db bot for this command');
-  const vcMembersId = message.guild.voice.channel.members.map(x => x.id);
+  }
+  const vcMembersId = message.guild.voice.channel.members.map((x) => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
   if (server.dictator) return message.channel.send('There is a dictator, cannot enable DJ mode.');
   if (server.voteAdmin.length < 1) {
@@ -111,7 +118,7 @@ function runDJCommand (message, server) {
   } else {
     let ix = 0;
     let newMemAdded = false;
-    for (let x of server.voteAdmin) {
+    for (const x of server.voteAdmin) {
       if (!vcMembersId.includes(x.id)) {
         let oldMem = server.voteAdmin[ix];
         oldMem = (oldMem.nickname ? oldMem.nickname : oldMem.user.username);
@@ -148,7 +155,7 @@ function runDJCommand (message, server) {
  * @param message The message metadata.
  * @param server The server.
  */
-function runResignCommand (message, server) {
+function runResignCommand(message, server) {
   if (!server.voteAdmin.length && !server.dictator) {
     message.channel.send('There is no DJ or dictator right now');
   } else if (server.dictator) {

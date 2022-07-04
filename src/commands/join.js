@@ -7,11 +7,11 @@ const {resetSession, pauseComputation, botInVC, catchVCJoinError} = require('../
  * If there is an error upon join attempt then it caught and forwarded to the user.
  * @param message The message metadata.
  * @param server The server object.
- * @return {Promise<boolean>} True upon successful voice channel join.
+ * @returns {Promise<boolean>} True upon successful voice channel join.
  */
-async function joinVoiceChannelSafe (message, server) {
-  let connection = server.audio.connection;
-  let vc = message.member?.voice?.channel;
+async function joinVoiceChannelSafe(message, server) {
+  const connection = server.audio.connection;
+  const vc = message.member?.voice?.channel;
   if (vc && (!botInVC(message) || !connection || (server.audio.voiceChannelId !== vc.id))) {
     if (connection) {
       pauseComputation(server, connection.channel);

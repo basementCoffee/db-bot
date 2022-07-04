@@ -13,13 +13,13 @@ class AudioImpl {
   // the VoiceConnection
   connection;
 
-  constructor () {
+  constructor() {
     this.reset();
   }
 
   // reset all property values
-  reset () {
-    if (this.connection){
+  reset() {
+    if (this.connection) {
       try {
         this.connection.destroy();
         this.connection.disconnect();
@@ -32,39 +32,40 @@ class AudioImpl {
     this.connection = undefined;
   }
 
+  // eslint-disable-next-line valid-jsdoc
   /**
    * Joins a voice channel.
-   * @param guild
-   * @param voiceChannelId
+   * @param guild {import('discord.js').Guild} The guild object
+   * @param voiceChannelId {string} The id of the voice channel
    * @return {import('discord.js').VoiceConnection}
    */
-  joinVoiceChannel (guild, voiceChannelId) {
+  joinVoiceChannel(guild, voiceChannelId) {
     this.voiceChannelId = voiceChannelId;
     this.connection = joinVoiceChannel({
       channelId: voiceChannelId,
       guildId: guild.id,
-      adapterCreator: guild.voiceAdapterCreator
+      adapterCreator: guild.voiceAdapterCreator,
     });
     return this.connection;
   }
 
   /**
    * Determine if the voice channel is active.
-   * @param voiceChannelId
+   * @param voiceChannelId {string} The id of the voice channel
+   * @returns {boolean} If the voice channel is active
    */
-  isActiveVoiceChannel (voiceChannelId) {
+  isActiveVoiceChannel(voiceChannelId) {
     return this.voiceChannelId && this.voiceChannelId === voiceChannelId;
   }
 
   /**
    * Returns true if the member is in the active voice channel.
    * @param member {import('discord.js').GuildMember} The member object
-   * @return {boolean} If the member is in the active voice channel
+   * @returns {boolean} If the member is in the active voice channel
    */
-  isVoiceChannelMember (member) {
+  isVoiceChannelMember(member) {
     return member.voice.channel && member.voice.channel.id === this.voiceChannelId;
   }
-
 }
 
 module.exports = {AudioImpl};

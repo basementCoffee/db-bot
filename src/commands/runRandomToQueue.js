@@ -12,16 +12,20 @@ const {hasDJPermissions} = require('../utils/permissions');
  * @param server The server playback metadata
  * @param addToFront Optional - true if to add to the front
  */
-async function runRandomToQueue (num, message, sheetName, server, addToFront = false) {
+async function runRandomToQueue(num, message, sheetName, server, addToFront = false) {
   if (!message.member.voice?.channel) {
     const sentMsg = await message.channel.send('must be in a voice channel to play random');
-    if (!botInVC(message)) setSeamless(server, runRandomToQueue, [num, message, sheetName, server, addToFront], sentMsg);
+    if (!botInVC(message)) {
+      setSeamless(server, runRandomToQueue, [num, message, sheetName, server, addToFront], sentMsg);
+    }
     return;
   }
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
+  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  if (server.dictator && message.member.id !== server.dictator.id)
+  }
+  if (server.dictator && message.member.id !== server.dictator.id) {
     return message.channel.send('only the dictator can randomize to queue');
+  }
   let isPlaylist;
   // holds the string
   const origArg = num;
@@ -44,11 +48,14 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
       const firstItem = server.queue.shift();
       shuffleQueue(server.queue, message);
       server.queue.unshift(firstItem);
-    } else message.channel.send(`*need a playlist url to shuffle, or a number to use random items from your keys list.*`);
+    } else {
+      message.channel.send('*need a playlist url to shuffle, or a number to use random items from your keys list.*');
+    }
     return;
   }
-  if (origArg.toString().includes('.'))
+  if (origArg.toString().includes('.')) {
     return addRandomToQueue(message, origArg, undefined, server, true, addToFront);
+  }
   const xdb = await getXdb2(server, sheetName, true);
   if (isPlaylist) {
     addRandomToQueue(message, origArg, xdb.globalKeys, server, true, addToFront).then();
@@ -62,13 +69,13 @@ async function runRandomToQueue (num, message, sheetName, server, addToFront = f
 }
 
 /**
- * Shuffles the queue. If provided a Message object, sends an update to the user regarding its status.
+ * Shuffles the provided queue. If provided a Message object, sends an update to the user regarding its status.
  * @param queue {Array<*>} The queue to shuffle.
  * @param message {Object?} The message object.
- * @returns {*}
+ * @returns {void}
  */
-function shuffleQueue (queue, message) {
-  let currentIndex = queue.length, randomIndex; // indices for shuffling
+function shuffleQueue(queue, message) {
+  let currentIndex = queue.length; let randomIndex; // indices for shuffling
   // don't include what's actively playing
   while (currentIndex > 1) {
     randomIndex = Math.floor(Math.random() * currentIndex) + 1;

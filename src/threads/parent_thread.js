@@ -1,7 +1,8 @@
+/* eslint-disable camelcase */
 const {Worker} = require('worker_threads');
 const processStats = require('../utils/process/ProcessStats');
 const {logError} = require('../utils/utils');
-let worker = new Worker(__dirname + '/worker.js');
+const worker = new Worker(__dirname + '/worker.js');
 
 /**
  * Send computationally heavy commands to a worker process.
@@ -10,25 +11,28 @@ let worker = new Worker(__dirname + '/worker.js');
  * @param channelId {string} The channel id.
  * @param commandArgs {any} A list of arguments to pass to a function.
  */
-function parent_thread (commandName, messageId, channelId, commandArgs = []) {
+function parent_thread(commandName, messageId, channelId, commandArgs = []) {
   worker.postMessage({
     content: {
       commandName,
       messageId: messageId,
       channelId: channelId,
-      commandArgs: commandArgs
-    }
+      commandArgs: commandArgs,
+    },
   });
 }
 
-function initialize () {
+/**
+ * Initializes the worker process.
+ */
+function initialize() {
   // what is received by the worker thread
-  worker.on('message', function (m) {
+  worker.on('message', function(m) {
     switch (m.content.commandName) {
-      case 'lyrics':
-        const server = processStats.servers.get(m.content.guildId);
-        if (server) server.numSinceLastEmbed = 10;
-        break;
+    case 'lyrics':
+      const server = processStats.servers.get(m.content.guildId);
+      if (server) server.numSinceLastEmbed = 10;
+      break;
     }
   });
 

@@ -3,13 +3,14 @@ const {Client, Intents} = require('discord.js');
 // the db bot instance
 const bot = new Client({
   intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_INVITES, Intents.FLAGS.GUILDS,
-    Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES, Intents.FLAGS.GUILD_PRESENCES,
-    Intents.FLAGS.GUILD_INTEGRATIONS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.DIRECT_MESSAGE_REACTIONS],
+    Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES,
+    Intents.FLAGS.GUILD_PRESENCES, Intents.FLAGS.GUILD_INTEGRATIONS, Intents.FLAGS.GUILD_MESSAGES,
+    Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.DIRECT_MESSAGE_REACTIONS],
 });
 // the id of the bot
 const botID = '987108278486065283';
 // boolean for dev process - used for debugging, default is false
-let startupDevMode = process.argv[2] === '--dev';
+const startupDevMode = process.argv[2] === '--dev';
 // max queue size
 const MAX_QUEUE_S = 500;
 // max key length
@@ -39,12 +40,12 @@ const StreamType = {
   SOUNDCLOUD: 'sc',
   SPOTIFY: 'sp',
   YOUTUBE: 'yt',
-  TWITCH: 'tw'
+  TWITCH: 'tw',
 };
 
-const INVITE_MSG = "Here's the invite link!\n<https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot>";
+const INVITE_MSG = 'Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot>';
 
 module.exports = {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK,
-  TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM, MAX_KEY_LENGTH, INVITE_MSG
+  TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM, MAX_KEY_LENGTH, INVITE_MSG,
 };

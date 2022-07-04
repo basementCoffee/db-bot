@@ -1,7 +1,7 @@
 const {verifyUrl, verifyPlaylist, linkFormatter, createQueueItem} = require('../utils/utils');
 const {getXdb2} = require('./database/retrieval');
 const {
-  SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, MAX_QUEUE_S
+  SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, MAX_QUEUE_S,
 } = require('../utils/process/constants');
 const {addPlaylistToQueue} = require('../utils/playlist');
 const ytpl = require('ytpl');
@@ -16,24 +16,27 @@ const {updateActiveEmbed} = require('../utils/embed');
  * @param sheetName {string} The sheet name to use.
  * @returns {Promise<number>} The position to insert or a negative if failed.
  */
-async function runInsertCommand (message, mgid, args, server, sheetName) {
+async function runInsertCommand(message, mgid, args, server, sheetName) {
   if (!args) return -1;
   if (insertCommandVerification(message, server, args) !== 1) return -1;
-  let num = args.filter(item => !Number.isNaN(Number(item))).slice(-1)[0];
+  let num = args.filter((item) => !Number.isNaN(Number(item))).slice(-1)[0];
   let links;
   // get position
   if (num) {
-    links = args.filter(item => item !== num);
+    links = args.filter((item) => item !== num);
     num = parseInt(num);
   } else {
     links = args;
     if (server.queue.length === 1) num = 1;
     else {
-      const sentMsg = await message.channel.send('What position would you like to insert? (1-' + server.queue.length + ') [or type \'q\' to quit]');
-      const filter = m => {
+      // insert question
+      const insertQ = 'What position would you like to insert? (1-' +
+       server.queue.length + ') [or type \'q\' to quit]';
+      const sentMsg = await message.channel.send(insertQ);
+      const filter = (m) => {
         return (message.author.id === m.author.id);
       };
-      let messages = await sentMsg.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']});
+      const messages = await sentMsg.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']});
       num = messages.first().content.trim();
       if (num.toLowerCase() === 'q') {
         message.channel.send('*cancelled*');
@@ -88,7 +91,8 @@ async function runInsertCommand (message, mgid, args, server, sheetName) {
         link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
         pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SOUNDCLOUD, false, num);
       } else {
-        server.queue.splice(num, 0, createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined));
+        server.queue.splice(num, 0,
+          createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined));
         pNums++;
       }
     } catch (e) {
@@ -110,15 +114,21 @@ async function runInsertCommand (message, mgid, args, server, sheetName) {
  * @param args {Array<string>} args[1] being the term, args[2] being the position.
  * @returns {*} 1 if passed
  */
-function insertCommandVerification (message, server, args) {
+function insertCommandVerification(message, server, args) {
   if (!message.member.voice?.channel) return message.channel.send('must be in a voice channel');
-  if (server.dictator && message.member.id !== server.dictator.id)
+  if (server.dictator && message.member.id !== server.dictator.id) {
     return message.channel.send('only the dictator can insert');
-  if (server.lockQueue && server.voteAdmin.filter(x => x.id === message.member.id).length === 0)
+  }
+  if (server.lockQueue && server.voteAdmin.filter((x) => x.id === message.member.id).length === 0) {
     return message.channel.send('the queue is locked: only the dj can insert');
+  }
   if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
-  if (server.queue.length < 1) return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
-  if (!args[1]) return message.channel.send('put a link followed by a position in the queue \`(i.e. insert [link] [num])\`');
+  if (server.queue.length < 1) {
+    return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
+  }
+  if (!args[1]) {
+    return message.channel.send('put a link followed by a position in the queue \`(i.e. insert [link] [num])\`');
+  }
   return 1;
 }
 

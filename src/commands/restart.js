@@ -8,10 +8,11 @@ const {playLinkToVC} = require('./stream/stream');
  * @param server The server playback metadata.
  * @returns {*}
  */
-async function runRestartCommand (message, mgid, keyword, server) {
+async function runRestartCommand(message, mgid, keyword, server) {
   if (!server.queue[0] && !server.queueHistory) return message.channel.send('must be actively playing to ' + keyword);
-  if (server.dictator && message.member.id !== server.dictator.id)
+  if (server.dictator && message.member.id !== server.dictator.id) {
     return message.channel.send('only the dictator can ' + keyword);
+  }
   if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member)) {
     return message.channel.send('as of right now, only the DJ can restart tracks');
   }

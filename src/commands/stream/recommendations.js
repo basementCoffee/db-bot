@@ -11,9 +11,9 @@ const {isCoreAdmin} = require('../../utils/permissions');
  * @param message The message metadata.
  * @param server The server metadata.
  * @param args The message content in an array.
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
-async function playRecommendation (message, server, args) {
+async function playRecommendation(message, server, args) {
   if (!isCoreAdmin(message.member.id)) return;
   if (!message.member.voice?.channel) {
     const sentMsg = await message.channel.send('must be in a voice channel to play');
@@ -46,7 +46,7 @@ async function playRecommendation (message, server, args) {
     return undefined;
   };
   // links that should be forwarded by default (meet func criteria)
-  let recs = [];
+  const recs = [];
   // array of messages, the earliest message are in the front
   const messages = await channel.messages.fetch({limit: 99});
   const filterUrlArgs = (link) => {
@@ -60,9 +60,9 @@ async function playRecommendation (message, server, args) {
    * Expects the queue param to have a '.url' field.
    * @param queue {Array<Object>} The queue to check.
    * @param link {string} The link to filter.
-   * @return {Boolean} Returns true if the item exists within the queue.
+   * @returns {Boolean} Returns true if the item exists within the queue.
    */
-  const isInQueue = (queue, link) => queue.some(val => val.url === link);
+  const isInQueue = (queue, link) => queue.some((val) => val.url === link);
   for (const [, m] of messages) {
     if (m.author.id !== bot.user.id) continue;
     const regex = /<(((?!discord).)*)>/g;
@@ -86,8 +86,8 @@ async function playRecommendation (message, server, args) {
     } else message.channel.send('*no more recommendations (the queue contains all of them)*');
     return;
   }
-  let wasEmpty = !server.queue[0];
-  for (let link of recs) {
+  const wasEmpty = !server.queue[0];
+  for (const link of recs) {
     await addLinkToQueue(link, message, server, message.guild.id, false, pushQueue);
   }
   if (!botInVC(message) || wasEmpty) {

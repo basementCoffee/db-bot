@@ -1,15 +1,31 @@
+/* eslint-disable camelcase */
 const {botID, MAX_KEY_LENGTH} = require('../utils/process/constants');
 const {reactions} = require('../utils/reactions');
 const {addToDatabase_P} = require('./database/add');
-const {universalLinkFormatter, linkValidator, botInVC, botInVC_Guild} = require('../utils/utils');
+const {universalLinkFormatter, linkValidator} = require('../utils/utils');
 const {getXdb2} = require('./database/retrieval');
 
-// create a string that warns the user that the itemName of type 'type' is exceeding a maximum length.
-function lengthErrorString (type, itemName, maxLength) {
+
+/**
+ * create a string that warns the user that the itemName of type 'type' is exceeding a maximum length.
+ * @param {*} type {string} The type of error.
+ * @param {*} itemName {string} The name of the item that is exceeding the maximum length.
+ * @param {*} maxLength {string} The maximum length allowed.
+ * @returns {string}
+ */
+function lengthErrorString(type, itemName, maxLength) {
   return `*error: ${type}-name **${itemName}** exceeds max character limit of ${maxLength}*`;
 }
 
-async function addNewPlaylist (server, channel, sheetName, playlistName) {
+/**
+ * Adds a playlist.
+ * @param {*} server The server.
+ * @param {*} channel The channel to send the response to.
+ * @param {*} sheetName The name of the sheet to add to.
+ * @param {*} playlistName The name of the playlist to add.
+ * @returns {void}
+ */
+async function addNewPlaylist(server, channel, sheetName, playlistName) {
   if (playlistName.length > MAX_KEY_LENGTH) {
     channel.send(lengthErrorString('playlist', playlistName, MAX_KEY_LENGTH));
     return;
@@ -33,7 +49,7 @@ async function addNewPlaylist (server, channel, sheetName, playlistName) {
  * @param member The member that is requesting the add.
  * @returns {*}
  */
-async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChannel, server, member) {
+async function runAddCommandWrapper_P(channel, args, sheetName, printMsgToChannel, server, member) {
   let playlistName;
   let keyName = args[0];
   let link = args[1];
@@ -44,7 +60,9 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
     link = args[2];
     xdb = await getXdb2(server, sheetName, false);
     if (!xdb.playlists.get(playlistName.toUpperCase())) {
-      channel.send(`*playlist **${playlistName}** does not exist: add a new playlist using the \`add-playlist\` command*`);
+      // eslint-disable-next-line max-len
+      const doesNotExist = `*playlist **${playlistName}** does not exist: add a new playlist using the \`add-playlist\` command*`;
+      channel.send(doesNotExist);
       return;
     }
   }
@@ -72,10 +90,11 @@ async function runAddCommandWrapper_P (channel, args, sheetName, printMsgToChann
     if (member.voice?.channel && server.queue[0]) {
       link = server.queue[0].url;
       if (keyName.includes('.') || keyName.includes(',')) return channel.send('cannot add names with \'.\' or \',\'');
-      channel.send(`Would you like to add what's currently playing as **${keyName}**? ${playlistName ? `*[to ${playlistName}]*` : ''}`).then(sentMsg => {
+      channel.send(`Would you like to add what's currently playing as **${keyName}**? ${playlistName ? `*[to ${playlistName}]*` : ''}`).then((sentMsg) => {
         sentMsg.react(reactions.CHECK).then(() => sentMsg.react(reactions.X));
         const filter = (reaction, user) => {
-          return botID !== user.id && [reactions.CHECK, reactions.X].includes(reaction.emoji.name) && member.id === user.id;
+          return botID !== user.id &&
+          [reactions.CHECK, reactions.X].includes(reaction.emoji.name) && member.id === user.id;
         };
         const collector = sentMsg.createReactionCollector({filter, time: 60000, dispose: true});
         collector.once('collect', (reaction) => {

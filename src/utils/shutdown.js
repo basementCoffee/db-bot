@@ -3,7 +3,12 @@ const CH = require('../../channel.json');
 const processStats = require('./process/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
 
-function shutdown (type) {
+/**
+ *  Shuts down the current process.
+ * @param {string} type The type of shutdown.
+ * @returns {Promise<void>}
+ */
+function shutdown(type) {
   return () => {
     const wasActive = !processStats.isInactive;
     processStats.setProcessInactive();
@@ -11,8 +16,8 @@ function shutdown (type) {
     // noinspection JSUnresolvedFunction
     try {
       if (!processStats.devMode) {
-        bot.channels.fetch(CH.process).then(channel => channel.send(`shutting down: '${process.pid}' (${type})`));
-        if (wasActive) bot.channels.fetch(CH.process).then(channel => channel.send(`=gzz`));
+        bot.channels.fetch(CH.process).then((channel) => channel.send(`shutting down: '${process.pid}' (${type})`));
+        if (wasActive) bot.channels.fetch(CH.process).then((channel) => channel.send('=gzz'));
       }
     } catch (e) {}
     const activeCSize = bot.voice.adapters.size;
@@ -21,9 +26,9 @@ function shutdown (type) {
       // noinspection JSUnresolvedFunction
       if (processStats.servers.size > 0) {
         bot.voice.adapters.forEach((x, guildId) => {
-          let server = processStats.servers.get(guildId);
+          const server = processStats.servers.get(guildId);
           bot.guilds.fetch(guildId).then((guild) => {
-            let currentEmbed = server.currentEmbed;
+            const currentEmbed = server.currentEmbed;
             getVoiceConnection(guildId)?.disconnect();
             x.destroy();
             try {

@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 const {gsrun, gsUpdateAdd, gsUpdateOverwrite} = require('./api/api');
 const {getXdb2} = require('./retrieval');
 const {serializeAndUpdate} = require('./utils');
@@ -10,7 +11,7 @@ const {serializeAndUpdate} = require('./utils');
  * @param {string} sheetName the name of the sheet to add to
  * @param printMsgToChannel whether to print response to channel
  */
-function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
+function addToDatabase(server, args, message, sheetName, printMsgToChannel) {
   let songsAddedInt = 0;
   let z = 1;
   // check duplicates, and initialize sheet for new servers
@@ -21,14 +22,14 @@ function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
         linkZ = linkZ.substring(0, linkZ.length - 1);
       }
       if (args[z].includes('.') || args[z].includes(',')) {
-        message.channel.send("did not add '" + args[z] + "', names cannot include '.' or ','");
+        message.channel.send('did not add \'' + args[z] + '\', names cannot include \'.\' or \',\'');
         songsAddedInt--;
       } else {
         let alreadyExists = false;
         if (printMsgToChannel) {
           for (const x of xdb.congratsDatabase.keys()) {
             if (x.toUpperCase() === args[z].toUpperCase()) {
-              message.channel.send("'" + x + "' is already in your list");
+              message.channel.send('\'' + x + '\' is already in your list');
               alreadyExists = true;
               songsAddedInt--;
               break;
@@ -55,13 +56,13 @@ function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
         if (databaseType === 'm') {
           typeString = 'your personal';
         } else {
-          typeString = "the server's";
+          typeString = 'the server\'s';
         }
         message.channel.send(`*link added to ${typeString} keys list. (use \`${ps}d ${args[1]}\` to play)*`);
       } else if (songsAddedInt > 1) {
-        await new Promise(res => setTimeout(res, 1000));
+        await new Promise((res) => setTimeout(res, 1000));
         gsUpdateOverwrite([xdb.dsInt + songsAddedInt], sheetName, xdb.dsInt);
-        message.channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + databaseType + "keys')*");
+        message.channel.send('*' + songsAddedInt + ' songs added to the keys list. (see \'' + ps + databaseType + 'keys\')*');
       }
     }
   });
@@ -76,14 +77,14 @@ function addToDatabase (server, args, message, sheetName, printMsgToChannel) {
  * @param printMsgToChannel {boolean}
  * @param playlistName {string}
  * @param xdb {any?} The XDB.
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
-async function addToDatabase_P (server, keysList, channel, sheetName, printMsgToChannel, playlistName = 'general', xdb) {
+async function addToDatabase_P(server, keysList, channel, sheetName, printMsgToChannel, playlistName = 'general', xdb) {
   let songsAddedInt = 0;
   let z = 0;
   // check duplicates, and initialize sheet for new servers
   if (!xdb) xdb = await getXdb2(server, sheetName, false);
-  let playlist = xdb.playlists.get(playlistName.toUpperCase()) ||
+  const playlist = xdb.playlists.get(playlistName.toUpperCase()) ||
     (() => {
       const tempMap = new Map();
       xdb.playlists.set(playlistName.toUpperCase(), tempMap);
@@ -97,7 +98,7 @@ async function addToDatabase_P (server, keysList, channel, sheetName, printMsgTo
       linkZ = linkZ.substring(0, linkZ.length - 1);
     }
     if (keysList[z].includes('.') || keysList[z].includes(',')) {
-      channel.send("did not add '" + keysList[z] + "', names cannot include '.' or ','");
+      channel.send('did not add \'' + keysList[z] + '\', names cannot include \'.\' or \',\'');
     } else {
       let alreadyExists = false;
       const existingKeyObj = xdb.globalKeys.get(keysList[z].toUpperCase());
@@ -115,7 +116,7 @@ async function addToDatabase_P (server, keysList, channel, sheetName, printMsgTo
         playlist.set(keysList[z].toUpperCase(), {
           name: keysList[z],
           link: keysList[z + 1],
-          timeStamp: ''
+          timeStamp: '',
         });
         songsAddedInt += 1;
       }
@@ -128,9 +129,9 @@ async function addToDatabase_P (server, keysList, channel, sheetName, printMsgTo
     if (songsAddedInt === 1) {
       channel.send(`*link added to your **${playlistName}** playlist. (use \`${ps}d ${keysList[0]}\` to play)*`);
     } else if (songsAddedInt > 1) {
-      await new Promise(res => setTimeout(res, 1000));
+      await new Promise((res) => setTimeout(res, 1000));
       gsUpdateOverwrite(10, sheetName, xdb.dsInt);
-      channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + "keys')*");
+      channel.send('*' + songsAddedInt + ' songs added to the keys list. (see \'' + ps + 'keys\')*');
     }
   }
 }

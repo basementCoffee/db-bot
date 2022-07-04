@@ -3,9 +3,9 @@ const {CORE_ADM} = require('./process/constants');
 /**
  * Returns whether a given ID has Admin rights.
  * @param id {string} The id of the member.
- * @return {boolean} True if provided Admin rights.
+ * @returns {boolean} True if provided Admin rights.
  */
-function isAdmin (id) {
+function isAdmin(id) {
   // kzbuu
   return ['268554823283113985', '443150640823271436', '730350452268597300', '799524729173442620',
     '434532121244073984'].includes(id);
@@ -14,9 +14,9 @@ function isAdmin (id) {
 /**
  * If the id is a coreAdmin ID;
  * @param id {string} The id of the user.
- * @return {boolean} If the user is a core admin.
+ * @returns {boolean} If the user is a core admin.
  */
-function isCoreAdmin (id) {
+function isCoreAdmin(id) {
   return CORE_ADM.includes(id);
 }
 
@@ -28,8 +28,8 @@ function isCoreAdmin (id) {
  * @param voteAdminList The list of admins for the DJ.
  * @returns {boolean} Returns true if the member has DJ permissions.
  */
-function hasDJPermissions (message, memberID, printErrMsg, voteAdminList) {
-  if (voteAdminList.length < 1 || voteAdminList.filter(x => x.id === memberID).length > 0) {
+function hasDJPermissions(message, memberID, printErrMsg, voteAdminList) {
+  if (voteAdminList.length < 1 || voteAdminList.filter((x) => x.id === memberID).length > 0) {
     return true;
   } else if (printErrMsg) {
     message.channel.send('*you do not have the necessary permissions to perform this action*');

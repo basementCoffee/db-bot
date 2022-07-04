@@ -3,14 +3,14 @@ const {serializeAndUpdate} = require('./database/utils');
 
 /**
  * Renames a playlist.
- * @param channel
- * @param server
- * @param sheetName
- * @param oldName
- * @param newName
- * @return {Promise<boolean>} True if successful
+ * @param channel The channel to send the message to.
+ * @param server The server to rename the playlist in.
+ * @param sheetName The name of the sheet to rename the playlist in.
+ * @param oldName The old name of the playlist.
+ * @param newName The new name of the playlist.
+ * @returns {Promise<boolean>} True if successful
  */
-async function renamePlaylist (channel, server, sheetName, oldName, newName) {
+async function renamePlaylist(channel, server, sheetName, oldName, newName) {
   const xdb = await getXdb2(server, sheetName);
   if (newName.length > 20) {
     channel.send('*character count for playlist has been exceeded (max is 20)*');
@@ -28,14 +28,14 @@ async function renamePlaylist (channel, server, sheetName, oldName, newName) {
 
 /**
  * Renames a key.
- * @param channel
- * @param server
- * @param sheetName
- * @param oldName
- * @param newName
- * @return {Promise<boolean>} True if successful
+ * @param channel The channel to send the message to.
+ * @param server  The server metadata.
+ * @param sheetName The name of the sheet to rename the key in.
+ * @param oldName The old name of the key.
+ * @param newName The new name of the key.
+ * @returns {Promise<boolean>} True if successful
  */
-async function renameKey (channel, server, sheetName, oldName, newName) {
+async function renameKey(channel, server, sheetName, oldName, newName) {
   const xdb = await getXdb2(server, sheetName);
   if (newName.length > 20) {
     channel.send('*character count for key has been exceeded (max is 20)*');

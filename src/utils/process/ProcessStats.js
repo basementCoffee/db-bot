@@ -24,15 +24,15 @@ class ProcessStats {
   // is null | XDB of the server prefixes. (see database/api for XDB reference)
   serverPrefixes;
 
-  constructor () {}
+  constructor() {}
 
   // adds an active stream
-  addActiveStream (gid) {
+  addActiveStream(gid) {
     this.activeStreamsMap.set(gid, Date.now());
   }
 
   // remove an active stream
-  removeActiveStream (gid) {
+  removeActiveStream(gid) {
     const streamStart = this.activeStreamsMap.get(gid);
     if (streamStart) {
       this.totalStreamTime += Date.now() - streamStart;
@@ -40,15 +40,15 @@ class ProcessStats {
     }
   }
 
-  getActiveStreamSize () {
+  getActiveStreamSize() {
     return this.activeStreamsMap.size;
   }
 
   /**
    * Gets the total stream time in milliseconds
-   * @return {number}
+   * @returns {number}
    */
-  getTotalStreamTime () {
+  getTotalStreamTime() {
     let activeTimes = 0;
     this.activeStreamsMap.forEach((val) => {
       activeTimes += Date.now() - val;
@@ -59,7 +59,7 @@ class ProcessStats {
   /**
    * Sets the process as inactive.
    */
-  setProcessInactive () {
+  setProcessInactive() {
     this.isInactive = true;
     this.serverPrefixes = null;
     console.log('-sidelined-');
@@ -72,7 +72,7 @@ class ProcessStats {
   /**
    * Sets the process as active.
    */
-  setProcessActive () {
+  setProcessActive() {
     this.servers.clear();
     this.isInactive = false;
     console.log('-active-');
@@ -83,7 +83,7 @@ class ProcessStats {
    * Initializes the server with all the required params.
    * @param mgid The message guild id.
    */
-  initializeServer (mgid) {
+  initializeServer(mgid) {
     this.servers.set(mgid, {
       guildId: mgid,
       // now playing is the first element
@@ -136,13 +136,13 @@ class ProcessStats {
         // the StreamType enum
         type: null,
         // the readable stream
-        stream: null
+        stream: null,
         // urlAlt is added if it's a YT stream
       },
       // if a twitch notification was sent
       twitchNotif: {
         isSent: false,
-        isTimer: false
+        isTimer: false,
       },
       // hold a ready-to-go function in case of vc join
       seamless: {
@@ -151,7 +151,7 @@ class ProcessStats {
         // args for the function
         args: undefined,
         // optional message to delete
-        message: undefined
+        message: undefined,
       },
       // [id, xdb]
       userKeys: new Map(),
@@ -163,10 +163,10 @@ class ProcessStats {
       djTimer: {
         timer: false,
         startTime: false,
-        duration: 1800000
+        duration: 1800000,
       },
       // the last time a DJ tip was sent to a group
-      djMessageDate: false
+      djMessageDate: false,
     });
   }
 }
