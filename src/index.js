@@ -806,7 +806,7 @@ async function runCommandCases(message) {
   case 'timestamp':
     if (!message.member.voice?.channel) message.channel.send('must be in a voice channel');
     else if (server.audio.isVoiceChannelMember(message.member)) {
-      message.channel.send('timestamp: ' + formatDuration(server.audio.playbackDuration));
+      message.channel.send('timestamp: ' + formatDuration(server.audio.resource?.playbackDuration));
     } else message.channel.send('nothing is playing right now');
     break;
   case 'verbose':
