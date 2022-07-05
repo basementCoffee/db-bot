@@ -76,7 +76,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       await new Promise((res) => setTimeout(res, 300));
       if (!botInVC(message)) {
         await new Promise((res, rej) => setTimeout((()=> {
-          if (botInVC) {
+          if (botInVC(message)) {
             res();
           } else {
             rej(new Error('VOICE_JOIN_CHANNEL'));
