@@ -10,7 +10,7 @@ class BuildNumber {
 
   constructor () {
     this.baseVersionStr = version.split('.').map(x => (x.length < 2 ? `0${x}` : x)).join('');
-    this.extensionStr = '04';
+    this.extensionStr = '05';
     this.buildNoStr = `${this.baseVersionStr}${this.extensionStr}`;
   }
 
