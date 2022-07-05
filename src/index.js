@@ -699,6 +699,9 @@ async function runCommandCases(message) {
   case 'queue':
     runQueueCommand(server, message, mgid, false);
     break;
+  case 'prefix':
+    message.channel.send('use the command `changeprefix` to change the bot\'s prefix');
+    break;
   case 'changeprefix':
     changePrefix(message, server, prefixString, args[1]);
     break;
