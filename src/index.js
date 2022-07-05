@@ -31,7 +31,7 @@ const {shutdown} = require('./utils/shutdown');
 const {runDatabasePlayCommand, playPlaylistDB} = require('./commands/databasePlayCommand');
 const {runAddCommandWrapper_P, addNewPlaylist} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
-const {playRecommendation, sendRecommendation} = require('./commands/stream/recommendations');
+const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
 const {runRandomToQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');
@@ -677,15 +677,7 @@ async function runCommandCases(message) {
   case 'reccommend':
   case 'recommend':
     args[0] = '';
-    let rUrl = server.queue[0]?.url;
-    if (args[1] && verifyUrl(args[1])) {
-      rUrl = args[1];
-      args[1] = '';
-    } else if (args.length > 2 && verifyUrl(args[args.length - 1])) {
-      rUrl = args[args.length - 1];
-      args[args.length - 1] = '';
-    }
-    sendRecommendation(message, args.join(' ').trim(), rUrl, bot.users).then();
+    sendRecommendationWrapper(message, args, bot.users, server).then();
     break;
   case 'rm':
   case 'remove':

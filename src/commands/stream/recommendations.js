@@ -1,4 +1,4 @@
-const {botInVC, setSeamless, resetSession, pushQueue} = require('../../utils/utils');
+const {botInVC, setSeamless, resetSession, pushQueue, verifyUrl} = require('../../utils/utils');
 const {bot, SPOTIFY_BASE_LINK, CORE_ADM} = require('../../utils/process/constants');
 const {playLinkToVC} = require('./stream');
 const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
@@ -6,23 +6,50 @@ const {addLinkToQueue} = require('../../utils/playlist');
 const {isCoreAdmin} = require('../../utils/permissions');
 
 /**
+ * Sends a recommendation to a user. EXPERIMENTAL. This is a wrapper for sendRecommendation.
+ * The args is expected to contain the message contents which includes a url and a message.
+ * @param message The message metadata.
+ * @param args The message contents in an array.
+ * @param uManager bot.users
+ * @param server The server metadata.
+ * @return {Promise<void>}
+ */
+async function sendRecommendationWrapper(message, args, uManager, server) {
+  let url;
+  let infos;
+  if (args[1] && verifyUrl(args[1])) {
+    url = args[1];
+    args[1] = '';
+  } else if (args.length > 2 && verifyUrl(args[args.length - 1])) {
+    url = args[args.length - 1];
+    args[args.length - 1] = '';
+  } else {
+    url = server.queue[0]?.url;
+    infos = server.queue[0]?.infos;
+  }
+  sendRecommendation(message, args.join(' '), url, uManager, infos);
+}
+
+/**
  * Send a recommendation to a user. EXPERIMENTAL.
  * @param message The message metadata.
  * @param content Optional - text to add to the recommendation.
  * @param url The url to recommend.
  * @param uManager bot.users
+ * @param infos {Object?} Optional - The url infos data.
  * @returns {Promise<void>}
  */
-async function sendRecommendation(message, content, url, uManager) {
+async function sendRecommendation(message, content, url, uManager, infos) {
   if (!isCoreAdmin(message.member.id)) return;
   if (!url) return;
+  else url = url.trim();
   try {
     const recUser = await uManager.fetch((message.member.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]));
     // formatting for the content
-    const desc = (content ? `:\n*${content}*` : '');
+    const desc = (content ? `:\n*${content.trim()}*` : '');
     await recUser.send({
-      content: `**${message.member.user.username}** has a recommendation for you${desc}\n<${url}>`,
-      embed: (await createEmbed(url)).embed,
+      content: `**${message.member.user.username}** has a recommendation for you${desc}\n\<${url}\>`,
+      embeds: [(await createEmbed(url, infos)).embed],
     });
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
   } catch (e) {
@@ -123,4 +150,4 @@ async function playRecommendation(message, server, args) {
   }
 }
 
-module.exports = {playRecommendation, sendRecommendation};
+module.exports = {playRecommendation, sendRecommendationWrapper};
