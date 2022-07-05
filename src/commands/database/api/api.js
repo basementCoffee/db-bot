@@ -367,7 +367,7 @@ const gsUpdateAdd2 = async (givenValue, firstColumnLetter, nameOfSheet) => {
 
 /**
  * Overwrites any cell. Overwrites cell D1 by default (if cell is not specified).
- * @param values The value to input into the cell
+ * @param values {Array<string>} The value to input into the cell(s)
  * @param nameOfSheet the name of the sheet to change
  * @param column1 The first column to update
  * @param row1 The first row to update
