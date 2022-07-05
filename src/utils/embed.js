@@ -4,8 +4,7 @@ const {MessageEmbed} = require('discord.js');
 const scdl = require('soundcloud-downloader').default;
 const ytdl = require('ytdl-core-discord');
 const {formatDuration, getQueueText, convertYTFormatToMS} = require('./utils');
-const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, CORE_ADM} = require('./process/constants');
-const {isCoreAdmin} = require('./permissions');
+const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK} = require('./process/constants');
 
 /**
  * Return an object containing the embed and time based on the data provided.
@@ -127,29 +126,4 @@ async function sessionEndEmbed(server, item) {
   }
 }
 
-/**
- * Send a recommendation to a user. EXPERIMENTAL.
- * @param message The message metadata.
- * @param content Optional - text to add to the recommendation.
- * @param url The url to recommend.
- * @param uManager bot.users
- * @returns {Promise<void>}
- */
-async function sendRecommendation(message, content, url, uManager) {
-  if (!isCoreAdmin(message.member.id)) return;
-  if (!url) return;
-  try {
-    const recUser = await uManager.fetch((message.member.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]));
-    // formatting for the content
-    const desc = (content ? `:\n*${content}*` : '');
-    await recUser.send({
-      content: `**${message.member.user.username}** has a recommendation for you${desc}\n<${url}>`,
-      embed: (await createEmbed(url)).embed,
-    });
-    message.channel.send(`*recommendation sent to ${recUser.username}*`);
-  } catch (e) {
-    console.log(e);
-  }
-}
-
-module.exports = {updateActiveEmbed, sendRecommendation, createEmbed, sessionEndEmbed};
+module.exports = {updateActiveEmbed, createEmbed, sessionEndEmbed};

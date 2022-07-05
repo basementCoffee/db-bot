@@ -21,7 +21,7 @@ const {
 } = require('./utils/process/constants');
 const {reactions} = require('./utils/reactions');
 const {runRemoveCommand, removePlaylist} = require('./commands/remove');
-const {updateActiveEmbed, sendRecommendation, sessionEndEmbed} = require('./utils/embed');
+const {updateActiveEmbed, sessionEndEmbed} = require('./utils/embed');
 const {runMoveItemCommand, moveKeysWrapper} = require('./commands/move');
 const {
   checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand,
@@ -31,7 +31,7 @@ const {shutdown} = require('./utils/shutdown');
 const {runDatabasePlayCommand, playPlaylistDB} = require('./commands/databasePlayCommand');
 const {runAddCommandWrapper_P, addNewPlaylist} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
-const {playRecommendation} = require('./commands/stream/recommendations');
+const {playRecommendation, sendRecommendation} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
 const {runRandomToQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');

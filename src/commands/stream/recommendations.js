@@ -1,9 +1,34 @@
 const {botInVC, setSeamless, resetSession, pushQueue} = require('../../utils/utils');
-const {bot, SPOTIFY_BASE_LINK} = require('../../utils/process/constants');
+const {bot, SPOTIFY_BASE_LINK, CORE_ADM} = require('../../utils/process/constants');
 const {playLinkToVC} = require('./stream');
-const {updateActiveEmbed} = require('../../utils/embed');
+const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
 const {addLinkToQueue} = require('../../utils/playlist');
 const {isCoreAdmin} = require('../../utils/permissions');
+
+/**
+ * Send a recommendation to a user. EXPERIMENTAL.
+ * @param message The message metadata.
+ * @param content Optional - text to add to the recommendation.
+ * @param url The url to recommend.
+ * @param uManager bot.users
+ * @returns {Promise<void>}
+ */
+async function sendRecommendation(message, content, url, uManager) {
+  if (!isCoreAdmin(message.member.id)) return;
+  if (!url) return;
+  try {
+    const recUser = await uManager.fetch((message.member.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]));
+    // formatting for the content
+    const desc = (content ? `:\n*${content}*` : '');
+    await recUser.send({
+      content: `**${message.member.user.username}** has a recommendation for you${desc}\n<${url}>`,
+      embed: (await createEmbed(url)).embed,
+    });
+    message.channel.send(`*recommendation sent to ${recUser.username}*`);
+  } catch (e) {
+    console.log(e);
+  }
+}
 
 /**
  * Plays a recommendation.
@@ -98,4 +123,4 @@ async function playRecommendation(message, server, args) {
   }
 }
 
-module.exports = {playRecommendation};
+module.exports = {playRecommendation, sendRecommendation};
