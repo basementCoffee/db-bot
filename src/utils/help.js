@@ -3,7 +3,7 @@ const {MessageEmbed} = require('discord.js');
 function getPages (ps, version) {
   return [
     // PAGE 1
-    '***[NEW]** - revamped playlists (May 2022)*\n\n' +
+    `***[NEW] (July 2022)** - release of db vibe (db bot 2.0) -> [try ${ps}invite]\n\n` +
     '--------------  **Music Commands** --------------\n' +
     `\`${ps}play [word] \` Searches YouTube and plays *[p]* \n` +
     `\`${ps}play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n` +

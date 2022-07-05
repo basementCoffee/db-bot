@@ -685,6 +685,7 @@ async function runCommandCases (message) {
     case 'queue':
       runQueueCommand(server, message, mgid, false);
       break;
+    case 'prefix':
     case 'changeprefix':
       changePrefix(message, server, prefixString, args[1]);
       break;
@@ -931,7 +932,7 @@ async function runCommandCases (message) {
       break;
     case 'inv':
     case 'invite':
-      message.channel.send(INVITE_MSG);
+      message.channel.send(getInviteEmbed());
       break;
     case 'hide':
     case 'silence':
@@ -1206,6 +1207,13 @@ bot.on('message', async (message) => {
     }
   }
 });
+
+function getInviteEmbed(){
+  return new MessageEmbed()
+    .setTitle('Invite')
+    .setDescription(INVITE_MSG)
+    .setFooter('db bot may eventually be shut down as it is running on an older framework of discord.js')
+}
 
 /**
  * Manages a custom or PM2 update command. Does not work with the heroku process.

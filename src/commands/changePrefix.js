@@ -1,6 +1,7 @@
 const {gsrun, gsUpdateOverwrite} = require('./database/api/api');
 const {runDeleteCommand} = require('./database/delete');
 const {addToDatabase} = require('./database/add');
+const {dbVibeLink} = require('../utils/process/constants');
 
 /**
  * Changes the server's prefix.
@@ -11,7 +12,8 @@ const {addToDatabase} = require('./database/add');
  * @returns {*}
  */
 function changePrefix(message, server, prefixString, newPrefix){
-  message.channel.send('\`command is under maintenance\`');
+  message.channel.send('\`command is no longer supported with db bot\`');
+  message.channel.send(`*replace db bot with db vibe (db bot 2.0) for improved features*\n${dbVibeLink}`);
   return; // todo - fix command (issue may be with the database handshake)
   if (!message.member.hasPermission('KICK_MEMBERS')) {
     return message.channel.send('Permissions Error: Only members who can kick other members can change the prefix.');

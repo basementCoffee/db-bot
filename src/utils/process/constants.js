@@ -41,13 +41,15 @@ const StreamType = {
   YOUTUBE: 'yt',
   TWITCH: 'tw'
 };
+
+const dbVibeLink = 'https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot';
+const dbBotLink = 'https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot';
 // the invite link message
-const INVITE_MSG = "Here's db vibe - our next generation db bot\n<https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot>" +
-  "\nor continue to use db bot which will no longer receive updates" +
-  "\nhttps://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot"
+const INVITE_MSG = `Here's **db vibe** (db bot with continued support)\n[click here for db vibe](<${dbVibeLink}>)\n\n` +
+  `or continue to use **db bot** which will no longer receive updates\n[click here for db bot](<${dbBotLink}>)\n\n`;
 
 module.exports = {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
   SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM,
-  MAX_KEY_LENGTH, INVITE_MSG
+  MAX_KEY_LENGTH, INVITE_MSG, dbVibeLink, dbBotLink
 };
