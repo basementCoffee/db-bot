@@ -4,9 +4,9 @@ const processStats = require('./process/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
 
 /**
- *  Shuts down the current process.
+ * Shuts down the current process.
  * @param {string} type The type of shutdown.
- * @returns {Promise<void>}
+ * @returns {Function} The shutdown function.
  */
 function shutdown(type) {
   return () => {
