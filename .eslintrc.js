@@ -29,7 +29,6 @@ module.exports = {
       {
         requireReturn: false,
         requireParamType: false,
-        prefer: {return: 'returns'},
         requireReturnDescription: false,
       },
     ],
