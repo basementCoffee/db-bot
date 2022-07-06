@@ -2,6 +2,7 @@ const {version} = require('../../package.json');
 const {reactions} = require('./reactions');
 const {bot, botID, INVITE_MSG} = require('./process/constants');
 const {getHelpList} = require('./help');
+const CH = require('../../channel.json');
 
 /**
  * Handles message requests.
@@ -21,7 +22,7 @@ function dmHandler(message, messageContent) {
   }
   const mb = reactions.OUTBOX;
   // noinspection JSUnresolvedFunction
-  bot.channels.cache.get('870800306655592489')
+  bot.channels.cache.get(CH.dm)
     .send('------------------------------------------\n' +
       '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
       messageContent + '\n------------------------------------------').then((msg) => {
