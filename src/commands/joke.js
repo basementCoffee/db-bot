@@ -1,5 +1,3 @@
-
-
 const request = require('request');
 const cheerio = require('cheerio');
 
@@ -16,7 +14,6 @@ function getJoke() {
         // parse html
         const $ = cheerio.load(body);
         let val = $('p').text();
-        console.log(val);
         val = val.substring(0, val.indexOf('icanhazdadjoke.com'));
         resolve(val);
       }
