@@ -631,9 +631,9 @@ async function runCommandCases (message) {
     case 'link':
       if (!args[1]) {
         if (server.queue[0] && message.member.voice?.channel) {
-          return message.channel.send(server.queue[0]);
+          return message.channel.send(server.queue[0].url);
         } else {
-          return message.channel.send('*add a key to get it\'s ' + statement.substr(1) + ' \`(i.e. ' + statement + ' [key])\`*');
+          return message.channel.send('*add a key to get it\'s ' + statement + ' \`(i.e. ' + statement + ' [key])\`*');
         }
       }
       await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], getSheetName(message.member.id), 'm');
