@@ -638,8 +638,8 @@ async function runCommandCases(message) {
   case 'gurl':
   case 'glink':
     if (!args[1]) {
-      if (server.queue[0] && message.member.voice?.channel) {
-        return message.channel.send(server.queue[0]);
+      if (server.queue[0] && message.member.voice.channel) {
+        return message.channel.send(server.queue[0].url);
       } else {
         return message.channel.send('*add a key to get it\'s ' + statement.substr(1) +
         ' \`(i.e. ' + statement + ' [key])\`*');
