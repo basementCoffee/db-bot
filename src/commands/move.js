@@ -1,4 +1,4 @@
-const {botInVC} = require('../utils/utils');
+const utils = require('../utils/utils');
 const {serializeAndUpdate} = require('./database/utils');
 
 /**
@@ -10,7 +10,7 @@ const {serializeAndUpdate} = require('./database/utils');
  * @returns {void}
  */
 function runMoveItemCommand(message, arr, posA, posB) {
-  if (!botInVC(message)) return;
+  if (!utils.botInVC(message)) return;
   posA = Math.floor(posA);
   posB = Math.floor(posB);
   const MIN_POS = 1;
