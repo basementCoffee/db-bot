@@ -7,7 +7,7 @@
     "start": "node ./src/index.js",
     "dev": "node --trace-warnings ./src/index.js --dev",
     "pm2": "echo running pm2 script...\npm2 start src/index.js --watch --name vibe",
-    "test": "jest --detectOpenHandles"
+    "test": "jest --detectOpenHandles --setupFiles dotenv/config --forceExit"
   },
   "engines": {
     "node": ">=16.15.1"
@@ -18,7 +18,7 @@
     "@discordjs/opus": "^0.8.0",
     "@discordjs/voice": "^0.10.0",
     "discord.js": "^13.8.1",
-    "dotenv": "^10.0.0",
+    "dotenv": "^16.0.1",
     "ffmpeg": "^0.0.4",
     "ffmpeg-static": "^4.4.1",
     "fluent-ffmpeg": "^2.1.2",
