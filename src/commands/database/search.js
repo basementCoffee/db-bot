@@ -88,7 +88,7 @@ async function searchForSingleKey(message, sheetName, providedString, server) {
  * @param sheetName The sheet name to use for the lookup.
  * @param link The link to lookup. Defaults to server
  * @param server The server metadata.
- * @returns {Boolean} If the request was a valid link.
+ * @returns {Promise<boolean>} If the request was a valid link.
  */
 async function runLookupLink(message, sheetName, link, server) {
   if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
@@ -108,11 +108,11 @@ async function runLookupLink(message, sheetName, link, server) {
  * @param message The message that triggered the bot.
  * @param server The server.
  * @param sheetName The guild id.
- * @param providedString The string to search for. Can contain multiple comma delinated strings.
+ * @param providedString The string to search for. Can contain multiple comma delineated strings.
  */
 async function runUniversalSearchCommand(message, server, sheetName, providedString) {
   if (!providedString) return message.channel.send('must provide a link or word');
-  const words = providedString.split(/, | |,/);
+  const words = providedString.trim().split(/, | |,/);
   // returns true if the item provided was a link, handles the request
   if (await runLookupLink(message, sheetName, words[0], server)) return;
   if (words.length === 1) {
