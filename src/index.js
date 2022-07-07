@@ -1329,7 +1329,7 @@ async function devProcessCommands(message) {
       }
       // the process message: [sidelined / active] [process number] [version number]
       const procMsg = () => {
-        (processStats.isInactive ? 'sidelined: ' : (processStats.devMode ? 'active: ' : '**active: **')) +
+        return (processStats.isInactive ? 'sidelined: ' : (processStats.devMode ? 'active: ' : '**active: **')) +
         process.pid +' (' + version + ')' + dm;
       };
       message.channel.send(procMsg()).then((sentMsg) => {
