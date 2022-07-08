@@ -43,7 +43,7 @@ const fluentFfmpeg = require('fluent-ffmpeg');
  * @param vc The voice channel to play the song in.
  * @param server The server playback metadata.
  * @param retries {number} Optional - Integer representing the number of retries.
- * @param seekSec {number} The amount to seek in seconds
+ * @param seekSec {number} Optional - The amount to seek in seconds
  * @returns {Promise<void>}
  */
 async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec) {
@@ -69,22 +69,28 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   // the alternative url to play
   let urlAlt = whatToPlay;
   let connection = server.audio.connection;
-  if (!botInVC(message) || !connection || (server.activeVoiceChannelId !== vc.id)) {
+  if (!botInVC(message) || !connection || (server.audio?.connection.joinConfig.channelId !== vc.id)) {
     try {
       connection = server.audio.joinVoiceChannel(message.guild, vc.id);
-      server.activeVoiceChannelId = vc.id;
       await new Promise((res) => setTimeout(res, 300));
-      if (!botInVC(message)) {
-        await new Promise((res, rej) => setTimeout((()=> {
+      if (!botInVC(message) || server.audio?.connection.joinConfig.channelId !== vc.id) {
+        await new Promise((res, rej) => setTimeout((() => {
           if (botInVC(message)) {
-            res();
+            if (server.audio?.connection.joinConfig.channelId !== vc.id) {
+              rej(new Error('VOICE_JOIN_CHANNEL_LIVE'));
+            } else {
+              res();
+            }
           } else {
             rej(new Error('VOICE_JOIN_CHANNEL'));
           }
-        })), 300);
+        }), 300));
       }
     } catch (e) {
-      resetSession(server);
+      // if the bot is already in a voice channel but cannot join the requested channel
+      if (e.message !== 'VOICE_JOIN_CHANNEL_LIVE') {
+        resetSession(server);
+      }
       catchVCJoinError(e, message.channel);
       return;
     }
