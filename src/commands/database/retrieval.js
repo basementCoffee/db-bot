@@ -27,9 +27,9 @@ async function getXdb(server, sheetName, save) {
 /**
  * Gets the user keys from the database.
  * @param server The server object.
- * @param sheetName {string}
- * @param save {any?}
- * @returns {Promise<unknown>}
+ * @param sheetName {string} The name of the sheet to retrieve
+ * @param save {any?} Whether to save the function to the server
+ * @returns {Promise<{playlistArray: [], playlists: Map<unknown, unknown>, globalKeys: any}>}
  */
 async function getXdb_P(server, sheetName, save) {
   if (!save) return (server.userKeys.get(sheetName) || (await gsrun_P('E', 'F', sheetName)));
