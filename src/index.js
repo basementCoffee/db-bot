@@ -1016,6 +1016,7 @@ async function runCommandCases(message) {
           '\n' + prefixString + 'gzmem - see the process\'s memory usage' +
           '\n' + prefixString + 'gzc - view commands stats' +
           '\n' + prefixString + 'gznuke [num] [\'db\'?] - deletes [num] recent messages (or db only)' +
+          '\n' + prefixString + 'gzr [userId] - queries a message from the bot to the user' +
           '\n\n**calibrate the active bot**' +
           '\n' + prefixString + 'gzq - quit/restarts the active bot' +
           '\n' + prefixString + 'gzupdate - updates the (active) pi instance of the bot' +
