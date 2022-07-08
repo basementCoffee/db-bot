@@ -92,8 +92,8 @@ async function searchForSingleKey(message, sheetName, providedString, server) {
  */
 async function runLookupLink(message, sheetName, link, server) {
   if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
-  const xdb = await getXdb(server, sheetName);
-  for (const [key, value] of xdb.congratsDatabase) {
+  const xdb = await getXdb2(server, sheetName);
+  for (const [key, value] of xdb.globalKeys) {
     if (value === link) {
       message.channel.send(`Found it! key name is: **${key}**`);
       return true;
@@ -126,8 +126,7 @@ async function runUniversalSearchCommand(message, server, sheetName, providedStr
       if (obj.link) finalString += `${obj.valueObj.ss}:\n${obj.link}\n`;
     }
     if (finalString === BASE_KEYS_STRING) {
-      finalString = 'did not find any exact key matches, ' +
-        'try a single search word (instead of multiple) for a more refined search within the keys lists';
+      finalString = 'did not find any exact key matches, try a single search word (instead of multiple) for a more refined search within the keys lists';
     }
     message.channel.send(finalString);
   }
