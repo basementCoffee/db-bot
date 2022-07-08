@@ -1,4 +1,4 @@
-const {setOfBotsOn, bot} = require('../utils/process/constants');
+const {setOfBotsOn, bot, PREFIX_SN} = require('../utils/process/constants');
 const CH = require('../../channel.json');
 const processStats = require('../utils/process/ProcessStats');
 const buildNo = require('../utils/process/BuildNumber');
@@ -26,7 +26,7 @@ async function responseHandler() {
   resHandlerTimeout = null;
   if (setOfBotsOn.size < 1 && processStats.isInactive) {
     processStats.servers.clear();
-    const xdb = await gsrun('A', 'B', 'prefixes');
+    const xdb = await gsrun('A', 'B', PREFIX_SN);
     for (const [gid, pfx] of xdb.congratsDatabase) {
       processStats.initializeServer(gid);
       processStats.servers.get(gid).prefix = pfx;

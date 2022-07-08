@@ -2,6 +2,7 @@
 const {botInVC, isPersonalSheet} = require('../../utils/utils');
 const {gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite} = require('./api/api');
 const processStats = require('../../utils/process/ProcessStats');
+const {PREFIX_SN} = require('../../utils/process/constants');
 
 // eslint-disable-next-line valid-jsdoc
 /**
@@ -88,13 +89,13 @@ async function sendListSize(message, server, sheetName) {
 async function getServerPrefix(server, mgid) {
   try {
     if (!processStats.serverPrefixes) {
-      processStats.serverPrefixes = await gsrun('A', 'B', 'prefixes');
+      processStats.serverPrefixes = await gsrun('A', 'B', PREFIX_SN);
     }
     server.prefix = processStats.serverPrefixes.congratsDatabase.get(mgid);
     if (!server.prefix) {
       server.prefix = '.';
       try {
-        gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', processStats.serverPrefixes.dsInt);
+        gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);
       } catch (e) {
         console.log(e);
       }
@@ -102,7 +103,7 @@ async function getServerPrefix(server, mgid) {
   } catch (e) {
     console.log(e);
     server.prefix = '.';
-    gsUpdateAdd(mgid, '.', 'A', 'B', 'prefixes', 1);
+    gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);
   }
 }
 

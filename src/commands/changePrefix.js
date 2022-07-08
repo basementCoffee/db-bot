@@ -1,4 +1,5 @@
-const {gsrun, gsUpdateOverwrite} = require('./database/api/api');
+const {gsrun, gsUpdateOverwrite, gsUpdateAdd} = require('./database/api/api');
+const {PREFIX_SN} = require('../utils/process/constants');
 
 /**
  * Changes the server's prefix.
@@ -9,7 +10,6 @@ const {gsrun, gsUpdateOverwrite} = require('./database/api/api');
  * @returns {*}
  */
 function changePrefix(message, server, oldPrefix, newPrefix) {
-  message.channel.send('command is currently not supported');
   if (!message.member.permissions.has('KICK_MEMBERS')) {
     return message.channel.send('\`Permissions Error: Only members who can kick other members can change the prefix.\`');
   }
@@ -26,14 +26,15 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
     return message.channel.send('cannot have a letter as a prefix.');
   }
   message.channel.send('*changing prefix...*').then(async (prefixMsg) => {
-    await gsrun('A', 'B', 'prefixes').then(async (xdb) => {
+    await gsrun('A', 'B', PREFIX_SN).then(async (xdb) => {
       let index = xdb.line.indexOf(message.guild.id);
       if (index === -1) {
-        return message.channel.send('\`There was an error - please contact dev team\`');
+        gsUpdateAdd(message.guild.id, oldPrefix, 'A', 'B', PREFIX_SN);
+        return message.channel.send('\`There was an error - please try again or contact dev team\`');
       }
       index += 2;
-      await gsUpdateOverwrite([message.guild.id, newPrefix], 'prefixes', 'A', index, 'B', index);
-      gsrun('A', 'B', 'prefixes').then(async (xdb) => {
+      await gsUpdateOverwrite([message.guild.id, newPrefix], PREFIX_SN, 'A', index, 'B', index);
+      gsrun('A', 'B', PREFIX_SN).then(async (xdb) => {
         server.prefix = xdb.congratsDatabase.get(message.guild.id);
         if (server.prefix === newPrefix) {
           prefixMsg.edit({content: `Prefix successfully changed to: ${server.prefix}`});

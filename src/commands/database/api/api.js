@@ -6,6 +6,13 @@ const stoken = process.env.STOKEN.replace(/\\n/gm, '\n');
 
 const GENERAL = 'GENERAL';
 
+/**
+ * Returns an Excel size function of for a given column (counts all values in the column).
+ * @param col {string} The column to
+ * @return {string} The size function for the column provided
+ */
+const dbSizeFunc = (col) => `=(COUNTA(${col}1:${col})+1)`;
+
 const client2 = new google.auth.JWT(client_email, null, private_key, [
   'https://www.googleapis.com/auth/spreadsheets',
 ]);
@@ -44,7 +51,10 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
   };
   let dataSizeFromSheets;
   let dsInt;
-  if (numOfRuns > 2) return;
+  if (numOfRuns > 2) {
+    console.log('Error: Too many recursions');
+    return;
+  }
   try {
     dataSizeFromSheets = await gsapi.spreadsheets.values.get(
       spreadsheetSizeObjects,
@@ -53,12 +63,12 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
     // dataSize.set(nameOfSheet, dataSizeFromSheets.data.values);
   } catch (e) {
     await createSheetNoMessage(nameOfSheet);
-    await gsUpdateAdd2(1, 'D', nameOfSheet);
+    await gsUpdateAdd2(dbSizeFunc('A'), 'D', nameOfSheet);
     return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
   }
 
   if (!dsInt) {
-    await gsUpdateAdd2(1, 'D', nameOfSheet);
+    await gsUpdateAdd2(dbSizeFunc('A'), 'D', nameOfSheet);
     return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
   }
 
@@ -124,7 +134,7 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
   }
 
   if (!dsInt) {
-    await gsUpdateOverwrite(['=(COUNTA(E2:E)+1)'], nameOfSheet, 'G', 1);
+    await gsUpdateOverwrite([dbSizeFunc('E')], nameOfSheet, 'G', 1);
     return await gsrun_P(columnToRun, secondColumn, nameOfSheet, ++numOfRuns);
   }
   const songRange = `${nameOfSheet}!${columnToRun}2:${secondColumn}${dsInt + 1}`;
@@ -290,7 +300,7 @@ const createSheetNoMessage = async (nameOfSheet) => {
   async function(err, response) {
     if (err) {
     } else {
-      await gsUpdateOverwrite(['=(COUNTA(E2:E)+1)'], nameOfSheet, 'G', 1);
+      await gsUpdateOverwrite([dbSizeFunc('E')], nameOfSheet, 'G', 1);
     }
     return response;
   },
@@ -304,9 +314,8 @@ const createSheetNoMessage = async (nameOfSheet) => {
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
  * @param nameOfSheet The name of the sheet to update
- * @param dsInt The size of the database plus 1
  */
-const gsUpdateAdd = (key, link, firstColumnLetter, secondColumnLetter, nameOfSheet, dsInt) => {
+const gsUpdateAdd = (key, link, firstColumnLetter, secondColumnLetter, nameOfSheet) => {
   gsapi.spreadsheets.values
     .append({
       spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',

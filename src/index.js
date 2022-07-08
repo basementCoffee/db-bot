@@ -18,6 +18,7 @@ const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
 const {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG,
+  PREFIX_SN,
 } = require('./utils/process/constants');
 const {reactions} = require('./utils/reactions');
 const {runRemoveCommand, removePlaylist} = require('./commands/remove');
@@ -1169,12 +1170,12 @@ async function runCommandCases(message) {
 
 bot.on('guildDelete', (guild) => {
   if (processStats.isInactive || processStats.devMode) return;
-  gsrun('A', 'B', 'prefixes').then(async (xdb) => {
+  gsrun('A', 'B', PREFIX_SN).then(async (xdb) => {
     for (let i = 0; i < xdb.line.length; i++) {
       const itemToCheck = xdb.line[i];
       if (itemToCheck === guild.id) {
         i += 1;
-        await deleteRows('prefixes', i);
+        await deleteRows(PREFIX_SN, i);
         break;
       }
     }

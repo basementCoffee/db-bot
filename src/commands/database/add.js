@@ -37,7 +37,7 @@ function addToDatabase(server, args, message, sheetName, printMsgToChannel) {
           }
         }
         if (!alreadyExists) {
-          await gsUpdateAdd(args[z], args[z + 1], 'A', 'B', sheetName, xdb.dsInt);
+          await gsUpdateAdd(args[z], args[z + 1], 'A', 'B', sheetName);
           xdb.congratsDatabase.set(args[z], args[z + 1]);
         }
       }
