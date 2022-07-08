@@ -128,8 +128,7 @@ class ProcessStats {
       activeUserQuestion: new Map(),
       // persistent user settings
       userSettings: new Map(),
-      // the id of the active voice channel
-      activeVoiceChannelId: undefined,
+      // the specific server's audio class
       audio: new AudioImpl(),
       // properties pertaining to the active stream
       streamData: {
