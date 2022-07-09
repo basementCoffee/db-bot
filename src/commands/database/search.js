@@ -93,9 +93,9 @@ async function searchForSingleKey(message, sheetName, providedString, server) {
 async function runLookupLink(message, sheetName, link, server) {
   if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
   const xdb = await getXdb2(server, sheetName);
-  for (const [key, value] of xdb.globalKeys) {
-    if (value === link) {
-      message.channel.send(`Found it! key name is: **${key}**`);
+  for (const [, value] of xdb.globalKeys) {
+    if (value.link === link) {
+      message.channel.send(`Found it! key name is: **${value.name}**`);
       return true;
     }
   }
