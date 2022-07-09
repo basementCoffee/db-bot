@@ -1458,10 +1458,10 @@ async function devProcessCommands (message) {
 
 // parses message, provides a response
 bot.on('message', (message) => {
-  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.member.id)) {
+  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id)) {
     return devProcessCommands(message);
   }
-  if (message.author.bot || processStats.isInactive || processStats.devMode && !isAdmin(message.member.id)) return;
+  if (message.author.bot || processStats.isInactive || processStats.devMode && !isAdmin(message.author.id)) return;
   if (message.channel.type === 'dm') {
     return dmHandler(message, message.content);
   } else {
