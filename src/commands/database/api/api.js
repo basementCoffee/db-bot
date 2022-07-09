@@ -155,7 +155,6 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
     // the array of rows (has two columns)
     try {
       line = arrayOfSpreadsheetValues[i];
-      // console.log(line);
       if (line && line[0]) {
         // convert to -------
         // playlistMap [playlist, keysMap]
@@ -174,7 +173,7 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
           for (const keyObject of playlistData.ks) {
             const deserializedKeyObject = {
               name: keyObject.kn,
-              link: values[incrementor++],
+              link: values[incrementor++].trim(),
               timeStamp: keyObject.ts,
               playlistName: playlistData.pn,
             };
