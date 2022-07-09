@@ -2,6 +2,7 @@ const {version} = require('../../package.json');
 const {reactions} = require('./reactions');
 const {bot, botID, INVITE_MSG} = require('./process/constants');
 const {getHelpList} = require('./help');
+const {MessageEmbed} = require('discord.js');
 
 /**
  * Handles message requests.
@@ -15,8 +16,15 @@ function dmHandler (message, messageContent) {
   if (mc.length < 9) {
     if (mc.length < 7 && mc.includes('help '))
       return message.author.send(getHelpList('.', 1, version)[0], version);
-    else if (mc.includes('invite '))
-      return message.channel.send(INVITE_MSG);
+    else if (mc.includes('invite ')){
+      const inviteEmbed = new MessageEmbed()
+        .setTitle('Invite me to your server!')
+        .setDescription(INVITE_MSG)
+        .setColor('#0099ff')
+        .setFooter('db bot may eventually be shutdown - it is running on an older version of discord.js');
+      return message.channel.send(inviteEmbed);
+    }
+
   }
   const mb = reactions.OUTBOX;
   // noinspection JSUnresolvedFunction
