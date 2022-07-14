@@ -1,5 +1,5 @@
 const {verifyUrl, verifyPlaylist, botInVC} = require('../../utils/utils');
-const {getXdb, getXdb2} = require('./retrieval');
+const {getXdb2} = require('./retrieval');
 
 /**
  * Searches a Map for the given key. Provides the keys that contain the given key.
@@ -62,22 +62,22 @@ function getAssumption (word, namesArray) {
  */
 async function searchForSingleKey (message, sheetName, providedString, server) {
   const xdb = await getXdb2(server, sheetName, true);
-  const so = runSearchCommand(providedString, Array.from(xdb.globalKeys.values()).map(item => item.name));
+  const so = runSearchCommand(providedString, Array.from(xdb.globalKeys.values()).map((item) => item.name));
   if (so.ssi) {
     let link;
     if (so.ssi === 1) link = xdb.globalKeys.get(so.ss.toUpperCase())?.link;
     return {
       valueObj: so,
       link,
-      message: `keys found: ${so.ss} ${(link ? `\n${link}` : '')}`
+      message: `keys found: ${so.ss} ${(link ? `\n${link}` : '')}`,
     };
   } else if (providedString.length < 2) {
     return {
-      message: 'Did not find any keys that start with the given letter.'
+      message: 'Did not find any keys that start with the given letter.',
     };
   } else {
     return {
-      message: 'Did not find any keys that contain \'' + providedString + '\''
+      message: 'Did not find any keys that contain \'' + providedString + '\'',
     };
   }
 }
@@ -90,16 +90,25 @@ async function searchForSingleKey (message, sheetName, providedString, server) {
  * @param server The server metadata.
  * @returns {Boolean} If the request was a valid link.
  */
+/**
+ * Looks for an exact match of a given link within a given database.
+ * @param message The message metadata.
+ * @param sheetName The sheet name to use for the lookup.
+ * @param link The link to lookup. Defaults to server
+ * @param server The server metadata.
+ * @returns {Promise<boolean>} If the request was a valid link.
+ */
 async function runLookupLink (message, sheetName, link, server) {
   if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
-  const xdb = await getXdb(server, sheetName);
-  for (let [key, value] of xdb.congratsDatabase) {
-    if (value === link) {
-      message.channel.send(`Found it! key name is: **${key}**`);
+  const xdb = await getXdb2(server, sheetName);
+  for (const [, value] of xdb.globalKeys) {
+    console.log(value.link);
+    if (value.link === link) {
+      message.channel.send(`Found it! key name is: **${value.name}**`);
       return true;
     }
   }
-  message.channel.send(`could not find any keys matching the given link`);
+  message.channel.send('could not find any keys matching the given link');
   return true;
 }
 
@@ -112,12 +121,16 @@ async function runLookupLink (message, sheetName, link, server) {
  */
 async function runUniversalSearchCommand (message, server, sheetName, providedString) {
   if (!providedString) return message.channel.send('must provide a link or word');
-  const words = providedString.split(/, | |,/);
+  const words = providedString.trim().split(/, | |,/);
+  console.log(words);
   // returns true if the item provided was a link, handles the request
   if (await runLookupLink(message, sheetName, words[0], server)) return;
+  console.log('passed lookup link');
   if (words.length === 1) {
+    console.log('A');
     message.channel.send((await searchForSingleKey(message, sheetName, words[0], server)).message);
   } else {
+  console.log('B');
     const BASE_KEYS_STRING = '**_Keys found_**\n';
     let finalString = BASE_KEYS_STRING;
     let obj;
@@ -126,8 +139,7 @@ async function runUniversalSearchCommand (message, server, sheetName, providedSt
       if (obj.link) finalString += `${obj.valueObj.ss}:\n${obj.link}\n`;
     }
     if (finalString === BASE_KEYS_STRING) {
-      finalString = 'did not find any exact key matches, ' +
-        'try a single search word (instead of multiple) for a more refined search within the keys lists';
+      finalString = 'did not find any exact key matches, try a single search word (instead of multiple) for a more refined search within the keys lists';
     }
     message.channel.send(finalString);
   }
