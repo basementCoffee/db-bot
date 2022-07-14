@@ -937,7 +937,7 @@ async function runCommandCases(message) {
   case 'restart':
     runRestartCommand(message, mgid, 'restart', server);
     break;
-  case 'empty':
+  case 'clearqueue':
   case 'clear':
     if (!message.member.voice?.channel) return message.channel.send('must be in a voice channel to clear');
     if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member)) {
