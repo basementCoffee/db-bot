@@ -163,7 +163,7 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
           for (let keyObject of playlistData.ks) {
             const deserializedKeyObject = {
               name: keyObject.kn,
-              link: values[incrementor++],
+              link: values[incrementor++].trim(),
               timeStamp: keyObject.ts,
               playlistName: playlistData.pn
             };
