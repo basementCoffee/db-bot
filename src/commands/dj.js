@@ -1,5 +1,5 @@
 const {MessageEmbed} = require('discord.js');
-const {formatDuration, botInVC, notInVoiceChannelErrorMsg} = require('../utils/utils');
+const {formatDuration, botInVC, notInVoiceChannelErrorMsg, getVCMembers} = require('../utils/utils');
 
 /**
  * Run the command to enable a music mode allowing only one user to control music commands in a server.
@@ -13,7 +13,7 @@ function runDictatorCommand(message, mgid, prefixString, server) {
   if (!(botInVC(message) && message.member.voice && message.member.voice.channel)) {
     return message.channel.send(notInVoiceChannelErrorMsg(message.guild));
   }
-  const vcMembersId = message.guild.voice.channel.members.map((x) => x.id);
+  const vcMembersId = getVCMembers(mgid).map((x) => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send(notInVoiceChannelErrorMsg(message.guild));
   if (server.voteAdmin.length > 0) {
     return message.channel.send('cannot have a dictator while there is a DJ');
@@ -107,7 +107,7 @@ function runDJCommand(message, server) {
   if (!botInVC(message) || !message.member.voice || !message.member.voice.channel) {
     return message.channel.send(notInVoiceChannelErrorMsg(message.guild));
   }
-  const vcMembersId = message.guild.voice.channel.members.map((x) => x.id);
+  const vcMembersId = getVCMembers(message.guild.id).map((x) => x.id).map((x) => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send(notInVoiceChannelErrorMsg(message.guild));
   if (server.dictator) return message.channel.send('There is a dictator, cannot enable DJ mode.');
   if (server.voteAdmin.length < 1) {

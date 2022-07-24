@@ -496,10 +496,21 @@ function isPersonalSheet(sheetName) {
   return sheetName[0] === 'p';
 }
 
+/**
+ * Gets the members of a voice channel.
+ * @param guildId {string} The guild id.
+ * @return {Array<*>}} The members of the voice channel.
+ */
+function getVCMembers(guildId) {
+  const gmArray = Array.from(bot.channels.cache.get(getVoiceConnection(guildId).joinConfig.channelId).members);
+  gmArray.map((item) => item[1].user.username);
+  return gmArray[0];
+}
+
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
   logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild, linkValidator, universalLinkFormatter,
-  removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg,
+  removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg, getVCMembers,
 };
