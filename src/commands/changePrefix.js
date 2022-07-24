@@ -1,5 +1,6 @@
 const {gsrun, gsUpdateOverwrite, gsUpdateAdd} = require('./database/api/api');
 const {PREFIX_SN} = require('../utils/process/constants');
+const {getBotDisplayName} = require('../utils/utils');
 
 /**
  * Changes the server's prefix.
@@ -63,7 +64,7 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
         if (!message.guild.me.nickname || (message.guild.me.nickname.substring(0, 1) !== '[' &&
           message.guild.me.nickname.substr(2, 1) !== ']')) {
           message.channel.send('----------------------\nWould you like me to update my name to reflect this? (yes or no)\nFrom **' +
-            (message.guild.me.nickname || 'db bot') + '**  -->  **[' + newPrefix + '] ' + name + '**').then(() => {
+            (getBotDisplayName(message.guild)) + '**  -->  **[' + newPrefix + '] ' + name + '**').then(() => {
             const filter = (m) => message.author.id === m.author.id;
             message.channel.awaitMessages({filter, time: 30000, max: 1, errors: ['time']})
               .then(async (messages) => {

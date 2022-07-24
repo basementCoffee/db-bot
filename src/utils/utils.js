@@ -383,6 +383,25 @@ function catchVCJoinError(error, textChannel) {
 }
 
 /**
+ * Returns the error message informing the user that it is not in a voice channel with the bot.
+ * @param guild The guild.
+ * @return {string} The error message.
+ */
+function notInVoiceChannelErrorMsg(guild) {
+  return `must be in a voice channel with ${getBotDisplayName(guild)} for this command`;
+}
+
+/**
+ * Gets the display name of the bot. If there is a nickname, it will return it, otherwise it will return the default
+ * name.
+ * @param guild The guild from which to get the name.
+ * @returns {string} The display name of the bot.
+ */
+function getBotDisplayName(guild) {
+  return guild.me.nickname || guild.me.user.username;
+}
+
+/**
  * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
  * @param server The server metadata.
  * @param force {boolean=} Ignores the status of the dispatcher.
@@ -482,5 +501,5 @@ module.exports = {
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
   logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild, linkValidator, universalLinkFormatter,
-  removeFormattingLink, getSheetName, isPersonalSheet,
+  removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg,
 };

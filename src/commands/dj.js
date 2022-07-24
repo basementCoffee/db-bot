@@ -1,5 +1,5 @@
 const {MessageEmbed} = require('discord.js');
-const {formatDuration, botInVC} = require('../utils/utils');
+const {formatDuration, botInVC, notInVoiceChannelErrorMsg} = require('../utils/utils');
 
 /**
  * Run the command to enable a music mode allowing only one user to control music commands in a server.
@@ -11,10 +11,10 @@ const {formatDuration, botInVC} = require('../utils/utils');
  */
 function runDictatorCommand(message, mgid, prefixString, server) {
   if (!(botInVC(message) && message.member.voice && message.member.voice.channel)) {
-    return message.channel.send('must be in a voice channel with the db bot for this command');
+    return message.channel.send(notInVoiceChannelErrorMsg(message.guild));
   }
   const vcMembersId = message.guild.voice.channel.members.map((x) => x.id);
-  if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
+  if (!vcMembersId.includes(message.member.id)) return message.channel.send(notInVoiceChannelErrorMsg(message.guild));
   if (server.voteAdmin.length > 0) {
     return message.channel.send('cannot have a dictator while there is a DJ');
   }
@@ -105,10 +105,10 @@ function getTimeLeft(duration, startTime) {
  */
 function runDJCommand(message, server) {
   if (!botInVC(message) || !message.member.voice || !message.member.voice.channel) {
-    return message.channel.send('must be in a voice channel with the db bot for this command');
+    return message.channel.send(notInVoiceChannelErrorMsg(message.guild));
   }
   const vcMembersId = message.guild.voice.channel.members.map((x) => x.id);
-  if (!vcMembersId.includes(message.member.id)) return message.channel.send('must be in a voice channel with db bot for this command');
+  if (!vcMembersId.includes(message.member.id)) return message.channel.send(notInVoiceChannelErrorMsg(message.guild));
   if (server.dictator) return message.channel.send('There is a dictator, cannot enable DJ mode.');
   if (server.voteAdmin.length < 1) {
     server.voteAdmin.push(message.member);

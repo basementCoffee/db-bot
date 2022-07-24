@@ -39,7 +39,7 @@ const gsapi = google.sheets({
  */
 const revokeClient = async () => {
   await client2.revokeCredentials();
-}
+};
 
 /**
  * Runs an update over the sheet and updates local variables. Returns the respective keys

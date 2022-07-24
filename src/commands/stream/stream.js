@@ -58,7 +58,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     if (!vc) return;
   }
   if (processStats.isInactive) {
-    message.channel.send('*db bot has been updated*');
+    message.channel.send(`*${message.guild.me.user.username} has been updated*`);
     return stopPlayingUtil(message.guild.id, vc, false, server);
   }
   if (server.voteAdmin.length > 0) {
