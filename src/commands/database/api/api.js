@@ -34,6 +34,14 @@ const gsapi = google.sheets({
 });
 
 /**
+ * Logs out of google client.
+ * @return {Promise<void>}
+ */
+const revokeClient = async () => {
+  await client2.revokeCredentials();
+}
+
+/**
  * Runs an update over the sheet and updates local variables. Returns the respective keys
  * and links within two maps (CongratsDatabase and ReferenceDatabase). The CongratsDatabase represents
  * unaltered keys and values while the ReferenceDatabase contains toUpper key names.
@@ -412,4 +420,4 @@ const gsUpdateOverwrite = (values, nameOfSheet, column1 = 'D', row1 = 1, column2
     );
 };
 
-module.exports = {gsrun, gsUpdateAdd, gsUpdateOverwrite, deleteRows, gsrun_P, getJSON};
+module.exports = {gsrun, gsUpdateAdd, gsUpdateOverwrite, deleteRows, gsrun_P, getJSON, revokeClient};

@@ -2,7 +2,7 @@ const {formatDuration} = require('../src/utils/utils');
 const {bot} = require('../src/utils/process/constants');
 const {runMoveItemCommand} = require('../src/commands/move');
 const utils = require('../src/utils/utils');
-const {destroyClient} = require('../src/commands/database/api/api');
+const {revokeClient} = require('../src/commands/database/api/api');
 
 let arr;
 const destroyBot = () => bot.destroy();
@@ -166,7 +166,9 @@ describe('test runMoveItemCommand', () => {
 
 });
 
-afterAll(() => {
+afterAll(async () => {
   destroyBot();
+  await revokeClient();
+  await new Promise(res => setTimeout(res, 2000));
 });
 
