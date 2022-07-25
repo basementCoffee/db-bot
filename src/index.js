@@ -17,7 +17,7 @@ const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
 let {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, dispatcherMap, dispatcherMapStatus, botID,
-  TWITCH_BASE_LINK, StreamType, INVITE_MSG
+  TWITCH_BASE_LINK, StreamType, INVITE_MSG, dbVibeLink
 } = require('./utils/process/constants');
 const {reactions} = require('./utils/reactions');
 const {runRemoveCommand, removePlaylist} = require('./commands/remove');
@@ -932,7 +932,7 @@ async function runCommandCases (message) {
       break;
     case 'inv':
     case 'invite':
-      message.channel.send(getInviteEmbed());
+      message.channel.send(getInvite());
       break;
     case 'hide':
     case 'silence':
@@ -1208,11 +1208,8 @@ bot.on('message', async (message) => {
   }
 });
 
-function getInviteEmbed(){
-  return new MessageEmbed()
-    .setTitle('Invite')
-    .setDescription(INVITE_MSG)
-    .setFooter('db bot may eventually be shut down as it is running on an older framework of discord.js')
+function getInvite(){
+  return `Here's the invite link!\n${dbVibeLink}`;
 }
 
 /**
