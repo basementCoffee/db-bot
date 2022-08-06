@@ -90,6 +90,11 @@ class ProcessStats {
       queue: [],
       // newest items are pushed
       queueHistory: [],
+      /*
+      a log of completed links and their metadata
+      Map<url, {queueItem, numOfPlays: number}>
+       */
+      mapFinishedLinks: new Map(),
       // continue playing after queue end
       autoplay: false,
       // boolean status of looping

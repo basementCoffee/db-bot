@@ -225,4 +225,17 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
   return generateQueue(0, false, false, []);
 }
 
-module.exports = {runQueueCommand};
+// creates a queue-like display of links
+// arrayOfItems: Array<{url, title, index}>
+// stringCallback: (index, title, url) => string
+async function createVisualText(server, arrayOfItems, stringCallback) {
+  let finalText = '';
+  for (let item of arrayOfItems) {
+    const title = item.title;
+    const url = item.url;
+    finalText +=  stringCallback(item.index, title, url);
+  }
+  return finalText;
+}
+
+module.exports = {runQueueCommand, createVisualText};

@@ -165,7 +165,7 @@ function verifyPlaylist(url) {
 }
 
 /**
- * Resets server playback to default args.
+ * Resets server playback to default args. MUST occur before voice channel join, NOT after voice channel leave.
  * @param server The server to reset.
  */
 function resetSession(server) {
@@ -173,6 +173,7 @@ function resetSession(server) {
   server.queueHistory = [];
   server.loop = false;
   server.audio.reset();
+  server.mapFinishedLinks.clear();
 }
 
 /**
@@ -507,10 +508,26 @@ function getVCMembers(guildId) {
   return gmArray[0];
 }
 
+/**
+ * Creates a visual embed.
+ * @param title {string} The title of the embed.
+ * @param text {string} The text of the embed.
+ * @param color {string?} The color of the embed.
+ * @param footer
+ * @return {MessageEmbed}
+ */
+function createVisualEmbed(title, text, color, footer) {
+  return new MessageEmbed()
+    .setTitle(title)
+    .setDescription(text)
+    .setColor(color || '#0099ff')
+}
+
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
-  logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild, linkValidator, universalLinkFormatter,
+  logError, pauseComputation, playComputation, getTimeActive, linkValidator, universalLinkFormatter,
   removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg, getVCMembers,
+  createVisualEmbed
 };

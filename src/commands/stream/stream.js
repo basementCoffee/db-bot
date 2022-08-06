@@ -5,7 +5,7 @@ const {
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
-  LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID,
+  LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID, CORE_ADM,
 } = require('../../utils/process/constants');
 const fetch = require('isomorphic-unfetch');
 const {getData} = require('spotify-url-info')(fetch);
@@ -263,7 +263,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         server.currentEmbed = null;
       }
     } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
-      await sendLinkAsEmbed(message, queueItem, vc, server, false);
+      queueItem = await sendLinkAsEmbed(message, queueItem, vc, server, false) || queueItem;
     }
     processStats.removeActiveStream(message.guild.id);
     processStats.addActiveStream(message.guild.id);
@@ -292,10 +292,14 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         try {
           // noinspection JSUnresolvedFunction
           logError(errString);
+          if (CORE_ADM.includes(message.member.id)){
+            message.channel.send(errString);
+          }
         } catch (e) {
           console.log(e);
         }
       }
+      server.mapFinishedLinks.set(whatToPlay, {queueItem, numOfPlays: (server.mapFinishedLinks.get(whatToPlay)?.numOfPlays ||  0) + 1});
       if (vc.members.size < 2) {
         connection.disconnect();
         server.audio.reset();
@@ -675,7 +679,7 @@ async function getRecLink(whatToPlay, infos, index = 0) {
  * @param voiceChannel {any} the voice channel that the link is being played in, if playing
  * @param server {Object} The server playback metadata
  * @param forceEmbed {Boolean} Force the embed to be re-sent in the text channel
- * @returns {Promise<void>}
+ * @returns {Promise<any | void>} An updated queueItem (see createQueueItem) if successful.
  */
 async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEmbed) {
   if (!message || !queueItem) return;
@@ -693,6 +697,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
   const embedData = await createEmbed(url, queueItem.infos);
   const timeMS = embedData.timeMS;
   const embed = embedData.embed;
+  queueItem.infos = embedData.infos;
   let showButtons = true;
   if (botInVC(message)) {
     if (server.currentEmbedChannelId !== message.channel.id) {
@@ -723,6 +728,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
       }
     });
   }
+  return queueItem;
 }
 
 /**

@@ -12,7 +12,7 @@ const {gsrun, deleteRows} = require('./commands/database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
   unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
-  removeFormattingLink, getSheetName, linkValidator,
+  removeFormattingLink, getSheetName, linkValidator, createVisualEmbed, getTitle,
 } = require('./utils/utils');
 const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
@@ -36,7 +36,7 @@ const {playRecommendation, sendRecommendationWrapper} = require('./commands/stre
 const {addLinkToQueue} = require('./utils/playlist');
 const {runRandomToQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');
-const {runQueueCommand} = require('./commands/generateQueue');
+const {runQueueCommand, createVisualText} = require('./commands/generateQueue');
 const {runUniversalSearchCommand} = require('./commands/database/search');
 const {
   sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2,
@@ -699,6 +699,23 @@ async function runCommandCases(message) {
   case 'upnext':
   case 'queue':
     runQueueCommand(server, message, mgid, false);
+    break;
+  case 'audit':
+  case 'plays':
+  case 'freq':
+  case 'frequency':
+    let tempAuditArray = [];
+    for (const [key, value] of server.mapFinishedLinks) {
+      tempAuditArray.push({url: key, title: (await getTitle(value.queueItem)), index: value.numOfPlays});
+    }
+    tempAuditArray.sort((a, b) => {
+      return b.index - a.index;
+    }); // sort by times played
+    message.channel.send({embeds: [
+      createVisualEmbed('Link Frequency',
+        ((await createVisualText(server, tempAuditArray,
+          (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links'))
+      ]});
     break;
   case 'prefix':
     message.channel.send('use the command `changeprefix` to change the bot\'s prefix');
