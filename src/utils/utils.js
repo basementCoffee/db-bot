@@ -523,11 +523,19 @@ function createVisualEmbed(title, text, color, footer) {
     .setColor(color || '#0099ff')
 }
 
+/**
+ * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and the player.
+ */
+function disconnectConnection(server, connection){
+  server.audio.reset();
+  connection.disconnect();
+}
+
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
   logError, pauseComputation, playComputation, getTimeActive, linkValidator, universalLinkFormatter,
   removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg, getVCMembers,
-  createVisualEmbed
+  createVisualEmbed, disconnectConnection
 };

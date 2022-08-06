@@ -1,6 +1,6 @@
 const {LEAVE_VC_TIMEOUT} = require('../utils/process/constants');
 const {sessionEndEmbed} = require('../utils/embed');
-const {resetSession, pauseComputation, botInVC, catchVCJoinError} = require('../utils/utils');
+const {resetSession, pauseComputation, botInVC, catchVCJoinError, disconnectConnection} = require('../utils/utils');
 
 /**
  * Joins the voice channel of the message member (if applicable).
@@ -28,7 +28,7 @@ async function joinVoiceChannelSafe(message, server) {
     resetSession(server);
     try {
       server.audio.joinVoiceChannel(message.guild, vc.id);
-      server.leaveVCTimeout = setTimeout(() => server.connection.disconnect(), LEAVE_VC_TIMEOUT);
+      server.leaveVCTimeout = setTimeout(() => disconnectConnection(server, server.connection), LEAVE_VC_TIMEOUT);
       return true;
     } catch (e) {
       catchVCJoinError(e, message.channel);

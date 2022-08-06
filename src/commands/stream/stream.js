@@ -2,6 +2,7 @@
 const {
   botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
   playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, getSheetName, resetSession,
+  disconnectConnection,
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
@@ -285,6 +286,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       );
       console.log('dispatcher error: ', e);
     });
+    // similar to on 'finish'
     player.once('idle', () => {
       if (whatToPlay !== whatspMap[vc.id]) {
         const errString = `There was a mismatch -----------\n old url: ${whatToPlay}\n current url: ${whatspMap[vc.id]}`;
@@ -292,7 +294,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         try {
           // noinspection JSUnresolvedFunction
           logError(errString);
-          if (CORE_ADM.includes(message.member.id)){
+          if (CORE_ADM.includes(message.member.id.toString())) {
             message.channel.send(errString);
           }
         } catch (e) {
@@ -301,8 +303,8 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       }
       server.mapFinishedLinks.set(whatToPlay, {queueItem, numOfPlays: (server.mapFinishedLinks.get(whatToPlay)?.numOfPlays ||  0) + 1});
       if (vc.members.size < 2) {
-        connection.disconnect();
-        server.audio.reset();
+        
+        disconnectConnection(server, connection);
         processStats.removeActiveStream(message.guild.id);
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
@@ -315,8 +317,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         } else {
           if (server.collector) server.collector.stop();
           updateActiveEmbed(server);
-          server.leaveVCTimeout = setTimeout(() => connection.disconnect(), LEAVE_VC_TIMEOUT);
-          server.audio.reset();
+          server.leaveVCTimeout = setTimeout(() => disconnectConnection(server, connection), LEAVE_VC_TIMEOUT);
           processStats.removeActiveStream(message.guild.id);
         }
       }
@@ -347,7 +348,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           skipLink(message, vc, true, server, true);
         } else {
           console.log('status code 404 error');
-          connection.disconnect();
+          disconnectConnection(server, connection);
           processStats.removeActiveStream(message.guild.id);
           message.channel.send('*db bot appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             console.log(e);
@@ -375,7 +376,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     console.log('error in playLinkToVC: ', whatToPlay);
     console.log(e);
     if (server.skipTimes > 3) {
-      connection.disconnect();
+      disconnectConnection(server, connection);
       processStats.removeActiveStream(message.guild.id);
       message.channel.send('***db bot is facing some issues, may restart***');
       checkStatusOfYtdl(server, message);
@@ -441,13 +442,13 @@ async function checkStatusOfYtdl(server, message) {
       else message.channel.send(diagnosisStr);
     }
     logError('ytdl status is unhealthy, shutting off bot');
-    connection.disconnect();
+    disconnectConnection(server, connection);
     if (processStats.isInactive) setTimeout(() => process.exit(0), 2000);
     else shutdown('YTDL-POOR')();
     return;
   }
   setTimeout(() => {
-    connection.disconnect();
+    disconnectConnection(server, connection);
     getVoiceConnection(server.guildId)?.disconnect();
     bot.voice.adapters.get(server.guildId)?.destroy();
     if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');

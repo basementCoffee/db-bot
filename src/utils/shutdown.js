@@ -2,6 +2,7 @@ const {bot} = require('./process/constants');
 const CH = require('../../channel.json');
 const processStats = require('./process/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
+const {disconnectConnection} = require('./utils');
 
 /**
  * Shuts down the current process.
@@ -34,7 +35,7 @@ function shutdown(type) {
             try {
               if (currentEmbed) currentEmbed.channel.send('db bot is restarting... (this will be quick)');
               else if (server.queue[0]) guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
-              server.audio.connection.disconnect();
+              disconnectConnection(server, server.audio.connection);
             } catch (e) {
               guild.systemChannel.send('db bot is restarting... (this will be quick)').then();
             }
