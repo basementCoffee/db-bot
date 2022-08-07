@@ -30,6 +30,8 @@ function getPages(ps, version) {
     `\`${ps}lyrics \` Get lyrics of what\'s currently playing\n` +
     `\`${ps}dj \` DJ mode, members have to vote to skip tracks\n` +
     `\`${ps}dictator \` Dictator mode, one member controls all music commands\n` +
+    `\`${ps}frequency \` View the frequency of the links played in a Session\n` +
+    `\`${ps}purge [keyword]\` purge a keyword from all links in the queue \n` +
     `\`${ps}verbose \` Keep all song embeds during a session\n` +
     `\`${ps}silence \` Silence/hide the now-playing embed \n`,
     // PAGE 2
