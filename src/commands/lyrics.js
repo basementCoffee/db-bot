@@ -1,14 +1,15 @@
 const ytdl = require('ytdl-core-discord');
-const {botInVC_Guild} = require('../utils/utils');
-const {getData} = require('spotify-url-info');
+const fetch = require('isomorphic-unfetch');
+const {getData} = require('spotify-url-info')(fetch);
 const {botID, StreamType} = require('../utils/process/constants');
 // imports for YouTube captions
 const https = require('https');
 const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 // Genius imports
-const Genius = require("genius-lyrics");
+const Genius = require('genius-lyrics');
 const {reactions} = require('../utils/reactions');
+const {MessageEmbed} = require('discord.js');
 const GeniusClient = new Genius.Client();
 
 /**
@@ -17,14 +18,14 @@ const GeniusClient = new Genius.Client();
  * @param reactionCallback A callback for when the lyrics (text) is sent within the channel.
  * @param args The args with the message content
  * @param queueItem The queueItem to get the lyrics of.
- * @param messageMemberId
+ * @param messageMemberId The id of the member that sent the command.
  * @returns {*}
  */
-function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMemberId) {
-  if ((!botInVC_Guild(channel.guild) || !queueItem) && !args[1]) {
+function runLyricsCommand(channel, reactionCallback, args, queueItem, messageMemberId) {
+  if (!queueItem) {
     return channel.send('must be playing a song');
   }
-  channel.send('retrieving lyrics...').then(async sentMsg => {
+  channel.send('retrieving lyrics...').then(async (sentMsg) => {
     let searchTerm;
     let searchTermRemix;
     let songName;
@@ -49,10 +50,10 @@ function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMe
         artistName = infos.artists[0].name;
         searchTerm = songName + ' ' + artistName;
         if (infos.name.toLowerCase().includes('remix')) {
-          let remixArgs = infos.name.toLowerCase().split(' ');
-          let remixArgs2 = [];
+          const remixArgs = infos.name.toLowerCase().split(' ');
+          const remixArgs2 = [];
           let wordIndex = 0;
-          for (let i of remixArgs) {
+          for (const i of remixArgs) {
             if (i.includes('remix') && wordIndex !== 0) {
               wordIndex--;
               break;
@@ -101,9 +102,9 @@ function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMe
           }
         }
         if (title.toLowerCase().includes('remix')) {
-          let remixArgs = title.toLowerCase().split(' ');
+          const remixArgs = title.toLowerCase().split(' ');
           let wordIndex = 0;
-          for (let i of remixArgs) {
+          for (const i of remixArgs) {
             if (i.includes('remix') && wordIndex !== 0) {
               wordIndex--;
               break;
@@ -118,9 +119,9 @@ function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMe
         }
       } else return channel.send('*lyrics command not supported for this stream type*');
     }
-    if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, messageMemberId, reactionCallback)
-        && !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), messageMemberId, reactionCallback)
-        && !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) :
+    if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, messageMemberId, reactionCallback) &&
+        !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), messageMemberId, reactionCallback) &&
+        !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) :
       !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
         getYoutubeSubtitles(sentMsg, lUrl, infos, reactionCallback);
@@ -139,16 +140,16 @@ function runLyricsCommand (channel, reactionCallback, args, queueItem, messageMe
  * @param reactionCallback Callback for when the full text is sent.
  * @returns {Promise<Boolean>} The status of if the song lyrics were found and sent.
  */
-async function sendSongLyrics (message, searchTerm, messageMemberId, reactionCallback) {
+async function sendSongLyrics(message, searchTerm, messageMemberId, reactionCallback) {
   try {
     const firstSong = (await GeniusClient.songs.search(searchTerm))[0];
-    await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async sentMsg => {
+    await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async (sentMsg) => {
       await sentMsg.react('📄');
       const filter = (reaction, user) => {
         return user.id !== botID && ['📄'].includes(reaction.emoji.name);
       };
       let lyrics;
-      const collector = sentMsg.createReactionCollector(filter, {time: 300000});
+      const collector = sentMsg.createReactionCollector({filter, time: 300000});
       collector.once('collect', async () => {
         try {
           lyrics = await firstSong.lyrics();
@@ -156,14 +157,18 @@ async function sendSongLyrics (message, searchTerm, messageMemberId, reactionCal
           lyrics = '*could not retrieve*';
         }
         // send the lyrics text on reaction click
-        const sentLyricsMsg = await message.channel.send((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics));
+        const lyricsEmbed = new MessageEmbed();
+        lyricsEmbed.setDescription((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics));
+        const sentLyricsMsg = await message.channel.send({embeds: [lyricsEmbed]});
         reactionCallback();
         // start reactionCollector for lyrics
         sentLyricsMsg.react(reactions.X).then();
         const lyricsFilter = (reaction, user) => {
           return user.id === messageMemberId && [reactions.X].includes(reaction.emoji.name);
         };
-        const lyricsCollector = sentLyricsMsg.createReactionCollector(lyricsFilter, {time: 300000, dispose: true});
+        const lyricsCollector = sentLyricsMsg.createReactionCollector({
+          filter: lyricsFilter, time: 300000, dispose: true,
+        });
         lyricsCollector.once('collect', () => {
           if (sentLyricsMsg.deletable) sentLyricsMsg.delete();
           lyricsCollector.stop();
@@ -188,16 +193,18 @@ async function sendSongLyrics (message, searchTerm, messageMemberId, reactionCal
  * @param infos The ytdl infos.
  * @param reactionCallback Callback for when the full text is sent.
  */
-function getYoutubeSubtitles (message, url, infos, reactionCallback) {
+function getYoutubeSubtitles(message, url, infos, reactionCallback) {
   try {
-    const player_resp = infos.player_response;
-    const tracks = player_resp.captions.playerCaptionsTracklistRenderer.captionTracks;
+    const playerResp = infos.player_response;
+    const tracks = playerResp.captions.playerCaptionsTracklistRenderer.captionTracks;
     let data = '';
-    https.get(tracks[0].baseUrl.toString(), function (res) {
+    https.get(tracks[0].baseUrl.toString(), function(res) {
       if (res.statusCode >= 200 && res.statusCode < 400) {
-        res.on('data', function (data_) { data += data_.toString(); });
-        res.on('end', function () {
-          parser.parseString(data, function (err, result) {
+        res.on('data', function(data_) {
+          data += data_.toString();
+        });
+        res.on('end', function() {
+          parser.parseString(data, function(err, result) {
             if (err) {
               console.log('ERROR in getYouTubeSubtitles');
               return console.log(err);
@@ -205,7 +212,7 @@ function getYoutubeSubtitles (message, url, infos, reactionCallback) {
               let finalString = '';
               let prevDuration = 0;
               let newDuration;
-              for (let i of result.transcript.text) {
+              for (const i of result.transcript.text) {
                 if (!i._) continue;
                 if (i._.trim().substring(0, 1) === '[') {
                   finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
@@ -213,14 +220,14 @@ function getYoutubeSubtitles (message, url, infos, reactionCallback) {
                   prevDuration -= 5;
                 } else {
                   newDuration = parseInt(i.$.start);
-                  finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ')
-                    + i._;
+                  finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ') +
+                    i._;
                   prevDuration = newDuration;
                 }
               }
               finalString = finalString.replace(/&#39;/g, '\'').trim();
               finalString = finalString.length > 1910 ? finalString.substring(0, 1910) + '...' : finalString;
-              message.edit('Could not find lyrics. Video captions are available.').then(sentMsg => {
+              message.edit('Could not find lyrics. Video captions are available.').then((sentMsg) => {
                 const mb = '📄';
                 sentMsg.react(mb).then();
 
@@ -228,7 +235,7 @@ function getYoutubeSubtitles (message, url, infos, reactionCallback) {
                   return user.id !== botID && [mb].includes(reaction.emoji.name);
                 };
 
-                const collector = sentMsg.createReactionCollector(filter, {time: 600000});
+                const collector = sentMsg.createReactionCollector({filter, time: 600000});
 
                 collector.once('collect', () => {
                   message.edit(`***Captions from YouTube***\n${finalString}`);

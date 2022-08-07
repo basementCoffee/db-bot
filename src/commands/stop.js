@@ -8,8 +8,9 @@ const {stopPlayingUtil} = require('./stream/utils');
  * @param server The server playback metadata
  * @param message Optional - The message metadata, used in the case of verifying a dj or dictator
  * @param actionUser Optional - The member requesting to stop playing, used in the case of verifying a dj or dictator
+ * @returns {Promise<void>}
  */
-function runStopPlayingCommand (mgid, voiceChannel, stayInVC, server, message, actionUser) {
+function runStopPlayingCommand(mgid, voiceChannel, stayInVC, server, message, actionUser) {
   return stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUser);
 }
 

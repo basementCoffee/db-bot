@@ -1,7 +1,8 @@
 const {version} = require('../../package.json');
 const {reactions} = require('./reactions');
-const {bot, botID} = require('./process/constants');
+const {bot, botID, INVITE_MSG} = require('./process/constants');
 const {getHelpList} = require('./help');
+const CH = require('../../channel.json');
 
 /**
  * Handles message requests.
@@ -9,38 +10,39 @@ const {getHelpList} = require('./help');
  * @param messageContent {string} The content of the message.
  * @returns {*}
  */
-function dmHandler (message, messageContent) {
+function dmHandler(message, messageContent) {
   // the message content - formatted in lower case
-  let mc = messageContent.toLowerCase().trim() + ' ';
+  const mc = messageContent.toLowerCase().trim() + ' ';
   if (mc.length < 9) {
-    if (mc.length < 7 && mc.includes('help '))
+    if (mc.length < 7 && mc.includes('help ')) {
       return message.author.send(getHelpList('.', 1, version)[0], version);
-    else if (mc.includes('invite '))
-      return message.channel.send('Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot>');
+    } else if (mc.includes('invite ')) {
+      return message.channel.send(INVITE_MSG);
+    }
   }
   const mb = reactions.OUTBOX;
   // noinspection JSUnresolvedFunction
-  bot.channels.cache.get('870800306655592489')
+  bot.channels.cache.get(CH.dm)
     .send('------------------------------------------\n' +
       '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
-      messageContent + '\n------------------------------------------').then(msg => {
-    msg.react(mb).then();
-    const filter = (reaction, user) => {
-      return user.id !== botID;
-    };
+      messageContent + '\n------------------------------------------').then((msg) => {
+      msg.react(mb).then();
+      const filter = (reaction, user) => {
+        return user.id !== botID;
+      };
 
-    const collector = msg.createReactionCollector(filter, {time: 86400000});
+      const collector = msg.createReactionCollector({filter, time: 86400000});
 
-    collector.on('collect', (reaction, user) => {
-      if (reaction.emoji.name === mb) {
-        sendMessageToUser(msg, message.author.id, user.id);
-        reaction.users.remove(user).then();
-      }
+      collector.on('collect', (reaction, user) => {
+        if (reaction.emoji.name === mb) {
+          sendMessageToUser(msg, message.author.id, user.id);
+          reaction.users.remove(user).then();
+        }
+      });
+      collector.once('end', () => {
+        msg.reactions.cache.get(mb).remove().then();
+      });
     });
-    collector.once('end', () => {
-      msg.reactions.cache.get(mb).remove().then();
-    });
-  });
 }
 
 /**
@@ -49,15 +51,15 @@ function dmHandler (message, messageContent) {
  * @param userID The ID of the user to send the reply to.
  * @param reactionUserID Optional - The ID of a user who can reply to the prompt besides the message author
  */
-function sendMessageToUser (message, userID, reactionUserID) {
+function sendMessageToUser(message, userID, reactionUserID) {
   const user = bot.users.cache.get(userID);
   message.channel.send('What would you like me to send to ' + user.username +
-    '? [type \'q\' to not send anything]').then(msg => {
-    const filter = m => {
+    '? [type \'q\' to not send anything]').then((msg) => {
+    const filter = (m) => {
       return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== botID);
     };
-    message.channel.awaitMessages(filter, {time: 60000, max: 1, errors: ['time']})
-      .then(messages => {
+    message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
+      .then((messages) => {
         if (messages.first().content && messages.first().content.trim() !== 'q') {
           user.send(messages.first().content).then(() => {
             message.channel.send('Message sent to ' + user.username + '.');
@@ -68,10 +70,10 @@ function sendMessageToUser (message, userID, reactionUserID) {
         }
         msg.delete();
       }).catch(() => {
-      message.channel.send('No message sent.');
-      msg.delete();
-    });
+        message.channel.send('No message sent.');
+        msg.delete();
+      });
   });
 }
 
-module.exports = {dmHandler, sendMessageToUser}
+module.exports = {dmHandler, sendMessageToUser};

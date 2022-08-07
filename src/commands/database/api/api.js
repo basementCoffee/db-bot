@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 const {google} = require('googleapis');
 const client_email = process.env.CLIENT_EMAIL.replace(/\\n/gm, '\n');
 const private_key = process.env.PRIVATE_KEY.replace(/\\n/gm, '\n');
@@ -5,14 +6,21 @@ const stoken = process.env.STOKEN.replace(/\\n/gm, '\n');
 
 const GENERAL = 'GENERAL';
 
+/**
+ * Returns an Excel size function of for a given column (counts all values in the column).
+ * @param col {string} The column to
+ * @return {string} The size function for the column provided
+ */
+const dbSizeFunc = (col) => `=(COUNTA(${col}1:${col})+1)`;
+
 const client2 = new google.auth.JWT(client_email, null, private_key, [
-  'https://www.googleapis.com/auth/spreadsheets'
+  'https://www.googleapis.com/auth/spreadsheets',
 ]);
 
 /**
  * Authorizes the google client
  */
-client2.authorize(function (err) {
+client2.authorize(function(err) {
   if (err) {
     console.log('login-error:', err);
   } else {
@@ -22,8 +30,16 @@ client2.authorize(function (err) {
 
 const gsapi = google.sheets({
   version: 'v4',
-  auth: client2
+  auth: client2,
 });
+
+/**
+ * Logs out of google client.
+ * @return {Promise<void>}
+ */
+const revokeClient = async () => {
+  await client2.revokeCredentials();
+};
 
 /**
  * Runs an update over the sheet and updates local variables. Returns the respective keys
@@ -39,31 +55,34 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
   nameOfSheet = nameOfSheet.toString();
   const spreadsheetSizeObjects = {
     spreadsheetId: stoken,
-    range: nameOfSheet + '!D1'
+    range: nameOfSheet + '!D1',
   };
   let dataSizeFromSheets;
   let dsInt;
-  if (numOfRuns > 2) return;
+  if (numOfRuns > 2) {
+    console.log('Error: Too many recursions');
+    return;
+  }
   try {
     dataSizeFromSheets = await gsapi.spreadsheets.values.get(
-      spreadsheetSizeObjects
+      spreadsheetSizeObjects,
     );
     dsInt = dataSizeFromSheets.data.values;
     // dataSize.set(nameOfSheet, dataSizeFromSheets.data.values);
   } catch (e) {
     await createSheetNoMessage(nameOfSheet);
-    await gsUpdateAdd2(1, 'D', nameOfSheet);
+    await gsUpdateAdd2(dbSizeFunc('A'), 'D', nameOfSheet);
     return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
   }
 
   if (!dsInt) {
-    await gsUpdateAdd2(1, 'D', nameOfSheet);
+    await gsUpdateAdd2(dbSizeFunc('A'), 'D', nameOfSheet);
     return gsrun(columnToRun, secondColumn, nameOfSheet, numOfRuns++);
   }
 
   const songObjects = {
     spreadsheetId: stoken,
-    range: nameOfSheet + '!' + columnToRun + '2:' + secondColumn + 'B' + dsInt
+    range: nameOfSheet + '!' + columnToRun + '2:' + secondColumn + 'B' + dsInt,
   };
 
   const dataSO = await gsapi.spreadsheets.values.get(songObjects);
@@ -72,9 +91,9 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
   let line;
   let keyT;
   let valueT;
-// What is returned when searching the db, uses key-name
+  // What is returned when searching the db, uses key-name
   const congratsDatabase = new Map();
-// Reference for the database, uses uppercase key-name
+  // Reference for the database, uses uppercase key-name
   const referenceDatabase = new Map();
   const keyArray = [];
   for (let i = 0; i < dsInt; i++) {
@@ -98,7 +117,7 @@ const gsrun = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) => {
     // the array of rows
     line: keyArray,
     // the size of the keys list
-    dsInt
+    dsInt,
   };
 };
 
@@ -106,14 +125,14 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
   nameOfSheet = nameOfSheet.toString();
   const spreadsheetSizeObjects = {
     spreadsheetId: stoken,
-    range: nameOfSheet + '!G1'
+    range: nameOfSheet + '!G1',
   };
   let dataSizeFromSheets;
   let dsInt;
   if (numOfRuns > 3) return;
   try {
     dataSizeFromSheets = await gsapi.spreadsheets.values.get(
-      spreadsheetSizeObjects
+      spreadsheetSizeObjects,
     );
     dsInt = dataSizeFromSheets.data.values;
     // dataSize.set(nameOfSheet, dataSizeFromSheets.data.values);
@@ -123,13 +142,13 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
   }
 
   if (!dsInt) {
-    await gsUpdateOverwrite(['=(COUNTA(E2:E)+1)'], nameOfSheet, 'G', 1);
+    await gsUpdateOverwrite([dbSizeFunc('E')], nameOfSheet, 'G', 1);
     return await gsrun_P(columnToRun, secondColumn, nameOfSheet, ++numOfRuns);
   }
   const songRange = `${nameOfSheet}!${columnToRun}2:${secondColumn}${dsInt + 1}`;
   const songObjects = {
     spreadsheetId: stoken,
-    range: songRange
+    range: songRange,
   };
 
   const dataSO = await gsapi.spreadsheets.values.get(songObjects);
@@ -144,7 +163,6 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
     // the array of rows (has two columns)
     try {
       line = arrayOfSpreadsheetValues[i];
-      // console.log(line);
       if (line && line[0]) {
         // convert to -------
         // playlistMap [playlist, keysMap]
@@ -160,12 +178,12 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
         const values = line[1]?.split(',');
         // create the keyDataObjects and put in maps
         if (values) {
-          for (let keyObject of playlistData.ks) {
+          for (const keyObject of playlistData.ks) {
             const deserializedKeyObject = {
               name: keyObject.kn,
-              link: values[incrementor++],
+              link: values[incrementor++].trim(),
               timeStamp: keyObject.ts,
-              playlistName: playlistData.pn
+              playlistName: playlistData.pn,
             };
             referenceDatabase.set(keyObject.kn.toUpperCase(), deserializedKeyObject);
             globalKeys.set(keyObject.kn.toUpperCase(), deserializedKeyObject);
@@ -184,7 +202,7 @@ const gsrun_P = async (columnToRun, secondColumn, nameOfSheet, numOfRuns = 0) =>
     playlistArray.push(GENERAL);
   }
   return {
-    playlists: allPlaylists, playlistArray, globalKeys
+    playlists: allPlaylists, playlistArray, globalKeys,
   };
 };
 
@@ -193,7 +211,7 @@ const getJSON = async (cellToRun, nameOfSheet) => {
 
   const songObjects = {
     spreadsheetId: stoken,
-    range: nameOfSheet + `!${cellToRun}:${cellToRun}`
+    range: nameOfSheet + `!${cellToRun}:${cellToRun}`,
   };
 
   const dataSO = await gsapi.spreadsheets.values.get(songObjects);
@@ -230,7 +248,7 @@ const deleteRows = async (sheetName, rowNumber) => {
       spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
       ranges: [sheetName],
       includeGridData: false,
-      auth: client2
+      auth: client2,
     };
 
     res = await gsapi.spreadsheets.get(request);
@@ -243,26 +261,26 @@ const deleteRows = async (sheetName, rowNumber) => {
 
   // ----------------------------------------------------------
   await gsapi.spreadsheets.batchUpdate({
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      resource: {
-        requests: [{
-          deleteDimension: {
-            range: {
-              sheetId: sheetId,
-              dimension: 'ROWS',
-              startIndex: rowNumber - 1,
-              endIndex: rowNumber
-            }
-          }
-        }]
-      }
+    spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+    resource: {
+      requests: [{
+        deleteDimension: {
+          range: {
+            sheetId: sheetId,
+            dimension: 'ROWS',
+            startIndex: rowNumber - 1,
+            endIndex: rowNumber,
+          },
+        },
+      }],
     },
-    function (err, response) {
-      if (err) {
-        console.log('deleteRows error:', err);
-      }
-      return response;
+  },
+  function(err, response) {
+    if (err) {
+      console.log('deleteRows error:', err);
     }
+    return response;
+  },
   );
 };
 
@@ -275,24 +293,24 @@ const createSheetNoMessage = async (nameOfSheet) => {
   console.log('within create sheets');
 
   await gsapi.spreadsheets.batchUpdate({
-      spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
-      resource: {
-        requests: [{
-          addSheet: {
-            properties: {
-              title: nameOfSheet
-            }
-          }
-        }]
-      }
+    spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
+    resource: {
+      requests: [{
+        addSheet: {
+          properties: {
+            title: nameOfSheet,
+          },
+        },
+      }],
     },
-    async function (err, response) {
-      if (err) {
-      } else {
-        await gsUpdateOverwrite(['=(COUNTA(E2:E)+1)'], nameOfSheet, 'G', 1);
-      }
-      return response;
+  },
+  async function(err, response) {
+    if (err) {
+    } else {
+      await gsUpdateOverwrite([dbSizeFunc('E')], nameOfSheet, 'G', 1);
     }
+    return response;
+  },
   );
 };
 
@@ -303,10 +321,8 @@ const createSheetNoMessage = async (nameOfSheet) => {
  * @param {*} firstColumnLetter The key column letter, should be uppercase
  * @param {*} secondColumnLetter The link column letter, should be uppercase
  * @param nameOfSheet The name of the sheet to update
- * @param dsInt The size of the database plus 1
  */
-const gsUpdateAdd = (key, link, firstColumnLetter, secondColumnLetter, nameOfSheet, dsInt) => {
-
+const gsUpdateAdd = (key, link, firstColumnLetter, secondColumnLetter, nameOfSheet) => {
   gsapi.spreadsheets.values
     .append({
       spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
@@ -318,18 +334,18 @@ const gsUpdateAdd = (key, link, firstColumnLetter, secondColumnLetter, nameOfShe
       valueInputOption: 'USER_ENTERED',
       resource: {
         values: [
-          [key, link]
-        ]
-      }
+          [key, link],
+        ],
+      },
     })
     .then(
-      function (response) {
+      function(response) {
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
       },
-      function (err) {
+      function(err) {
         console.error('Execute error', err);
-      }
+      },
     );
 };
 
@@ -340,7 +356,6 @@ const gsUpdateAdd = (key, link, firstColumnLetter, secondColumnLetter, nameOfShe
  * @param nameOfSheet The name of the sheet to add to
  */
 const gsUpdateAdd2 = async (givenValue, firstColumnLetter, nameOfSheet) => {
-
   await gsapi.spreadsheets.values
     .append({
       spreadsheetId: '1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0',
@@ -352,33 +367,33 @@ const gsUpdateAdd2 = async (givenValue, firstColumnLetter, nameOfSheet) => {
       valueInputOption: 'USER_ENTERED',
       resource: {
         values: [
-          [givenValue]
-        ]
-      }
+          [givenValue],
+        ],
+      },
     }).then(
-      function (response) {
+      function(response) {
         // Handle the results here (response.result has the parsed body).
         return response;
       },
-      function (err) {
+      function(err) {
         console.error('Execute error', err);
-      }
+      },
     );
 };
 
 /**
  * Overwrites any cell. Overwrites cell D1 by default (if cell is not specified).
- * @param values
+ * @param values {Array<string>} The value to input into the cell(s)
  * @param nameOfSheet the name of the sheet to change
- * @param column1
- * @param row1
- * @param column2
- * @param row2
+ * @param column1 The first column to update
+ * @param row1 The first row to update
+ * @param column2 The second column to update
+ * @param row2 The second row to update
  */
-const gsUpdateOverwrite = (values, nameOfSheet, column1 = "D", row1 = 1, column2, row2) => {
+const gsUpdateOverwrite = (values, nameOfSheet, column1 = 'D', row1 = 1, column2, row2) => {
   const gsapi = google.sheets({
     version: 'v4',
-    auth: client2
+    auth: client2,
   });
   const range = `${nameOfSheet}!${column1}${row1}` + (row2 ? `:${column2}${row2}` : '');
   gsapi.spreadsheets.values
@@ -390,19 +405,19 @@ const gsUpdateOverwrite = (values, nameOfSheet, column1 = "D", row1 = 1, column2
       valueInputOption: 'USER_ENTERED',
       resource: {
         values: [
-          values
-        ]
-      }
+          values,
+        ],
+      },
     })
     .then(
-      function (response) {
+      function(response) {
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
       },
-      function (err) {
+      function(err) {
         console.error('Execute error', err);
-      }
+      },
     );
 };
 
-module.exports = {gsrun, gsUpdateAdd, gsUpdateOverwrite, deleteRows, gsrun_P, getJSON};
+module.exports = {gsrun, gsUpdateAdd, gsUpdateOverwrite, deleteRows, gsrun_P, getJSON, revokeClient};

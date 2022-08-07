@@ -16,7 +16,7 @@ const reactions = {
   PPAUSE: '⏯',
   // rewind
   REWIND: '⏪',
-  //stop
+  // stop
   STOP: '⏹',
   // page curl
   PAGE_C: '📃',
@@ -37,7 +37,7 @@ const reactions = {
   // orange diamond
   O_DIAMOND: '🔸',
   // orange book
-  BOOK_O: '📙'
+  BOOK_O: '📙',
 };
 
 module.exports = {reactions};

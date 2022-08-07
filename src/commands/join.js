@@ -1,21 +1,21 @@
-const {dispatcherMap, LEAVE_VC_TIMEOUT} = require('../utils/process/constants');
+const {LEAVE_VC_TIMEOUT} = require('../utils/process/constants');
 const {sessionEndEmbed} = require('../utils/embed');
-const {resetSession, pauseComputation, botInVC, catchVCJoinError} = require('../utils/utils');
+const {resetSession, pauseComputation, botInVC, catchVCJoinError, disconnectConnection} = require('../utils/utils');
 
 /**
  * Joins the voice channel of the message member (if applicable).
  * If there is an error upon join attempt then it caught and forwarded to the user.
  * @param message The message metadata.
  * @param server The server object.
- * @return {Promise<boolean>} True upon successful voice channel join.
+ * @returns {Promise<boolean>} True upon successful voice channel join.
  */
-async function joinVoiceChannelSafe (message, server) {
-  let connection = server.connection;
-  let vc = message.member?.voice?.channel;
-  if (vc && (!botInVC(message) || !connection || (connection.channel.id !== vc.id))) {
-    if (connection && dispatcherMap[connection.channel.id]) {
-      pauseComputation(connection.channel);
-      dispatcherMap[connection.channel.id] = undefined;
+async function joinVoiceChannelSafe(message, server) {
+  const connection = server.audio.connection;
+  const vc = message.member?.voice?.channel;
+  if (vc && (!botInVC(message) || !connection || (server.audio.voiceChannelId !== vc.id))) {
+    if (connection) {
+      pauseComputation(server, connection.channel);
+      server.audio.reset();
     }
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
@@ -27,8 +27,8 @@ async function joinVoiceChannelSafe (message, server) {
     }
     resetSession(server);
     try {
-      server.connection = await vc.join();
-      server.leaveVCTimeout = setTimeout(() => server.connection.disconnect(), LEAVE_VC_TIMEOUT);
+      server.audio.joinVoiceChannel(message.guild, vc.id);
+      server.leaveVCTimeout = setTimeout(() => disconnectConnection(server, server.connection), LEAVE_VC_TIMEOUT);
       return true;
     } catch (e) {
       catchVCJoinError(e, message.channel);
@@ -38,3 +38,4 @@ async function joinVoiceChannelSafe (message, server) {
 }
 
 module.exports = {joinVoiceChannelSafe};
+

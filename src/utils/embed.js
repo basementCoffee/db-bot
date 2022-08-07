@@ -1,24 +1,24 @@
-const {getData} = require('spotify-url-info');
+const fetch = require('isomorphic-unfetch');
+const {getData} = require('spotify-url-info')(fetch);
 const {MessageEmbed} = require('discord.js');
 const scdl = require('soundcloud-downloader').default;
 const ytdl = require('ytdl-core-discord');
 const {formatDuration, getQueueText, convertYTFormatToMS} = require('./utils');
-const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, CORE_ADM} = require('./process/constants');
-const {isCoreAdmin} = require('./permissions');
+const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK} = require('./process/constants');
 
 /**
  * Return an object containing the embed and time based on the data provided.
  * @param url {string} The url to create the embed for.
  * @param infos {Object?} Optional - the info metadata to use.
- * @return {Promise<{embed: module:"discord.js".MessageEmbed, infos: {formats}, timeMS: number}>}
+ * @returns {Promise<{embed: MessageEmbed, infos: any, timeMS: number}>}
  */
-async function createEmbed (url, infos) {
+async function createEmbed(url, infos) {
   let timeMS;
   let embed;
-  if (url.toString().includes(SPOTIFY_BASE_LINK)) {
+  if (url.includes(SPOTIFY_BASE_LINK)) {
     if (!infos) infos = await getData(url);
     let artists = '';
-    infos.artists.forEach(x => artists ? artists += ', ' + x.name : artists += x.name);
+    infos.artists.forEach((x) => artists ? artists += ', ' + x.name : artists += x.name);
     embed = new MessageEmbed()
       .setTitle(`${infos.name}`)
       .setURL(infos.external_urls.spotify)
@@ -30,12 +30,13 @@ async function createEmbed (url, infos) {
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (!infos) infos = await scdl.getInfo(url);
     const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
-    const title = (infos.publisher_metadata ? (infos.publisher_metadata.release_title || infos.publisher_metadata.album_title) : '') || (infos.title.replace(/"/g, '') || 'SoundCloud');
+    const title = (infos.publisher_metadata ? (infos.publisher_metadata.release_title ||
+       infos.publisher_metadata.album_title) : '') || (infos.title.replace(/"/g, '') || 'SoundCloud');
     embed = new MessageEmbed()
       .setTitle(title)
       .setURL(url)
       .setColor('#ee4900')
-      .addField(`Artist`, artist, true)
+      .addField('Artist', artist, true)
       .addField('Duration', formatDuration(infos.duration || 0), true)
       .setThumbnail(infos.artwork_url || infos.user?.avatar_url || null);
     timeMS = infos.duration || infos.full_duration || 'N/A';
@@ -45,7 +46,7 @@ async function createEmbed (url, infos) {
       .setTitle(`${artist}'s stream`)
       .setURL(url)
       .setColor('#8a2aef')
-      .addField(`Channel`, artist, true)
+      .addField('Channel', artist, true)
       .addField('Duration', 'live', true)
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg');
   } else {
@@ -81,7 +82,7 @@ async function createEmbed (url, infos) {
   return {
     embed,
     timeMS,
-    infos
+    infos,
   };
 }
 
@@ -91,15 +92,15 @@ async function createEmbed (url, infos) {
  * @param server The server.
  * @returns {Promise<void>}
  */
-async function updateActiveEmbed (server) {
-  const queueItem = server.queue[0] || server.queueHistory[server.queueHistory.length-1];
+async function updateActiveEmbed(server) {
+  const queueItem = server.queue[0] || server.queueHistory[server.queueHistory.length - 1];
   try {
     if (!server.currentEmbed || !queueItem) return;
     let embed = await createEmbed(queueItem.url, queueItem.infos);
     queueItem.infos = embed.infos;
     embed = embed.embed;
     embed.addField('Queue', getQueueText(server), true);
-    server.currentEmbed.edit(embed);
+    server.currentEmbed.edit({embeds: [embed]});
   } catch (e) {
     console.log(e);
   }
@@ -109,9 +110,9 @@ async function updateActiveEmbed (server) {
  * Sends a session ended embed.
  * @param server The server metadata.
  * @param item The QueueItem to display.
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
-async function sessionEndEmbed(server, item){
+async function sessionEndEmbed(server, item) {
   try {
     if (!server.currentEmbed || !item) return;
     let embed = await createEmbed(item.url, item.infos);
@@ -119,35 +120,10 @@ async function sessionEndEmbed(server, item){
     server.currentEmbedChannelId = '0';
     server.numSinceLastEmbed = 0;
     embed.addField('-', 'Session ended', true);
-    server.currentEmbed.edit(embed);
+    server.currentEmbed.edit({embeds: [embed]});
   } catch (e) {
     console.log(e);
   }
 }
 
-/**
- * Send a recommendation to a user. EXPERIMENTAL.
- * @param message The message metadata.
- * @param content Optional - text to add to the recommendation.
- * @param url The url to recommend.
- * @param uManager bot.users
- * @returns {Promise<void>}
- */
-async function sendRecommendation (message, content, url, uManager) {
-  if (!isCoreAdmin(message.member.id)) return;
-  if (!url) return;
-  try {
-    let recUser = await uManager.fetch((message.member.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]));
-    await recUser.send({
-      content: `**${message.member.user.username}** has a recommendation for you${(content ? `:\n*${content}*` : '')}\n<${url}>`,
-      embed: (await createEmbed(url)).embed
-    });
-    message.channel.send(`*recommendation sent to ${recUser.username}*`);
-  } catch (e) {
-    console.log(e);
-  }
-}
-
-
-
-module.exports = {updateActiveEmbed, sendRecommendation, createEmbed, sessionEndEmbed}
+module.exports = {updateActiveEmbed, createEmbed, sessionEndEmbed};

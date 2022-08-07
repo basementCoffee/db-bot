@@ -1,18 +1,22 @@
+/* eslint-disable camelcase */
 const {
   botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
-  playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, getSheetName
+  playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, getSheetName, resetSession,
+  disconnectConnection,
 } = require('../../utils/utils');
 const {
-  StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, dispatcherMap,
-  dispatcherMapStatus, LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID
+  StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
+  LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID, CORE_ADM,
 } = require('../../utils/process/constants');
-const {getData} = require('spotify-url-info');
+const fetch = require('isomorphic-unfetch');
+const {getData} = require('spotify-url-info')(fetch);
 const m3u8stream = require('m3u8stream');
 const ytdl_core = require('ytdl-core');
 const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 const twitch = require('twitch-m3u8');
-let scdl = require("scdl-core").SoundCloud.create().then(x => scdl = x);
+const {SoundCloud: scdl} = require('scdl-core');
+scdl.connect();
 const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
 const processStats = require('../../utils/process/ProcessStats');
 const {shutdown} = require('../../utils/shutdown');
@@ -25,30 +29,37 @@ const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
 const {runPlayCommand} = require('../play');
 const {runKeysCommand} = require('../keys');
+const {
+  createAudioResource,
+  createAudioPlayer,
+  StreamType: VoiceStreamType, getVoiceConnection,
+} = require('@discordjs/voice');
+const CH = require('../../../channel.json');
+const fluentFfmpeg = require('fluent-ffmpeg');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
- * @param {*} message The message that triggered the bot.
+ * @param message {import('discord.js').Message} The message that triggered the bot.
  * @param queueItem The queue item to play (see createQueueItem).
  * @param vc The voice channel to play the song in.
  * @param server The server playback metadata.
  * @param retries {number} Optional - Integer representing the number of retries.
- * @param seekSec {number} The amount to seek in seconds
+ * @param seekSec {number} Optional - The amount to seek in seconds
  * @returns {Promise<void>}
  */
-async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSec) {
+async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec) {
   let whatToPlay = queueItem?.url;
   if (!whatToPlay) {
     queueItem = server.queue[0];
-    whatToPlay = queueItem.url;
     if (!queueItem || !queueItem.url) return;
+    whatToPlay = queueItem.url;
   }
   if (!vc) {
     vc = message.member.voice?.channel;
     if (!vc) return;
   }
   if (processStats.isInactive) {
-    message.channel.send('*db bot has been updated*');
+    message.channel.send(`*${message.guild.me.user.username} has been updated*`);
     return stopPlayingUtil(message.guild.id, vc, false, server);
   }
   if (server.voteAdmin.length > 0) {
@@ -58,12 +69,29 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
   }
   // the alternative url to play
   let urlAlt = whatToPlay;
-  let connection = server.connection;
-  if (!botInVC(message) || !connection || (connection.channel.id !== vc.id)) {
+  let connection = server.audio.connection;
+  if (!botInVC(message) || !connection || (server.audio?.connection.joinConfig.channelId !== vc.id)) {
     try {
-      connection = await vc.join();
-      await new Promise(res => setTimeout(res, 300));
+      connection = server.audio.joinVoiceChannel(message.guild, vc.id);
+      await new Promise((res) => setTimeout(res, 300));
+      if (!botInVC(message) || server.audio?.connection.joinConfig.channelId !== vc.id) {
+        await new Promise((res, rej) => setTimeout((() => {
+          if (botInVC(message)) {
+            if (server.audio?.connection.joinConfig.channelId !== vc.id) {
+              rej(new Error('VOICE_JOIN_CHANNEL_LIVE'));
+            } else {
+              res();
+            }
+          } else {
+            rej(new Error('VOICE_JOIN_CHANNEL'));
+          }
+        }), 300));
+      }
     } catch (e) {
+      // if the bot is already in a voice channel but cannot join the requested channel
+      if (e.message !== 'VOICE_JOIN_CHANNEL_LIVE') {
+        resetSession(server);
+      }
       catchVCJoinError(e, message.channel);
       return;
     }
@@ -71,8 +99,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       server.startUpMessage = true;
       message.channel.send(processStats.startUpMessage);
     }
-    server.connection = connection;
-    connection.voice.setSelfDeaf(true).then();
   }
   if (server.leaveVCTimeout) {
     clearTimeout(server.leaveVCTimeout);
@@ -98,8 +124,9 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         }
       }
       let artists = '';
+      const queueItemNameLower = queueItem.infos.name.toLowerCase();
       if (queueItem.infos.artists) {
-        queueItem.infos.artists.forEach(x => artists += x.name + ' ');
+        queueItem.infos.artists.forEach((x) => artists += x.name + ' ');
         artists = artists.trim();
       } else artists = 'N/A';
       let search = await ytsr(queueItem.infos.name + ' ' + artists, {pages: 1});
@@ -127,10 +154,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
           (Math.abs(spotifyDuration - (convertYTFormatToMS(search.items[itemIndex2].duration.split(':')))) + 1000)) {
           itemIndex = itemIndex2;
         }
-      } else if (queueItem.infos.name.includes('feat')) {
-        search = await ytsr(queueItem.infos.name + ' lyrics', {pages: 1});
+      } else if (queueItemNameLower.includes('feat') || queueItemNameLower.includes('remix')) {
+        search = await ytsr(`${queueItem.infos.name} lyrics`, {pages: 1});
       } else {
-        search = await ytsr(queueItem.infos.name + ' ' + artists.split(' ')[0] + ' lyrics', {pages: 1});
+        search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0]} lyrics`, {pages: 1});
       }
       if (search.items[itemIndex]) queueItem.urlAlt = urlAlt = search.items[itemIndex].url;
       else {
@@ -148,15 +175,16 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     server.currentEmbed.delete();
     server.currentEmbed = null;
   }
-  if (server.streamData.type === StreamType.YOUTUBE) await server.streamData.stream.destroy();
-  else if (server.streamData.stream) endStream(server);
+  if (server.streamData.type === StreamType.YOUTUBE) {
+    try {
+      await server.streamData.stream.destroy();
+    } catch (e) {}
+  } else if (server.streamData.stream) endStream(server);
   if (whatToPlay !== whatspMap[vc.id]) return;
-  let dispatcher;
   try {
     let playbackTimeout;
     let stream;
-    let encoderType;
-    let streamHWM;
+    let audioResourceOptions;
     // noinspection JSCheckFunctionSignatures
     if (queueItem.type === StreamType.SOUNDCLOUD) {
       commandsMap.set('SOUNDCLOUD', (commandsMap.get('SOUNDCLOUD') || 0) + 1);
@@ -164,7 +192,6 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       // add formatted link to whatspMap
       whatspMap[vc.id] = whatToPlay;
       stream = await scdl.download(whatToPlay, {highWaterMark: 1 << 25});
-      streamHWM = 1 << 25;
       server.streamData.type = StreamType.SOUNDCLOUD;
     } else if (queueItem.type === StreamType.TWITCH) {
       let twitchEncoded;
@@ -203,32 +230,33 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       server.streamData.stream = stream;
     } else if (seekSec) {
       stream = await ytdl_core(urlAlt, {filter: 'audioonly'});
+      // set the video start time
+      stream = fluentFfmpeg({source: stream}).toFormat('mp3').setStartTime(Math.ceil(seekSec));
       server.streamData.type = StreamType.YOUTUBE;
       queueItem.urlAlt = urlAlt;
     } else {
       stream = await ytdl(urlAlt, {
         filter: (retries % 2 === 0 ? () => ['251'] : ''),
-        highWaterMark: 1 << 25
+        highWaterMark: 1 << 25,
       });
-      streamHWM = 1 << 25;
-      encoderType = 'opus';
+      audioResourceOptions = {inputType: VoiceStreamType.Opus};
       queueItem.urlAlt = urlAlt;
     }
     server.streamData.stream = stream;
-    dispatcher = connection.play(stream, (seekSec ? {seek: seekSec} : {
-        type: encoderType,
-        volume: false,
-        highWaterMark: streamHWM
-      }
-    ));
-    dispatcherMap[vc.id] = dispatcher;
+
+    const player = createAudioPlayer();
+    const resource = createAudioResource(stream, audioResourceOptions);
+    connection.subscribe(player);
+    player.play(resource);
+    server.audio.resource = resource;
+    server.audio.player = player;
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
-      pauseComputation(vc, true);
-      await new Promise(res => setTimeout(() => {
-        if (whatToPlay === whatspMap[vc.id]) playComputation(vc, true);
+      pauseComputation(server, true);
+      await new Promise((res) => setTimeout(() => {
+        if (whatToPlay === whatspMap[vc.id]) playComputation(server, true);
         res();
       }, 3000));
-    } else dispatcherMapStatus[vc.id] = false;
+    } else server.audio.status = true;
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
       if (server.currentEmbed) {
@@ -236,40 +264,47 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         server.currentEmbed = null;
       }
     } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
-      await sendLinkAsEmbed(message, queueItem, vc, server, false).then(() => dispatcher.setVolume(0.5));
+      queueItem = await sendLinkAsEmbed(message, queueItem, vc, server, false) || queueItem;
     }
     processStats.removeActiveStream(message.guild.id);
     processStats.addActiveStream(message.guild.id);
     server.skipTimes = 0;
-    dispatcher.on('error', async (e) => {
-      if (dispatcher.streamTime < 1000 && retries < 4) {
+    player.on('error', async (e) => {
+      if (resource.playbackDuration < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
-        if (retries === 3) await new Promise(res => setTimeout(res, 500));
+        if (retries === 3) await new Promise((res) => setTimeout(res, 500));
         if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
         return;
       }
       skipLink(message, vc, false, server, false);
       // noinspection JSUnresolvedFunction
       logError(
-        (new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
-        timestamp: ${formatDuration(dispatcher.streamTime)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)
+        {
+          embeds: [(new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
+        timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)],
+        },
       );
       console.log('dispatcher error: ', e);
     });
-    dispatcher.once('finish', () => {
+    // similar to on 'finish'
+    player.once('idle', () => {
       if (whatToPlay !== whatspMap[vc.id]) {
         const errString = `There was a mismatch -----------\n old url: ${whatToPlay}\n current url: ${whatspMap[vc.id]}`;
         console.log(errString);
         try {
           // noinspection JSUnresolvedFunction
           logError(errString);
+          if (CORE_ADM.includes(message.member.id.toString())) {
+            message.channel.send(errString);
+          }
         } catch (e) {
           console.log(e);
         }
       }
+      server.mapFinishedLinks.set(whatToPlay, {queueItem, numOfPlays: (server.mapFinishedLinks.get(whatToPlay)?.numOfPlays ||  0) + 1});
       if (vc.members.size < 2) {
-        connection.disconnect();
-        dispatcherMap[vc.id] = undefined;
+        
+        disconnectConnection(server, connection);
         processStats.removeActiveStream(message.guild.id);
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
@@ -282,8 +317,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
         } else {
           if (server.collector) server.collector.stop();
           updateActiveEmbed(server);
-          server.leaveVCTimeout = setTimeout(() => connection.disconnect(), LEAVE_VC_TIMEOUT);
-          dispatcherMap[vc.id] = undefined;
+          server.leaveVCTimeout = setTimeout(() => disconnectConnection(server, connection), LEAVE_VC_TIMEOUT);
           processStats.removeActiveStream(message.guild.id);
         }
       }
@@ -294,7 +328,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     });
     if (!retries) {
       playbackTimeout = setTimeout(() => {
-        if (server.queue[0]?.url === whatToPlay && botInVC(message) && dispatcher.streamTime < 1) {
+        if (server.queue[0]?.url === whatToPlay && botInVC(message) && resource.playbackDuration < 1) {
           playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
         }
       }, 2000);
@@ -306,15 +340,15 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
       else {
         server.skipTimes++;
         if (server.skipTimes < 4) {
-          if (server.skipTimes === 2) checkStatusOfYtdl(message);
+          if (server.skipTimes === 2) checkStatusOfYtdl(server, message);
           message.channel.send(
-            '***error code 404:*** *this video may contain a restriction preventing it from being played.*'
-            + (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
+            '***error code 404:*** *this video may contain a restriction preventing it from being played.*' +
+            (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
           server.numSinceLastEmbed++;
           skipLink(message, vc, true, server, true);
         } else {
           console.log('status code 404 error');
-          connection.disconnect();
+          disconnectConnection(server, connection);
           processStats.removeActiveStream(message.guild.id);
           message.channel.send('*db bot appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             console.log(e);
@@ -342,10 +376,10 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
     console.log('error in playLinkToVC: ', whatToPlay);
     console.log(e);
     if (server.skipTimes > 3) {
-      connection.disconnect();
+      disconnectConnection(server, connection);
       processStats.removeActiveStream(message.guild.id);
       message.channel.send('***db bot is facing some issues, may restart***');
-      checkStatusOfYtdl(message);
+      checkStatusOfYtdl(server, message);
       return;
     } else {
       server.skipTimes++;
@@ -370,7 +404,7 @@ async function playLinkToVC (message, queueItem, vc, server, retries = 0, seekSe
  * @param server The server
  * @param whatToPlayS The broken link provided as a string
  */
-function searchForBrokenLinkWithinDB (message, server, whatToPlayS) {
+function searchForBrokenLinkWithinDB(message, server, whatToPlayS) {
   getXdb2(server, getSheetName(message.member.id), botInVC(message)).then((xdb) => {
     xdb.globalKeys.forEach((value) => {
       if (value.name === whatToPlayS) {
@@ -382,43 +416,43 @@ function searchForBrokenLinkWithinDB (message, server, whatToPlayS) {
 
 /**
  * Checks the status of ytdl-core-discord and exits the active process if the test link is unplayable.
+ * @param server The server metadata.
  * @param message The message metadata to send a response to the appropriate channel
  */
-function checkStatusOfYtdl (message) {
+async function checkStatusOfYtdl(server, message) {
   // noinspection JSUnresolvedFunction
-  bot.channels.fetch('839643770986561607').then(channel =>
-    channel.join().then(async (connection) => {
-      await new Promise(res => setTimeout(res, 500));
-      try {
-        // noinspection JSCheckFunctionSignatures
-        connection.play(await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
-          filter: () => ['251'],
-          highWaterMark: 1 << 25
-        }), {
-          type: 'opus',
-          volume: false,
-          highWaterMark: 1 << 25
-        });
-      } catch (e) {
-        console.log(e);
-        // noinspection JSUnresolvedFunction
-        if (message) {
-          const diagnosisStr = '*self-diagnosis complete: db bot will be restarting*';
-          if (message.deletable) message.edit(diagnosisStr);
-          else message.channel.send(diagnosisStr);
-        }
-        logError('ytdl status is unhealthy, shutting off bot');
-        connection.disconnect();
-        if (processStats.isInactive) setTimeout(() => process.exit(0), 2000);
-        else shutdown('YTDL-POOR')();
-        return;
-      }
-      setTimeout(() => {
-        connection.disconnect();
-        if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
-      }, 6000);
-    })
-  );
+  const connection = await server.audio.joinVoiceChannel((await bot.guilds.fetch(CH['check-in-guild'])), CH['check-in-voice']);
+
+  const stream = await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
+    filter: () => ['251'],
+    highWaterMark: 1 << 25,
+  });
+  const player = createAudioPlayer();
+  const resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus});
+
+  await new Promise((res) => setTimeout(res, 500));
+  try {
+    connection.subscribe(player);
+    player.play(resource);
+  } catch (e) {
+    console.log(e);
+    if (message) {
+      const diagnosisStr = '*self-diagnosis complete: db bot will be restarting*';
+      if (message.deletable) message.edit(diagnosisStr);
+      else message.channel.send(diagnosisStr);
+    }
+    logError('ytdl status is unhealthy, shutting off bot');
+    disconnectConnection(server, connection);
+    if (processStats.isInactive) setTimeout(() => process.exit(0), 2000);
+    else shutdown('YTDL-POOR')();
+    return;
+  }
+  setTimeout(() => {
+    disconnectConnection(server, connection);
+    getVoiceConnection(server.guildId)?.disconnect();
+    bot.voice.adapters.get(server.guildId)?.destroy();
+    if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
+  }, 6000);
 }
 
 /**
@@ -430,7 +464,7 @@ function checkStatusOfYtdl (message) {
  * @param server The server playback metadata
  * @param noHistory Optional - true excludes link from the queue history
  */
-function skipLink (message, voiceChannel, playMessageToChannel, server, noHistory) {
+function skipLink(message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
   if (server.streamData.type === StreamType.TWITCH) endStream(server);
   if (server.queue.length > 0) {
@@ -470,12 +504,13 @@ function skipLink (message, voiceChannel, playMessageToChannel, server, noHistor
  * @param server The server playback metadata
  * @returns {*}
  */
-function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSingleRewind, force, mem, server) {
+function runRewindCommand(message, mgid, voiceChannel, numberOfTimes, ignoreSingleRewind, force, mem, server) {
   if (!voiceChannel) {
     return message.channel.send('You must be in a voice channel to rewind');
   }
-  if (server.dictator && mem.id !== server.dictator.id)
+  if (server.dictator && mem.id !== server.dictator.id) {
     return message.channel.send('only the dictator can perform this action');
+  }
   // boolean to determine if there is a song
   let queueItem;
   let rewindTimes = 1;
@@ -536,8 +571,9 @@ function runRewindCommand (message, mgid, voiceChannel, numberOfTimes, ignoreSin
  * @param sendSkipMsg Whether to send a 'skipped' message when a single link is skipped
  * @param forceSkip Optional - If there is a DJ, grants force skip abilities
  * @param mem The user that is completing the action, used for DJ mode
+ * @returns {*}
  */
-function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, forceSkip, mem) {
+function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkipMsg, forceSkip, mem) {
   // in case of force disconnect
   if (!botInVC(message)) return;
   if (!voiceChannel) {
@@ -545,15 +581,16 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
     if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
   }
   if (server.queue.length < 1) return message.channel.send('*nothing is playing right now*');
-  if (server.dictator && mem.id !== server.dictator.id)
+  if (server.dictator && mem.id !== server.dictator.id) {
     return message.channel.send('only the dictator can perform this action');
+  }
   if (server.voteAdmin.length > 0 && !forceSkip) {
     if (voteSystem(message, message.guild.id, 'skip', mem, server.voteSkipMembersId, server)) {
       skipTimes = 1;
       sendSkipMsg = false;
     } else return;
   }
-  if (dispatcherMap[voiceChannel.id]) dispatcherMap[voiceChannel.id].pause();
+  if (server.audio.player) server.audio.player.pause();
   if (skipTimes) {
     try {
       skipTimes = parseInt(skipTimes);
@@ -590,7 +627,7 @@ function runSkipCommand (message, voiceChannel, server, skipTimes, sendSkipMsg, 
  * @param queueItem The last queueItem.
  * @returns {Promise<void>}
  */
-async function runAutoplayCommand (message, server, vc, queueItem) {
+async function runAutoplayCommand(message, server, vc, queueItem) {
   if (queueItem?.urlAlt) {
     const whatToPlay = queueItem.urlAlt;
     try {
@@ -610,9 +647,9 @@ async function runAutoplayCommand (message, server, vc, queueItem) {
     } catch (e) {}
     message.channel.send('*could not find a video to play*');
     server.collector.stop();
-    dispatcherMap[vc.id] = undefined;
+    server.audio.reset();
   } else {
-    message.channel.send(`*smartplay is not supported for this stream type*`);
+    message.channel.send('*smartplay is not supported for this stream type*');
     stopPlayingUtil(message.guild.id, vc, true, server, message, message.member);
   }
 }
@@ -624,11 +661,10 @@ async function runAutoplayCommand (message, server, vc, queueItem) {
  * @param index The index of the recommendation to get.
  * @returns {Promise<string|undefined>} A new link if successful.
  */
-async function getRecLink (whatToPlay, infos, index = 0) {
+async function getRecLink(whatToPlay, infos, index = 0) {
   try {
-    let id;
     if (!infos || !infos.related_videos) infos = await ytdl.getBasicInfo(whatToPlay);
-    id = infos.related_videos[index].id;
+    const id = infos.related_videos[index].id;
     return `https://www.youtube.com/watch?v=${id}`;
   } catch (e) {
     return undefined;
@@ -639,14 +675,14 @@ async function getRecLink (whatToPlay, infos, index = 0) {
  * Sends an embed to the channel depending on the given link.
  * If not given a voice channel then playback buttons will not appear. This is the main playabck embed.
  * If no url is provided then returns.
- * @param message {module:"discord.js".Message} The message to send the channel to
+ * @param message {any} The message to send the channel to
  * @param queueItem {Object} the queueItem to generate the embed for
- * @param voiceChannel {module:"discord.js".VoiceChannel} the voice channel that the link is being played in, if playing
+ * @param voiceChannel {any} the voice channel that the link is being played in, if playing
  * @param server {Object} The server playback metadata
  * @param forceEmbed {Boolean} Force the embed to be re-sent in the text channel
- * @returns {Promise<void>}
+ * @returns {Promise<any | void>} An updated queueItem (see createQueueItem) if successful.
  */
-async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceEmbed) {
+async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEmbed) {
   if (!message || !queueItem) return;
   const url = queueItem.url;
   if (!voiceChannel) {
@@ -654,14 +690,15 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
     if (!voiceChannel) return;
   }
   if (server.verbose) forceEmbed = true;
-  if (server.loop && url === server.queue[0]?.url && !forceEmbed && botInVC(message)
-    && server.currentEmbed.reactions) {
+  if (server.loop && url === server.queue[0]?.url && !forceEmbed && botInVC(message) &&
+    server.currentEmbed.reactions) {
     return;
   }
   // the created embed
   const embedData = await createEmbed(url, queueItem.infos);
   const timeMS = embedData.timeMS;
   const embed = embedData.embed;
+  queueItem.infos = embedData.infos;
   let showButtons = true;
   if (botInVC(message)) {
     if (server.currentEmbedChannelId !== message.channel.id) {
@@ -679,29 +716,32 @@ async function sendLinkAsEmbed (message, queueItem, voiceChannel, server, forceE
     queueItem.infos = embedData.infos;
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed?.deletable) {
       try {
-        const sentMsg = await server.currentEmbed.edit(embed);
-        if (sentMsg.reactions.cache.size < 1 && showButtons && dispatcherMap[voiceChannel.id])
+        const sentMsg = await server.currentEmbed.edit({embeds: [embed]});
+        if (sentMsg.reactions.cache.size < 1 && showButtons && server.audio.player) {
           generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
+        }
         return;
       } catch (e) {}
     }
-    await sendEmbedUpdate(message.channel, server, forceEmbed, embed).then(sentMsg => {
-      if (showButtons && dispatcherMap[voiceChannel.id])
+    await sendEmbedUpdate(message.channel, server, forceEmbed, embed).then((sentMsg) => {
+      if (showButtons && server.audio.player) {
         generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
+      }
     });
   }
+  return queueItem;
 }
 
 /**
  * Sends a new message embed to the channel. Is a helper for sendLinkAsEmbed.
- * @param channel {module:"discord.js".TextChannel | module:"discord.js".DMChannel | module:"discord.js".NewsChannel}
+ * @param channel {import(discord.js).TextChannel | import(discord.js).DMChannel | import(discord.js).NewsChannel}
  * Discord's Channel object. Used for sending the new embed.
  * @param server The server.
  * @param forceEmbed {Boolean} If to keep the old embed and send a new one.
  * @param embed The embed to send.
  * @returns {Promise<Message>} The new message that was sent.
  */
-async function sendEmbedUpdate (channel, server, forceEmbed, embed) {
+async function sendEmbedUpdate(channel, server, forceEmbed, embed) {
   server.numSinceLastEmbed = 0;
   if (server.currentEmbed) {
     if (!forceEmbed && server.currentEmbed.deletable) {
@@ -711,7 +751,7 @@ async function sendEmbedUpdate (channel, server, forceEmbed, embed) {
     }
   }
   // noinspection JSUnresolvedFunction
-  const sentMsg = await channel.send(embed);
+  const sentMsg = await channel.send({embeds: [embed]});
   server.currentEmbed = sentMsg;
   return sentMsg;
 }
@@ -724,7 +764,7 @@ async function sendEmbedUpdate (channel, server, forceEmbed, embed) {
  * @param timeMS The time for the reaction collector
  * @param mgid The message guild id
  */
-function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid) {
+function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) {
   if (!sentMsg) return;
   sentMsg.react(reactions.REWIND).then(() => {
     if (collector.ended) return;
@@ -742,77 +782,86 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
 
   const filter = (reaction, user) => {
     if (voiceChannel && user.id !== botID) {
-      if (voiceChannel.members.has(user.id))
-        return [reactions.PPAUSE, reactions.SKIP, reactions.REWIND, reactions.STOP, reactions.BOOK_O].includes(reaction.emoji.name);
+      if (voiceChannel.members.has(user.id)) {
+        const allowedReactions = [reactions.PPAUSE, reactions.SKIP, reactions.REWIND, reactions.STOP, reactions.BOOK_O];
+        return allowedReactions.includes(reaction.emoji.name);
+      }
     }
     return false;
   };
 
   timeMS += 7200000;
-  const collector = sentMsg.createReactionCollector(filter, {time: timeMS, dispose: true});
+  const collector = sentMsg.createReactionCollector({filter, time: timeMS, dispose: true});
   server.collector = collector;
 
   collector.on('collect', async (reaction, reactionCollector) => {
-    if (!dispatcherMap[voiceChannel.id] || !voiceChannel) return;
+    if (!server.audio.player || !voiceChannel) return;
     switch (reaction.emoji.name) {
-      case reactions.SKIP:
-        runSkipCommand(sentMsg, voiceChannel, server, 1, false, false, sentMsg.member.voice?.channel.members.get(reactionCollector.id));
-        reaction.users.remove(reactionCollector.id).then();
-        if (server.followUpMessage?.deletable) {
-          server.followUpMessage.delete();
-          server.followUpMessage = undefined;
-        }
-        break;
-      case reactions.PPAUSE:
-        let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
-        if (dispatcherMapStatus[voiceChannel.id]) {
-          runPlayCommand(sentMsg, tempUser, server, true, false, true);
-          if (server.voteAdmin.length < 1 && !server.dictator) {
-            tempUser = tempUser.nickname;
-            if (server.followUpMessage) {
-              server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*');
-            } else {
-              sentMsg.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*').then(msg => {server.followUpMessage = msg;});
-            }
-          }
-        } else {
-          pauseCommandUtil(sentMsg, tempUser, server, true, false, true);
+    case reactions.SKIP:
+      runSkipCommand(sentMsg, voiceChannel, server, 1, false, false,
+        sentMsg.member.voice?.channel.members.get(reactionCollector.id));
+      reaction.users.remove(reactionCollector.id).then();
+      if (server.followUpMessage?.deletable) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+      break;
+    case reactions.PPAUSE:
+      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
+      if (!server.audio.status) {
+        runPlayCommand(sentMsg, tempUser, server, true, false, true);
+        if (server.voteAdmin.length < 1 && !server.dictator) {
           tempUser = tempUser.nickname;
-          if (server.voteAdmin.length < 1 && !server.dictator) {
-            if (server.followUpMessage) {
-              server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+          if (server.followUpMessage) {
+            server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
                 '\`*');
-            } else {
-              sentMsg.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*').then(msg => {server.followUpMessage = msg;});
-            }
+          } else {
+            sentMsg.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                '\`*').then((msg) => {
+              server.followUpMessage = msg;
+            });
           }
         }
-        reaction.users.remove(reactionCollector.id).then();
-        break;
-      case reactions.REWIND:
-        reaction.users.remove(reactionCollector.id).then();
-        runRewindCommand(sentMsg, mgid, voiceChannel, undefined, true, false, sentMsg.member.voice?.channel.members.get(reactionCollector.id), server);
-        if (server.followUpMessage) {
-          server.followUpMessage.delete();
-          server.followUpMessage = undefined;
+      } else {
+        pauseCommandUtil(sentMsg, tempUser, server, true, false, true);
+        tempUser = tempUser.nickname;
+        if (server.voteAdmin.length < 1 && !server.dictator) {
+          if (server.followUpMessage) {
+            server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                '\`*');
+          } else {
+            sentMsg.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
+                '\`*').then((msg) => {
+              server.followUpMessage = msg;
+            });
+          }
         }
-        break;
-      case reactions.STOP:
-        const mem = sentMsg.member.voice?.channel.members.get(reactionCollector.id);
-        stopPlayingUtil(mgid, voiceChannel, false, server, sentMsg, mem);
-        if (server.followUpMessage) {
-          server.followUpMessage.delete();
-          server.followUpMessage = undefined;
-        }
-        break;
-      case reactions.BOOK_O:
-        const tempUserBook = await sentMsg.guild.members.fetch(reactionCollector.id);
-        runKeysCommand(sentMsg, server, getSheetName(reactionCollector.id), reactionCollector, undefined, tempUserBook.nickname).then();
-        server.numSinceLastEmbed += 5;
-        break;
+      }
+      reaction.users.remove(reactionCollector.id).then();
+      break;
+    case reactions.REWIND:
+      reaction.users.remove(reactionCollector.id).then();
+      runRewindCommand(sentMsg, mgid, voiceChannel, undefined, true,
+        false, sentMsg.member.voice?.channel.members.get(reactionCollector.id), server);
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+      break;
+    case reactions.STOP:
+      const mem = sentMsg.member.voice?.channel.members.get(reactionCollector.id);
+      stopPlayingUtil(mgid, voiceChannel, false, server, sentMsg, mem);
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+      break;
+    case reactions.BOOK_O:
+      const tempUserBook = await sentMsg.guild.members.fetch(reactionCollector.id);
+      runKeysCommand(sentMsg, server,
+        getSheetName(reactionCollector.id), reactionCollector, undefined, tempUserBook.nickname).then();
+      server.numSinceLastEmbed += 5;
+      break;
     }
   });
   collector.on('end', () => {
@@ -829,9 +878,10 @@ function generatePlaybackReactions (sentMsg, server, voiceChannel, timeMS, mgid)
  * @param isPlaylist Optional - True if to randomize just a playlist
  * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
  */
-async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, addToFront = 0) {
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin))
+async function addRandomToQueue(message, numOfTimes, cdb, server, isPlaylist, addToFront = 0) {
+  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
     return message.channel.send('the queue is locked: only the DJ can add to the queue');
+  }
   // the playlist url
   let playlistUrl;
   let sentMsg;
@@ -843,7 +893,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     if (cdb) {
       playlistUrl = cdb.get(numOfTimes.toUpperCase()) || (() => {
         // tries to get a close match
-        const assumption = getAssumption(numOfTimes, [...cdb.values()].map(item => item.name));
+        const assumption = getAssumption(numOfTimes, [...cdb.values()].map((item) => item.name));
         if (assumption) {
           message.channel.send(`could not find '${numOfTimes}'. **Assuming '${assumption}'**`);
           return cdb.get(assumption.toUpperCase());
@@ -857,7 +907,7 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
     if (verifyPlaylist(playlistUrl)) sentMsg = message.channel.send('randomizing your playlist...');
   } else {
     valArray = [];
-    cdb.forEach(value => valArray.push(value.link));
+    cdb.forEach((value) => valArray.push(value.link));
     if (valArray.length < 1) {
       const pf = server.prefix;
       return message.channel.send('Your saved-links list is empty *(Try  `' + pf + 'add` to add to a list)*');
@@ -961,11 +1011,11 @@ async function addRandomToQueue (message, numOfTimes, cdb, server, isPlaylist, a
  * @param messageText The text to send to the channel.
  * @param server The server object.
  */
-function updatedQueueMessage (channel, messageText, server) {
+function updatedQueueMessage(channel, messageText, server) {
   channel.send(messageText);
   updateActiveEmbed(server).then();
 }
 
 module.exports = {
-  playLinkToVC, checkStatusOfYtdl, skipLink, runSkipCommand, runRewindCommand, sendLinkAsEmbed, addRandomToQueue
+  playLinkToVC, checkStatusOfYtdl, skipLink, runSkipCommand, runRewindCommand, sendLinkAsEmbed, addRandomToQueue,
 };

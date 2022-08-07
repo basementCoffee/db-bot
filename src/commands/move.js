@@ -1,4 +1,4 @@
-const {botInVC} = require('../utils/utils');
+const utils = require('../utils/utils');
 const {serializeAndUpdate} = require('./database/utils');
 
 /**
@@ -7,17 +7,18 @@ const {serializeAndUpdate} = require('./database/utils');
  * @param arr The array.
  * @param posA The first position.
  * @param posB THe second position.
- * @return {void}
+ * @returns {void}
  */
-function runMoveItemCommand (message, arr, posA, posB) {
-  if (!botInVC(message)) return;
+function runMoveItemCommand(message, arr, posA, posB) {
+  if (!utils.botInVC(message)) return;
   posA = Math.floor(posA);
   posB = Math.floor(posB);
   const MIN_POS = 1;
   const MIN_ARR_SIZE = 3;
-  if (!(posA && posB)) message.channel.send(
-    '*two numbers expected: the position of the item to move and it\'s new position*\n`ex: move 1 5`');
-  else if (arr.length < MIN_ARR_SIZE) message.channel.send('*not enough items in the queue*');
+  if (!(posA && posB)) {
+    message.channel.send(
+      '*two numbers expected: the position of the item to move and it\'s new position*\n`ex: move 1 5`');
+  } else if (arr.length < MIN_ARR_SIZE) message.channel.send('*not enough items in the queue*');
   else if (posA < MIN_POS || posB < MIN_POS) {
     message.channel.send(`positions must be greater than ${MIN_POS - 1}`);
   } else {
@@ -30,17 +31,17 @@ function runMoveItemCommand (message, arr, posA, posB) {
 }
 
 /**
- *
- * @param server
- * @param channel
- * @param sheetName
- * @param xdb
+ * Moves an item from one playlist to another.
+ * @param server The server object.
+ * @param channel The channel to send the message to.
+ * @param sheetName The name of the sheet.
+ * @param xdb The database object.
  * @param args A list of keys and single playlist (the playlist should be the one to move the keys into).
  */
-function moveKeysWrapper (server, channel, sheetName, xdb, args) {
+function moveKeysWrapper(server, channel, sheetName, xdb, args) {
   let playlist;
   let playlistName;
-  args = args.join(' ').split(/,|, | /).filter(i => i);
+  args = args.join(' ').split(/,|, | /).filter((i) => i);
   for (let i = args.length - 1; i > -1; i--) {
     playlist = xdb.playlists.get(args[i].toUpperCase());
     if (playlist) {
@@ -66,20 +67,20 @@ function moveKeysWrapper (server, channel, sheetName, xdb, args) {
  * @param listOfKeys {Array<string>}
  * @param playlistNameTo {string}
  */
-async function moveKeysCommand (server, channel, sheetName, xdb, listOfKeys, playlistNameTo) {
+async function moveKeysCommand(server, channel, sheetName, xdb, listOfKeys, playlistNameTo) {
   const insertPlaylist = xdb.playlists.get(playlistNameTo.toUpperCase());
   if (!insertPlaylist) {
     channel.send(`*could not find playlist ${playlistNameTo}*`);
     return;
   }
-  let unknownKeys = [];
-  let errorKeys = [];
+  const unknownKeys = [];
+  const errorKeys = [];
   // set of playlists names where keys were removed from
-  let removedPlaylistsSet = new Set();
+  const removedPlaylistsSet = new Set();
   let keyObj;
   let keyName;
   const playlistArray = xdb.playlistArray;
-  const playlistArrayUpper = playlistArray.map(val => val.toUpperCase());
+  const playlistArrayUpper = playlistArray.map((val) => val.toUpperCase());
   const index = playlistArrayUpper.indexOf(playlistNameTo.toUpperCase());
   const insertPlaylistName = playlistArray[index];
   for (keyName of listOfKeys) {
@@ -114,13 +115,12 @@ async function moveKeysCommand (server, channel, sheetName, xdb, listOfKeys, pla
   // insert new data first
   await serializeAndUpdate(server, sheetName, playlistNameTo, xdb);
   // remove old data
-  for (let updatedPlaylist of removedPlaylistsSet) {
+  for (const updatedPlaylist of removedPlaylistsSet) {
     await serializeAndUpdate(server, sheetName, updatedPlaylist, xdb);
   }
   if ((errorKeys.length + unknownKeys.length) < listOfKeys.length) {
     channel.send(`*moved keys to **${playlistNameTo}***`);
   }
 }
-
 
 module.exports = {runMoveItemCommand, moveKeysWrapper};

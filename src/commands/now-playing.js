@@ -12,20 +12,23 @@ const {sendLinkAsEmbed} = require('./stream/stream');
  * @param sheetLetter Required if dbKey is given - a letter enum representing the type of sheet being referenced
  * (server or personal)
  */
-async function runWhatsPCommand (server, message, voiceChannel, keyName, sheetName, sheetLetter) {
+async function runWhatsPCommand(server, message, voiceChannel, keyName, sheetName, sheetLetter) {
   if (keyName && sheetName) {
     const xdb = await getXdb2(server, sheetName, !!voiceChannel);
     let link = xdb.globalKeys.get(keyName.toUpperCase()).link;
     // update link value here
     if (!link) {
-      let sObj = runSearchCommand(keyName, xdb.globalKeys);
-      if (sObj.ssi === 1 && sObj.ss)
+      const sObj = runSearchCommand(keyName, xdb.globalKeys);
+      if (sObj.ssi === 1 && sObj.ss) {
         link = `Assuming **${sObj.ss}**\n${xdb.globalKeys.get(sObj.ss.toUpperCase())}`;
+      }
     }
     if (link) {
       return message.channel.send(link);
     } else {
-      message.channel.send(`Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`);
+      // not found msg
+      const notFound = `Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`;
+      message.channel.send(notFound);
       return sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, true);
     }
   } else if (!voiceChannel) {

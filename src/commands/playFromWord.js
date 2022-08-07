@@ -11,12 +11,12 @@ const {runYoutubeSearch} = require('./stream/youtubeSearch');
  * @param mgid The guild id.
  * @param playNow Whether to play now.
  */
-function playFromWord (message, args, sheetName, server, mgid, playNow) {
+function playFromWord(message, args, sheetName, server, mgid, playNow) {
   if (sheetName) {
     runDatabasePlayCommand(args, message, sheetName, playNow, false, server).then();
   } else {
-    runYoutubeSearch(message, playNow, server, args.map(x => x).splice(1).join('')).then();
+    runYoutubeSearch(message, playNow, server, args.map((x) => x).splice(1).join('')).then();
   }
 }
 
-module.exports = {playFromWord}
+module.exports = {playFromWord};

@@ -1,9 +1,11 @@
-const {getData} = require('spotify-url-info');
+/* eslint-disable camelcase */
+const fetch = require('isomorphic-unfetch');
+const {getData} = require('spotify-url-info')(fetch);
 const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot, dispatcherMapStatus, dispatcherMap
+  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot,
 } = require('./process/constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
@@ -11,6 +13,7 @@ const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
 const processStats = require('./process/ProcessStats');
+const {getVoiceConnection} = require('@discordjs/voice');
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -19,7 +22,7 @@ const processStats = require('./process/ProcessStats');
  * @param duration a duration in milliseconds
  * @returns {string} a formatted string duration
  */
-function formatDuration (duration) {
+function formatDuration(duration) {
   const seconds = duration / 1000;
   const min = (seconds / 60);
   const hours = Math.floor(min / 60);
@@ -33,7 +36,7 @@ function formatDuration (duration) {
   if (seconds >= 0) {
     return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
   }
-  return `0m 0s`;
+  return '0m 0s';
 }
 
 /**
@@ -41,7 +44,7 @@ function formatDuration (duration) {
  * @param durationArray An array of durations.
  * @returns {number} The duration in MS or 0 if there was an error.
  */
-function convertYTFormatToMS (durationArray) {
+function convertYTFormatToMS(durationArray) {
   try {
     if (durationArray) {
       let duration = 0;
@@ -59,16 +62,17 @@ function convertYTFormatToMS (durationArray) {
  * Converts a provided seek format (ex: 1s 10m2s 1h31s) to seconds. If a number without an appending letter
  * is provided, then assumes it is already provided in seconds.
  * @param seekString The string to parse.
+ * @returns {number} The seek time in seconds.
  */
-function convertSeekFormatToSec (seekString) {
+function convertSeekFormatToSec(seekString) {
   let numSeconds;
   if (Number(seekString)) {
     numSeconds = seekString;
   } else {
-    let array = [];
+    const array = [];
     const testVals = ['h', 'm', 's'];
     const convertToArray = (formattedNum) => {
-      for (let val of testVals) {
+      for (const val of testVals) {
         const search = new RegExp(`(\\d*)${val}`);
         const res = search.exec(formattedNum);
         if (res) array.push(Number(res[1]) || 0);
@@ -86,17 +90,19 @@ function convertSeekFormatToSec (seekString) {
  * @param message The message that triggered the bot.
  * @returns {Object} The voice channel if the bot is in a voice channel.
  */
-function botInVC (message) {
-  try {
-    return message.guild.voice?.channel;
-  } catch (e) {
-    return false;
-  }
+function botInVC(message) {
+  return botInVC_Guild(message.guild);
 }
 
-function botInVC_Guild (guild) {
+/**
+ * Returns whether the bot is in a voice channel within the guild.
+ * @param guild The guild.
+ * @returns {Object} The voice channel if the bot is in a voice channel.
+ */
+function botInVC_Guild(guild) {
   try {
-    return guild.voice?.channel;
+    const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId)?.members;
+    return bot.voice.adapters.get(guild.id) && members && members.has(bot.user.id);
   } catch (e) {
     return false;
   }
@@ -105,8 +111,9 @@ function botInVC_Guild (guild) {
 /**
  * Returns the queue display status.
  * @param server The server.
+ * @returns {string} The queue count/status.
  */
-function getQueueText (server) {
+function getQueueText(server) {
   let content;
   if (server.queue.length > 1) content = `1 / ${server.queue.length}`;
   else if (server.queue.length > 0) content = (server.autoplay ? 'smartplay' : '1 / 1');
@@ -119,7 +126,7 @@ function getQueueText (server) {
  * @param url The url to verify.
  * @returns {boolean} True if given a playable URL.
  */
-function verifyUrl (url) {
+function verifyUrl(url) {
   return (url.includes(SPOTIFY_BASE_LINK) ? url.includes('/track/') :
     (url.includes(SOUNDCLOUD_BASE_LINK) ? scdl.isValidUrl(linkFormatter(url, SOUNDCLOUD_BASE_LINK)) :
       (ytdl.validateURL(url) || url.includes(TWITCH_BASE_LINK))) && !verifyPlaylist(url));
@@ -132,7 +139,7 @@ function verifyUrl (url) {
  * @param baseLink {string}  The starting of the remainder of the link to always add after the prefix.
  * @returns {string} The formatted URL.
  */
-function linkFormatter (url, baseLink) {
+function linkFormatter(url, baseLink) {
   return `https://${url.substr(url.indexOf(baseLink))}`;
 }
 
@@ -141,7 +148,7 @@ function linkFormatter (url, baseLink) {
  * @param url The url to verify.
  * @returns {string | boolean} A StreamType or false.
  */
-function verifyPlaylist (url) {
+function verifyPlaylist(url) {
   try {
     url = url.toLowerCase();
     if (url.includes(SPOTIFY_BASE_LINK)) {
@@ -158,22 +165,24 @@ function verifyPlaylist (url) {
 }
 
 /**
- * Resets server playback to default args.
+ * Resets server playback to default args. MUST occur before voice channel join, NOT after voice channel leave.
  * @param server The server to reset.
  */
-function resetSession (server) {
+function resetSession(server) {
   server.queue = [];
   server.queueHistory = [];
   server.loop = false;
+  server.audio.reset();
+  server.mapFinishedLinks.clear();
 }
 
 /**
  * Adjusts the queue for play now depending on the stream time.
- * @param dsp The dispatcher to reference.
+ * @param dsp {import('@discordjs/voice').AudioResource} The dispatcher to reference.
  * @param server The server to use.
  */
-function adjustQueueForPlayNow (dsp, server) {
-  if (server.queue[0] && dsp?.streamTime && (dsp.streamTime > 21000)) {
+function adjustQueueForPlayNow(dsp, server) {
+  if (server.queue[0] && dsp?.playbackDuration && (dsp.playbackDuration > 21000)) {
     server.queueHistory.push(server.queue.shift());
   }
 }
@@ -184,7 +193,7 @@ function adjustQueueForPlayNow (dsp, server) {
  * @param cutoff {number=} A number representing the cutoff value.
  * @returns {Promise<string>} The title of the provided link.
  */
-async function getTitle (queueItem, cutoff) {
+async function getTitle(queueItem, cutoff) {
   let title;
   try {
     if (queueItem.type === StreamType.SPOTIFY) {
@@ -212,14 +221,14 @@ async function getTitle (queueItem, cutoff) {
 /**
  * Formats B to MB.
  * @param data The bytes to format to MB.
- * @returns {`${number}`} A string that has the number of MB.
+ * @returns {string} A string that has the number of MB.
  */
 const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100}`;
 
 /**
  * Creates an embed regarding memory usage.
  */
-async function createMemoryEmbed () {
+async function createMemoryEmbed() {
   const memUsage = process.memoryUsage();
   const cpuUsage = await cpu.usage();
   return new MessageEmbed()
@@ -234,12 +243,14 @@ async function createMemoryEmbed () {
  * Ends the stream if a configuration for it is available.
  * @param server The server in which to end the stream.
  */
-function endStream (server) {
+function endStream(server) {
   try {
     if (server.streamData.type === StreamType.SOUNDCLOUD) {
-      if (!server.streamData.stream._readableState.closed) console.log(`not closed: ${server.streamData.stream._readableState.pipes.length}`);
+      if (!server.streamData.stream._readableState.closed) {
+        console.log(`not closed: ${server.streamData.stream._readableState.pipes.length}`);
+      }
       if (server.streamData.stream._readableState.pipes.length > 0) {
-        for (let v of Object.keys(server.streamData.stream._readableState.pipes[0])) {
+        for (const v of Object.keys(server.streamData.stream._readableState.pipes[0])) {
           server.streamData.stream._readableState.pipes[v] = undefined;
         }
         server.streamData.stream._readableState.pipes.pop();
@@ -262,7 +273,7 @@ function endStream (server) {
  * @param queue {Array} The queue to unshift.
  * @param queueItem The item to add to the queue.
  */
-function unshiftQueue (queue, queueItem) {
+function unshiftQueue(queue, queueItem) {
   queue.unshift(queueItem);
 }
 
@@ -273,12 +284,12 @@ function unshiftQueue (queue, queueItem) {
  * @param infos {any?} The infos of the URL.
  * @returns {{type, url, infos}}
  */
-function createQueueItem (url, type, infos) {
+function createQueueItem(url, type, infos) {
   if (!type) type = getLinkType(url);
   return {
     url: url,
     type: type,
-    infos: infos
+    infos: infos,
   };
 }
 
@@ -287,7 +298,7 @@ function createQueueItem (url, type, infos) {
  * @param queue {Array} The queue to push to.
  * @param queueItem The item to add to the queue.
  */
-function pushQueue (queue, queueItem) {
+function pushQueue(queue, queueItem) {
   queue.push(queueItem);
 }
 
@@ -311,7 +322,7 @@ const getLinkType = (url) => {
  * @param args The function parameters.
  * @param message A message to delete.
  */
-function setSeamless (server, fName, args, message) {
+function setSeamless(server, fName, args, message) {
   server.seamless.function = fName;
   server.seamless.args = args;
   server.seamless.message = message;
@@ -326,12 +337,12 @@ function setSeamless (server, fName, args, message) {
  * @param deleteNum {number} The number of recent db bot messages to remove.
  * @param onlyDB {boolean} True if to delete only db bot messages.
  */
-function removeDBMessage (channelID, deleteNum = 1, onlyDB) {
+function removeDBMessage(channelID, deleteNum = 1, onlyDB) {
   let firstRun = true;
   try {
-    bot.channels.fetch(channelID).then(x =>
-      x.messages.fetch(30).then(async x => {
-        for (let [, item] of x) {
+    bot.channels.fetch(channelID).then((x) =>
+      x.messages.fetch(30).then(async (x) => {
+        for (const [, item] of x) {
           if (item.deletable) {
             if (firstRun) {
               firstRun = false;
@@ -349,11 +360,11 @@ function removeDBMessage (channelID, deleteNum = 1, onlyDB) {
 
 /**
  * Logs an error to a channel.
- * @param msgTxt {string} The message to send.
+ * @param msgTxt {string || Object} The message to send.
  */
-function logError (msgTxt) {
+function logError(msgTxt) {
   bot.channels.fetch(CH.err)
-    .then((channel) => channel.send(msgTxt))
+    .then((channel) => channel?.send(msgTxt))
     .catch((e) => console.log('Failed sending error message: ', e));
 }
 
@@ -362,8 +373,8 @@ function logError (msgTxt) {
  * @param error The error.
  * @param textChannel The text channel to notify.
  */
-function catchVCJoinError (error, textChannel) {
-  let eMsg = error.toString();
+function catchVCJoinError(error, textChannel) {
+  const eMsg = error.toString();
   if (eMsg.includes('it is full')) textChannel.send('\`error: cannot join voice channel; it is full\`');
   else if (eMsg.includes('VOICE_JOIN_CHANNEL')) textChannel.send('\`permissions error: cannot join voice channel\`');
   else {
@@ -373,42 +384,57 @@ function catchVCJoinError (error, textChannel) {
 }
 
 /**
+ * Returns the error message informing the user that it is not in a voice channel with the bot.
+ * @param guild The guild.
+ * @return {string} The error message.
+ */
+function notInVoiceChannelErrorMsg(guild) {
+  return `must be in a voice channel with ${getBotDisplayName(guild)} for this command`;
+}
+
+/**
+ * Gets the display name of the bot. If there is a nickname, it will return it, otherwise it will return the default
+ * name.
+ * @param guild The guild from which to get the name.
+ * @returns {string} The display name of the bot.
+ */
+function getBotDisplayName(guild) {
+  return guild.me.nickname || guild.me.user.username;
+}
+
+/**
  * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param voiceChannel The voice channel that the dispatcher is playing in.
+ * @param server The server metadata.
  * @param force {boolean=} Ignores the status of the dispatcher.
  */
-function pauseComputation (voiceChannel, force = false) {
-  if (!dispatcherMap[voiceChannel.id]) return;
-  if (!dispatcherMapStatus[voiceChannel.id] || force) {
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMapStatus[voiceChannel.id] = true;
-    processStats.removeActiveStream(voiceChannel.guild.id);
+function pauseComputation(server, force = false) {
+  if (!server.audio.player) return;
+  if (server.audio.status || force) {
+    server.audio.player.pause();
+    server.audio.status = false;
+    processStats.removeActiveStream(server.guildId);
   }
 }
 
 /**
  * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param voiceChannel The voice channel that the dispatcher is playing in.
+ * @param server The server metadata.
  * @param force {boolean=} Ignores the status of the dispatcher.
  */
-function playComputation (voiceChannel, force) {
-  if (!dispatcherMap[voiceChannel.id]) return;
-  if (dispatcherMapStatus[voiceChannel.id] || force) {
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMap[voiceChannel.id].pause();
-    dispatcherMap[voiceChannel.id].resume();
-    dispatcherMapStatus[voiceChannel.id] = false;
-    processStats.addActiveStream(voiceChannel.guild.id);
+function playComputation(server, force) {
+  if (!server.audio.player) return;
+  if (!server.audio.status || force) {
+    server.audio.player.unpause();
+    server.audio.status = true;
+    processStats.addActiveStream(server.guildId);
   }
 }
 
 /**
  * Get the amount of time that this process has been active as a formatted string.
- * @return {string}
+ * @returns {string}
  */
-function getTimeActive () {
+function getTimeActive() {
   if (processStats.dateActive) {
     return formatDuration(processStats.activeMS + Date.now() - processStats.dateActive);
   } else {
@@ -419,9 +445,9 @@ function getTimeActive () {
 /**
  * Removes <> and [] from links. If provided a spotify or soundcloud link then properly formats those as well.
  * @param link {string} The link to format.
- * @return {string} The formatted link.
+ * @returns {string} The formatted link.
  */
-function universalLinkFormatter (link) {
+function universalLinkFormatter(link) {
   if (link[0] === '[' && link[link.length - 1] === ']') {
     link = link.substring(1, link.length - 1);
   } else if (link[0] === '<' && link[link.length - 1] === '>') {
@@ -435,18 +461,18 @@ function universalLinkFormatter (link) {
 /**
  * Returns true if the link is a valid playable link (includes playlists).
  * @param link {string} The link to validate.
- * @return {boolean} If the link is a valid, playable link.
+ * @returns {boolean} If the link is a valid, playable link.
  */
-function linkValidator (link) {
+function linkValidator(link) {
   return verifyUrl(link) || verifyPlaylist(link);
 }
 
 /**
  * Removes extra formatting from a link (< and >).
  * @param link {string} The link to format.
- * @return {string} The formatted link.
+ * @returns {string} The formatted link.
  */
-function removeFormattingLink (link) {
+function removeFormattingLink(link) {
   if (link[0] === '<' && link[link.length - 1] === '>') {
     link = link.substring(1, link.length - 1);
   }
@@ -456,25 +482,60 @@ function removeFormattingLink (link) {
 /**
  * Returns the sheet name for the user id.
  * @param userId {string}
- * @return {string} The sheet name.
+ * @returns {string} The sheet name.
  */
-function getSheetName (userId) {
+function getSheetName(userId) {
   return `p${userId}`;
 }
 
 /**
  * Determines if the provided sheetName is a user sheet.
  * @param sheetName {string} A sheet name.
- * @return {boolean} True if is a user sheet.
+ * @returns {boolean} True if is a user sheet.
  */
-function isPersonalSheet (sheetName) {
+function isPersonalSheet(sheetName) {
   return sheetName[0] === 'p';
+}
+
+/**
+ * Gets the members of a voice channel.
+ * @param guildId {string} The guild id.
+ * @return {Array<*>}} The members of the voice channel.
+ */
+function getVCMembers(guildId) {
+  const gmArray = Array.from(bot.channels.cache.get(getVoiceConnection(guildId).joinConfig.channelId).members);
+  gmArray.map((item) => item[1].user.username);
+  return gmArray[0];
+}
+
+/**
+ * Creates a visual embed.
+ * @param title {string} The title of the embed.
+ * @param text {string} The text of the embed.
+ * @param color {string?} The color of the embed.
+ * @param footer
+ * @return {MessageEmbed}
+ */
+function createVisualEmbed(title, text, color, footer) {
+  return new MessageEmbed()
+    .setTitle(title)
+    .setDescription(text)
+    .setColor(color || '#0099ff')
+}
+
+/**
+ * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and the player.
+ */
+function disconnectConnection(server, connection){
+  server.audio.reset();
+  connection.disconnect();
 }
 
 module.exports = {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
   setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
-  logError, pauseComputation, playComputation, getTimeActive, botInVC_Guild, linkValidator, universalLinkFormatter,
-  removeFormattingLink, getSheetName, isPersonalSheet
+  logError, pauseComputation, playComputation, getTimeActive, linkValidator, universalLinkFormatter,
+  removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg, getVCMembers,
+  createVisualEmbed, disconnectConnection
 };
