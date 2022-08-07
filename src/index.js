@@ -56,6 +56,7 @@ const {renamePlaylist, renameKey} = require('./commands/rename');
 const {runKeysCommand} = require('./commands/keys');
 const {getVoiceConnection} = require('@discordjs/voice');
 const {getJoke} = require('./commands/joke');
+const {runPurgeCommand} = require('./commands/purge');
 
 process.setMaxListeners(0);
 
@@ -717,6 +718,10 @@ async function runCommandCases(message) {
           (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links'))
       ]});
     break;
+    case 'purge':
+      if (!args[1]) return message.channel.send('*input a term to purge from the queue*');
+      await runPurgeCommand(message, server, args.slice(1).join(' ').toLowerCase());
+      break;
   case 'prefix':
     message.channel.send('use the command `changeprefix` to change the bot\'s prefix');
     break;
