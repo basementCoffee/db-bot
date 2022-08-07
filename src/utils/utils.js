@@ -195,17 +195,18 @@ function adjustQueueForPlayNow(dsp, server) {
  */
 async function getTitle(queueItem, cutoff) {
   let title;
+  const isEmptyQueueItem = !queueItem.infos || !Object.keys(queueItem.infos).length;
   try {
     if (queueItem.type === StreamType.SPOTIFY) {
-      if (!queueItem.infos) queueItem.infos = await getData(queueItem.url);
+      if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await getData(queueItem.url));
       title = queueItem.infos.name;
-    } else if (queueItem.type === 'soundcloud') {
-      if (!queueItem.infos) queueItem.infos = await scdl.getInfo(queueItem.url);
+    } else if (queueItem.type === StreamType.SOUNDCLOUD) {
+      if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await scdl.getInfo(queueItem.url));
       title = queueItem.infos.title;
     } else if (queueItem.type === StreamType.TWITCH) {
       title = 'twitch livestream';
     } else {
-      if (!queueItem.infos) queueItem.infos = await ytdl.getBasicInfo(queueItem.url);
+      if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await ytdl.getBasicInfo(queueItem.url));
       title = queueItem.infos.videoDetails?.title || queueItem.infos.title;
     }
   } catch (e) {
