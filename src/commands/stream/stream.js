@@ -349,7 +349,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           console.log('status code 404 error');
           disconnectConnection(server, connection);
           processStats.removeActiveStream(message.guild.id);
-          message.channel.send('*db bot appears to be facing some issues: automated diagnosis is underway.*').then(() => {
+          message.channel.send('*db vibe appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             console.log(e);
             // noinspection JSUnresolvedFunction
             logError('***status code 404 error***' +
@@ -377,7 +377,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     if (server.skipTimes > 3) {
       disconnectConnection(server, connection);
       processStats.removeActiveStream(message.guild.id);
-      message.channel.send('***db bot is facing some issues, may restart***');
+      message.channel.send('***db vibe is facing some issues, may restart***');
       checkStatusOfYtdl(server, message);
       return;
     } else {
@@ -435,7 +435,7 @@ async function checkStatusOfYtdl(server, message) {
   } catch (e) {
     console.log(e);
     if (message) {
-      const diagnosisStr = '*self-diagnosis complete: db bot will be restarting*';
+      const diagnosisStr = '*self-diagnosis complete: db vibe will be restarting*';
       if (message.deletable) message.edit(diagnosisStr);
       else message.channel.send(diagnosisStr);
     }
@@ -449,7 +449,7 @@ async function checkStatusOfYtdl(server, message) {
     disconnectConnection(server, connection);
     getVoiceConnection(server.guildId)?.disconnect();
     bot.voice.adapters.get(server.guildId)?.destroy();
-    if (message) message.channel.send('*self-diagnosis complete: db bot does not appear to have any issues*');
+    if (message) message.channel.send('*self-diagnosis complete: db vibe does not appear to have any issues*');
   }, 6000);
 }
 

@@ -212,7 +212,7 @@ async function runCommandCases(message) {
   // for all non-commands
   if (fwPrefix !== prefixString) {
     if (processStats.devMode) return;
-    if (firstWordBegin === '.db-bot ') {
+    if (firstWordBegin === '.db-vibe ') {
       return message.channel.send('Current prefix is: ' + prefixString);
     }
     return;
@@ -1108,7 +1108,7 @@ async function runCommandCases(message) {
     break;
   case 'gzs':
     const embed = new MessageEmbed()
-      .setTitle('db bot - statistics')
+      .setTitle('db vibe - statistics')
       .setDescription(`version: ${version} (${buildNo.getBuildNo()})` +
           `\nprocess: ${process.pid.toString()}` +
           `\nservers: ${bot.guilds.cache.size}` +
@@ -1132,7 +1132,7 @@ async function runCommandCases(message) {
       break;
     } else if (args[1] === 'update') {
       if (process.pid === 4 || (args[2] && args[2] === 'force')) {
-        const updateMsg = 'db bot is about to be updated. This may lead to a temporary interruption.';
+        const updateMsg = 'db vibe is about to be updated. This may lead to a temporary interruption.';
         bot.voice.adapters.forEach((x, g) => {
           try {
             const guildToUpdate = bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).guild;
@@ -1227,7 +1227,7 @@ bot.once('ready', () => {
     processStats.initializeServer(CH['check-in-guild']);
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
     processStats.setProcessInactive();
-    bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'});
+    bot.user.setActivity('beats | .db-vibe', {type: 'PLAYING'});
     if (!processStats.checkActiveInterval) {
       processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     }
@@ -1329,7 +1329,7 @@ function devUpdateCommand(message, args = []) {
 }
 
 /**
- * Interpret developer process-related commands. Used for maintenance of multiple db bot instances.
+ * Interpret developer process-related commands. Used for maintenance of multiple db vibe instances.
  * The first three letters of the message are assumed to be the developer prefix and are therefore ignored.
  * @param message The message metadata.
  */
@@ -1380,7 +1380,7 @@ async function devProcessCommands(message) {
             sentMsg.edit(procMsg());
           } catch (e) {
             const updatedMsg =
-            '*db bot ' + process.pid + (processStats.isInactive ? ' has been sidelined*' : ' is now active*');
+            '*db vibe ' + process.pid + (processStats.isInactive ? ' has been sidelined*' : ' is now active*');
             message.channel.send(updatedMsg);
           }
         };
@@ -1454,10 +1454,10 @@ async function devProcessCommands(message) {
         if (zargs[i].replace(/,/g, '') === process.pid.toString()) {
           if (processStats.isInactive) {
             processStats.setProcessActive();
-            message.channel.send('*db bot ' + process.pid + ' is now active*');
+            message.channel.send('*db vibe ' + process.pid + ' is now active*');
           } else {
             processStats.setProcessInactive();
-            message.channel.send('*db bot ' + process.pid + ' has been sidelined*');
+            message.channel.send('*db vibe ' + process.pid + ' has been sidelined*');
           }
           return;
         }

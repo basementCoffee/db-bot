@@ -332,11 +332,11 @@ function setSeamless(server, fName, args, message) {
 }
 
 /**
- * Removes a specific number of recent db bot messages.
+ * Removes a specific number of recent db vibe messages.
  * Also removes the command message if possible.
  * @param channelID {string} The channel id to search within.
- * @param deleteNum {number} The number of recent db bot messages to remove.
- * @param onlyDB {boolean} True if to delete only db bot messages.
+ * @param deleteNum {number} The number of recent db vibe messages to remove.
+ * @param onlyDB {boolean} True if to delete only db vibe messages.
  */
 function removeDBMessage(channelID, deleteNum = 1, onlyDB) {
   let firstRun = true;
