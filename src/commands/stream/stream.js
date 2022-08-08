@@ -303,7 +303,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       }
       server.mapFinishedLinks.set(whatToPlay, {queueItem, numOfPlays: (server.mapFinishedLinks.get(whatToPlay)?.numOfPlays ||  0) + 1});
       if (vc.members.size < 2) {
-        
         disconnectConnection(server, connection);
         processStats.removeActiveStream(message.guild.id);
       } else if (server.loop) {
@@ -429,7 +428,6 @@ async function checkStatusOfYtdl(server, message) {
   });
   const player = createAudioPlayer();
   const resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus});
-
   await new Promise((res) => setTimeout(res, 500));
   try {
     connection.subscribe(player);
