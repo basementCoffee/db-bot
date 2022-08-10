@@ -48,6 +48,7 @@ const fluentFfmpeg = require('fluent-ffmpeg');
  * @returns {Promise<void>}
  */
 async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec) {
+  // the queue item's formal url (can be of any type)
   let whatToPlay = queueItem?.url;
   if (!whatToPlay) {
     queueItem = server.queue[0];
@@ -462,7 +463,7 @@ async function checkStatusOfYtdl(server, message) {
  * @param server The server playback metadata
  * @param noHistory Optional - true excludes link from the queue history
  */
-function skipLink(message, voiceChannel, playMessageToChannel, server, noHistory) {
+async function skipLink(message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
   if (server.streamData.type === StreamType.TWITCH) endStream(server);
   if (server.queue.length > 0) {
@@ -475,7 +476,7 @@ function skipLink(message, voiceChannel, playMessageToChannel, server, noHistory
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
-      playLinkToVC(message, server.queue[0], voiceChannel, server);
+      await playLinkToVC(message, server.queue[0], voiceChannel, server);
     } else if (server.autoplay && link) {
       runAutoplayCommand(message, server, voiceChannel, server.queueHistory[server.queueHistory.length - 1]).then();
     } else {
@@ -571,7 +572,7 @@ function runRewindCommand(message, mgid, voiceChannel, numberOfTimes, ignoreSing
  * @param mem The user that is completing the action, used for DJ mode
  * @returns {*}
  */
-function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkipMsg, forceSkip, mem) {
+async function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkipMsg, forceSkip, mem) {
   // in case of force disconnect
   if (!botInVC(message)) return;
   if (!voiceChannel) {
@@ -602,7 +603,7 @@ function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkipMsg, f
         if (skipTimes === 1 && server.queue.length > 0) {
           skipCounter++;
         }
-        skipLink(message, voiceChannel, (sendSkipMsg ? skipCounter === 1 : false), server);
+        await skipLink(message, voiceChannel, (sendSkipMsg ? skipCounter === 1 : false), server);
         if (skipCounter > 1) {
           message.channel.send('*skipped ' + skipCounter + ' times*');
         }
@@ -610,10 +611,10 @@ function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkipMsg, f
         message.channel.send('*invalid skip amount (must be between 1 - 1000)*');
       }
     } catch (e) {
-      skipLink(message, voiceChannel, true, server);
+      await skipLink(message, voiceChannel, true, server);
     }
   } else {
-    skipLink(message, voiceChannel, true, server);
+    await skipLink(message, voiceChannel, true, server);
   }
 }
 
@@ -791,14 +792,17 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
   timeMS += 7200000;
   const collector = sentMsg.createReactionCollector({filter, time: timeMS, dispose: true});
   server.collector = collector;
-
+  let processingReaction = false; // if the bot is processing a reaction
   collector.on('collect', async (reaction, reactionCollector) => {
     if (!server.audio.player || !voiceChannel) return;
     switch (reaction.emoji.name) {
     case reactions.SKIP:
-      runSkipCommand(sentMsg, voiceChannel, server, 1, false, false,
+      if (processingReaction) return;
+      processingReaction = true;
+      await runSkipCommand(sentMsg, voiceChannel, server, 1, false, false,
         sentMsg.member.voice?.channel.members.get(reactionCollector.id));
-      reaction.users.remove(reactionCollector.id).then();
+      await reaction.users.remove(reactionCollector.id);
+      processingReaction = false;
       if (server.followUpMessage?.deletable) {
         server.followUpMessage.delete();
         server.followUpMessage = undefined;

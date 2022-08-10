@@ -1,5 +1,5 @@
 const {botID} = require('../../utils/process/constants');
-const {pauseComputation, playComputation, botInVC} = require('../../utils/utils');
+const {pauseComputation, playComputation, botInVC, disconnectConnection} = require('../../utils/utils');
 const {createEmbed} = require('../../utils/embed');
 const {getVoiceConnection} = require('@discordjs/voice');
 
@@ -143,7 +143,7 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   const lastPlayed = server.queue[0] || server.queueHistory.slice(-1)[0];
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
-      getVoiceConnection(mgid).disconnect();
+      disconnectConnection(server, getVoiceConnection(mgid));
     }, 600);
   } else {
     if (server.currentEmbed) {
@@ -153,7 +153,9 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
         server.collector?.stop();
       });
     }
-    server.audio.reset();
+    if (server.audio.player) {
+      server.audio.player.pause();
+    }
   }
 }
 
