@@ -1338,7 +1338,7 @@ async function devProcessCommands(message) {
   switch (zargs[0].substring(3)) {
   case 'k':
     // =gzk
-    if (message.member.id === botID) {
+    if (CH.process === message.channel.id) {
       if (!processStats.isInactive && !processStats.devMode) {
         const dbOnMsg = `~db-process-on${Math.min(bot.voice.adapters.size, 9)}${buildNo.getBuildNo()}ver${process.pid}`;
         return message.channel.send(dbOnMsg);
@@ -1548,7 +1548,7 @@ async function devProcessCommands(message) {
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
-  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id)) {
+  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id.toString()) || message.member.id === botID) {
     return devProcessCommands(message);
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
