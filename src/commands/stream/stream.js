@@ -589,7 +589,13 @@ async function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkip
       sendSkipMsg = false;
     } else return;
   }
-  if (server.audio.player) server.audio.player.pause();
+  if (server.audio.player) {
+    server.audio.player.pause();
+    // add link to finished map if being played for over 100 seconds
+    if (server.audio.resource?.playbackDuration > 100000 && server.queue[0]) {
+      server.mapFinishedLinks.set(server.queue[0].url, {queueItem: server.queue[0], numOfPlays: (server.mapFinishedLinks.get(server.queue[0].url)?.numOfPlays ||  0) + 1});
+    }
+  }
   if (skipTimes) {
     try {
       skipTimes = parseInt(skipTimes);
