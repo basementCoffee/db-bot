@@ -23,8 +23,17 @@ async function createEmbed(url, infos) {
       .setTitle(`${infos.name}`)
       .setURL(infos.external_urls.spotify)
       .setColor('#1DB954')
-      .addField(`Artist${infos.artists.length > 1 ? 's' : ''}`, artists, true)
-      .addField('Duration', formatDuration(infos.duration_ms), true)
+      .addFields({
+          inline: true,
+          name: `Artist${infos.artists.length > 1 ? 's' : ''}`,
+          value: artists
+        },
+        {
+          inline: true,
+          name: 'Duration',
+          value: formatDuration(infos.duration_ms)
+        },
+      )
       .setThumbnail(infos.album?.images[infos.album.images.length - 1].url);
     timeMS = parseInt(infos.duration_ms);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
@@ -36,8 +45,17 @@ async function createEmbed(url, infos) {
       .setTitle(title)
       .setURL(url)
       .setColor('#ee4900')
-      .addField('Artist', artist, true)
-      .addField('Duration', formatDuration(infos.duration || 0), true)
+      .addFields({
+          inline: true,
+          name: 'Artist',
+          value: artist
+        },
+        {
+          inline: true,
+          name: 'Duration',
+          value: formatDuration(infos.duration || 0)
+        },
+      )
       .setThumbnail(infos.artwork_url || infos.user?.avatar_url || null);
     timeMS = infos.duration || infos.full_duration || 'N/A';
   } else if (url.includes(TWITCH_BASE_LINK)) {
@@ -46,8 +64,17 @@ async function createEmbed(url, infos) {
       .setTitle(`${artist}'s stream`)
       .setURL(url)
       .setColor('#8a2aef')
-      .addField('Channel', artist, true)
-      .addField('Duration', 'live', true)
+      .addFields({
+        inline: true,
+        name: 'Channel',
+        value: artist
+      },
+        {
+          inline: true,
+          name: 'Duration',
+          value: 'live'
+        },
+        )
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg');
   } else {
     if (!infos) infos = await ytdl.getBasicInfo(url);
@@ -74,9 +101,19 @@ async function createEmbed(url, infos) {
       .setTitle(`${videoDetails.title}`)
       .setURL(videoDetails.video_url || videoDetails.shortUrl || infos.url)
       .setColor('#c40d00')
-      .addField('Channel', `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]` +
-        `(${videoDetails.author.url || videoDetails.author.channel_url})`, true)
-      .addField('Duration', duration || videoDetails.duration, true)
+      .addFields(
+        {
+          inline: true,
+          name: 'Channel',
+          value: `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]`
+            + `(${videoDetails.author.url || videoDetails.author.channel_url})`
+        },
+        {
+          inline: true,
+          name: 'Duration',
+          value: duration || videoDetails.duration
+        }
+        )
       .setThumbnail(videoDetails.thumbnails[0].url);
   }
   return {
@@ -99,7 +136,11 @@ async function updateActiveEmbed(server) {
     let embed = await createEmbed(queueItem.url, queueItem.infos);
     queueItem.infos = embed.infos;
     embed = embed.embed;
-    embed.addField('Queue', getQueueText(server), true);
+    embed.addFields({
+        inline: true,
+        name: 'Queue',
+        value: getQueueText(server),
+    })
     server.currentEmbed.edit({embeds: [embed]});
   } catch (e) {
     console.log(e);
@@ -119,7 +160,11 @@ async function sessionEndEmbed(server, item) {
     embed = embed.embed;
     server.currentEmbedChannelId = '0';
     server.numSinceLastEmbed = 0;
-    embed.addField('-', 'Session ended', true);
+    embed.addFields({
+      inline: true,
+      name: '-',
+      value: 'Session ended'
+    })
     server.currentEmbed.edit({embeds: [embed]});
   } catch (e) {
     console.log(e);

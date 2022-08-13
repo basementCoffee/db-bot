@@ -704,11 +704,21 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
       server.currentEmbedChannelId = message.channel.id;
       server.numSinceLastEmbed += 10;
     }
-    embed.addField('Queue', getQueueText(server), true);
+    embed.addFields(
+      {
+        inline: true,
+        name: 'Queue',
+        value: getQueueText(server)
+      }
+    );
   } else {
     server.currentEmbedChannelId = '0';
     server.numSinceLastEmbed = 0;
-    embed.addField('-', 'Session ended', true);
+    embed.addFields({
+      inline: true,
+      name: '-',
+      value: 'Session ended'
+    })
     showButtons = false;
   }
   if (server.queue.length < 1 || server.queue[0]?.url === url) {
