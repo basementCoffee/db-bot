@@ -107,67 +107,18 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   }
   if (!queueItem.type) queueItem.type = getLinkType(whatToPlay);
   if (queueItem.type === StreamType.SPOTIFY) {
-    if (queueItem.urlAlt) {
-      urlAlt = queueItem.urlAlt;
-    } else {
-      whatToPlay = linkFormatter(whatToPlay, SPOTIFY_BASE_LINK);
-      let itemIndex = 0;
-      if (!queueItem.infos) {
-        try {
-          queueItem.infos = await getData(whatToPlay);
-        } catch (e) {
-          if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
-          console.log(e);
-          message.channel.send('error: could not get link metadata <' + whatToPlay + '>');
-          whatspMap[vc.id] = '';
-          skipLink(message, vc, false, server, true);
-          return;
-        }
-      }
-      let artists = '';
-      const queueItemNameLower = queueItem.infos.name.toLowerCase();
-      if (queueItem.infos.artists) {
-        queueItem.infos.artists.forEach((x) => artists += x.name + ' ');
-        artists = artists.trim();
-      } else artists = 'N/A';
-      let search = await ytsr(queueItem.infos.name + ' ' + artists, {pages: 1});
-      let youtubeDuration;
-      if (search.items[itemIndex]) {
-        if (search.items[itemIndex].duration) {
-          youtubeDuration = convertYTFormatToMS(search.items[itemIndex].duration.split(':'));
-        } else if (verifyUrl(search.items[itemIndex].url)) {
-          const ytdlInfos = await ytdl.getBasicInfo(search.items[itemIndex].url);
-          youtubeDuration = ytdlInfos.formats[itemIndex].approxDurationMs || 0;
-        } else {
-          skipLink(message, vc, false, server, true);
-          await message.channel.send(`link not playable: <${search.items[itemIndex].url}>`);
-          await updateActiveEmbed(server);
-          return;
-        }
-        const spotifyDuration = parseInt(queueItem.infos.duration_ms);
-        let itemIndex2 = itemIndex + 1;
-        while (search.items[itemIndex2] && search.items[itemIndex2].type !== 'video' && itemIndex2 < 6) {
-          itemIndex2++;
-        }
-        // if the next video is a better match then play the next video
-        if (search.items[itemIndex2] && search.items[itemIndex2].duration &&
-          Math.abs(spotifyDuration - youtubeDuration) >
-          (Math.abs(spotifyDuration - (convertYTFormatToMS(search.items[itemIndex2].duration.split(':')))) + 1000)) {
-          itemIndex = itemIndex2;
-        }
-      } else if (queueItemNameLower.includes('feat') || queueItemNameLower.includes('remix')) {
-        search = await ytsr(`${queueItem.infos.name} lyrics`, {pages: 1});
+    whatToPlay = linkFormatter(whatToPlay, SPOTIFY_BASE_LINK);
+    const urlRes = await getYTUrlFromSpotifyUrl(message, queueItem, vc, server, whatToPlay);
+      if (urlRes.ok){
+        urlAlt = urlRes.url; // the alternative url to play
       } else {
-        search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0]} lyrics`, {pages: 1});
-      }
-      if (search.items[itemIndex]) queueItem.urlAlt = urlAlt = search.items[itemIndex].url;
-      else {
-        message.channel.send(`could not find <${whatToPlay}>`);
+        if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
+        message.channel.send(urlRes.errorMsg);
+        whatspMap[vc.id] = '';
         skipLink(message, vc, false, server, true);
         return;
       }
     }
-  }
   whatspMap[vc.id] = whatToPlay;
   // remove previous embed buttons
   if (server.numSinceLastEmbed > 4 && server.currentEmbed &&
@@ -395,7 +346,84 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     // noinspection JSUnresolvedFunction
     logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
     logError(e.toString().substring(0, 1910));
+  } // end of try catch
+  // load the next link if conditions are met
+  if (server.queue[1]?.type === StreamType.SPOTIFY && !server.queue[1]?.urlAlt) {
+    // the next link to play
+    const whatToPlay2 = server.queue[1].url;
+    // the next link to play, formatted
+    const whatToPlay2Formatted = linkFormatter(whatToPlay2, SPOTIFY_BASE_LINK);
+    const resUrl = await getYTUrlFromSpotifyUrl(message, server.queue[1], vc, server, whatToPlay2Formatted);
+    if (resUrl.ok && server.queue[1]?.url === whatToPlay2) {
+      server.queue[1].urlAlt = resUrl.url;
+    }
   }
+}
+
+async function getYTUrlFromSpotifyUrl(message, queueItem, vc, server, whatToPlay) {
+  if (!queueItem.urlAlt) {
+    let itemIndex = 0;
+    if (!queueItem.infos) {
+      try {
+        queueItem.infos = await getData(whatToPlay);
+      } catch (e) {
+        console.log(e);
+        return {
+          ok: false,
+          errorMsg: `error: could not get link metadata <${whatToPlay}>`
+        };
+      }
+    }
+    let artists = '';
+    const queueItemNameLower = queueItem.infos.name.toLowerCase();
+    if (queueItem.infos.artists) {
+      queueItem.infos.artists.forEach((x) => artists += x.name + ' ');
+      artists = artists.trim();
+    } else artists = 'N/A';
+    let search = await ytsr(queueItem.infos.name + ' ' + artists, {pages: 1});
+    let youtubeDuration;
+    if (search.items[itemIndex]) {
+      if (search.items[itemIndex].duration) {
+        youtubeDuration = convertYTFormatToMS(search.items[itemIndex].duration.split(':'));
+      } else if (verifyUrl(search.items[itemIndex].url)) {
+        const ytdlInfos = await ytdl.getBasicInfo(search.items[itemIndex].url);
+        youtubeDuration = ytdlInfos.formats[itemIndex].approxDurationMs || 0;
+      } else {
+        return {
+          ok: false,
+          errorMsg: `link not playable: <${search.items[itemIndex].url}>`
+        };
+      }
+      const spotifyDuration = parseInt(queueItem.infos.duration_ms);
+      let itemIndex2 = itemIndex + 1;
+      while (search.items[itemIndex2] && search.items[itemIndex2].type !== 'video' && itemIndex2 < 6) {
+        itemIndex2++;
+      }
+      // if the next video is a better match then play the next video
+      if (search.items[itemIndex2] && search.items[itemIndex2].duration &&
+        Math.abs(spotifyDuration - youtubeDuration) >
+        (Math.abs(spotifyDuration - (convertYTFormatToMS(search.items[itemIndex2].duration.split(':')))) + 1000)) {
+        itemIndex = itemIndex2;
+      }
+    } else if (queueItemNameLower.includes('feat') || queueItemNameLower.includes('remix')) {
+      search = await ytsr(`${queueItem.infos.name} lyrics`, {pages: 1});
+    } else {
+      search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0]} lyrics`, {pages: 1});
+    }
+    if (search.items[itemIndex]) {
+      queueItem.urlAlt = search.items[itemIndex].url;
+    }
+    else {
+      return {
+        ok: false,
+        errorMsg: `could not find <${whatToPlay}>`
+      };
+    }
+  }
+  return {
+    ok: true,
+    url: queueItem.urlAlt
+  };
 }
 
 /**
@@ -466,7 +494,7 @@ async function checkStatusOfYtdl(server, message) {
 async function skipLink(message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
   if (server.streamData.type === StreamType.TWITCH) endStream(server);
-  if (server.queue.length > 0) {
+  if (server.queue.length > 0 && botInVC(message)) {
     let link;
     if (noHistory) server.queue.shift();
     else {
