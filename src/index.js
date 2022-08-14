@@ -34,7 +34,7 @@ const {runAddCommandWrapper_P, addNewPlaylist} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
-const {runRandomToQueue} = require('./commands/runRandomToQueue');
+const {runRandomToQueue, shuffleQueue} = require('./commands/runRandomToQueue');
 const {checkToSeeActive} = require('./processes/checkToSeeActive');
 const {runQueueCommand, createVisualText} = require('./commands/generateQueue');
 const {runUniversalSearchCommand} = require('./commands/database/search');
@@ -461,7 +461,11 @@ async function runCommandCases(message) {
     runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'shuffle':
-    runRandomToQueue(args[1], message, mgid, server).then();
+    if (!args[1]){
+      shuffleQueue(server, message);
+    } else {
+      runRandomToQueue(args[1], message, mgid, server).then();
+    }
     break;
   case 'rn':
   case 'randnow':
