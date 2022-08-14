@@ -348,15 +348,12 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     logError(e.toString().substring(0, 1910));
   } // end of try catch
   // load the next link if conditions are met
-  if (server.queue[1]?.type === StreamType.SPOTIFY && !server.queue[1]?.urlAlt) {
+  if (server.queue[1]?.type === StreamType.SPOTIFY && !server.queue[1].urlAlt) {
     // the next link to play
-    const whatToPlay2 = server.queue[1].url;
+    const nextQueueItem = server.queue[1];
     // the next link to play, formatted
-    const whatToPlay2Formatted = linkFormatter(whatToPlay2, SPOTIFY_BASE_LINK);
-    const resUrl = await getYTUrlFromSpotifyUrl(message, server.queue[1], vc, server, whatToPlay2Formatted);
-    if (resUrl.ok && server.queue[1]?.url === whatToPlay2) {
-      server.queue[1].urlAlt = resUrl.url;
-    }
+    const whatToPlay2Formatted = linkFormatter(nextQueueItem.url, SPOTIFY_BASE_LINK);
+    getYTUrlFromSpotifyUrl(message, nextQueueItem, vc, server, whatToPlay2Formatted);
   }
 }
 
