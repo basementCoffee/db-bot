@@ -218,8 +218,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
       queueItem = await sendLinkAsEmbed(message, queueItem, vc, server, false) || queueItem;
     }
-    processStats.removeActiveStream(message.guild.id);
-    processStats.addActiveStream(message.guild.id);
+    processStats.addActiveStreamIfNoneExists(message.guild.id);
     server.skipTimes = 0;
     player.on('error', async (e) => {
       if (resource.playbackDuration < 1000 && retries < 4) {
@@ -725,9 +724,15 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
     return;
   }
   // the created embed
-  const embedData = await createEmbed(url, queueItem.infos);
+  let embedData;
+  if (queueItem.embed) {
+    embedData = queueItem.embed;
+  } else {
+    embedData = await createEmbed(url, queueItem.infos);
+    queueItem.embed = embedData;
+  }
   const timeMS = embedData.timeMS;
-  const embed = embedData.embed;
+  const embed = new MessageEmbed(embedData.embed);
   queueItem.infos = embedData.infos;
   let showButtons = true;
   if (botInVC(message)) {
@@ -753,7 +758,6 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
     showButtons = false;
   }
   if (server.queue.length < 1 || server.queue[0]?.url === url) {
-    queueItem.infos = embedData.infos;
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed?.deletable) {
       try {
         const sentMsg = await server.currentEmbed.edit({embeds: [embed]});

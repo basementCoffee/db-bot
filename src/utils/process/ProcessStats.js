@@ -40,6 +40,12 @@ class ProcessStats {
     }
   }
 
+  addActiveStreamIfNoneExists(gid) {
+    if (!this.activeStreamsMap.has(gid)) {
+      this.addActiveStream(gid);
+    }
+  }
+
   getActiveStreamSize() {
     return this.activeStreamsMap.size;
   }
