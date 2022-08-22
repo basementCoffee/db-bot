@@ -530,6 +530,7 @@ function createVisualEmbed(title, text, color, footer) {
 function disconnectConnection(server, connection){
   server.audio.reset();
   connection.disconnect();
+  processStats.removeActiveStream(server.guildId);
 }
 
 module.exports = {

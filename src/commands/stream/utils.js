@@ -157,9 +157,7 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
         server.collector?.stop();
       });
     }
-    if (server.audio.player) {
-      server.audio.player.pause();
-    }
+    pauseComputation(server);
   }
 }
 

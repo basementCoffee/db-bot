@@ -255,7 +255,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       server.mapFinishedLinks.set(whatToPlay, {queueItem, numOfPlays: (server.mapFinishedLinks.get(whatToPlay)?.numOfPlays ||  0) + 1});
       if (vc.members.size < 2) {
         disconnectConnection(server, connection);
-        processStats.removeActiveStream(message.guild.id);
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
       } else {
@@ -299,7 +298,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         } else {
           console.log('status code 404 error');
           disconnectConnection(server, connection);
-          processStats.removeActiveStream(message.guild.id);
           message.channel.send('*db vibe appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             console.log(e);
             // noinspection JSUnresolvedFunction
@@ -327,7 +325,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     console.log(e);
     if (server.skipTimes > 3) {
       disconnectConnection(server, connection);
-      processStats.removeActiveStream(message.guild.id);
       message.channel.send('***db vibe is facing some issues, may restart***');
       checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild']), message).then();
       return;
@@ -612,7 +609,7 @@ async function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkip
     } else return;
   }
   if (server.audio.player) {
-    server.audio.player.pause();
+    pauseComputation(server);
     // add link to finished map if being played for over 100 seconds
     if (server.audio.resource?.playbackDuration > 100000 && server.queue[0]) {
       server.mapFinishedLinks.set(server.queue[0].url, {queueItem: server.queue[0], numOfPlays: (server.mapFinishedLinks.get(server.queue[0].url)?.numOfPlays ||  0) + 1});
