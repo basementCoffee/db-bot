@@ -1314,15 +1314,17 @@ function devUpdateCommand(message, args = []) {
     if (args[0] === 'force') {
       args.splice(0, 1);
     } else {
-      message?.channel.send('***people are using the bot:*** *to force an update type \`force\` after the command*');
+      message?.channel.send(
+        '***people are using the bot:*** *to force an update type \`force\` immediately after the command*'
+      );
       return;
     }
   }
   if (!args[0]) {
-    exec('git stash && git pull && npm upgrade && npm i && pm2 restart vibe');
+    exec('git stash && git pull && npm i && pm2 restart vibe');
     processStats.setProcessInactive();
   } else if (args[0] === 'all') {
-    exec('git stash && git pull && npm upgrade && npm i && pm2 restart 0 && pm2 restart 1');
+    exec('git stash && git pull && npm i && pm2 restart 0 && pm2 restart 1');
     processStats.setProcessInactive();
   } else if (args[0] === 'custom' && args[1]) {
     exec(args.slice(1).join(' '));
