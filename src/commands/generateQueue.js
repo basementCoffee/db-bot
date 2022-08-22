@@ -230,10 +230,10 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
 // stringCallback: (index, title, url) => string
 async function createVisualText(server, arrayOfItems, stringCallback) {
   let finalText = '';
-  for (let item of arrayOfItems) {
+  for (const item of arrayOfItems) {
     const title = item.title;
     const url = item.url;
-    finalText +=  stringCallback(item.index, title, url);
+    finalText += stringCallback(item.index, title, url);
   }
   return finalText;
 }

@@ -461,7 +461,7 @@ async function runCommandCases(message) {
     runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'shuffle':
-    if (!args[1]){
+    if (!args[1]) {
       shuffleQueue(server, message);
     } else {
       runRandomToQueue(args[1], message, mgid, server).then();
@@ -710,7 +710,7 @@ async function runCommandCases(message) {
   case 'plays':
   case 'freq':
   case 'frequency':
-    let tempAuditArray = [];
+    const tempAuditArray = [];
     for (const [key, value] of server.mapFinishedLinks) {
       tempAuditArray.push({url: key, title: (await getTitle(value.queueItem)), index: value.numOfPlays});
     }
@@ -720,13 +720,13 @@ async function runCommandCases(message) {
     message.channel.send({embeds: [
       createVisualEmbed('Link Frequency',
         ((await createVisualText(server, tempAuditArray,
-          (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links'))
-      ]});
+          (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links')),
+    ]});
     break;
-    case 'purge':
-      if (!args[1]) return message.channel.send('*input a term to purge from the queue*');
-      await runPurgeCommand(message, server, args.slice(1).join(' ').toLowerCase());
-      break;
+  case 'purge':
+    if (!args[1]) return message.channel.send('*input a term to purge from the queue*');
+    await runPurgeCommand(message, server, args.slice(1).join(' ').toLowerCase());
+    break;
   case 'prefix':
     message.channel.send('use the command `changeprefix` to change the bot\'s prefix');
     break;
@@ -1315,7 +1315,7 @@ function devUpdateCommand(message, args = []) {
       args.splice(0, 1);
     } else {
       message?.channel.send(
-        '***people are using the bot:*** *to force an update type \`force\` immediately after the command*'
+        '***people are using the bot:*** *to force an update type \`force\` immediately after the command*',
       );
       return;
     }

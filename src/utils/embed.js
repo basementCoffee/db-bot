@@ -24,15 +24,15 @@ async function createEmbed(url, infos) {
       .setURL(infos.external_urls.spotify)
       .setColor('#1DB954')
       .addFields({
-          inline: true,
-          name: `Artist${infos.artists.length > 1 ? 's' : ''}`,
-          value: artists
-        },
-        {
-          inline: true,
-          name: 'Duration',
-          value: formatDuration(infos.duration_ms)
-        },
+        inline: true,
+        name: `Artist${infos.artists.length > 1 ? 's' : ''}`,
+        value: artists,
+      },
+      {
+        inline: true,
+        name: 'Duration',
+        value: formatDuration(infos.duration_ms),
+      },
       )
       .setThumbnail(infos.album?.images[infos.album.images.length - 1].url);
     timeMS = parseInt(infos.duration_ms);
@@ -46,15 +46,15 @@ async function createEmbed(url, infos) {
       .setURL(url)
       .setColor('#ee4900')
       .addFields({
-          inline: true,
-          name: 'Artist',
-          value: artist
-        },
-        {
-          inline: true,
-          name: 'Duration',
-          value: formatDuration(infos.duration || 0)
-        },
+        inline: true,
+        name: 'Artist',
+        value: artist,
+      },
+      {
+        inline: true,
+        name: 'Duration',
+        value: formatDuration(infos.duration || 0),
+      },
       )
       .setThumbnail(infos.artwork_url || infos.user?.avatar_url || null);
     timeMS = infos.duration || infos.full_duration || 'N/A';
@@ -67,14 +67,14 @@ async function createEmbed(url, infos) {
       .addFields({
         inline: true,
         name: 'Channel',
-        value: artist
+        value: artist,
       },
-        {
-          inline: true,
-          name: 'Duration',
-          value: 'live'
-        },
-        )
+      {
+        inline: true,
+        name: 'Duration',
+        value: 'live',
+      },
+      )
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg');
   } else {
     if (!infos) infos = await ytdl.getBasicInfo(url);
@@ -105,15 +105,15 @@ async function createEmbed(url, infos) {
         {
           inline: true,
           name: 'Channel',
-          value: `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]`
-            + `(${videoDetails.author.url || videoDetails.author.channel_url})`
+          value: `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]` +
+            `(${videoDetails.author.url || videoDetails.author.channel_url})`,
         },
         {
           inline: true,
           name: 'Duration',
-          value: duration || videoDetails.duration
-        }
-        )
+          value: duration || videoDetails.duration,
+        },
+      )
       .setThumbnail(videoDetails.thumbnails[0].url);
   }
   return {
@@ -137,10 +137,10 @@ async function updateActiveEmbed(server) {
     queueItem.infos = embed.infos;
     embed = embed.embed;
     embed.addFields({
-        inline: true,
-        name: 'Queue',
-        value: getQueueText(server),
-    })
+      inline: true,
+      name: 'Queue',
+      value: getQueueText(server),
+    });
     server.currentEmbed.edit({embeds: [embed]});
   } catch (e) {
     console.log(e);
@@ -163,8 +163,8 @@ async function sessionEndEmbed(server, item) {
     embed.addFields({
       inline: true,
       name: '-',
-      value: 'Session ended'
-    })
+      value: 'Session ended',
+    });
     server.currentEmbed.edit({embeds: [embed]});
   } catch (e) {
     console.log(e);

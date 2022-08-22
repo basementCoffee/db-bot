@@ -1,8 +1,8 @@
-const { getTitle } = require('../utils/utils');
+const {getTitle} = require('../utils/utils');
 
 async function runPurgeCommand(message, server, term) {
-  let sentMsg = await message.channel.send(`*purging **${term}**...*`);
-  let count = await purgeItem(server.queue, async (item) => {
+  const sentMsg = await message.channel.send(`*purging **${term}**...*`);
+  const count = await purgeItem(server.queue, async (item) => {
     return (await getTitle(item)).toLowerCase().includes(term);
   });
   sentMsg.edit(`*purged ${count} items from the queue*`);
@@ -16,10 +16,10 @@ async function runPurgeCommand(message, server, term) {
 async function purgeItem(array, arrayItemApplicator) {
   let counter = 0; // counter for how many items were purged
   for (let i = 1; i < array.length; i++) {
-     if (await arrayItemApplicator(array[i])){
-       array.splice(i, 1);
-       counter++;
-     }
+    if (await arrayItemApplicator(array[i])) {
+      array.splice(i, 1);
+      counter++;
+    }
   }
   return counter;
 }

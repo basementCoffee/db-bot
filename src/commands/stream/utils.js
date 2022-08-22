@@ -123,8 +123,8 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
  * @param server The server playback metadata
- * @param message {any?} Optional - The message metadata, used in the case of verifying a dj or dictator
- * @param actionUser {any?} Optional - The member requesting to stop playing, used in the case of verifying a dj or dictator
+ * @param message {any?} The message metadata, used in the case of verifying a dj or dictator
+ * @param actionUser {any?} The member requesting to stop playing, used in the case of verifying a dj or dictator
  * @returns {void}
  */
 function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUser) {
@@ -151,8 +151,8 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
         e.embed.addFields({
           inline: true,
           name: 'Queue',
-          value: 'empty'
-        })
+          value: 'empty',
+        });
         server.currentEmbed.edit({embeds: [e.embed]});
         server.collector?.stop();
       });
