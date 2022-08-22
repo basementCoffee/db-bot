@@ -1224,11 +1224,11 @@ bot.once('ready', () => {
     buildNo.decrementBuildNo();
   }
   // noinspection JSUnresolvedFunction
+  processStats.initializeServer(CH['check-in-guild']);
   if (processStats.devMode) {
     console.log('-devmode enabled-');
     processStats.setProcessActive();
   } else {
-    processStats.initializeServer(CH['check-in-guild']);
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
     processStats.setProcessInactive();
     bot.user.setActivity('beats | .db-vibe', {type: 'PLAYING'});

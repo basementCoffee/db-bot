@@ -329,7 +329,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       disconnectConnection(server, connection);
       processStats.removeActiveStream(message.guild.id);
       message.channel.send('***db vibe is facing some issues, may restart***');
-      checkStatusOfYtdl(server, message);
+      checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild']), message).then();
       return;
     } else {
       server.skipTimes++;
@@ -472,8 +472,6 @@ async function checkStatusOfYtdl(server, message) {
   }
   setTimeout(() => {
     disconnectConnection(server, connection);
-    getVoiceConnection(server.guildId)?.disconnect();
-    bot.voice.adapters.get(server.guildId)?.destroy();
     if (message) message.channel.send('*self-diagnosis complete: db vibe does not appear to have any issues*');
   }, 6000);
 }
