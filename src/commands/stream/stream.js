@@ -442,8 +442,6 @@ function searchForBrokenLinkWithinDB(message, server, whatToPlayS) {
  */
 async function checkStatusOfYtdl(server, message) {
   // noinspection JSUnresolvedFunction
-  const connection = await server.audio.joinVoiceChannel((await bot.guilds.fetch(CH['check-in-guild'])), CH['check-in-voice']);
-
   const stream = await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
     filter: () => ['251'],
     highWaterMark: 1 << 25,
@@ -451,6 +449,13 @@ async function checkStatusOfYtdl(server, message) {
   const player = createAudioPlayer();
   const resource = createAudioResource(stream, {inputType: VoiceStreamType.Opus});
   await new Promise((res) => setTimeout(res, 500));
+  let connection;
+  try {
+    connection = await server.audio.joinVoiceChannel((await bot.guilds.fetch(CH['check-in-guild'])), CH['check-in-voice']);
+  } catch(e) {
+    // if cannot join check-in voice channel, try the backup voice channel
+    connection = await server.audio.joinVoiceChannel((await bot.guilds.fetch(CH['check-in-guild'])), CH['check-in-voice-2']);
+  }
   try {
     connection.subscribe(player);
     player.play(resource);
