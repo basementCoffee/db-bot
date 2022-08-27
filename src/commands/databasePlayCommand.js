@@ -7,7 +7,6 @@ const {
 const {MAX_QUEUE_S} = require('../utils/process/constants');
 const {updateActiveEmbed} = require('../utils/embed');
 const {addPlaylistToQueue} = require('../utils/playlist');
-const {shuffleQueue} = require('./runRandomToQueue');
 
 /**
  *
@@ -63,7 +62,7 @@ async function playPlaylistDB(args, message, sheetName, playRightNow, printError
     message.channel.send('*no keys found in the playlists provided*');
     return;
   }
-  await runDatabasePlayCommand(keys, message, sheetName, playRightNow, printErrorMsg, server, shuffle);
+  await runDatabasePlayCommand(keys, message, sheetName, playRightNow, printErrorMsg, server);
 }
 
 /**
@@ -75,10 +74,9 @@ async function playPlaylistDB(args, message, sheetName, playRightNow, printError
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
  * @param server The server playback metadata
- * @param shuffle {boolean?}
  * @returns {Promise<boolean>} whether the play command has been handled accordingly
  */
-async function runDatabasePlayCommand(args, message, sheetName, playRightNow, printErrorMsg, server, shuffle) {
+async function runDatabasePlayCommand(args, message, sheetName, playRightNow, printErrorMsg, server) {
   if (!args[1]) {
     message.channel.send('*put a key-name after the command to play a specific key*');
     return true;
@@ -147,9 +145,6 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
     if (firstUnfoundRan) {
       unFoundString = unFoundString.concat('*');
       message.channel.send(unFoundString);
-    }
-    if (shuffle) {
-      shuffleQueue(server.queue);
     }
     if (playRightNow) {
       playLinkToVC(message, server.queue[0], voiceChannel, server);

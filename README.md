@@ -1,10 +1,10 @@
-# db-bot
+# db-vibe (formerly db-bot)
 
 <img align="right" src="assets/dbBotLogoBanner2.jpg" height=120 alt=" ">
 
 A discord playback bot that saves your favorite links for you. Available for free.  
 
-[Click here](https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot) to add me.
+[Click here](https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot) to add me.
 
 ## Commands
 
@@ -60,7 +60,7 @@ Type `congrats` or `congratulations` while in a voice channel to play a special 
 
 
 ## Invite - add to your server
-[Click here](https://discord.com/oauth2/authorize?client_id=730350452268597300&permissions=1076288&scope=bot) 
+[Click here](https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot) 
 
 <a href="https://top.gg/bot/730350452268597300">
   <img src="https://top.gg/api/widget/730350452268597300.svg" alt="top.gg/bot/730350452268597300">

@@ -1,6 +1,7 @@
 const {LEAVE_VC_TIMEOUT} = require('../utils/process/constants');
 const {sessionEndEmbed} = require('../utils/embed');
-const {resetSession, pauseComputation, botInVC, catchVCJoinError, disconnectConnection} = require('../utils/utils');
+const {resetSession, pauseComputation, botInVC, catchVCJoinError} = require('../utils/utils');
+const {disconnectConnection} = require('./stream/utils');
 
 /**
  * Joins the voice channel of the message member (if applicable).

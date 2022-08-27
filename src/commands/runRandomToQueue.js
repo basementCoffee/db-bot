@@ -26,33 +26,22 @@ async function runRandomToQueue(num, message, sheetName, server, addToFront = fa
   if (server.dictator && message.member.id !== server.dictator.id) {
     return message.channel.send('only the dictator can randomize to queue');
   }
+  // in case of force disconnect
+  if (!botInVC(message)) resetSession(server);
+  else if (server.queue.length >= MAX_QUEUE_S) {
+    return message.channel.send('*max queue size has been reached*');
+  }
   let isPlaylist;
   // holds the string
-  const origArg = num;
+  const origArg = num || 1;
   // convert addToFront into a number for addRandomToQueue
   num = Math.floor(num);
   if (!num) isPlaylist = true;
   else if (num < 1) return message.channel.send('*invalid number*');
   server.numSinceLastEmbed++;
-  // in case of force disconnect
-  if (!botInVC(message)) resetSession(server);
-  else if (server.queue.length >= MAX_QUEUE_S && origArg) {
-    return message.channel.send('*max queue size has been reached*');
-  }
   // addToFront parameter must be a number for addRandomToQueue
   if (addToFront) addToFront = 1;
   // if no arguments, assumes that the active queue should be shuffled
-  if (!origArg) {
-    if (server.queue[0]) {
-      // save the first item to prevent it from being shuffled
-      const firstItem = server.queue.shift();
-      shuffleQueue(server.queue, message);
-      server.queue.unshift(firstItem);
-    } else {
-      message.channel.send('*need a playlist url to shuffle, or a number to use random items from your keys list.*');
-    }
-    return;
-  }
   if (origArg.toString().includes('.')) {
     return addRandomToQueue(message, origArg, undefined, server, true, addToFront);
   }
@@ -69,21 +58,37 @@ async function runRandomToQueue(num, message, sheetName, server, addToFront = fa
 }
 
 /**
- * Shuffles the provided queue. If provided a Message object, sends an update to the user regarding its status.
- * @param queue {Array<*>} The queue to shuffle.
+ * Shuffles the provided array. If provided a Message object, sends an update to the user regarding its status.
+ * @param array {Array<*>} The array to shuffle.
  * @param message {Object?} The message object.
  * @returns {void}
  */
-function shuffleQueue(queue, message) {
-  let currentIndex = queue.length; let randomIndex; // indices for shuffling
+function shuffleArray(array) {
+  let currentIndex = array.length; let randomIndex; // indices for shuffling
   // don't include what's actively playing
-  while (currentIndex > 1) {
+  while (currentIndex > 0) {
     randomIndex = Math.floor(Math.random() * currentIndex) + 1;
     currentIndex--;
     // swap current and random index locations
-    [queue[currentIndex], queue[randomIndex]] = [queue[randomIndex], queue[currentIndex]];
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
   }
-  if (message) message.channel.send('*your queue has been shuffled*');
+}
+
+// shuffles the queue
+function shuffleQueue(server, message) {
+  if (!botInVC(message)) {
+    message.channel.send('*must be in an active session to shuffle the queue*');
+    return;
+  }
+  if (server.queue.length < 3) {
+    message.channel.send('*not enough links in queue to shuffle*');
+    return;
+  }
+  // save the first item to prevent it from being shuffled
+  const firstItem = server.queue.shift();
+  shuffleArray(server.queue);
+  server.queue.unshift(firstItem);
+  message.channel.send('*your queue has been shuffled*');
 }
 
 module.exports = {runRandomToQueue, shuffleQueue};

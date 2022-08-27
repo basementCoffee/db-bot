@@ -1,7 +1,8 @@
 const {botID} = require('../../utils/process/constants');
 const {pauseComputation, playComputation, botInVC} = require('../../utils/utils');
-const {createEmbed} = require('../../utils/embed');
+const {createEmbed, updateActiveEmbed} = require('../../utils/embed');
 const {getVoiceConnection} = require('@discordjs/voice');
+const processStats = require('../../utils/process/ProcessStats');
 
 /**
  * A system to manage votes for various bot actions. Used for DJ mode.
@@ -118,13 +119,13 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
 }
 
 /**
- * Stops playing in the given voice channel and leaves.
+ * Stops playing in the given voice channel and leaves. This is intended for when a user attempts to alter a session.
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
  * @param server The server playback metadata
- * @param message {any?} Optional - The message metadata, used in the case of verifying a dj or dictator
- * @param actionUser {any?} Optional - The member requesting to stop playing, used in the case of verifying a dj or dictator
+ * @param message {any?} The message metadata, used in the case of verifying a dj or dictator
+ * @param actionUser {any?} The member requesting to stop playing, used in the case of verifying a dj or dictator
  * @returns {void}
  */
 function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUser) {
@@ -143,18 +144,44 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   const lastPlayed = server.queue[0] || server.queueHistory.slice(-1)[0];
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
-      getVoiceConnection(mgid).disconnect();
+      disconnectConnection(server, getVoiceConnection(mgid));
     }, 600);
   } else {
     if (server.currentEmbed) {
       createEmbed(lastPlayed.url, lastPlayed.infos).then((e) => {
-        e.embed.addField('Queue', 'empty', true);
+        e.embed.addFields({
+          inline: true,
+          name: 'Queue',
+          value: 'empty',
+        });
         server.currentEmbed.edit({embeds: [e.embed]});
-        server.collector?.stop();
       });
     }
-    server.audio.reset();
+    endAudioDuringSession(server);
   }
 }
 
-module.exports = {voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil};
+/**
+ * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and the player.
+ * @param server The server metadata.
+ * @param connection The voice connection.
+ */
+function disconnectConnection(server, connection) {
+  server.audio.reset();
+  connection.disconnect();
+  processStats.removeActiveStream(server.guildId);
+}
+
+/**
+ * Performs changes when there is (or should be) no now-playing during an active session.
+ * @param server
+ */
+function endAudioDuringSession(server) {
+  updateActiveEmbed(server);
+  server.collector?.stop();
+  pauseComputation(server); // active stream should be removed here
+}
+
+module.exports = {
+  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, disconnectConnection, endAudioDuringSession,
+};

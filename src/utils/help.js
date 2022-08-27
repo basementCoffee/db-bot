@@ -3,7 +3,7 @@ const {MessageEmbed} = require('discord.js');
 /**
  * Full description of the help list.
  * @param {*} ps the prefix in string format.
- * @param {*} version the current version of the db bot.
+ * @param {*} version the current version of db vibe.
  * @returns {Array<string>} an array of strings representing the help list.
  */
 function getPages(ps, version) {
@@ -30,6 +30,8 @@ function getPages(ps, version) {
     `\`${ps}lyrics \` Get lyrics of what\'s currently playing\n` +
     `\`${ps}dj \` DJ mode, members have to vote to skip tracks\n` +
     `\`${ps}dictator \` Dictator mode, one member controls all music commands\n` +
+    `\`${ps}frequency \` View the frequency of the links played in a Session\n` +
+    `\`${ps}purge [keyword]\` purge a keyword from all links in the queue \n` +
     `\`${ps}verbose \` Keep all song embeds during a session\n` +
     `\`${ps}silence \` Silence/hide the now-playing embed \n`,
     // PAGE 2
@@ -93,7 +95,7 @@ function getTitleArray() {
  * Function to generate an array of embeds representing the help list.
  * @param {string} prefixString the prefix in string format
  * @param numOfPages {number} optional - the number of embeds to generate
- * @param version {string} the current version of the db bot
+ * @param version {string} the current version of the db vibe
  * @returns {Array<Discord.MessageEmbed>} an array of embeds representing the help list.
  */
 function getHelpList(prefixString, numOfPages, version) {
