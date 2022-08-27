@@ -2,7 +2,6 @@
 const {
   botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
   playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, getSheetName, resetSession,
-  disconnectConnection,
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
@@ -26,7 +25,7 @@ const {MessageEmbed} = require('discord.js');
 const {getAssumption} = require('../database/search');
 const {getXdb2} = require('../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
-const {stopPlayingUtil, voteSystem, pauseCommandUtil} = require('./utils');
+const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, disconnectConnection} = require('./utils');
 const {runPlayCommand} = require('../play');
 const {runKeysCommand} = require('../keys');
 const {
@@ -268,10 +267,8 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         } else if (server.autoplay) {
           runAutoplayCommand(message, server, vc, queueItem);
         } else {
-          if (server.collector) server.collector.stop();
-          updateActiveEmbed(server);
+          endAudioDuringSession(server);
           server.leaveVCTimeout = setTimeout(() => disconnectConnection(server, connection), LEAVE_VC_TIMEOUT);
-          processStats.removeActiveStream(message.guild.id);
         }
       }
       if (server?.followUpMessage) {
@@ -678,16 +675,14 @@ async function runAutoplayCommand(message, server, vc, queueItem) {
       if (uniqueVid) {
         server.queue.push(createQueueItem(uniqueVid, StreamType.YOUTUBE));
         playLinkToVC(message, server.queue[0], vc, server);
+        return; // EXIT on SUCCESS
       }
-      return;
     } catch (e) {}
     message.channel.send('*could not find a video to play*');
-    server.collector.stop();
-    server.audio.reset();
   } else {
     message.channel.send('*smartplay is not supported for this stream type*');
-    stopPlayingUtil(message.guild.id, vc, true, server, message, message.member);
   }
+  endAudioDuringSession(server);
 }
 
 /**

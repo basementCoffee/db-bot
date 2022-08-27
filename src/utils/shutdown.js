@@ -2,7 +2,7 @@ const {bot} = require('./process/constants');
 const CH = require('../../channel.json');
 const processStats = require('./process/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
-const {disconnectConnection} = require('./utils');
+const {disconnectConnection} = require('../commands/stream/utils');
 
 /**
  * Shuts down the current process.

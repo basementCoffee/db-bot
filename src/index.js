@@ -12,7 +12,7 @@ const {gsrun, deleteRows} = require('./commands/database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
   unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
-  removeFormattingLink, getSheetName, linkValidator, createVisualEmbed, getTitle, disconnectConnection,
+  removeFormattingLink, getSheetName, linkValidator, createVisualEmbed, getTitle,
 } = require('./utils/utils');
 const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
@@ -57,6 +57,7 @@ const {runKeysCommand} = require('./commands/keys');
 const {getVoiceConnection} = require('@discordjs/voice');
 const {getJoke} = require('./commands/joke');
 const {runPurgeCommand} = require('./commands/purge');
+const {disconnectConnection} = require('./commands/stream/utils');
 
 process.setMaxListeners(0);
 

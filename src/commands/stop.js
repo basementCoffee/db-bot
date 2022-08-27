@@ -1,7 +1,7 @@
 const {stopPlayingUtil} = require('./stream/utils');
 
 /**
- * Stops playing in the given voice channel and leaves.
+ * Stops playing in the given voice channel and leaves. This is intended for when a user attempts to alter a session.
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
