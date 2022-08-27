@@ -1070,13 +1070,13 @@ async function runCommandCases(message) {
   case 'gzupdate':
     devUpdateCommand(message, args.splice(1));
     break;
-    case 'gzdebug':
-      if (server.queue[0]){
-        message.channel.send(`url: ${server.queue[0].url}\nurlAlt: ${server.queue[0].urlAlt}`);
-      } else {
-        message.channel.send('nothing is playing right now');
-      }
-      break;
+  case 'gzdebug':
+    if (server.queue[0]) {
+      message.channel.send(`url: ${server.queue[0].url}\nurlAlt: ${server.queue[0].urlAlt}`);
+    } else {
+      message.channel.send('nothing is playing right now');
+    }
+    break;
   case 'gzc':
     const commandsMapEmbed = new MessageEmbed();
     let commandsMapString = '';

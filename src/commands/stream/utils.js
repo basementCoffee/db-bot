@@ -183,5 +183,5 @@ function endAudioDuringSession(server) {
 }
 
 module.exports = {
-  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, disconnectConnection, endAudioDuringSession
+  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, disconnectConnection, endAudioDuringSession,
 };
