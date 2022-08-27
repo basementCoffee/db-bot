@@ -6,7 +6,7 @@ const {PREFIX_SN} = require('../../utils/process/constants');
 
 // eslint-disable-next-line valid-jsdoc
 /**
- * Get the keys and links from the database. Uses local storage if available.
+ * [DEPRECATED] Get the keys and links from the database. Uses local storage if available.
  * If there is no current embed then also resorts to an API fetch.
  * @param server The server object.
  * @param sheetName {string} The name of the sheet to get info from.
@@ -27,11 +27,11 @@ async function getXdb(server, sheetName, save) {
 /**
  * Gets the user keys from the database.
  * @param server The server object.
- * @param sheetName {string} The name of the sheet to retrieve
+ * @param sheetName {string} The name of the sheet to retrieve (for user data use getSheetName(userId))
  * @param save {any?} Whether to save the function to the server
  * @returns {Promise<{playlistArray: [], playlists: Map<unknown, unknown>, globalKeys: any}>}
  */
-async function getXdb_P(server, sheetName, save) {
+async function getXdb2(server, sheetName, save) {
   if (!save) return (server.userKeys.get(sheetName) || (await gsrun_P('E', 'F', sheetName)));
   let xdb = server.userKeys.get(sheetName);
   if (!xdb) {
@@ -107,4 +107,4 @@ async function getServerPrefix(server, mgid) {
   }
 }
 
-module.exports = {getXdb, sendListSize, getServerPrefix, getXdb2: getXdb_P, getSettings, setSettings};
+module.exports = {getXdb, sendListSize, getServerPrefix, getXdb2, getSettings, setSettings};
