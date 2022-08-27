@@ -164,6 +164,7 @@ class ProcessStats {
         message: undefined,
       },
       // [id, xdb]
+      // use getXdb2() for user data
       userKeys: new Map(),
       // the server's prefix
       prefix: undefined,
