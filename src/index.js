@@ -198,7 +198,7 @@ async function runCommandCases(message) {
   // the server guild playback data
   if (!processStats.servers.get(mgid)) processStats.initializeServer(mgid);
   const server = processStats.servers.get(mgid);
-  if (processStats.devMode) server.prefix = '='; // devmode prefix
+  if (processStats.devMode && !server.prefix) server.prefix = '='; // devmode prefix
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed++;
   }
@@ -1041,27 +1041,40 @@ async function runCommandCases(message) {
       .setTitle('Dev Commands')
       .setDescription(
         '**active bot commands**' +
-          '\n' + prefixString + 'gzs - statistics for the active bot' +
-          '\n' + prefixString + 'gzmem - see the process\'s memory usage' +
-          '\n' + prefixString + 'gzc - view commands stats' +
-          '\n' + prefixString + 'gznuke [num] [\'db\'?] - deletes [num] recent messages (or db only)' +
-          '\n' + prefixString + 'gzr [userId] - queries a message from the bot to the user' +
+          `\n ${prefixString} gzs - statistics for the active bot` +
+          `\n ${prefixString} gzmem - see the process\'s memory usage` +
+          `\n ${prefixString} gzc - view commands stats` +
+          `\n ${prefixString} gznuke [num] [\'db\'?] - deletes [num] recent messages (or db only)` +
+          `\n ${prefixString} gzr [userId] - queries a message from the bot to the user` +
           '\n\n**calibrate the active bot**' +
-          '\n' + prefixString + 'gzq - quit/restarts the active bot' +
-          '\n' + prefixString + 'gzupdate - updates the (active) pi instance of the bot' +
-          '\n' + prefixString + 'gzm update - sends a message to active guilds that the bot will be updating' +
-          '\n' + prefixString + 'gzsms [message] - set a default message for all users on VC join' +
+          `\n ${prefixString} gzq - quit/restarts the active bot` +
+          `\n ${prefixString} gzupdate - updates the (active) pi instance of the bot` +
+          `\n ${prefixString} gzm update - sends a message to active guilds that the bot will be updating` +
+          `\n ${prefixString} gzsms [message] - set a default message for all users on VC join` +
           '\n\n**calibrate multiple/other bots**' +
           '\n=gzl - return all bot\'s ping and latency' +
           '\n=gzk - start/kill a process' +
           '\n=gzd [process #] - toggle dev mode' +
           '\n=gzupdate - updates all (inactive) pi instances of the bot' +
-          '\n\n**other commands**' +
-          '\n' + prefixString + 'gzid - guild, bot, and member id' +
-          '\ndevadd - access the database',
+          '\n\n**dev-testing commands**' +
+          `\n ${prefixString} gzcpf - change prefix for testing (if in devmode)` +
+          `\n ${prefixString} gzid - guild, bot, and member id` +
+          `\n ${prefixString} devadd - access the database`,
       )
       .setFooter({text: `version: ${version}`});
     message.channel.send({embeds: [devCEmbed]});
+    break;
+  case 'gzcpf':
+    if (processStats.devMode) {
+      if (args[1]) {
+        server.prefix = args[1];
+        message.channel.send('*prefix has been changed*');
+      } else {
+        message.channel.send('*must provide prefix argument*');
+      }
+    } else {
+      message.channel.send('*can only be performed in devmode*');
+    }
     break;
   case 'gznuke':
     parent_thread('gzn', message.id, message.channel.id,
@@ -1329,15 +1342,29 @@ function devUpdateCommand(message, args = []) {
     }
   }
   if (!args[0]) {
+    processStats.setProcessInactive();
     exec('git stash && git pull && npm i && pm2 restart vibe');
-    processStats.setProcessInactive();
-  } else if (args[0] === 'all') {
-    exec('git stash && git pull && npm i && pm2 restart 0 && pm2 restart 1');
-    processStats.setProcessInactive();
-  } else if (args[0] === 'custom' && args[1]) {
-    exec(args.slice(1).join(' '));
   } else {
-    response = 'incorrect argument provided';
+    switch (args[0]) {
+    case 'update':
+    case 'upgrade':
+      processStats.setProcessInactive();
+      exec('git stash && git pull && npm update && npm upgrade && pm2 restart vibe');
+      break;
+    case 'all':
+      processStats.setProcessInactive();
+      exec('git stash && git pull && npm i && pm2 restart 0 && pm2 restart 1');
+      break;
+    case 'custom':
+      if (args[1]) {
+        exec(args.slice(1).join(' '));
+      } else {
+        response = '*must provide script after \'custom\'*';
+      }
+      break;
+    default:
+      response = '*incorrect argument provided*';
+    }
   }
   message?.channel.send(response);
 }
