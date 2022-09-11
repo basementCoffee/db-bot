@@ -74,7 +74,10 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
       } else links[i] = link;
     }
   }
-  if (notFoundString.length) message.channel.send(`could not find ${notFoundString} in any keys list`);
+  if (notFoundString.length) {
+    message.channel.send(`could not find ${notFoundString.replace(',', '')} in any keys list`);
+  }
+  if (links.length < 1) return -1;
   let pNums = 0;
   let link;
   let failedLinks = '';
