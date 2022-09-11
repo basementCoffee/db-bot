@@ -6,7 +6,7 @@ const {
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
   LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID, CORE_ADM,
-} = require('../../utils/process/constants');
+} = require('../../utils/lib/constants');
 const fetch = require('isomorphic-unfetch');
 const {getData} = require('spotify-url-info')(fetch);
 const m3u8stream = require('m3u8stream');
@@ -17,15 +17,15 @@ const twitch = require('twitch-m3u8');
 const {SoundCloud: scdl} = require('scdl-core');
 scdl.connect();
 const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
-const processStats = require('../../process/utils/ProcessStats');
+const processStats = require('../../utils/lib/ProcessStats');
 const {shutdown} = require('../../utils/shutdown');
-const {reactions} = require('../../utils/reactions');
+const {reactions} = require('../../utils/lib/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
 const {MessageEmbed} = require('discord.js');
-const {getAssumption} = require('../database/search');
-const {getXdb2} = require('../database/retrieval');
+const {getAssumption} = require('../../database/search');
+const {getXdb2} = require('../../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
-const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, disconnectConnection} = require('./utils');
+const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession} = require('./utils');
 const {runPlayCommand} = require('../play');
 const {runKeysCommand} = require('../keys');
 const {
@@ -257,7 +257,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           numOfPlays: (server.mapFinishedLinks.get(whatToPlay)?.numOfPlays || 0) + 1,
         });
       if (vc.members.size < 2) {
-        disconnectConnection(server, connection);
+        processStats.disconnectConnection(server, connection);
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
       } else {
@@ -268,7 +268,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           runAutoplayCommand(message, server, vc, queueItem);
         } else {
           endAudioDuringSession(server);
-          server.leaveVCTimeout = setTimeout(() => disconnectConnection(server, connection), LEAVE_VC_TIMEOUT);
+          server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, connection), LEAVE_VC_TIMEOUT);
         }
       }
       if (server?.followUpMessage) {
@@ -298,7 +298,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           skipLink(message, vc, true, server, true);
         } else {
           console.log('status code 404 error');
-          disconnectConnection(server, connection);
+          processStats.disconnectConnection(server, connection);
           message.channel.send('*db vibe appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             console.log(e);
             // noinspection JSUnresolvedFunction
@@ -325,7 +325,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     console.log('error in playLinkToVC: ', whatToPlay);
     console.log(e);
     if (server.skipTimes > 3) {
-      disconnectConnection(server, connection);
+      processStats.disconnectConnection(server, connection);
       message.channel.send('***db vibe is facing some issues, may restart***');
       checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild']), message).then();
       return;
@@ -467,13 +467,13 @@ async function checkStatusOfYtdl(server, message) {
       else message.channel.send(diagnosisStr);
     }
     logError('ytdl status is unhealthy, shutting off bot');
-    disconnectConnection(server, connection);
+    processStats.disconnectConnection(server, connection);
     if (processStats.isInactive) setTimeout(() => process.exit(0), 2000);
     else shutdown('YTDL-POOR')();
     return;
   }
   setTimeout(() => {
-    disconnectConnection(server, connection);
+    processStats.disconnectConnection(server, connection);
     if (message) message.channel.send('*self-diagnosis complete: db vibe does not appear to have any issues*');
   }, 6000);
 }
@@ -785,7 +785,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
  * @param server The server.
  * @param forceEmbed {Boolean} If to keep the old embed and send a new one.
  * @param embed The embed to send.
- * @returns {Promise<Message>} The new message that was sent.
+ * @returns {Promise<any>} The new message that was sent.
  */
 async function sendEmbedUpdate(channel, server, forceEmbed, embed) {
   server.numSinceLastEmbed = 0;

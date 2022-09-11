@@ -1,9 +1,9 @@
 /* eslint-disable camelcase */
-const {botID, MAX_KEY_LENGTH} = require('../utils/process/constants');
-const {reactions} = require('../utils/reactions');
-const {addToDatabase_P} = require('./database/add');
+const {botID, MAX_KEY_LENGTH} = require('../utils/lib/constants');
+const {reactions} = require('../utils/lib/reactions');
+const {addToDatabase_P} = require('../database/add');
 const {universalLinkFormatter, linkValidator} = require('../utils/utils');
-const {getXdb2} = require('./database/retrieval');
+const {getXdb2} = require('../database/retrieval');
 
 
 /**

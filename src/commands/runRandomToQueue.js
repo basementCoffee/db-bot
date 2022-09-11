@@ -1,7 +1,7 @@
 const {addRandomToQueue} = require('./stream/stream');
-const {getXdb2} = require('./database/retrieval');
+const {getXdb2} = require('../database/retrieval');
 const {botInVC, setSeamless, resetSession} = require('../utils/utils');
-const {MAX_QUEUE_S} = require('../utils/process/constants');
+const {MAX_QUEUE_S} = require('../utils/lib/constants');
 const {hasDJPermissions} = require('../utils/permissions');
 
 /**

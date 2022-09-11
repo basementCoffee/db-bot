@@ -1,8 +1,8 @@
-const {botID} = require('../../utils/process/constants');
+const {botID} = require('../../utils/lib/constants');
 const {pauseComputation, playComputation, botInVC} = require('../../utils/utils');
 const {createEmbed, updateActiveEmbed} = require('../../utils/embed');
 const {getVoiceConnection} = require('@discordjs/voice');
-const processStats = require('../../process/utils/ProcessStats');
+const processStats = require('../../utils/lib/ProcessStats');
 
 /**
  * A system to manage votes for various bot actions. Used for DJ mode.
@@ -144,7 +144,7 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   const lastPlayed = server.queue[0] || server.queueHistory.slice(-1)[0];
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
-      disconnectConnection(server, getVoiceConnection(mgid));
+      processStats.disconnectConnection(server, getVoiceConnection(mgid));
     }, 600);
   } else {
     if (server.currentEmbed) {
@@ -161,16 +161,6 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   }
 }
 
-/**
- * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and the player.
- * @param server The server metadata.
- * @param connection The voice connection.
- */
-function disconnectConnection(server, connection) {
-  server.audio.reset();
-  connection.disconnect();
-  processStats.removeActiveStream(server.guildId);
-}
 
 /**
  * Performs changes when there is (or should be) no now-playing during an active session.
@@ -183,5 +173,5 @@ function endAudioDuringSession(server) {
 }
 
 module.exports = {
-  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, disconnectConnection, endAudioDuringSession,
+  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, endAudioDuringSession,
 };

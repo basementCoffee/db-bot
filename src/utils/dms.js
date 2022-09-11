@@ -1,6 +1,6 @@
 const {version} = require('../../package.json');
-const {reactions} = require('./reactions');
-const {bot, botID, INVITE_MSG} = require('./process/constants');
+const {reactions} = require('./lib/reactions');
+const {bot, botID, INVITE_MSG} = require('./lib/constants');
 const {getHelpList} = require('./help');
 const CH = require('../../channel.json');
 

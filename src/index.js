@@ -6,10 +6,9 @@ const {exec} = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
-const buildNo = require('./utils/process/BuildNumber');
-const processStats = require('./process/utils/ProcessStats');
-const processController = require('./process/ProcessController');
-const {gsrun, deleteRows} = require('./commands/database/api/api');
+const buildNo = require('./utils/lib/BuildNumber');
+const processStats = require('./utils/lib/ProcessStats');
+const {gsrun, deleteRows} = require('./database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
   unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
@@ -20,8 +19,8 @@ const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = requi
 const {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG,
   PREFIX_SN,
-} = require('./utils/process/constants');
-const {reactions} = require('./utils/reactions');
+} = require('./utils/lib/constants');
+const {reactions} = require('./utils/lib/reactions');
 const {runRemoveCommand, removePlaylist} = require('./commands/remove');
 const {updateActiveEmbed, sessionEndEmbed} = require('./utils/embed');
 const {runMoveItemCommand, moveKeysWrapper} = require('./commands/move');
@@ -36,19 +35,19 @@ const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
 const {runRandomToQueue, shuffleQueue} = require('./commands/runRandomToQueue');
-const {checkToSeeActive} = require('./processes/checkToSeeActive');
+const {checkToSeeActive} = require('./process/checkToSeeActive');
 const {runQueueCommand, createVisualText} = require('./commands/generateQueue');
-const {runUniversalSearchCommand} = require('./commands/database/search');
+const {runUniversalSearchCommand} = require('./database/search');
 const {
   sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2,
-} = require('./commands/database/retrieval');
+} = require('./database/retrieval');
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {playFromWord} = require('./commands/playFromWord');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
 const {changePrefix} = require('./commands/changePrefix');
 const {runPlayCommand} = require('./commands/play');
 const {runPauseCommand} = require('./commands/pause');
-const {runDeleteKeyCommand_P} = require('./commands/database/delete');
+const {runDeleteKeyCommand_P} = require('./database/delete');
 const {runStopPlayingCommand} = require('./commands/stop');
 const {runInsertCommand} = require('./commands/insert');
 const {parent_thread} = require('./threads/parent_thread');
@@ -58,7 +57,6 @@ const {runKeysCommand} = require('./commands/keys');
 const {getVoiceConnection} = require('@discordjs/voice');
 const {getJoke} = require('./commands/joke');
 const {runPurgeCommand} = require('./commands/purge');
-const {disconnectConnection} = require('./commands/stream/utils');
 
 process.setMaxListeners(0);
 
@@ -1217,6 +1215,16 @@ async function runCommandCases(message) {
   }
 }
 
+/**
+ * Sets the process as inactive, enables the 'checkActiveInterval' to ensure that a process is active.
+ */
+function setProcessInactiveAndMonitor() {
+  processStats.setProcessInactive();
+  if (!processStats.checkActiveInterval) {
+    processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
+  }
+}
+
 bot.on('guildDelete', (guild) => {
   if (processStats.isInactive || processStats.devMode) return;
   gsrun('A', 'B', PREFIX_SN).then(async (xdb) => {
@@ -1252,7 +1260,7 @@ bot.once('ready', () => {
     processStats.setProcessActive();
   } else {
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
-    processController.setProcessInactive();
+    setProcessInactiveAndMonitor();
     bot.user.setActivity('beats | .db-vibe', {type: 'PLAYING'});
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
@@ -1296,7 +1304,7 @@ bot.on('messageCreate', async (message) => {
       // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
       // compare process IDs
       if (message.content.substr(24).trim() !== process.pid.toString()) {
-        processController.setProcessInactive();
+        setProcessInactiveAndMonitor();
       } else {
         processStats.setProcessActive();
       }
@@ -1460,7 +1468,7 @@ async function devProcessCommands(message) {
             if (processStats.isInactive) {
               processStats.setProcessActive();
             } else {
-              processController.setProcessInactive();
+              setProcessInactiveAndMonitor();
             }
 
             if (sentMsg.deletable) {
@@ -1470,7 +1478,7 @@ async function devProcessCommands(message) {
           } else if (reaction.emoji.name === reactions.O_DIAMOND) {
             if (processStats.devMode) {
               processStats.devMode = false;
-              processController.setProcessInactive();
+              setProcessInactiveAndMonitor();
             }
             if (sentMsg.deletable) updateMessage();
           }
@@ -1484,7 +1492,7 @@ async function devProcessCommands(message) {
         });
       });
     } else if (zargs[1] === 'all') {
-      processController.setProcessInactive();
+      setProcessInactiveAndMonitor();
     } else {
       let i = 1;
       while (zargs[i]) {
@@ -1493,7 +1501,7 @@ async function devProcessCommands(message) {
             processStats.setProcessActive();
             message.channel.send('*db vibe ' + process.pid + ' is now active*');
           } else {
-            processController.setProcessInactive();
+            setProcessInactiveAndMonitor();
             message.channel.send('*db vibe ' + process.pid + ' has been sidelined*');
           }
           return;
@@ -1511,7 +1519,7 @@ async function devProcessCommands(message) {
     }
     if (processStats.devMode && zargs[1] === process.pid.toString()) {
       processStats.devMode = false;
-      processController.setProcessInactive();
+      setProcessInactiveAndMonitor();
       processStats.servers.delete(message.guild.id);
       return message.channel.send(`*devmode is off ${process.pid}*`);
     } else if (zargs[1] === process.pid.toString()) {
@@ -1627,7 +1635,7 @@ async function updateVoiceState(oldState, newState, server) {
     clearDJTimer(server);
     // disconnect and delete the voice adapter
     const voiceConnection = getVoiceConnection(newState.guild.id);
-    if (voiceConnection) disconnectConnection(server, voiceConnection);
+    if (voiceConnection) processStats.disconnectConnection(server, voiceConnection);
     bot.voice.adapters.get(oldState.guild.id)?.destroy();
     processStats.removeActiveStream(oldState.guild.id);
     await sessionEndEmbed(server, server.queue[0] || server.queueHistory.slice(-1)[0]);
@@ -1668,7 +1676,7 @@ async function updateVoiceState(oldState, newState, server) {
         server.leaveVCTimeout = null;
         if (oldState.channel.members.filter((x) => !x.user.bot).size < 1) {
           const voiceConnection = getVoiceConnection(newState.guild.id);
-          if (voiceConnection) disconnectConnection(server, voiceConnection);
+          if (voiceConnection) processStats.disconnectConnection(server, voiceConnection);
         }
       }, leaveVCInt);
     }

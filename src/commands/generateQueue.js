@@ -1,7 +1,7 @@
-const {botID, MAX_QUEUE_S} = require('../utils/process/constants');
+const {botID, MAX_QUEUE_S} = require('../utils/lib/constants');
 const {botInVC, getTitle, createQueueItem, getSheetName} = require('../utils/utils');
 const {MessageEmbed} = require('discord.js');
-const {reactions} = require('../utils/reactions');
+const {reactions} = require('../utils/lib/reactions');
 const {updateActiveEmbed} = require('../utils/embed');
 const {runInsertCommand} = require('./insert');
 

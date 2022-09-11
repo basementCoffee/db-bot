@@ -1,5 +1,5 @@
-const {getXdb2} = require('./database/retrieval');
-const {runSearchCommand} = require('./database/search');
+const {getXdb2} = require('../database/retrieval');
+const {runSearchCommand} = require('../database/search');
 const {sendLinkAsEmbed} = require('./stream/stream');
 
 /**

@@ -1,8 +1,8 @@
 /* eslint-disable camelcase */
-const {botInVC, isPersonalSheet} = require('../../utils/utils');
+const {botInVC, isPersonalSheet} = require('../utils/utils');
 const {gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite} = require('./api/api');
-const processStats = require('../../process/utils/ProcessStats');
-const {PREFIX_SN} = require('../../utils/process/constants');
+const processStats = require('../process/checkToSeeActive');
+const {PREFIX_SN} = require('../utils/lib/constants');
 
 // eslint-disable-next-line valid-jsdoc
 /**

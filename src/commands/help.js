@@ -1,6 +1,6 @@
-const {botID} = require('../utils/process/constants');
+const {botID} = require('../utils/lib/constants');
 const {getHelpList} = require('../utils/help');
-const {reactions} = require('../utils/reactions');
+const {reactions} = require('../utils/lib/reactions');
 
 /**
  * Produces the help list and manages its reactions.

@@ -1,5 +1,5 @@
 const utils = require('../utils/utils');
-const {serializeAndUpdate} = require('./database/utils');
+const {serializeAndUpdate} = require('../database/utils');
 
 /**
  * Mutates the provided array by moving an element at posA to posB.

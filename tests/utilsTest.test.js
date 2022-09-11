@@ -1,8 +1,8 @@
 const {formatDuration} = require('../src/utils/utils');
-const {bot} = require('../src/utils/process/constants');
+const {bot} = require('../src/utils/lib/constants');
 const {runMoveItemCommand} = require('../src/commands/move');
 const utils = require('../src/utils/utils');
-const {revokeClient} = require('../src/commands/database/api/api');
+const {revokeClient} = require('../src/database/api/api');
 
 let arr;
 const destroyBot = () => bot.destroy();

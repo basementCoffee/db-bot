@@ -3,7 +3,7 @@ scdl.connect();
 const {createQueueItem, getLinkType, linkFormatter, verifyPlaylist} = require('./utils');
 const {
   StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK,
-} = require('./process/constants');
+} = require('./lib/constants');
 const fetch = require('isomorphic-unfetch');
 const {getData, getTracks} = require('spotify-url-info')(fetch);
 const ytpl = require('ytpl');

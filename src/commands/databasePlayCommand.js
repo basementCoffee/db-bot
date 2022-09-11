@@ -1,10 +1,10 @@
-const {getXdb2} = require('./database/retrieval');
-const {getAssumption} = require('./database/search');
+const {getXdb2} = require('../database/retrieval');
+const {getAssumption} = require('../database/search');
 const {playLinkToVC} = require('./stream/stream');
 const {
   botInVC, setSeamless, resetSession, verifyPlaylist, createQueueItem, adjustQueueForPlayNow,
 } = require('../utils/utils');
-const {MAX_QUEUE_S} = require('../utils/process/constants');
+const {MAX_QUEUE_S} = require('../utils/lib/constants');
 const {updateActiveEmbed} = require('../utils/embed');
 const {addPlaylistToQueue} = require('../utils/playlist');
 

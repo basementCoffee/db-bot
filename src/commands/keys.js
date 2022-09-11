@@ -1,12 +1,12 @@
 const {botInVC, isPersonalSheet, universalLinkFormatter, linkValidator} = require('../utils/utils');
-const {getXdb2, getSettings} = require('./database/retrieval');
-const {getAssumption} = require('./database/search');
-const {reactions} = require('../utils/reactions');
-const {botID} = require('../utils/process/constants');
+const {getXdb2, getSettings} = require('../database/retrieval');
+const {getAssumption} = require('../database/search');
+const {reactions} = require('../utils/lib/reactions');
+const {botID} = require('../utils/lib/constants');
 const {MessageEmbed} = require('discord.js');
 const {isCoreAdmin} = require('../utils/permissions');
 const {renameKey, renamePlaylist} = require('./rename');
-const {serializeAndUpdate} = require('./database/utils');
+const {serializeAndUpdate} = require('../database/utils');
 const {removePlaylist} = require('./remove');
 
 // returns an array of tips

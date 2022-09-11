@@ -1,4 +1,4 @@
-const {verifyUrl, verifyPlaylist, botInVC} = require('../../utils/utils');
+const {verifyUrl, verifyPlaylist, botInVC} = require('../utils/utils');
 const {getXdb2} = require('./retrieval');
 
 /**

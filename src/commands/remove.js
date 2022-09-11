@@ -1,5 +1,5 @@
 const {updateActiveEmbed} = require('../utils/embed');
-const {serializeAndUpdate} = require('./database/utils');
+const {serializeAndUpdate} = require('../database/utils');
 
 /**
  * Removes an item from the queue. Does not allow for the currently playing item to be removed from the queue (index 0).

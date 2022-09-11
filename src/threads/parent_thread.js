@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 const {Worker} = require('worker_threads');
-const processStats = require('../process/utils/ProcessStats');
+const processStats = require('../utils/lib/ProcessStats');
 const {logError} = require('../utils/utils');
 const worker = new Worker(__dirname + '/worker.js');
 

@@ -1,8 +1,7 @@
-const {bot} = require('./process/constants');
+const {bot} = require('./lib/constants');
 const CH = require('../../channel.json');
-const processStats = require('../process/utils/ProcessStats');
+const processStats = require('./lib/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
-const {disconnectConnection} = require('../commands/stream/utils');
 
 /**
  * Shuts down the current process.
@@ -35,7 +34,7 @@ function shutdown(type) {
             try {
               if (currentEmbed) currentEmbed.channel.send('db vibe is restarting... (this will be quick)');
               else if (server.queue[0]) guild.systemChannel.send('db vibe is restarting... (this will be quick)').then();
-              disconnectConnection(server, server.audio.connection);
+              processStats.disconnectConnection(server, server.audio.connection);
             } catch (e) {
               guild.systemChannel.send('db vibe is restarting... (this will be quick)').then();
             }

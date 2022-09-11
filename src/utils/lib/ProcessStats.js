@@ -1,5 +1,5 @@
-const {startupDevMode} = require('../../utils/process/constants');
-const {AudioImpl} = require('../../utils/process/AudioImpl');
+const {startupDevMode} = require('./constants');
+const {AudioImpl} = require('./AudioImpl');
 
 // process related statistics
 class ProcessStats {
@@ -64,6 +64,7 @@ class ProcessStats {
 
   /**
    * Sets the process as inactive.
+   * This does NOT activate 'checkToSeeActive' interval, which ensures that an active process is up.
    */
   setProcessInactive() {
     this.serverPrefixes = null;
@@ -73,6 +74,17 @@ class ProcessStats {
       this.activeMS += Date.now() - this.dateActive;
       this.dateActive = null;
     }
+  }
+
+  /**
+   * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and the player.
+   * @param server The server metadata.
+   * @param connection The voice connection.
+   */
+  disconnectConnection(server, connection) {
+    server.audio.reset();
+    connection.disconnect();
+    this.removeActiveStream(server.guildId);
   }
 
   /**

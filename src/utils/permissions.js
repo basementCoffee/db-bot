@@ -1,4 +1,4 @@
-const {CORE_ADM} = require('./process/constants');
+const {CORE_ADM} = require('./lib/constants');
 
 /**
  * Returns whether a given ID has Admin rights.
