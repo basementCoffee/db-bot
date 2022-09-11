@@ -1,4 +1,3 @@
-const request = require('request');
 const cheerio = require('cheerio');
 
 /**
@@ -7,17 +6,15 @@ const cheerio = require('cheerio');
  */
 function getJoke() {
   return new Promise((resolve, reject) => {
-    request('https://icanhazdadjoke.com/', (error, response, body) => {
-      if (error) {
-        reject(error);
-      } else {
+    fetch('https://icanhazdadjoke.com/').then(response => {
+      response.text().then((htmlText) => {
         // parse html
-        const $ = cheerio.load(body);
+        const $ = cheerio.load(htmlText);
         let val = $('p').text();
         val = val.substring(0, val.indexOf('icanhazdadjoke.com'));
         resolve(val);
-      }
-    });
+      });
+    })
   });
 }
 
