@@ -1,6 +1,6 @@
-import { addCustomPlaylist, runAddCommandWrapper_P } from './add';
-import { changePrefix } from './changePrefix';
-import { playPlaylistDB, runDatabasePlayCommand } from './databasePlayCommand';
+const { addCustomPlaylist, runAddCommandWrapper_P } = require('./add');
+const { changePrefix } = require('./changePrefix');
+const { playPlaylistDB, runDatabasePlayCommand } = require('./databasePlayCommand');
 
 
 // A common handler for user commands.
