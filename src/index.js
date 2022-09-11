@@ -9,6 +9,7 @@ const {MessageEmbed} = require('discord.js');
 const buildNo = require('./utils/lib/BuildNumber');
 const processStats = require('./utils/lib/ProcessStats');
 const {gsrun, deleteRows} = require('./database/api/api');
+const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
   unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
@@ -30,7 +31,6 @@ const {
 const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
 const {runDatabasePlayCommand, playPlaylistDB} = require('./commands/databasePlayCommand');
-const {runAddCommandWrapper_P, addCustomPlaylist} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
@@ -44,7 +44,6 @@ const {
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {playFromWord} = require('./commands/playFromWord');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
-const {changePrefix} = require('./commands/changePrefix');
 const {runPlayCommand} = require('./commands/play');
 const {runPauseCommand} = require('./commands/pause');
 const {runDeleteKeyCommand_P} = require('./database/delete');
@@ -731,7 +730,7 @@ async function runCommandCases(message) {
     message.channel.send('use the command `changeprefix` to change the bot\'s prefix');
     break;
   case 'changeprefix':
-    changePrefix(message, server, prefixString, args[1]);
+    commandHandlerCommon.changePrefix(message, server, prefixString, args[1]);
     break;
     // list commands for public commands
   case 'h':
@@ -870,11 +869,11 @@ async function runCommandCases(message) {
     // .ga adds to the test database
   case 'ga':
   case 'gadd':
-    runAddCommandWrapper_P(message.channel, args.slice(1), 'entries', true, server, message.member);
+    commandHandlerCommon.addKey(message.channel, args.slice(1), 'entries', true, server, message.member);
     break;
     // .add is personal add
   case 'add':
-    runAddCommandWrapper_P(message.channel, args.slice(1),
+    commandHandlerCommon.addKey(message.channel, args.slice(1),
       getSheetName(message.member.id), true, server, message.member);
     break;
   case 'playlist-add':
@@ -884,7 +883,7 @@ async function runCommandCases(message) {
       message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
       return;
     }
-    addCustomPlaylist(server, message.channel, getSheetName(message.member.id), args[1]);
+    commandHandlerCommon.addCustomPlaylist(server, message.channel, getSheetName(message.member.id), args[1]);
     break;
   case 'gadd-playlist':
   case 'gplaylist-add':
@@ -892,7 +891,7 @@ async function runCommandCases(message) {
       message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
       return;
     }
-    addCustomPlaylist(server, message.channel, 'entries', args[1]);
+    commandHandlerCommon.addCustomPlaylist(server, message.channel, 'entries', args[1]);
     break;
   case 'delete-playlist':
   case 'del-playlist':

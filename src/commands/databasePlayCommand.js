@@ -9,7 +9,7 @@ const {updateActiveEmbed} = require('../utils/embed');
 const {addPlaylistToQueue} = require('../utils/playlist');
 
 /**
- *
+ * Plays an entire custom playlist.
  * @param args {Array<string>} The array of playlists to play.
  * @param message {Message} The message object.
  * @param sheetName {string} The name of the sheet to reference.
@@ -67,7 +67,6 @@ async function playPlaylistDB(args, message, sheetName, playRightNow, printError
 
 /**
  * Executes play assuming that message args are intended for a database call.
- * The database referenced depends on what is passed in via mgid.
  * @param {*} args the message split by spaces into an array
  * @param {*} message the message that triggered the bot
  * @param {*} sheetName the name of the sheet to reference
