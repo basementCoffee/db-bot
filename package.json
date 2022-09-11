@@ -6,11 +6,12 @@
   "scripts": {
     "start": "node ./src/index.js",
     "dev": "node --trace-warnings ./src/index.js --dev",
+    "dev-test": "node --trace-warnings ./src/index.js --dev --test 987120641549430824",
     "pm2": "echo running pm2 script...\npm2 start src/index.js --watch --name vibe",
     "test": "jest --detectOpenHandles --setupFiles dotenv/config --forceExit"
   },
   "engines": {
-    "node": ">=16.15.1"
+    "node": "^16.10.0 | ^18"
   },
   "author": "",
   "license": "ISC",
