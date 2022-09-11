@@ -1,5 +1,12 @@
 const {getTitle} = require('../utils/utils');
 
+/**
+ * Purges an item from the queue.
+ * @param message The message object.
+ * @param server The server object.
+ * @param term {string} The term to purge.
+ * @return {Promise<void>}
+ */
 async function runPurgeCommand(message, server, term) {
   const sentMsg = await message.channel.send(`*purging **${term}**...*`);
   const count = await purgeItem(server.queue, async (item) => {

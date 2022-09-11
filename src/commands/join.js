@@ -28,7 +28,8 @@ async function joinVoiceChannelSafe(message, server) {
     resetSession(server);
     try {
       server.audio.joinVoiceChannel(message.guild, vc.id);
-      server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, server.connection), LEAVE_VC_TIMEOUT);
+      server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, server.connection),
+        LEAVE_VC_TIMEOUT);
       return true;
     } catch (e) {
       catchVCJoinError(e, message.channel);

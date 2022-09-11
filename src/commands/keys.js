@@ -1,6 +1,6 @@
 const {botInVC, isPersonalSheet, universalLinkFormatter, linkValidator} = require('../utils/utils');
 const {getXdb2, getSettings} = require('../database/retrieval');
-const {getAssumption} = require('../database/search');
+const {getAssumption} = require('./search');
 const {reactions} = require('../utils/lib/reactions');
 const {botID} = require('../utils/lib/constants');
 const {MessageEmbed} = require('discord.js');

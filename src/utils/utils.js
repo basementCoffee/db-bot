@@ -532,5 +532,5 @@ module.exports = {
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
   logError, pauseComputation, playComputation, getTimeActive, linkValidator, universalLinkFormatter,
   removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg, getVCMembers,
-  createVisualEmbed,
+  createVisualEmbed, botInVC_Guild,
 };

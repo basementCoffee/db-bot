@@ -22,11 +22,10 @@ const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/lib/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
 const {MessageEmbed} = require('discord.js');
-const {getAssumption} = require('../../database/search');
+const {getAssumption} = require('../search');
 const {getXdb2} = require('../../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
-const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession} = require('./utils');
-const {runPlayCommand} = require('../play');
+const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil} = require('./utils');
 const {runKeysCommand} = require('../keys');
 const {
   createAudioResource,
@@ -268,7 +267,8 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           runAutoplayCommand(message, server, vc, queueItem);
         } else {
           endAudioDuringSession(server);
-          server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, connection), LEAVE_VC_TIMEOUT);
+          server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, connection),
+            LEAVE_VC_TIMEOUT);
         }
       }
       if (server?.followUpMessage) {
@@ -858,7 +858,7 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
     case reactions.PPAUSE:
       let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
       if (!server.audio.status) {
-        runPlayCommand(sentMsg, tempUser, server, true, false, true);
+        playCommandUtil(sentMsg, tempUser, server, true, false, true);
         if (server.voteAdmin.length < 1 && !server.dictator) {
           tempUser = tempUser.nickname;
           if (server.followUpMessage) {

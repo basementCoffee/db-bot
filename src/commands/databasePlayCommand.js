@@ -1,5 +1,5 @@
 const {getXdb2} = require('../database/retrieval');
-const {getAssumption} = require('../database/search');
+const {getAssumption} = require('./search');
 const {playLinkToVC} = require('./stream/stream');
 const {
   botInVC, setSeamless, resetSession, verifyPlaylist, createQueueItem, adjustQueueForPlayNow,
@@ -11,7 +11,7 @@ const {addPlaylistToQueue} = require('../utils/playlist');
 /**
  * Plays an entire custom playlist.
  * @param args {Array<string>} The array of playlists to play.
- * @param message {Message} The message object.
+ * @param message {import('Discord.js').Message} The message object.
  * @param sheetName {string} The name of the sheet to reference.
  * @param playRightNow {boolean} If the playlist should be played right now.
  * @param printErrorMsg {boolean} If an error message should be printed.

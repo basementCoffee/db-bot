@@ -77,7 +77,8 @@ class ProcessStats {
   }
 
   /**
-   * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and the player.
+   * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and
+   * the player.
    * @param server The server metadata.
    * @param connection The voice connection.
    */

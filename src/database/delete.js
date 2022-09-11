@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 const {gsrun, gsUpdateOverwrite, deleteRows} = require('./api/api');
-const {runSearchCommand} = require('./search');
+const {runSearchCommand} = require('../commands/search');
 const {getXdb2} = require('./retrieval');
 const {serializeAndUpdate} = require('./utils');
 const {isPersonalSheet} = require('../utils/utils');
