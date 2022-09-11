@@ -1,5 +1,5 @@
-const {startupDevMode} = require('./constants');
-const {AudioImpl} = require('./AudioImpl');
+const {startupDevMode} = require('../../utils/process/constants');
+const {AudioImpl} = require('../../utils/process/AudioImpl');
 
 // process related statistics
 class ProcessStats {
@@ -66,8 +66,8 @@ class ProcessStats {
    * Sets the process as inactive.
    */
   setProcessInactive() {
-    this.isInactive = true;
     this.serverPrefixes = null;
+    this.isInactive = true;
     console.log('-sidelined-');
     if (this.dateActive) {
       this.activeMS += Date.now() - this.dateActive;

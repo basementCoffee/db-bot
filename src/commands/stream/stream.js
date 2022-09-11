@@ -17,7 +17,7 @@ const twitch = require('twitch-m3u8');
 const {SoundCloud: scdl} = require('scdl-core');
 scdl.connect();
 const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
-const processStats = require('../../utils/process/ProcessStats');
+const processStats = require('../../process/utils/ProcessStats');
 const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');

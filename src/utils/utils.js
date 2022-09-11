@@ -12,7 +12,7 @@ const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
-const processStats = require('./process/ProcessStats');
+const processStats = require('../process/utils/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
 
 /**

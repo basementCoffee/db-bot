@@ -36,7 +36,7 @@ async function createEmbed(url, infos) {
       )
       .setThumbnail(
         infos.coverArt?.sources[infos.coverArt.sources.length - 1]?.url ||
-        infos.album?.images[infos.album.images.length - 1]?.url
+        infos.album?.images[infos.album.images.length - 1]?.url,
       );
     timeMS = parseInt(infos.duration_ms);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {

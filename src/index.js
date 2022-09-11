@@ -7,7 +7,8 @@ const version = require('../package.json').version;
 const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
 const buildNo = require('./utils/process/BuildNumber');
-const processStats = require('./utils/process/ProcessStats');
+const processStats = require('./process/utils/ProcessStats');
+const processController = require('./process/ProcessController');
 const {gsrun, deleteRows} = require('./commands/database/api/api');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
@@ -1251,11 +1252,8 @@ bot.once('ready', () => {
     processStats.setProcessActive();
   } else {
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
-    processStats.setProcessInactive();
+    processController.setProcessInactive();
     bot.user.setActivity('beats | .db-vibe', {type: 'PLAYING'});
-    if (!processStats.checkActiveInterval) {
-      processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
-    }
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
@@ -1298,7 +1296,7 @@ bot.on('messageCreate', async (message) => {
       // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
       // compare process IDs
       if (message.content.substr(24).trim() !== process.pid.toString()) {
-        processStats.setProcessInactive();
+        processController.setProcessInactive();
       } else {
         processStats.setProcessActive();
       }
@@ -1399,16 +1397,15 @@ async function devProcessCommands(message) {
         process.pid +' (' + version + ')' + dm;
       };
       message.channel.send(procMsg()).then((sentMsg) => {
-        const devR = reactions.O_DIAMOND;
         if (processStats.devMode) {
-          sentMsg.react(devR);
+          sentMsg.react(reactions.O_DIAMOND);
         } else {
           sentMsg.react(reactions.GEAR);
         }
 
         const filter = (reaction, user) => {
           return user.id !== botID && user.id === message.member.id &&
-              [reactions.GEAR, devR].includes(reaction.emoji.name);
+              [reactions.GEAR, reactions.O_DIAMOND].includes(reaction.emoji.name);
         };
           // updates the existing gzk message
         const updateMessage = () => {
@@ -1463,18 +1460,17 @@ async function devProcessCommands(message) {
             if (processStats.isInactive) {
               processStats.setProcessActive();
             } else {
-              processStats.setProcessInactive();
+              processController.setProcessInactive();
             }
 
             if (sentMsg.deletable) {
               updateMessage();
               reaction.users.remove(user.id);
             }
-          } else if (reaction.emoji.name === devR) {
-            processStats.devMode = false;
-            processStats.setProcessInactive();
-            if (!processStats.checkActiveInterval) {
-              processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
+          } else if (reaction.emoji.name === reactions.O_DIAMOND) {
+            if (processStats.devMode) {
+              processStats.devMode = false;
+              processController.setProcessInactive();
             }
             if (sentMsg.deletable) updateMessage();
           }
@@ -1488,7 +1484,7 @@ async function devProcessCommands(message) {
         });
       });
     } else if (zargs[1] === 'all') {
-      processStats.setProcessInactive();
+      processController.setProcessInactive();
     } else {
       let i = 1;
       while (zargs[i]) {
@@ -1497,7 +1493,7 @@ async function devProcessCommands(message) {
             processStats.setProcessActive();
             message.channel.send('*db vibe ' + process.pid + ' is now active*');
           } else {
-            processStats.setProcessInactive();
+            processController.setProcessInactive();
             message.channel.send('*db vibe ' + process.pid + ' has been sidelined*');
           }
           return;
@@ -1515,7 +1511,7 @@ async function devProcessCommands(message) {
     }
     if (processStats.devMode && zargs[1] === process.pid.toString()) {
       processStats.devMode = false;
-      processStats.setProcessInactive();
+      processController.setProcessInactive();
       processStats.servers.delete(message.guild.id);
       return message.channel.send(`*devmode is off ${process.pid}*`);
     } else if (zargs[1] === process.pid.toString()) {

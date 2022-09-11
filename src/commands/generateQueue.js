@@ -59,7 +59,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
     }
     queueMsgEmbed.setDescription(queueSB);
     if (serverQueue.length > 11) {
-      queueMsgEmbed.setFooter({text:'use \'insert\' & \'remove\' to edit the queue'});
+      queueMsgEmbed.setFooter({text: 'use \'insert\' & \'remove\' to edit the queue'});
     }
     if (tempMsg?.deletable) tempMsg.delete();
     if (sentMsg?.deletable) {

@@ -1,6 +1,6 @@
 const {bot} = require('./process/constants');
 const CH = require('../../channel.json');
-const processStats = require('./process/ProcessStats');
+const processStats = require('../process/utils/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
 const {disconnectConnection} = require('../commands/stream/utils');
 

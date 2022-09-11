@@ -1,6 +1,6 @@
 const {setOfBotsOn, bot, PREFIX_SN} = require('../utils/process/constants');
 const CH = require('../../channel.json');
-const processStats = require('../utils/process/ProcessStats');
+const processStats = require('./utils/ProcessStats');
 const buildNo = require('../utils/process/BuildNumber');
 const {shutdown} = require('../utils/shutdown');
 const {gsrun} = require('../commands/database/api/api');

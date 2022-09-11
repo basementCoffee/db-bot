@@ -2,7 +2,7 @@ const {botID} = require('../../utils/process/constants');
 const {pauseComputation, playComputation, botInVC} = require('../../utils/utils');
 const {createEmbed, updateActiveEmbed} = require('../../utils/embed');
 const {getVoiceConnection} = require('@discordjs/voice');
-const processStats = require('../../utils/process/ProcessStats');
+const processStats = require('../../process/utils/ProcessStats');
 
 /**
  * A system to manage votes for various bot actions. Used for DJ mode.
@@ -174,7 +174,7 @@ function disconnectConnection(server, connection) {
 
 /**
  * Performs changes when there is (or should be) no now-playing during an active session.
- * @param server
+ * @param server The server object.
  */
 function endAudioDuringSession(server) {
   updateActiveEmbed(server);
