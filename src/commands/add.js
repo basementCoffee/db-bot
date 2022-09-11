@@ -18,14 +18,14 @@ function lengthErrorString(type, itemName, maxLength) {
 }
 
 /**
- * Adds a playlist.
+ * Adds a custom playlist to the database.
  * @param {*} server The server.
  * @param {*} channel The channel to send the response to.
  * @param {*} sheetName The name of the sheet to add to.
  * @param {*} playlistName The name of the playlist to add.
  * @returns {void}
  */
-async function addNewPlaylist(server, channel, sheetName, playlistName) {
+async function addCustomPlaylist(server, channel, sheetName, playlistName) {
   if (playlistName.length > MAX_KEY_LENGTH) {
     channel.send(lengthErrorString('playlist', playlistName, MAX_KEY_LENGTH));
     return;
@@ -42,7 +42,7 @@ async function addNewPlaylist(server, channel, sheetName, playlistName) {
 /**
  * Wrapper for the function 'addToDatabase', for the purpose of error checking. Expects the provided playlist to exist.
  * @param channel The channel that triggered the bot
- * @param args The arguments provided to the command
+ * @param args {Array<string>} [playlist-name (optional), key-name, link]
  * @param sheetName The name of the sheet to add to
  * @param printMsgToChannel Whether to print a response to the channel
  * @param server The server.
@@ -122,4 +122,4 @@ async function runAddCommandWrapper_P(channel, args, sheetName, printMsgToChanne
   else channel.send('Could not add to your keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + 'add [key] [link]\`)*');
 }
 
-module.exports = {runAddCommandWrapper_P, addNewPlaylist};
+module.exports = {runAddCommandWrapper_P, addCustomPlaylist};

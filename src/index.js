@@ -30,7 +30,7 @@ const {
 const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
 const {runDatabasePlayCommand, playPlaylistDB} = require('./commands/databasePlayCommand');
-const {runAddCommandWrapper_P, addNewPlaylist} = require('./commands/add');
+const {runAddCommandWrapper_P, addCustomPlaylist} = require('./commands/add');
 const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
@@ -884,7 +884,7 @@ async function runCommandCases(message) {
       message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
       return;
     }
-    addNewPlaylist(server, message.channel, getSheetName(message.member.id), args[1]);
+    addCustomPlaylist(server, message.channel, getSheetName(message.member.id), args[1]);
     break;
   case 'gadd-playlist':
   case 'gplaylist-add':
@@ -892,7 +892,7 @@ async function runCommandCases(message) {
       message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
       return;
     }
-    addNewPlaylist(server, message.channel, 'entries', args[1]);
+    addCustomPlaylist(server, message.channel, 'entries', args[1]);
     break;
   case 'delete-playlist':
   case 'del-playlist':
