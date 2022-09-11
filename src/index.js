@@ -18,7 +18,7 @@ const {
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
 const {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG,
-  PREFIX_SN,
+  PREFIX_SN, startupTest,
 } = require('./utils/lib/constants');
 const {reactions} = require('./utils/lib/reactions');
 const {updateActiveEmbed, sessionEndEmbed} = require('./utils/embed');
@@ -526,7 +526,7 @@ async function runCommandCases(message) {
   case 'lookup':
   case 'search':
     commandHandlerCommon.searchForKeyUniversal(message, server, getSheetName(message.member.id),
-      (args[1] ? args[1] : server.queue[0]?.url));
+      (args[1] ? args[1] : server.queue[0]?.url)).then();
     break;
   case 'gfind':
   case 'glookup':
@@ -1184,6 +1184,20 @@ bot.once('ready', () => {
   if (processStats.devMode) {
     console.log('-devmode enabled-');
     processStats.setProcessActive();
+    if (startupTest) {
+      const index = process.argv.indexOf('--test');
+      if (index === process.argv.length-1) {
+        console.log('could not run test, please provide channel id');
+      } else {
+        bot.channels.fetch(process.argv[index+1]).then((channel) => {
+          if (channel.isText) {
+            channel.send('=test').then();
+          } else {
+            console.log('not a text channel');
+          }
+        });
+      }
+    }
   } else {
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
     setProcessInactiveAndMonitor();
@@ -1519,7 +1533,7 @@ async function devProcessCommands(message) {
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
-  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id.toString()) || message.member.id === botID) {
+  if ((message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id.toString())) || message.member.id === botID) {
     return devProcessCommands(message);
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;

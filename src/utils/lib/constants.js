@@ -14,6 +14,8 @@ const botID = '987108278486065283';
 const PREFIX_SN = 'prefixes-vibe';
 // boolean for dev process - used for debugging, default is false
 const startupDevMode = process.argv.includes('--dev');
+// true if 'test' flag is active
+const startupTest = process.argv.includes('--test');
 // max queue size
 const MAX_QUEUE_S = 500;
 // max key length
@@ -51,4 +53,5 @@ const INVITE_MSG = 'Here\'s the invite link!\n<https://discord.com/oauth2/author
 module.exports = {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK,
   TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM, MAX_KEY_LENGTH, INVITE_MSG, PREFIX_SN,
+  startupTest,
 };
