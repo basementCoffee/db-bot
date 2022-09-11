@@ -18,6 +18,7 @@ const {runRestartCommand} = require('./restart');
 const {renameKey, renamePlaylist} = require('./rename');
 const {runRandomToQueue} = require('./runRandomToQueue');
 const {runPlayLinkCommand} = require('./playLink');
+const {ZWSP} = require('../utils/lib/constants');
 
 
 // A common handler for user commands.
@@ -115,7 +116,7 @@ class CommandHandlerCommon {
    */
   async joke(channel) {
     const joke = await getJoke();
-    channel.send(joke);
+    channel.send(`${ZWSP}${joke}`);
   }
 
   /**
