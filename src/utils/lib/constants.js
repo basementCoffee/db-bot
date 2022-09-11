@@ -10,10 +10,10 @@ const bot = new Client({
 });
 // the id of the bot
 const botID = '987108278486065283';
-// the sheetname for the list of prefixes in the database
+// the sheet-name for the list of prefixes in the database
 const PREFIX_SN = 'prefixes-vibe';
 // boolean for dev process - used for debugging, default is false
-const startupDevMode = process.argv[2] === '--dev';
+const startupDevMode = process.argv.includes('--dev');
 // max queue size
 const MAX_QUEUE_S = 500;
 // max key length
