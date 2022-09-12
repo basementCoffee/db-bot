@@ -139,8 +139,7 @@ async function runCommandCases(message) {
   // the command name
   const statement = args[0].substr(1).toLowerCase();
   if (statement.substring(0, 1) === 'g' && statement !== 'guess') {
-    if (message.member.id.toString() !== '443150640823271436' &&
-     message.member.id.toString() !== '268554823283113985') {
+    if (!isAdmin(message.member.id)) {
       return;
     }
   } else {
@@ -663,6 +662,12 @@ async function runCommandCases(message) {
   case 'help':
     commandHandlerCommon.help(message, server, version);
     break;
+  case 'test':
+    // this method is for testing purposes only
+    if (!(isAdmin(message.member.id) && processStats.devMode)) return;
+    message.channel.send('*test received*');
+    // start test code from here...
+    break;
     // !skip
   case 'next':
   case 'sk':
@@ -783,10 +788,7 @@ async function runCommandCases(message) {
     }
     break;
   case 'devadd':
-    if (message.member.id.toString() !== '443150640823271436' &&
-     message.member.id.toString() !== '268554823283113985') {
-      return;
-    }
+    if (!isAdmin(message.member.id)) return;
     message.channel.send(
       'Here\'s the dev docs:\n' +
         '<https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622>',
@@ -1533,7 +1535,7 @@ async function devProcessCommands(message) {
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
-  if ((message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id.toString())) || message.member.id === botID) {
+  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id.toString()) || message.member.id === botID) {
     return devProcessCommands(message);
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
