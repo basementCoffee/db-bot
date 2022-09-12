@@ -6,7 +6,7 @@ const cheerio = require('cheerio');
  */
 function getJoke() {
   return new Promise((resolve, reject) => {
-    fetch('https://icanhazdadjoke.com/').then(response => {
+    fetch('https://icanhazdadjoke.com/').then((response) => {
       response.text().then((htmlText) => {
         // parse html
         const $ = cheerio.load(htmlText);
@@ -14,7 +14,7 @@ function getJoke() {
         val = val.substring(0, val.indexOf('icanhazdadjoke.com'));
         resolve(val);
       });
-    })
+    });
   });
 }
 
