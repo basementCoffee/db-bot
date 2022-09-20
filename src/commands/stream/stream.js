@@ -30,7 +30,7 @@ const {runKeysCommand} = require('../keys');
 const {
   createAudioResource,
   createAudioPlayer,
-  StreamType: VoiceStreamType,
+  StreamType: VoiceStreamType, getVoiceConnection,
 } = require('@discordjs/voice');
 const CH = require('../../../channel.json');
 const fluentFfmpeg = require('fluent-ffmpeg');
@@ -46,20 +46,25 @@ const fluentFfmpeg = require('fluent-ffmpeg');
  * @returns {Promise<void>}
  */
 async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec) {
-  // the queue item's formal url (can be of any type)
-  let whatToPlay = queueItem?.url;
-  if (!whatToPlay) {
-    queueItem = server.queue[0];
-    if (!queueItem || !queueItem.url) return;
-    whatToPlay = queueItem.url;
-  }
   if (!vc) {
     vc = message.member.voice?.channel;
-    if (!vc) return;
+    if (!vc) {
+      getVoiceConnection(message.guildId)?.disconnect();
+      return;
+    }
   }
   if (processStats.isInactive) {
     message.channel.send(`*${message.guild.me.user.username} has been updated*`);
     return stopPlayingUtil(message.guild.id, vc, false, server);
+  }
+  // the queue item's formal url (can be of any type)
+  let whatToPlay = queueItem?.url;
+  if (!whatToPlay) {
+    queueItem = server.queue[0];
+    if (!queueItem || !queueItem.url) {
+      return stopPlayingUtil(message.guild.id, vc, true, server);
+    }
+    whatToPlay = queueItem.url;
   }
   if (server.voteAdmin.length > 0) {
     server.voteSkipMembersId.length = 0;
@@ -206,7 +211,10 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         if (whatToPlay === whatspMap[vc.id]) playComputation(server, true);
         res();
       }, 3000));
-    } else server.audio.status = true;
+    } else {
+      server.audio.status = true;
+    }
+    processStats.addActiveStreamIfNoneExists(message.guild.id);
     // if the server is not silenced then send the embed when playing
     if (server.silence) {
       if (server.currentEmbed) {
@@ -216,7 +224,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     } else if (!(retries && whatToPlay === server.queue[0]?.url)) {
       queueItem = await sendLinkAsEmbed(message, queueItem, vc, server, false) || queueItem;
     }
-    processStats.addActiveStreamIfNoneExists(message.guild.id);
     server.skipTimes = 0;
     player.on('error', async (e) => {
       if (resource.playbackDuration < 1000 && retries < 4) {

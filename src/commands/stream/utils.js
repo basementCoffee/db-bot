@@ -168,8 +168,10 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
  */
 function endAudioDuringSession(server) {
   updateActiveEmbed(server);
-  server.collector?.stop();
   pauseComputation(server); // active stream should be removed here
+  try {
+    server.collector?.stop();
+  } catch (e) {}
 }
 
 module.exports = {
