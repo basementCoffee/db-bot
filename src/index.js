@@ -663,10 +663,11 @@ async function runCommandCases(message) {
     commandHandlerCommon.help(message, server, version);
     break;
   case 'test':
-    // this method is for testing purposes only
+    // this method is for testing purposes only (npm run dev-test)
     if (!(isAdmin(message.member.id) && processStats.devMode)) return;
     message.channel.send('*test received*');
-    // start test code from here...
+    // ------ START TEST -------
+    // ------ END TEST -------
     break;
     // !skip
   case 'next':
