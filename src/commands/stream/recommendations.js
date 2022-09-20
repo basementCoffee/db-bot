@@ -1,5 +1,5 @@
 const {botInVC, setSeamless, resetSession, pushQueue, verifyUrl} = require('../../utils/utils');
-const {bot, SPOTIFY_BASE_LINK, CORE_ADM} = require('../../utils/process/constants');
+const {bot, SPOTIFY_BASE_LINK, CORE_ADM} = require('../../utils/lib/constants');
 const {playLinkToVC} = require('./stream');
 const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
 const {addLinkToQueue} = require('../../utils/playlist');

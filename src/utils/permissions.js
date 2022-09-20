@@ -1,4 +1,4 @@
-const {CORE_ADM} = require('./process/constants');
+const {CORE_ADM} = require('./lib/constants');
 
 /**
  * Returns whether a given ID has Admin rights.
@@ -7,7 +7,7 @@ const {CORE_ADM} = require('./process/constants');
  */
 function isAdmin(id) {
   // kzbuu
-  return ['268554823283113985', '443150640823271436', '730350452268597300', '799524729173442620',
+  return ['268554823283113985', '443150640823271436', '987108278486065283', '799524729173442620',
     '434532121244073984'].includes(id);
 }
 

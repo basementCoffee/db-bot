@@ -1,8 +1,8 @@
 const {verifyUrl, verifyPlaylist, linkFormatter, createQueueItem} = require('../utils/utils');
-const {getXdb2} = require('./database/retrieval');
+const {getXdb2} = require('../database/retrieval');
 const {
   SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, MAX_QUEUE_S,
-} = require('../utils/process/constants');
+} = require('../utils/lib/constants');
 const {addPlaylistToQueue} = require('../utils/playlist');
 const ytpl = require('ytpl');
 const {updateActiveEmbed} = require('../utils/embed');
@@ -74,7 +74,10 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
       } else links[i] = link;
     }
   }
-  if (notFoundString.length) message.channel.send(`could not find ${notFoundString} in any keys list`);
+  if (notFoundString.length) {
+    message.channel.send(`could not find ${notFoundString.replace(',', '')} in any keys list`);
+  }
+  if (links.length < 1) return -1;
   let pNums = 0;
   let link;
   let failedLinks = '';

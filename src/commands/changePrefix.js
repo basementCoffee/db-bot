@@ -1,5 +1,5 @@
-const {gsrun, gsUpdateOverwrite, gsUpdateAdd} = require('./database/api/api');
-const {PREFIX_SN} = require('../utils/process/constants');
+const {gsrun, gsUpdateOverwrite, gsUpdateAdd} = require('../database/api/api');
+const {PREFIX_SN} = require('../utils/lib/constants');
 const {getBotDisplayName} = require('../utils/utils');
 
 /**

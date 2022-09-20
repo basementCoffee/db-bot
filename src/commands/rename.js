@@ -1,5 +1,5 @@
-const {getXdb2} = require('./database/retrieval');
-const {serializeAndUpdate} = require('./database/utils');
+const {getXdb2} = require('../database/retrieval');
+const {serializeAndUpdate} = require('../database/utils');
 
 /**
  * Renames a playlist.

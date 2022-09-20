@@ -6,13 +6,13 @@ const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
   botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot,
-} = require('./process/constants');
+} = require('./lib/constants');
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
-const processStats = require('./process/ProcessStats');
+const processStats = require('./lib/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
 
 /**
@@ -532,5 +532,5 @@ module.exports = {
   getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
   logError, pauseComputation, playComputation, getTimeActive, linkValidator, universalLinkFormatter,
   removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg, getVCMembers,
-  createVisualEmbed,
+  createVisualEmbed, botInVC_Guild,
 };

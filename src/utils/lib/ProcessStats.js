@@ -64,15 +64,28 @@ class ProcessStats {
 
   /**
    * Sets the process as inactive.
+   * This does NOT activate 'checkToSeeActive' interval, which ensures that an active process is up.
    */
   setProcessInactive() {
-    this.isInactive = true;
     this.serverPrefixes = null;
+    this.isInactive = true;
     console.log('-sidelined-');
     if (this.dateActive) {
       this.activeMS += Date.now() - this.dateActive;
       this.dateActive = null;
     }
+  }
+
+  /**
+   * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and
+   * the player.
+   * @param server The server metadata.
+   * @param connection The voice connection.
+   */
+  disconnectConnection(server, connection) {
+    server.audio.reset();
+    connection.disconnect();
+    this.removeActiveStream(server.guildId);
   }
 
   /**
@@ -164,6 +177,7 @@ class ProcessStats {
         message: undefined,
       },
       // [id, xdb]
+      // use getXdb2() for user data
       userKeys: new Map(),
       // the server's prefix
       prefix: undefined,

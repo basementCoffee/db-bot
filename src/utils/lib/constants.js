@@ -10,10 +10,12 @@ const bot = new Client({
 });
 // the id of the bot
 const botID = '987108278486065283';
-// the sheetname for the list of prefixes in the database
+// the sheet-name for the list of prefixes in the database
 const PREFIX_SN = 'prefixes-vibe';
 // boolean for dev process - used for debugging, default is false
-const startupDevMode = process.argv[2] === '--dev';
+const startupDevMode = process.argv.includes('--dev');
+// true if 'test' flag is active
+const startupTest = process.argv.includes('--test');
 // max queue size
 const MAX_QUEUE_S = 500;
 // max key length
@@ -34,7 +36,10 @@ const SOUNDCLOUD_BASE_LINK = 'soundcloud.com';
 const TWITCH_BASE_LINK = 'twitch.tv';
 // 45 minutes
 const LEAVE_VC_TIMEOUT = 2700000;
-const CORE_ADM = Object.freeze(['443150640823271436', '268554823283113985']); // z, k
+// a zero-width space, useful for preventing responses from becoming commands
+const ZWSP = '​';
+// z, k
+const CORE_ADM = Object.freeze(['443150640823271436', '268554823283113985']);
 /**
  * Enum - Acceptable link sources.
  * @type {{TWITCH: string, SOUNDCLOUD: string, SPOTIFY: string, YOUTUBE: string}}
@@ -51,4 +56,5 @@ const INVITE_MSG = 'Here\'s the invite link!\n<https://discord.com/oauth2/author
 module.exports = {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK,
   TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM, MAX_KEY_LENGTH, INVITE_MSG, PREFIX_SN,
+  startupTest, ZWSP,
 };

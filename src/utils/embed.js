@@ -4,7 +4,7 @@ const {MessageEmbed} = require('discord.js');
 const scdl = require('soundcloud-downloader').default;
 const ytdl = require('ytdl-core-discord');
 const {formatDuration, getQueueText, convertYTFormatToMS} = require('./utils');
-const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK} = require('./process/constants');
+const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK} = require('./lib/constants');
 
 /**
  * Return an object containing the embed and time based on the data provided.
@@ -31,10 +31,13 @@ async function createEmbed(url, infos) {
       {
         inline: true,
         name: 'Duration',
-        value: formatDuration(infos.duration_ms),
+        value: formatDuration(infos.duration || infos.duration_ms),
       },
       )
-      .setThumbnail(infos.album?.images[infos.album.images.length - 1].url);
+      .setThumbnail(
+        infos.coverArt?.sources[infos.coverArt.sources.length - 1]?.url ||
+        infos.album?.images[infos.album.images.length - 1]?.url,
+      );
     timeMS = parseInt(infos.duration_ms);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (!infos) infos = await scdl.getInfo(url);

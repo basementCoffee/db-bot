@@ -2,9 +2,9 @@ const ytsr = require('ytsr');
 const {playLinkToVC} = require('./stream');
 const {MessageEmbed} = require('discord.js');
 const {adjustQueueForPlayNow, createQueueItem} = require('../../utils/utils');
-const {StreamType, botID} = require('../../utils/process/constants');
+const {StreamType, botID} = require('../../utils/lib/constants');
 const {updateActiveEmbed} = require('../../utils/embed');
-const {reactions} = require('../../utils/reactions');
+const {reactions} = require('../../utils/lib/reactions');
 
 /**
  * Function for searching for message contents on YouTube for playback.

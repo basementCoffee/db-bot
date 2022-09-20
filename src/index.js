@@ -6,58 +6,36 @@ const {exec} = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
 const {MessageEmbed} = require('discord.js');
-const buildNo = require('./utils/process/BuildNumber');
-const processStats = require('./utils/process/ProcessStats');
-const {gsrun, deleteRows} = require('./commands/database/api/api');
+const buildNo = require('./utils/lib/BuildNumber');
+const processStats = require('./utils/lib/ProcessStats');
+const {gsrun, deleteRows} = require('./database/api/api');
+const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
   formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
-  unshiftQueue, pushQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
+  unshiftQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
   removeFormattingLink, getSheetName, linkValidator, createVisualEmbed, getTitle,
 } = require('./utils/utils');
-const {runHelpCommand} = require('./commands/help');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
 const {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG,
-  PREFIX_SN,
-} = require('./utils/process/constants');
-const {reactions} = require('./utils/reactions');
-const {runRemoveCommand, removePlaylist} = require('./commands/remove');
+  PREFIX_SN, startupTest,
+} = require('./utils/lib/constants');
+const {reactions} = require('./utils/lib/reactions');
 const {updateActiveEmbed, sessionEndEmbed} = require('./utils/embed');
-const {runMoveItemCommand, moveKeysWrapper} = require('./commands/move');
 const {
   checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand,
 } = require('./commands/stream/stream');
-const {runWhatsPCommand} = require('./commands/now-playing');
 const {shutdown} = require('./utils/shutdown');
-const {runDatabasePlayCommand, playPlaylistDB} = require('./commands/databasePlayCommand');
-const {runAddCommandWrapper_P, addNewPlaylist} = require('./commands/add');
-const {runRestartCommand} = require('./commands/restart');
 const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
 const {addLinkToQueue} = require('./utils/playlist');
-const {runRandomToQueue, shuffleQueue} = require('./commands/runRandomToQueue');
-const {checkToSeeActive} = require('./processes/checkToSeeActive');
+const {checkToSeeActive} = require('./process/checkToSeeActive');
 const {runQueueCommand, createVisualText} = require('./commands/generateQueue');
-const {runUniversalSearchCommand} = require('./commands/database/search');
-const {
-  sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2,
-} = require('./commands/database/retrieval');
+const {sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2} = require('./database/retrieval');
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
-const {playFromWord} = require('./commands/playFromWord');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
-const {changePrefix} = require('./commands/changePrefix');
-const {runPlayCommand} = require('./commands/play');
-const {runPauseCommand} = require('./commands/pause');
-const {runDeleteKeyCommand_P} = require('./commands/database/delete');
-const {runStopPlayingCommand} = require('./commands/stop');
-const {runInsertCommand} = require('./commands/insert');
+const {runDeleteKeyCommand_P} = require('./database/delete');
 const {parent_thread} = require('./threads/parent_thread');
-const {joinVoiceChannelSafe} = require('./commands/join');
-const {renamePlaylist, renameKey} = require('./commands/rename');
-const {runKeysCommand} = require('./commands/keys');
 const {getVoiceConnection} = require('@discordjs/voice');
-const {getJoke} = require('./commands/joke');
-const {runPurgeCommand} = require('./commands/purge');
-const {disconnectConnection} = require('./commands/stream/utils');
 
 process.setMaxListeners(0);
 
@@ -108,9 +86,9 @@ async function runPlayNowCommand(message, args, mgid, server, sheetName, seekSec
       args[1] = args[1].substr(1, args[1].length - 2);
     }
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
-      return playFromWord(message, args, sheetName, server, mgid, true);
+      return commandHandlerCommon.playFromWord(message, args, sheetName, server, mgid, true);
     }
-  } else return playFromWord(message, args, sheetName, server, mgid, true);
+  } else return commandHandlerCommon.playFromWord(message, args, sheetName, server, mgid, true);
   // places the currently playing into the queue history if played long enough
   if (adjustQueue) adjustQueueForPlayNow(server.audio.resource, server);
   // counter to iterate over all args - excluding args[0]
@@ -126,67 +104,6 @@ async function runPlayNowCommand(message, args, mgid, server, sheetName, seekSec
   playLinkToVC(message, server.queue[0], voiceChannel, server, 0, seekSec);
 }
 
-/**
- * Runs the commands and checks to play a link
- * @param message The message that triggered the bot
- * @param args An array of given play parameters, should be links or keywords
- * @param mgid The message guild id
- * @param server The server playback metadata
- * @param sheetName The name of the sheet to reference
- */
-async function runPlayLinkCommand(message, args, mgid, server, sheetName) {
-  if (!message.member.voice?.channel) {
-    const sentMsg = await message.channel.send('must be in a voice channel to play');
-    if (!botInVC(message) && args[1]) {
-      setSeamless(server, runPlayLinkCommand, [message, args, mgid, server, sheetName], sentMsg);
-    }
-    return;
-  }
-  if (!args[1]) {
-    if (runPlayCommand(message, message.member, server, true)) return;
-    return message.channel.send('What should I play? Put a link or some words after the command.');
-  }
-  if (server.dictator && message.member.id !== server.dictator.id) {
-    return message.channel.send('only the dictator can perform this action');
-  }
-  // in case of force disconnect
-  if (!botInVC(message)) {
-    resetSession(server);
-  } else if (server.queue.length >= MAX_QUEUE_S) {
-    return message.channel.send('*max queue size has been reached*');
-  }
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
-    return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  }
-  if (args[1].includes('.')) {
-    args[1] = removeFormattingLink(args[1]);
-    if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
-      return playFromWord(message, args, sheetName, server, mgid, false);
-    }
-  } else return playFromWord(message, args, sheetName, server, mgid, false);
-  // valid link
-  let queueWasEmpty = false;
-  if (server.queue.length < 1) {
-    queueWasEmpty = true;
-  }
-  // the number of added links
-  let pNums = 0;
-  // counter to iterate over remaining link args
-  let linkItem = 1;
-  while (args[linkItem]) {
-    let url = args[linkItem];
-    if (url[url.length - 1] === ',') url = url.replace(/,/, '');
-    pNums += await addLinkToQueue(args[linkItem], message, server, mgid, false, pushQueue);
-    linkItem++;
-  }
-  // if queue was empty then play
-  if (queueWasEmpty) {
-    playLinkToVC(message, server.queue[0], message.member.voice?.channel, server, 0);
-  } else {
-    message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
-    await updateActiveEmbed(server);
-  }
-}
 
 /**
  * The execution for all bot commands
@@ -198,7 +115,7 @@ async function runCommandCases(message) {
   // the server guild playback data
   if (!processStats.servers.get(mgid)) processStats.initializeServer(mgid);
   const server = processStats.servers.get(mgid);
-  if (processStats.devMode) server.prefix = '='; // devmode prefix
+  if (processStats.devMode && !server.prefix) server.prefix = '='; // devmode prefix
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed++;
   }
@@ -222,8 +139,7 @@ async function runCommandCases(message) {
   // the command name
   const statement = args[0].substr(1).toLowerCase();
   if (statement.substring(0, 1) === 'g' && statement !== 'guess') {
-    if (message.member.id.toString() !== '443150640823271436' &&
-     message.member.id.toString() !== '268554823283113985') {
+    if (!isAdmin(message.member.id)) {
       return;
     }
   } else {
@@ -233,7 +149,7 @@ async function runCommandCases(message) {
   switch (statement) {
   case 'db-bot':
   case 'db-vibe':
-    runHelpCommand(message, server, version);
+    commandHandlerCommon.help(message, server, version);
     break;
   case 'omedetou':
   case 'congratulations':
@@ -291,22 +207,21 @@ async function runCommandCases(message) {
     break;
     // tell the user a joke
   case 'joke':
-    const joke = await getJoke();
-    message.channel.send(joke);
+    commandHandlerCommon.joke(message.channel).then();
     break;
     // the normal play command
   case 'play':
   case 'p':
-    runPlayLinkCommand(message, args, mgid, server, undefined).then();
+    commandHandlerCommon.playLink(message, args, mgid, server, undefined).then();
     break;
   case 'mplay':
   case 'mp':
-    runPlayLinkCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
+    commandHandlerCommon.playLink(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
     // test purposes - play command
   case 'gplay':
   case 'gp':
-    runPlayLinkCommand(message, args, mgid, server, 'entries').then();
+    commandHandlerCommon.playLink(message, args, mgid, server, 'entries').then();
     break;
     // test purposes - play now command
   case 'gpnow':
@@ -361,7 +276,7 @@ async function runCommandCases(message) {
     message.channel.send(SEEK_ERR_MSG);
     break;
   case 'join':
-    joinVoiceChannelSafe(message, server);
+    commandHandlerCommon.joinVoiceChannelSafe(message, server).then();
     break;
     // stop session commands
   case 'disconnect':
@@ -369,7 +284,7 @@ async function runCommandCases(message) {
   case 'leave':
   case 'end':
   case 'e':
-    runStopPlayingCommand(mgid, message.member.voice?.channel, false, server, message, message.member);
+    commandHandlerCommon.stopPlaying(mgid, message.member.voice?.channel, false, server, message, message.member);
     break;
   case 'autoplay':
   case 'sp':
@@ -419,21 +334,21 @@ async function runCommandCases(message) {
     break;
   case 'lyric':
   case 'lyrics':
-    parent_thread('lyrics', message.id, message.channel.id, [args, server.queue[0], message.member.id]);
+    commandHandlerCommon.lyrics(message, args, server);
     break;
     // test purposes - run database links
   case 'gd':
-    runDatabasePlayCommand(args, message, 'entries', false, true, server).then();
+    commandHandlerCommon.playDBKeys(args, message, 'entries', false, true, server).then();
     break;
     // test purposes - run database command
   case 'gdnow':
   case 'gdn':
-    runDatabasePlayCommand(args, message, 'entries', true, true, server).then();
+    commandHandlerCommon.playDBKeys(args, message, 'entries', true, true, server).then();
     break;
     // test purposes - run database command
   case 'gkn':
   case 'gknow':
-    runDatabasePlayCommand(args, message, 'entries', true, true, server).then();
+    commandHandlerCommon.playDBKeys(args, message, 'entries', true, true, server).then();
     break;
   case 'know':
   case 'kn':
@@ -443,16 +358,19 @@ async function runCommandCases(message) {
     break;
   case 'pd':
   case 'dd':
-    playPlaylistDB(args.splice(1), message, getSheetName(message.member.id), false, true, server).then();
+    commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id),
+      false, true, server).then();
     break;
   case 'ps':
   case 'pshuffle':
-    playPlaylistDB(args.splice(1), message, getSheetName(message.member.id), false, true, server, true).then();
+    commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id), false,
+      true, server, true).then();
     break;
     // .md is retrieves and plays from the keys list
   case 'md':
   case 'd':
-    runDatabasePlayCommand(args, message, getSheetName(message.member.id), false, true, server).then();
+    commandHandlerCommon.playDBKeys(args, message, getSheetName(message.member.id), false,
+      true, server).then();
     break;
     // .mdnow retrieves and plays from the keys list immediately
   case 'mkn':
@@ -465,13 +383,13 @@ async function runCommandCases(message) {
     if (!args[1]) {
       shuffleQueue(server, message);
     } else {
-      runRandomToQueue(args[1], message, mgid, server).then();
+      commandHandlerCommon.addRandomKeysToQueue(args[1], message, mgid, server).then();
     }
     break;
   case 'rn':
   case 'randnow':
   case 'randomnow':
-    runRandomToQueue(args[1] || 1, message, mgid, server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, mgid, server, true).then();
     break;
   case 'sync':
     // assume that there is something playing
@@ -486,7 +404,7 @@ async function runCommandCases(message) {
           else if (seconds > MAX_SYNC_SECONDS) seconds = MAX_SYNC_SECONDS;
         }
         const playArgs = [message, message.member, server, true, false, true];
-        runPauseCommand(...playArgs);
+        commandHandlerCommon.pauseStream(...playArgs);
         const streamTime = server.audio.resource.playbackDuration;
         if (!streamTime) return message.channel.send('*could not find a valid stream time*');
         // the seconds shown to the user
@@ -507,7 +425,7 @@ async function runCommandCases(message) {
             const newMsgStr = `timestamp is **${vals.join(' ')}**` + '\n***---now---***';
             if (isClose) await syncMsg.edit(newMsgStr);
             else syncMsg.edit(newMsgStr);
-            runPlayCommand(...playArgs);
+            commandHandlerCommon.resumeStream(...playArgs);
             setTimeout(() => {
               if (syncMsg.deletable) syncMsg.delete();
             }, 5000);
@@ -518,15 +436,15 @@ async function runCommandCases(message) {
     break;
   case 'shufflen':
   case 'shufflenow':
-    runRandomToQueue(args[1], message, mgid, server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1], message, mgid, server, true).then();
     break;
     // test purposes - random command
   case 'grand':
   case 'gr':
-    runRandomToQueue(args[1] || 1, message, 'entries', server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, 'entries', server).then();
     break;
   case 'gshuffle':
-    runRandomToQueue(args[1], message, 'entries', server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1], message, 'entries', server).then();
     break;
     // .mr is the personal random that works with the normal queue
     // .r is a random that works with the normal queue
@@ -536,18 +454,20 @@ async function runCommandCases(message) {
   case 's':
   case 'r':
   case 'mr':
-    runRandomToQueue(args[1] || 1, message, getSheetName(message.member.id), server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id), server).then();
     break;
   case 'mshuffle':
-    runRandomToQueue(args[1], message, getSheetName(message.member.id), server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id), server).then();
     break;
   case 'mrn':
   case 'mrandnow':
-    runRandomToQueue(args[1] || 1, message, getSheetName(message.member.id), server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id),
+      server, true).then();
     break;
   case 'mshufflen':
   case 'mshufflenow':
-    runRandomToQueue(args[1], message, getSheetName(message.member.id), server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id),
+      server, true).then();
     break;
   case 'rename-key':
   case 'rename-keys':
@@ -557,7 +477,8 @@ async function runCommandCases(message) {
       message.channel.send(`*expected a key-name and new key-name (i.e. ${args[0]} [A] [B])*`);
       return;
     }
-    renameKey(message.channel, server, getSheetName(message.member.id), args[1], args[2]);
+    commandHandlerCommon.renameKey(message.channel, server, getSheetName(message.member.id), args[1],
+      args[2]).then();
     break;
   case 'rename-playlist':
   case 'rename-playlists':
@@ -567,7 +488,8 @@ async function runCommandCases(message) {
       message.channel.send(`*expected a playlist-name and new playlist-name (i.e. ${args[0]} [A] [B])*`);
       return;
     }
-    renamePlaylist(message.channel, server, getSheetName(message.member.id), args[1], args[2]);
+    commandHandlerCommon.renamePlaylist(message.channel, server, getSheetName(message.member.id), args[1],
+      args[2]).then();
     break;
     // .keys is personal keys
   case 'key':
@@ -575,13 +497,14 @@ async function runCommandCases(message) {
   case 'keys':
   case 'playlist':
   case 'playlists':
-    runKeysCommand(message, server, getSheetName(message.member.id), null, args[1], message.member.nickname).then();
+    commandHandlerCommon.keys(message, server, getSheetName(message.member.id), null, args[1],
+      message.member.nickname).then();
     break;
     // test purposes - return keys
   case 'gk':
   case 'gkey':
   case 'gkeys':
-    runKeysCommand(message, server, 'entries', null, args[1]).then();
+    commandHandlerCommon.keys(message, server, 'entries', null, args[1]).then();
     break;
   case 'splash':
     if (!args[1] || !args[1].includes('.')) {
@@ -601,13 +524,13 @@ async function runCommandCases(message) {
   case 'find':
   case 'lookup':
   case 'search':
-    runUniversalSearchCommand(message, server, getSheetName(message.member.id),
-      (args[1] ? args[1] : server.queue[0]?.url));
+    commandHandlerCommon.searchForKeyUniversal(message, server, getSheetName(message.member.id),
+      (args[1] ? args[1] : server.queue[0]?.url)).then();
     break;
   case 'gfind':
   case 'glookup':
   case 'gsearch':
-    runUniversalSearchCommand(message, server, 'entries', (args[1] ? args[1] : server.queue[0]?.url)).then();
+    commandHandlerCommon.searchForKeyUniversal(message, server, 'entries', (args[1] ? args[1] : server.queue[0]?.url)).then();
     break;
   case 'size':
     if (!args[1]) sendListSize(message, server, mgid).then();
@@ -632,15 +555,15 @@ async function runCommandCases(message) {
   case 'nowplaying':
   case 'playing':
   case 'now':
-    await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], mgid, '');
+    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], mgid, '');
     break;
   case 'g?':
-    await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
+    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
     break;
   case 'm?':
   case 'mnow':
   case 'mwhat':
-    await runWhatsPCommand(server, message, message.member.voice?.channel, args[1],
+    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1],
       getSheetName(message.member.id), 'm');
     break;
   case 'gurl':
@@ -653,7 +576,7 @@ async function runCommandCases(message) {
         ' \`(i.e. ' + statement + ' [key])\`*');
       }
     }
-    await runWhatsPCommand(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
+    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
     break;
   case 'url':
   case 'link':
@@ -665,7 +588,7 @@ async function runCommandCases(message) {
         ' \`(i.e. ' + statement + ' [key])\`*');
       }
     }
-    await runWhatsPCommand(server, message, message.member.voice?.channel,
+    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel,
       args[1], getSheetName(message.member.id), 'm');
     break;
   case 'ping':
@@ -689,14 +612,14 @@ async function runCommandCases(message) {
     break;
   case 'rm':
   case 'remove':
-    await runRemoveCommand(message, server, args[1]);
+    await commandHandlerCommon.removeFromQueue(message, server, args[1]);
     break;
   case 'move':
-    runMoveItemCommand(message, server.queue, args[1], args[2]);
+    commandHandlerCommon.moveItemInQueue(message.channel, server, args[1], args[2]);
     break;
   case 'input':
   case 'insert':
-    runInsertCommand(message, mgid, args.slice(1), server, getSheetName(message.member.id)).then();
+    commandHandlerCommon.insert(message, mgid, args.slice(1), server, getSheetName(message.member.id)).then();
     break;
   case 'q':
   case 'que':
@@ -726,18 +649,25 @@ async function runCommandCases(message) {
     break;
   case 'purge':
     if (!args[1]) return message.channel.send('*input a term to purge from the queue*');
-    await runPurgeCommand(message, server, args.slice(1).join(' ').toLowerCase());
+    commandHandlerCommon.purgeWordFromQueue(message, server, args.slice(1).join(' ').toLowerCase()).then();
     break;
   case 'prefix':
     message.channel.send('use the command `changeprefix` to change the bot\'s prefix');
     break;
   case 'changeprefix':
-    changePrefix(message, server, prefixString, args[1]);
+    commandHandlerCommon.changePrefix(message, server, prefixString, args[1]);
     break;
     // list commands for public commands
   case 'h':
   case 'help':
-    runHelpCommand(message, server, version);
+    commandHandlerCommon.help(message, server, version);
+    break;
+  case 'test':
+    // this method is for testing purposes only (npm run dev-test)
+    if (!(isAdmin(message.member.id) && processStats.devMode)) return;
+    message.channel.send('*test received*');
+    // ------ START TEST -------
+    // ------ END TEST -------
     break;
     // !skip
   case 'next':
@@ -780,14 +710,14 @@ async function runCommandCases(message) {
   case 'forcepl':
   case 'forceplay':
     if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
-      runPlayCommand(message, message.member, server, false, true);
+      commandHandlerCommon.resumeStream(message, message.member, server, false, true);
     }
     break;
   case 'fpa':
   case 'forcepa':
   case 'forcepause':
     if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
-      runPauseCommand(message, message.member, server, false, true);
+      commandHandlerCommon.pauseStream(message, message.member, server, false, true);
     }
     break;
   case 'lock-queue':
@@ -805,13 +735,13 @@ async function runCommandCases(message) {
     // !pa
   case 'stop':
   case 'pause':
-    runPauseCommand(message, message.member, server);
+    commandHandlerCommon.pauseStream(message, message.member, server);
     break;
     // !pl
   case 'pl':
   case 'res':
   case 'resume':
-    runPlayCommand(message, message.member, server);
+    commandHandlerCommon.resumeStream(message, message.member, server);
     break;
   case 'gzconvert':
   case 'gz-convert':
@@ -859,10 +789,7 @@ async function runCommandCases(message) {
     }
     break;
   case 'devadd':
-    if (message.member.id.toString() !== '443150640823271436' &&
-     message.member.id.toString() !== '268554823283113985') {
-      return;
-    }
+    if (!isAdmin(message.member.id)) return;
     message.channel.send(
       'Here\'s the dev docs:\n' +
         '<https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622>',
@@ -871,11 +798,11 @@ async function runCommandCases(message) {
     // .ga adds to the test database
   case 'ga':
   case 'gadd':
-    runAddCommandWrapper_P(message.channel, args.slice(1), 'entries', true, server, message.member);
+    commandHandlerCommon.addKeyToDB(message.channel, args.slice(1), 'entries', true, server, message.member);
     break;
     // .add is personal add
   case 'add':
-    runAddCommandWrapper_P(message.channel, args.slice(1),
+    commandHandlerCommon.addKeyToDB(message.channel, args.slice(1),
       getSheetName(message.member.id), true, server, message.member);
     break;
   case 'playlist-add':
@@ -885,7 +812,7 @@ async function runCommandCases(message) {
       message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
       return;
     }
-    addNewPlaylist(server, message.channel, getSheetName(message.member.id), args[1]);
+    commandHandlerCommon.addCustomPlaylist(server, message.channel, getSheetName(message.member.id), args[1]);
     break;
   case 'gadd-playlist':
   case 'gplaylist-add':
@@ -893,20 +820,21 @@ async function runCommandCases(message) {
       message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
       return;
     }
-    addNewPlaylist(server, message.channel, 'entries', args[1]);
+    commandHandlerCommon.addCustomPlaylist(server, message.channel, 'entries', args[1]);
     break;
   case 'delete-playlist':
   case 'del-playlist':
   case 'playlist-del':
   case 'p-del':
-    removePlaylist(server, getSheetName(message.member.id), args[1],
-      (await getXdb2(server, getSheetName(message.member.id))), message.channel);
+    commandHandlerCommon.removeDBPlaylist(server, getSheetName(message.member.id), args[1],
+      (await getXdb2(server, getSheetName(message.member.id))), message.channel).then();
     break;
   case 'gdelete-playlist':
   case 'gdel-playlist':
   case 'gplaylist-del':
   case 'gp-del':
-    removePlaylist(server, 'entries', args[1], (await getXdb2(server, 'entries')), message.channel);
+    commandHandlerCommon.removeDBPlaylist(server, 'entries', args[1],
+      (await getXdb2(server, 'entries')), message.channel).then();
     break;
     // .del deletes database entries
   case 'del':
@@ -928,14 +856,14 @@ async function runCommandCases(message) {
   case 'move-key':
   case 'move-keys':
     if (!args[1] && statement === 'mk') return;
-    moveKeysWrapper(server, message.channel, getSheetName(message.member.id),
+    commandHandlerCommon.moveKeysBetweenPlaylists(server, message.channel, getSheetName(message.member.id),
       (await getXdb2(server, getSheetName(message.member.id))), args.splice(1));
     break;
   case 'gmk':
   case 'gmove-key':
   case 'gmove-keys':
     if (!args[1] && statement === 'mk') return;
-    moveKeysWrapper(server, message.channel, 'entries', (await getXdb2(server, 'entries')), args.splice(1));
+    commandHandlerCommon.moveKeysBetweenPlaylists(server, message.channel, 'entries', (await getXdb2(server, 'entries')), args.splice(1));
     break;
   case 'soundcloud':
     message.channel.send(`*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`);
@@ -959,11 +887,11 @@ async function runCommandCases(message) {
     break;
   case 'rp':
   case 'replay':
-    runRestartCommand(message, mgid, 'replay', server);
+    commandHandlerCommon.restartPlaying(message, mgid, 'replay', server);
     break;
   case 'rs':
   case 'restart':
-    runRestartCommand(message, mgid, 'restart', server);
+    commandHandlerCommon.restartPlaying(message, mgid, 'restart', server);
     break;
   case 'clearqueue':
   case 'clear':
@@ -1041,27 +969,40 @@ async function runCommandCases(message) {
       .setTitle('Dev Commands')
       .setDescription(
         '**active bot commands**' +
-          '\n' + prefixString + 'gzs - statistics for the active bot' +
-          '\n' + prefixString + 'gzmem - see the process\'s memory usage' +
-          '\n' + prefixString + 'gzc - view commands stats' +
-          '\n' + prefixString + 'gznuke [num] [\'db\'?] - deletes [num] recent messages (or db only)' +
-          '\n' + prefixString + 'gzr [userId] - queries a message from the bot to the user' +
+          `\n ${prefixString} gzs - statistics for the active bot` +
+          `\n ${prefixString} gzmem - see the process\'s memory usage` +
+          `\n ${prefixString} gzc - view commands stats` +
+          `\n ${prefixString} gznuke [num] [\'db\'?] - deletes [num] recent messages (or db only)` +
+          `\n ${prefixString} gzr [userId] - queries a message from the bot to the user` +
           '\n\n**calibrate the active bot**' +
-          '\n' + prefixString + 'gzq - quit/restarts the active bot' +
-          '\n' + prefixString + 'gzupdate - updates the (active) pi instance of the bot' +
-          '\n' + prefixString + 'gzm update - sends a message to active guilds that the bot will be updating' +
-          '\n' + prefixString + 'gzsms [message] - set a default message for all users on VC join' +
+          `\n ${prefixString} gzq - quit/restarts the active bot` +
+          `\n ${prefixString} gzupdate - updates the (active) pi instance of the bot` +
+          `\n ${prefixString} gzm update - sends a message to active guilds that the bot will be updating` +
+          `\n ${prefixString} gzsms [message] - set a default message for all users on VC join` +
           '\n\n**calibrate multiple/other bots**' +
           '\n=gzl - return all bot\'s ping and latency' +
           '\n=gzk - start/kill a process' +
           '\n=gzd [process #] - toggle dev mode' +
           '\n=gzupdate - updates all (inactive) pi instances of the bot' +
-          '\n\n**other commands**' +
-          '\n' + prefixString + 'gzid - guild, bot, and member id' +
-          '\ndevadd - access the database',
+          '\n\n**dev-testing commands**' +
+          `\n ${prefixString} gzcpf - change prefix for testing (if in devmode)` +
+          `\n ${prefixString} gzid - guild, bot, and member id` +
+          `\n ${prefixString} devadd - access the database`,
       )
       .setFooter({text: `version: ${version}`});
     message.channel.send({embeds: [devCEmbed]});
+    break;
+  case 'gzcpf':
+    if (processStats.devMode) {
+      if (args[1]) {
+        server.prefix = args[1];
+        message.channel.send('*prefix has been changed*');
+      } else {
+        message.channel.send('*must provide prefix argument*');
+      }
+    } else {
+      message.channel.send('*can only be performed in devmode*');
+    }
     break;
   case 'gznuke':
     parent_thread('gzn', message.id, message.channel.id,
@@ -1203,6 +1144,16 @@ async function runCommandCases(message) {
   }
 }
 
+/**
+ * Sets the process as inactive, enables the 'checkActiveInterval' to ensure that a process is active.
+ */
+function setProcessInactiveAndMonitor() {
+  processStats.setProcessInactive();
+  if (!processStats.checkActiveInterval) {
+    processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
+  }
+}
+
 bot.on('guildDelete', (guild) => {
   if (processStats.isInactive || processStats.devMode) return;
   gsrun('A', 'B', PREFIX_SN).then(async (xdb) => {
@@ -1236,13 +1187,24 @@ bot.once('ready', () => {
   if (processStats.devMode) {
     console.log('-devmode enabled-');
     processStats.setProcessActive();
+    if (startupTest) {
+      const index = process.argv.indexOf('--test');
+      if (index === process.argv.length-1) {
+        console.log('could not run test, please provide channel id');
+      } else {
+        bot.channels.fetch(process.argv[index+1]).then((channel) => {
+          if (channel.isText) {
+            channel.send('=test').then();
+          } else {
+            console.log('not a text channel');
+          }
+        });
+      }
+    }
   } else {
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
-    processStats.setProcessInactive();
+    setProcessInactiveAndMonitor();
     bot.user.setActivity('beats | .db-vibe', {type: 'PLAYING'});
-    if (!processStats.checkActiveInterval) {
-      processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
-    }
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
@@ -1285,7 +1247,7 @@ bot.on('messageCreate', async (message) => {
       // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
       // compare process IDs
       if (message.content.substr(24).trim() !== process.pid.toString()) {
-        processStats.setProcessInactive();
+        setProcessInactiveAndMonitor();
       } else {
         processStats.setProcessActive();
       }
@@ -1329,15 +1291,29 @@ function devUpdateCommand(message, args = []) {
     }
   }
   if (!args[0]) {
+    processStats.setProcessInactive();
     exec('git stash && git pull && npm i && pm2 restart vibe');
-    processStats.setProcessInactive();
-  } else if (args[0] === 'all') {
-    exec('git stash && git pull && npm i && pm2 restart 0 && pm2 restart 1');
-    processStats.setProcessInactive();
-  } else if (args[0] === 'custom' && args[1]) {
-    exec(args.slice(1).join(' '));
   } else {
-    response = 'incorrect argument provided';
+    switch (args[0]) {
+    case 'update':
+    case 'upgrade':
+      processStats.setProcessInactive();
+      exec('git stash && git pull && npm update && npm upgrade && pm2 restart vibe');
+      break;
+    case 'all':
+      processStats.setProcessInactive();
+      exec('git stash && git pull && npm i && pm2 restart 0 && pm2 restart 1');
+      break;
+    case 'custom':
+      if (args[1]) {
+        exec(args.slice(1).join(' '));
+      } else {
+        response = '*must provide script after \'custom\'*';
+      }
+      break;
+    default:
+      response = '*incorrect argument provided*';
+    }
   }
   message?.channel.send(response);
 }
@@ -1372,16 +1348,15 @@ async function devProcessCommands(message) {
         process.pid +' (' + version + ')' + dm;
       };
       message.channel.send(procMsg()).then((sentMsg) => {
-        const devR = reactions.O_DIAMOND;
         if (processStats.devMode) {
-          sentMsg.react(devR);
+          sentMsg.react(reactions.O_DIAMOND);
         } else {
           sentMsg.react(reactions.GEAR);
         }
 
         const filter = (reaction, user) => {
           return user.id !== botID && user.id === message.member.id &&
-              [reactions.GEAR, devR].includes(reaction.emoji.name);
+              [reactions.GEAR, reactions.O_DIAMOND].includes(reaction.emoji.name);
         };
           // updates the existing gzk message
         const updateMessage = () => {
@@ -1436,18 +1411,17 @@ async function devProcessCommands(message) {
             if (processStats.isInactive) {
               processStats.setProcessActive();
             } else {
-              processStats.setProcessInactive();
+              setProcessInactiveAndMonitor();
             }
 
             if (sentMsg.deletable) {
               updateMessage();
               reaction.users.remove(user.id);
             }
-          } else if (reaction.emoji.name === devR) {
-            processStats.devMode = false;
-            processStats.setProcessInactive();
-            if (!processStats.checkActiveInterval) {
-              processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
+          } else if (reaction.emoji.name === reactions.O_DIAMOND) {
+            if (processStats.devMode) {
+              processStats.devMode = false;
+              setProcessInactiveAndMonitor();
             }
             if (sentMsg.deletable) updateMessage();
           }
@@ -1461,7 +1435,7 @@ async function devProcessCommands(message) {
         });
       });
     } else if (zargs[1] === 'all') {
-      processStats.setProcessInactive();
+      setProcessInactiveAndMonitor();
     } else {
       let i = 1;
       while (zargs[i]) {
@@ -1470,7 +1444,7 @@ async function devProcessCommands(message) {
             processStats.setProcessActive();
             message.channel.send('*db vibe ' + process.pid + ' is now active*');
           } else {
-            processStats.setProcessInactive();
+            setProcessInactiveAndMonitor();
             message.channel.send('*db vibe ' + process.pid + ' has been sidelined*');
           }
           return;
@@ -1488,7 +1462,7 @@ async function devProcessCommands(message) {
     }
     if (processStats.devMode && zargs[1] === process.pid.toString()) {
       processStats.devMode = false;
-      processStats.setProcessInactive();
+      setProcessInactiveAndMonitor();
       processStats.servers.delete(message.guild.id);
       return message.channel.send(`*devmode is off ${process.pid}*`);
     } else if (zargs[1] === process.pid.toString()) {
@@ -1604,7 +1578,7 @@ async function updateVoiceState(oldState, newState, server) {
     clearDJTimer(server);
     // disconnect and delete the voice adapter
     const voiceConnection = getVoiceConnection(newState.guild.id);
-    if (voiceConnection) disconnectConnection(server, voiceConnection);
+    if (voiceConnection) processStats.disconnectConnection(server, voiceConnection);
     bot.voice.adapters.get(oldState.guild.id)?.destroy();
     processStats.removeActiveStream(oldState.guild.id);
     await sessionEndEmbed(server, server.queue[0] || server.queueHistory.slice(-1)[0]);
@@ -1645,7 +1619,7 @@ async function updateVoiceState(oldState, newState, server) {
         server.leaveVCTimeout = null;
         if (oldState.channel.members.filter((x) => !x.user.bot).size < 1) {
           const voiceConnection = getVoiceConnection(newState.guild.id);
-          if (voiceConnection) disconnectConnection(server, voiceConnection);
+          if (voiceConnection) processStats.disconnectConnection(server, voiceConnection);
         }
       }, leaveVCInt);
     }

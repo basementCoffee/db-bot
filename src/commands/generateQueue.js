@@ -1,7 +1,7 @@
-const {botID, MAX_QUEUE_S} = require('../utils/process/constants');
+const {botID, MAX_QUEUE_S} = require('../utils/lib/constants');
 const {botInVC, getTitle, createQueueItem, getSheetName} = require('../utils/utils');
 const {MessageEmbed} = require('discord.js');
-const {reactions} = require('../utils/reactions');
+const {reactions} = require('../utils/lib/reactions');
 const {updateActiveEmbed} = require('../utils/embed');
 const {runInsertCommand} = require('./insert');
 
@@ -44,7 +44,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
       tempMsg = await message.channel.send(msgTxt);
     }
     queueMsgEmbed.setTitle('Up Next')
-      .setAuthor('playing:  ' + authorName)
+      .setAuthor({name: `playing:  ${authorName}`})
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
     let sizeConstraint = 0;
     const qIterations = Math.min(serverQueue.length, startingIndex + 11);
@@ -59,7 +59,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
     }
     queueMsgEmbed.setDescription(queueSB);
     if (serverQueue.length > 11) {
-      queueMsgEmbed.setFooter('use \'insert\' & \'remove\' to edit the queue');
+      queueMsgEmbed.setFooter({text: 'use \'insert\' & \'remove\' to edit the queue'});
     }
     if (tempMsg?.deletable) tempMsg.delete();
     if (sentMsg?.deletable) {

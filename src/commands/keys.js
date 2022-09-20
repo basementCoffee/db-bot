@@ -1,12 +1,12 @@
 const {botInVC, isPersonalSheet, universalLinkFormatter, linkValidator} = require('../utils/utils');
-const {getXdb2, getSettings} = require('./database/retrieval');
-const {getAssumption} = require('./database/search');
-const {reactions} = require('../utils/reactions');
-const {botID} = require('../utils/process/constants');
+const {getXdb2, getSettings} = require('../database/retrieval');
+const {getAssumption} = require('./search');
+const {reactions} = require('../utils/lib/reactions');
+const {botID} = require('../utils/lib/constants');
 const {MessageEmbed} = require('discord.js');
-const {isCoreAdmin} = require('../utils/permissions');
+const {isAdmin} = require('../utils/permissions');
 const {renameKey, renamePlaylist} = require('./rename');
-const {serializeAndUpdate} = require('./database/utils');
+const {serializeAndUpdate} = require('../database/utils');
 const {removePlaylist} = require('./remove');
 
 // returns an array of tips
@@ -159,7 +159,8 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
             );
           message.channel.send({embeds: [embed]});
         } else {
-          if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isCoreAdmin(user.id))) {
+          // if it is not a personal sheet then it is a global sheet (which is in testing)
+          if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isAdmin(user.id))) {
             if (reaction.emoji.name === reactions.ARROW_R) {
               pageIndex += 1;
               sentMsg.edit({embeds: [await generateKeysEmbed()]});

@@ -1,5 +1,5 @@
 const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
-const {bot, botID} = require('../utils/process/constants');
+const {bot, botID} = require('../utils/lib/constants');
 const {runLyricsCommand} = require('../commands/lyrics');
 const {removeDBMessage, logError} = require('../utils/utils');
 const {parentPort} = require('worker_threads');
