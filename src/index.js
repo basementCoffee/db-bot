@@ -1566,7 +1566,7 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
  */
 async function updateVoiceState(oldState, newState, server) {
   if (!server) return;
-  // if bot
+  // if the bot is leaving
   if (oldState.member.id === botID) {
     // if the bot joined then ignore
     if (newState.channel?.members.get(botID)) return;
@@ -1612,7 +1612,8 @@ async function updateVoiceState(oldState, newState, server) {
     if (oldState.channel?.members.filter((x) => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
-      if (server.audio.resource && !server.audio.resource.ended) leaveVCInt = 420000;
+      if (server.audio.resource && !server.audio.resource.ended &&
+        processStats.activeStreamsMap.get(newState.guild.id)) leaveVCInt = 420000;
       // clear if timeout exists, set new timeout
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
