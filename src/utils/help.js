@@ -9,7 +9,6 @@ const {MessageEmbed} = require('discord.js');
 function getPages(ps, version) {
   return [
     // PAGE 1
-    '***[NEW]** - revamped playlists (May 2022)*\n\n' +
     '--------------  **Music Commands** --------------\n' +
     `\`${ps}play [word] \` Searches YouTube and plays *[p]* \n` +
     `\`${ps}play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n` +
