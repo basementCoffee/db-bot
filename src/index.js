@@ -1148,7 +1148,7 @@ bot.once('ready', () => {
   } else {
     checkStatusOfYtdl();
     processStats.setProcessInactive();
-    bot.user.setActivity('beats | .db-bot', {type: 'PLAYING'}).then();
+    bot.user.setActivity('end | READ ME', {type: 'PLAYING'}).then();
     if (!processStats.checkActiveInterval) processStats.checkActiveInterval = setInterval(checkToSeeActive, checkActiveMS);
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
