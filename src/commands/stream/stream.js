@@ -57,6 +57,10 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     message.channel.send(`*${message.guild.me.user.username} has been updated*`);
     return stopPlayingUtil(message.guild.id, vc, false, server);
   }
+  if (server.leaveVCTimeout) {
+    clearTimeout(server.leaveVCTimeout);
+    server.leaveVCTimeout = null;
+  }
   // the queue item's formal url (can be of any type)
   let whatToPlay = queueItem?.url;
   if (!whatToPlay) {
@@ -103,10 +107,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       server.startUpMessage = true;
       message.channel.send(processStats.startUpMessage);
     }
-  }
-  if (server.leaveVCTimeout) {
-    clearTimeout(server.leaveVCTimeout);
-    server.leaveVCTimeout = null;
   }
   if (!queueItem.type) queueItem.type = getLinkType(whatToPlay);
   if (queueItem.type === StreamType.SPOTIFY) {
@@ -267,16 +267,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
       } else {
-        server.queueHistory.push(server.queue.shift());
-        if (server.queue.length > 0) {
-          playLinkToVC(message, server.queue[0], vc, server, undefined, undefined);
-        } else if (server.autoplay) {
-          runAutoplayCommand(message, server, vc, queueItem);
-        } else {
-          endAudioDuringSession(server);
-          server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, connection),
-            LEAVE_VC_TIMEOUT);
-        }
+        skipLink(message, vc, false, server, false);
       }
       if (server?.followUpMessage) {
         server.followUpMessage.delete();
@@ -497,28 +488,36 @@ async function checkStatusOfYtdl(server, message) {
 async function skipLink(message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
   if (server.streamData.type === StreamType.TWITCH) endStream(server);
-  if (server.queue.length > 0 && botInVC(message)) {
-    let link;
-    if (noHistory) server.queue.shift();
-    else {
-      link = server.queue[0];
+  if (!botInVC(message)) return;
+  if (server.followUpMessage) {
+    server.followUpMessage.delete();
+    server.followUpMessage = undefined;
+  }
+  if (server.queue.length > 0) {
+    const skippedLink = server.queue.shift();
+    if (!noHistory) {
       server.queueHistory.push(server.queue.shift());
     }
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
       await playLinkToVC(message, server.queue[0], voiceChannel, server);
-    } else if (server.autoplay && link) {
-      runAutoplayCommand(message, server, voiceChannel, server.queueHistory[server.queueHistory.length - 1]).then();
+    } else if (server.autoplay) {
+      runAutoplayCommand(message, server, voiceChannel, skippedLink).then();
     } else {
       stopPlayingUtil(message.guild.id, voiceChannel, true, server, message, message.member);
+      if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
+      server.leaveVCTimeout = setTimeout(
+        () => processStats.disconnectConnection(server, getVoiceConnection(message.guildId)),
+        LEAVE_VC_TIMEOUT);
     }
   } else {
     stopPlayingUtil(message.guild.id, voiceChannel, true, server, message, message.member);
-  }
-  if (server.followUpMessage) {
-    server.followUpMessage.delete();
-    server.followUpMessage = undefined;
+    if (!server.leaveVCTimeout) {
+      server.leaveVCTimeout = setTimeout(
+        () => processStats.disconnectConnection(server, getVoiceConnection(message.guildId)),
+        LEAVE_VC_TIMEOUT);
+    }
   }
 }
 
