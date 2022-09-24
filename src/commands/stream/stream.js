@@ -496,7 +496,7 @@ async function skipLink(message, voiceChannel, playMessageToChannel, server, noH
   if (server.queue.length > 0) {
     const skippedLink = server.queue.shift();
     if (!noHistory) {
-      server.queueHistory.push(server.queue.shift());
+      server.queueHistory.push(skippedLink);
     }
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next link
