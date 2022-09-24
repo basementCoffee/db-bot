@@ -286,13 +286,14 @@ async function runCommandCases(message) {
   case 'e':
     commandHandlerCommon.stopPlaying(mgid, message.member.voice?.channel, false, server, message, message.member);
     break;
-  case 'autoplay':
-  case 'sp':
-  case 'smartp':
   case 'smartplay':
+  case 'autoplay':
+  case 'auto':
+  case 'sp':
+  case 'ap':
     if (!botInVC(message)) {
       // avoid sending a message for smaller command names
-      if (args[0].length > 2) message.channel.send('must be playing something to use smartplay');
+      if (args[0].length > 4) message.channel.send('must be playing something to use smartplay');
       return;
     }
     if (server.autoplay) {
