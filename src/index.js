@@ -1659,6 +1659,7 @@ process
 function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
   console.log('error message: ', e.message);
+  logError(`Uncaught Exception:\n${e.message}`);
 }
 
 // The main method
