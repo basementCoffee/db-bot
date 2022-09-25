@@ -36,6 +36,7 @@ const {dmHandler, sendMessageToUser} = require('./utils/dms');
 const {runDeleteKeyCommand_P} = require('./database/delete');
 const {parent_thread} = require('./threads/parent_thread');
 const {getVoiceConnection} = require('@discordjs/voice');
+const {shuffleQueue} = require('./commands/runRandomToQueue');
 
 process.setMaxListeners(0);
 
@@ -455,10 +456,12 @@ async function runCommandCases(message) {
   case 's':
   case 'r':
   case 'mr':
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id), server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id),
+      server).then();
     break;
   case 'mshuffle':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id), server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id),
+      server).then();
     break;
   case 'mrn':
   case 'mrandnow':
