@@ -11,7 +11,7 @@ function getPages(ps, version) {
   // '***[NEW]** - revamped playlists (May 2022)*\n\n' +
   return [
     // PAGE 1
-    '***[NEW]** - update underlying framework (September 2022)*\n\n' +
+    '***[NEW]** - update underlying framework (August 2022)*\n\n' +
     '--------------  **Music Commands** --------------\n' +
     `\`${ps}play [word] \` Searches YouTube and plays *[p]* \n` +
     `\`${ps}play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n` +
