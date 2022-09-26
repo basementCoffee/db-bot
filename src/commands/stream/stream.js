@@ -21,7 +21,7 @@ const processStats = require('../../utils/lib/ProcessStats');
 const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/lib/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
-const {MessageEmbed} = require('discord.js');
+const {MessageEmbed, EmbedBuilder} = require('discord.js');
 const {getAssumption} = require('../search');
 const {getXdb2} = require('../../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
@@ -740,7 +740,12 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
     queueItem.embed = embedData;
   }
   const timeMS = embedData.timeMS;
-  const embed = new MessageEmbed(embedData.embed);
+  const embed = new EmbedBuilder()
+    .setTitle(embedData.embed.data.title)
+    .setURL(embedData.embed.data.url)
+    .setColor(embedData.embed.data.color)
+    .addFields([...embedData.embed.data.fields])
+    .setThumbnail(embedData.embed.data.thumbnail.url)
   queueItem.infos = embedData.infos;
   let showButtons = true;
   if (botInVC(message)) {

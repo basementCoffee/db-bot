@@ -5,7 +5,7 @@ const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
 const {exec} = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
-const {MessageEmbed} = require('discord.js');
+const {EmbedBuilder} = require('discord.js');
 const buildNo = require('./utils/lib/BuildNumber');
 const processStats = require('./utils/lib/ProcessStats');
 const {gsrun, deleteRows} = require('./database/api/api');
@@ -671,6 +671,13 @@ async function runCommandCases(message) {
     if (!(isAdmin(message.member.id) && processStats.devMode)) return;
     message.channel.send('*test received*');
     // ------ START TEST -------
+    const testEmbed = new EmbedBuilder()
+      .setTitle('title')
+      .addFields([
+      { name: 'one', value: 'one', inline: true},
+      { name: 'two', value: 'two', inline: true},
+      ]);
+    message.channel.send({embeds: [testEmbed]});
     // ------ END TEST -------
     break;
     // !skip
@@ -946,7 +953,7 @@ async function runCommandCases(message) {
     break;
     // print out the version number
   case 'version':
-    const vEmbed = new MessageEmbed();
+    const vEmbed = new EmbedBuilder();
     vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
     message.channel.send({embeds: [vEmbed]});
     break;
@@ -960,7 +967,7 @@ async function runCommandCases(message) {
     if (!friend) return message.channel.send('*no friend provided*');
     const friendName = friend.username;
     const friendAvatar = friend.avatarURL();
-    const friendEmbed = new MessageEmbed();
+    const friendEmbed = new EmbedBuilder();
     friendEmbed.setTitle('Congrats!').setDescription(`${friendName} has been congratulated!`);
     friendEmbed.setThumbnail(friendAvatar);
     friendEmbed.setColor('#00ff00');
@@ -969,7 +976,7 @@ async function runCommandCases(message) {
     break;
     // dev commands for testing purposes
   case 'gzh':
-    const devCEmbed = new MessageEmbed()
+    const devCEmbed = new EmbedBuilder()
       .setTitle('Dev Commands')
       .setDescription(
         '**active bot commands**' +
@@ -1023,7 +1030,7 @@ async function runCommandCases(message) {
     }
     break;
   case 'gzc':
-    const commandsMapEmbed = new MessageEmbed();
+    const commandsMapEmbed = new EmbedBuilder();
     let commandsMapString = '';
     const commandsMapArray = [];
     let CMAInt = 0;
@@ -1064,7 +1071,7 @@ async function runCommandCases(message) {
     } else message.channel.send('*there is no startup message right now*');
     break;
   case 'gzs':
-    const embed = new MessageEmbed()
+    const embed = new EmbedBuilder()
       .setTitle('db vibe - statistics')
       .setDescription(`version: ${version} (${buildNo.getBuildNo()})` +
           `\nprocess: ${process.pid.toString()}` +
@@ -1197,7 +1204,7 @@ bot.once('ready', () => {
         console.log('could not run test, please provide channel id');
       } else {
         bot.channels.fetch(process.argv[index+1]).then((channel) => {
-          if (channel.isText) {
+          if (channel.lastMessageId) {
             channel.send('=test').then();
           } else {
             console.log('not a text channel');
