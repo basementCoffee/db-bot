@@ -22,7 +22,7 @@ const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/lib/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
 const {MessageEmbed} = require('discord.js');
-const {getAssumption} = require('../search');
+const {getAssumptionMultipleMethods} = require('../search');
 const {getXdb2} = require('../../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil} = require('./utils');
@@ -948,7 +948,7 @@ async function addRandomToQueue(message, numOfTimes, cdb, server, isPlaylist, ad
     if (cdb) {
       playlistUrl = cdb.get(numOfTimes.toUpperCase()) || (() => {
         // tries to get a close match
-        const assumption = getAssumption(numOfTimes, [...cdb.values()].map((item) => item.name));
+        const assumption = getAssumptionMultipleMethods(numOfTimes, [...cdb.values()].map((item) => item.name));
         if (assumption) {
           message.channel.send(`could not find '${numOfTimes}'. **Assuming '${assumption}'**`);
           return cdb.get(assumption.toUpperCase());
