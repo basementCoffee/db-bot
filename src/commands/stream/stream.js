@@ -920,7 +920,12 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
     }
   });
   collector.on('end', () => {
-    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then();
+    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then().catch(e => {
+      if (e.toString().toLowerCase().includes('permissions') && !server.errors.permissionReaction) {
+        server.errors.permissionReaction = true;
+        sentMsg.channel.send('\`permissions error: cannot remove reactions (field: Manage Messages)\`');
+      }
+    });
   });
 }
 

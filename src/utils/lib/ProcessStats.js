@@ -191,6 +191,11 @@ class ProcessStats {
       },
       // the last time a DJ tip was sent to a group
       djMessageDate: false,
+      // error manager - keep track of errors
+      errors: {
+        // if a reaction permissions error occurred
+        permissionReaction: false
+      }
     });
   }
 }
