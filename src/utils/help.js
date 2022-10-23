@@ -8,10 +8,9 @@ const {EmbedBuilderLocal} = require('./lib/EmbedBuilderLocal');
  */
 function getPages(ps, version) {
   // example of help list change-log highlight
-  // '***[NEW]** - revamped playlists (May 2022)*\n\n' +
+  // '***[NEW]** - example_feature_here (May 2022)*\n\n' +
   return [
     // PAGE 1
-    '***[NEW]** - update underlying framework (August 2022)*\n\n' +
     '--------------  **Music Commands** --------------\n' +
     `\`${ps}play [word] \` Searches YouTube and plays *[p]* \n` +
     `\`${ps}play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n` +
@@ -98,7 +97,7 @@ function getTitleArray() {
  * @param {string} prefixString the prefix in string format
  * @param numOfPages {number} optional - the number of embeds to generate
  * @param version {string} the current version of the db vibe
- * @returns {Array<import('discord.js').EmbedBuilderLocal>} an array of embeds representing the help list.
+ * @returns {Array<EmbedBuilderLocal>} an array of embeds representing the help list.
  */
 function getHelpList(prefixString, numOfPages, version) {
   const pages = getPages(prefixString, version);
