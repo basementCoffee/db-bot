@@ -386,7 +386,7 @@ async function getYTUrlFromSpotifyUrl(message, queueItem, vc, server, whatToPlay
           errorMsg: `link not playable: <${search.items[itemIndex].url}>`,
         };
       }
-      const spotifyDuration = parseInt(queueItem.infos.duration_ms);
+      const spotifyDuration = parseInt(queueItem.infos.duration || queueItem.infos.duration_ms);
       let itemIndex2 = itemIndex + 1;
       while (search.items[itemIndex2] && search.items[itemIndex2].type !== 'video' && itemIndex2 < 6) {
         itemIndex2++;

@@ -38,7 +38,7 @@ async function createEmbed(url, infos) {
         infos.coverArt?.sources[infos.coverArt.sources.length - 1]?.url ||
         infos.album?.images[infos.album.images.length - 1]?.url,
       );
-    timeMS = parseInt(infos.duration_ms);
+    timeMS = parseInt(infos.duration || infos.duration_ms);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (!infos) infos = await scdl.getInfo(url);
     const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
