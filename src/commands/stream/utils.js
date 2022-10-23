@@ -154,7 +154,7 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
           name: 'Queue',
           value: 'empty',
         });
-        server.currentEmbed.edit({embeds: [e.embed]});
+        e.embed.edit(server.currentEmbed).then();
       });
     }
     endAudioDuringSession(server);

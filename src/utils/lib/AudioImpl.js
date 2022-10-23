@@ -14,7 +14,7 @@ class AudioImpl {
   connection;
 
   constructor() {
-    this.reset();
+
   }
 
   // reset all property values

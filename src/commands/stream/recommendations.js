@@ -49,7 +49,7 @@ async function sendRecommendation(message, content, url, uManager, infos) {
     const desc = (content ? `:\n*${content.trim()}*` : '');
     await recUser.send({
       content: `**${message.member.user.username}** has a recommendation for you${desc}\n\<${url}\>`,
-      embeds: [(await createEmbed(url, infos)).embed],
+      embeds: [(await createEmbed(url, infos)).embed.build()],
     });
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
   } catch (e) {

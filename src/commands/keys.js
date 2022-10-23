@@ -3,11 +3,11 @@ const {getXdb2, getSettings} = require('../database/retrieval');
 const {getAssumption} = require('./search');
 const {reactions} = require('../utils/lib/reactions');
 const {botID} = require('../utils/lib/constants');
-const {MessageEmbed} = require('discord.js');
 const {isAdmin} = require('../utils/permissions');
 const {renameKey, renamePlaylist} = require('./rename');
 const {serializeAndUpdate} = require('../database/utils');
 const {removePlaylist} = require('./remove');
+const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
 
 // returns an array of tips
 const getTips = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-specific',
@@ -31,12 +31,14 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
   const embedPages = [];
   xdb.playlistArray.forEach((key) => playlistString += `${counter++}. ${key}\n`);
   const settings = await getSettings(server, sheetName);
-  const embedKeysMessage = new MessageEmbed();
-  embedKeysMessage.setTitle(`----- ${title} playlists -----`).setDescription(playlistString)
+  embedPages.push(
+    new EmbedBuilderLocal()
+    .setTitle(`----- ${title} playlists -----`)
+    .setDescription(playlistString)
     .setColor(keyEmbedColor)
     .setFooter({text: `${getTips(prefixString)[Math.floor(Math.random() * getTips().length)]}`, iconURL: iconUrl})
-    .setThumbnail(settings.splash);
-  embedPages.push(embedKeysMessage);
+    .setThumbnail(settings.splash).build()
+  );
   let keysString;
   // iterate over playlists
   xdb.playlists.forEach((val, key) => {
@@ -50,10 +52,13 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
     } else {
       keysString = ' *this playlist is empty* ';
     }
-    embedPages.push((new MessageEmbed()).setTitle(key)
+    embedPages.push(
+      (new EmbedBuilderLocal())
+      .setTitle(key)
       .setDescription(keysString)
       .setColor(keyEmbedColor)
-      .setFooter({text: `play command: ${prefixString}d [key]`}));
+      .setFooter({text: `play command: ${prefixString}d [key]`}).build()
+    );
   });
   return embedPages;
 }
@@ -105,7 +110,7 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
     /**
      * Generates the keys list embed.
      * @param requiresUpdate {boolean?} If to grab new data for the embed.
-     * @returns {Promise<MessageEmbed>}
+     * @returns {Promise<import('discord.js').EmbedBuilder>}
      */
     const generateKeysEmbed = async (requiresUpdate) => {
       // returns an array of embeds
@@ -142,7 +147,7 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
       const keysButtonCollector = sentMsg.createReactionCollector({filter, time: 1200000});
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
         if (reaction.emoji.name === reactions.QUESTION) {
-          const embed = new MessageEmbed()
+          const embed = new EmbedBuilderLocal()
             .setTitle('How to add/delete')
             .setDescription(
               '*Keys allow you to save a link as a playable word* \n' +
@@ -152,12 +157,13 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
               `Rename a key -> \` ${prefixString}rename-key [old-name] [new]\`\n\n` +
               `Create a playlist -> \` ${prefixString}add-playlist [playlist]\`\n` +
               `Delete a playlist -> \` ${prefixString}del-playlist [playlist]\`\n` +
-              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n`,
-            ).setFooter(
+              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n`
+            )
+            .setFooter(
               `play a key ->  ${prefixString}d [key]\n` +
               `play a playlist -> ${prefixString}pd [playlist]`,
-            );
-          message.channel.send({embeds: [embed]});
+            )
+            .send(message.channel);
         } else {
           // if it is not a personal sheet then it is a global sheet (which is in testing)
           if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isAdmin(user.id))) {

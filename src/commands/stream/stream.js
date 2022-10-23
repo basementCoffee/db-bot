@@ -21,7 +21,6 @@ const processStats = require('../../utils/lib/ProcessStats');
 const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/lib/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
-const {MessageEmbed, EmbedBuilder} = require('discord.js');
 const {getAssumption} = require('../search');
 const {getXdb2} = require('../../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
@@ -34,6 +33,7 @@ const {
 } = require('@discordjs/voice');
 const CH = require('../../../channel.json');
 const fluentFfmpeg = require('fluent-ffmpeg');
+const {EmbedBuilderLocal} = require('../../utils/lib/EmbedBuilderLocal');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -236,7 +236,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       // noinspection JSUnresolvedFunction
       logError(
         {
-          embeds: [(new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
+          embeds: [(new EmbedBuilderLocal()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
         timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)],
         },
       );
@@ -740,7 +740,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
     queueItem.embed = embedData;
   }
   const timeMS = embedData.timeMS;
-  const embed = new EmbedBuilder()
+  const embed = new EmbedBuilderLocal()
     .setTitle(embedData.embed.data.title)
     .setURL(embedData.embed.data.url)
     .setColor(embedData.embed.data.color)
@@ -773,7 +773,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
   if (server.queue.length < 1 || server.queue[0]?.url === url) {
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed?.deletable) {
       try {
-        const sentMsg = await server.currentEmbed.edit({embeds: [embed]});
+        const sentMsg = await embed.edit(server.currentEmbed);
         if (sentMsg.reactions.cache.size < 1 && showButtons && server.audio.player) {
           generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
         }
@@ -795,7 +795,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
  * Discord's Channel object. Used for sending the new embed.
  * @param server The server.
  * @param forceEmbed {Boolean} If to keep the old embed and send a new one.
- * @param embed The embed to send.
+ * @param embed {EmbedBuilderLocal} The embed to send.
  * @returns {Promise<any>} The new message that was sent.
  */
 async function sendEmbedUpdate(channel, server, forceEmbed, embed) {
@@ -808,7 +808,7 @@ async function sendEmbedUpdate(channel, server, forceEmbed, embed) {
     }
   }
   // noinspection JSUnresolvedFunction
-  const sentMsg = await channel.send({embeds: [embed]});
+  const sentMsg = await embed.send(channel);
   server.currentEmbed = sentMsg;
   return sentMsg;
 }

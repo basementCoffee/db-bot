@@ -5,7 +5,6 @@ const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
 const {exec} = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
-const {EmbedBuilder} = require('discord.js');
 const buildNo = require('./utils/lib/BuildNumber');
 const processStats = require('./utils/lib/ProcessStats');
 const {gsrun, deleteRows} = require('./database/api/api');
@@ -37,6 +36,7 @@ const {runDeleteKeyCommand_P} = require('./database/delete');
 const {parent_thread} = require('./threads/parent_thread');
 const {getVoiceConnection} = require('@discordjs/voice');
 const {shuffleQueue} = require('./commands/runRandomToQueue');
+const {EmbedBuilderLocal} = require('./utils/lib/EmbedBuilderLocal');
 
 process.setMaxListeners(0);
 
@@ -645,11 +645,10 @@ async function runCommandCases(message) {
     tempAuditArray.sort((a, b) => {
       return b.index - a.index;
     }); // sort by times played
-    message.channel.send({embeds: [
-      createVisualEmbed('Link Frequency',
-        ((await createVisualText(server, tempAuditArray,
-          (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links')),
-    ]});
+    createVisualEmbed('Link Frequency',
+      ((await createVisualText(server, tempAuditArray,
+        (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links'))
+      .send(message.channel).then();
     break;
   case 'purge':
     if (!args[1]) return message.channel.send('*input a term to purge from the queue*');
@@ -671,13 +670,6 @@ async function runCommandCases(message) {
     if (!(isAdmin(message.member.id) && processStats.devMode)) return;
     message.channel.send('*test received*');
     // ------ START TEST -------
-    const testEmbed = new EmbedBuilder()
-      .setTitle('title')
-      .addFields([
-      { name: 'one', value: 'one', inline: true},
-      { name: 'two', value: 'two', inline: true},
-      ]);
-    message.channel.send({embeds: [testEmbed]});
     // ------ END TEST -------
     break;
     // !skip
@@ -953,30 +945,31 @@ async function runCommandCases(message) {
     break;
     // print out the version number
   case 'version':
-    const vEmbed = new EmbedBuilder();
-    vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
-    message.channel.send({embeds: [vEmbed]});
+    new EmbedBuilderLocal()
+      .setTitle('Version')
+      .setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)')
+      .send(message.channel).then();
     break;
   case 'gzmem':
-    message.channel.send({embeds: [await createMemoryEmbed()]});
+    (await createMemoryEmbed()).send(message.channel).then();
     break;
-  case 'congratulate':
+    case 'congratulate':
     // congratulate a friend
     if (!args[1]) return message.channel.send('*no friend provided*');
     const friend = message.mentions.users.first();
     if (!friend) return message.channel.send('*no friend provided*');
     const friendName = friend.username;
     const friendAvatar = friend.avatarURL();
-    const friendEmbed = new EmbedBuilder();
-    friendEmbed.setTitle('Congrats!').setDescription(`${friendName} has been congratulated!`);
-    friendEmbed.setThumbnail(friendAvatar);
-    friendEmbed.setColor('#00ff00');
-    friendEmbed.setFooter(`By ${message.author.username}`, message.author.avatarURL());
-    message.channel.send({embeds: [friendEmbed]});
+    new EmbedBuilderLocal()
+      .setTitle('Congrats!').setDescription(`${friendName} has been congratulated!`)
+      .setThumbnail(friendAvatar)
+      .setColor('#00ff00')
+      .setFooter(`By ${message.author.username}`, message.author.avatarURL())
+      .send(message.channel).then();
     break;
     // dev commands for testing purposes
-  case 'gzh':
-    const devCEmbed = new EmbedBuilder()
+    case 'gzh':
+    new EmbedBuilderLocal()
       .setTitle('Dev Commands')
       .setDescription(
         '**active bot commands**' +
@@ -1000,8 +993,8 @@ async function runCommandCases(message) {
           `\n ${prefixString} gzid - guild, bot, and member id` +
           `\n ${prefixString} devadd - access the database`,
       )
-      .setFooter({text: `version: ${version}`});
-    message.channel.send({embeds: [devCEmbed]});
+      .setFooter({text: `version: ${version}`})
+      .send(message.channel).then();
     break;
   case 'gzcpf':
     if (processStats.devMode) {
@@ -1030,7 +1023,6 @@ async function runCommandCases(message) {
     }
     break;
   case 'gzc':
-    const commandsMapEmbed = new EmbedBuilder();
     let commandsMapString = '';
     const commandsMapArray = [];
     let CMAInt = 0;
@@ -1041,8 +1033,8 @@ async function runCommandCases(message) {
     commandsMapArray.forEach((val) => {
       commandsMapString += val[1] + ' - ' + val[0] + '\n';
     });
-    commandsMapEmbed.setTitle('Commands Usage - Stats').setDescription(commandsMapString);
-    message.channel.send({embeds: [commandsMapEmbed]});
+    (new EmbedBuilderLocal()).setTitle('Commands Usage - Stats').setDescription(commandsMapString)
+      .send(message.channel).then();
     break;
   case 'gzq':
     if (bot.voice.adapters.size > 0 && args[1] !== 'force') {
@@ -1071,7 +1063,7 @@ async function runCommandCases(message) {
     } else message.channel.send('*there is no startup message right now*');
     break;
   case 'gzs':
-    const embed = new EmbedBuilder()
+    new EmbedBuilderLocal()
       .setTitle('db vibe - statistics')
       .setDescription(`version: ${version} (${buildNo.getBuildNo()})` +
           `\nprocess: ${process.pid.toString()}` +
@@ -1082,8 +1074,7 @@ async function runCommandCases(message) {
           `\nup since: ${bot.readyAt.toString().substring(0, 21)}` +
           `\nnumber of streams: ${processStats.getActiveStreamSize()}` +
           `\nactive voice channels: ${bot.voice.adapters.size}`,
-      );
-    message.channel.send({embeds: [embed]});
+      ).send(message.channel).then();
     break;
   case 'gzr':
     if (!args[1] || !parseInt(args[1])) return;
@@ -1670,7 +1661,7 @@ process
 function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
   console.log('error message: ', e.message);
-  logError(`Uncaught Exception:\n${e.message}`);
+  logError(`Uncaught Exception (djs14):\n${e.message}`);
 }
 
 // The main method

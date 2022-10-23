@@ -11,7 +11,7 @@ const {reactions} = require('../utils/lib/reactions');
 function runHelpCommand(message, server, version) {
   server.numSinceLastEmbed += 10;
   const helpPages = getHelpList(server.prefix, 2, version);
-  message.channel.send({embeds: [helpPages[0]]}).then((sentMsg) => {
+  helpPages[0].send().then((sentMsg) => {
     let currentHelp = 0;
 
     sentMsg.react(reactions.ARROW_R).then();
@@ -23,12 +23,12 @@ function runHelpCommand(message, server, version) {
     collector.on('collect', (reaction, user) => {
       if (user.bot) return;
       if (reaction.emoji.name === reactions.ARROW_R) {
-        sentMsg.edit({embeds: [helpPages[(++currentHelp % helpPages.length)]]});
+        helpPages[(++currentHelp % helpPages.length)].edit(sentMsg);
       }
     });
     collector.on('remove', (reaction) => {
       if (reaction.emoji.name === reactions.ARROW_R) {
-        sentMsg.edit({embeds: [helpPages[(++currentHelp % helpPages.length)]]});
+        helpPages[(++currentHelp % helpPages.length)].send(sentMsg);
       }
     });
     collector.on('end', () => {
