@@ -738,12 +738,15 @@ async function runCommandCases(message) {
     // !pa
   case 'stop':
   case 'pause':
+  case 'pa':
+    if (statement.length < 3 && !botInVC(message)) return;
     commandHandlerCommon.pauseStream(message, message.member, server);
     break;
     // !pl
   case 'pl':
   case 'res':
   case 'resume':
+    if (statement.length < 3 && !botInVC(message)) return;
     commandHandlerCommon.resumeStream(message, message.member, server);
     break;
   case 'gzconvert':
