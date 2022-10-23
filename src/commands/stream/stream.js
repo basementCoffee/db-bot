@@ -250,7 +250,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         try {
           // noinspection JSUnresolvedFunction
           logError(errString);
-          if (CORE_ADM.includes(message.member.id.toString())) {
+          if (CORE_ADM.includes(message.member.id)) {
             message.channel.send(errString);
           }
         } catch (e) {

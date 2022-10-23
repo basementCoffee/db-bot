@@ -107,7 +107,7 @@ async function runPlayNowCommand(message, args, mgid, server, sheetName, seekSec
 
 
 /**
- * The execution for all bot commands
+ * The execution for all bot commands within a server.
  * @param message the message that triggered the bot
  * @returns {Promise<void>}
  */
@@ -1531,14 +1531,14 @@ async function devProcessCommands(message) {
     }
     break;
   default:
-    if (processStats.devMode && !processStats.isInactive) return runCommandCases(message);
+    if (processStats.devMode && !processStats.isInactive && message.guild) return runCommandCases(message);
     break;
   }
 }
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
-  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id.toString()) || message.member.id === botID) {
+  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id) || message.author.id === botID) {
     return devProcessCommands(message);
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
