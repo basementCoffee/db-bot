@@ -84,7 +84,7 @@ class ProcessStats {
    */
   disconnectConnection(server, connection) {
     server.audio.reset();
-    connection.disconnect();
+    connection?.disconnect();
     this.removeActiveStream(server.guildId);
   }
 
