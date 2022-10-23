@@ -46,4 +46,4 @@ function initialize() {
 
 initialize();
 
-module.exports = {parentThread: parentThread};
+module.exports = {parentThread};
