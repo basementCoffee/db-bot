@@ -1,5 +1,6 @@
 const {verifyUrl, verifyPlaylist, botInVC} = require('../utils/utils');
 const {getXdb2} = require('../database/retrieval');
+const leven = require('leven');
 
 /**
  * Searches a Map for the given key. Provides the keys that contain the given key.
@@ -45,8 +46,48 @@ function getAssumption(word, namesArray) {
       return ss;
     }
   }
-
   return false;
+}
+
+/**
+ * Searches a Map for the given key. Uses an implementation of the Levenshtein distance algorithm
+ * @param keyName {string} the key to search for.
+ * @param keyArray {Array<>} An array containing all the valid names.
+ * @param levenThreashold {Number?} The maximum threshold to include.
+ * @returns {Array<string>} An array of the closest matches.
+ */
+function getAssumptionUsingLeven(keyName, keyArray, levenThreashold = 2) {
+  const closestMatches = [];
+  let lowestValue = levenThreashold;
+  let currentValue;
+  for (const key of keyArray) {
+    currentValue = leven(keyName, key);
+    if (currentValue < lowestValue) {
+      lowestValue = currentValue;
+      closestMatches.length = 0;
+      closestMatches.push(key);
+    } else if (currentValue === lowestValue) {
+      closestMatches.push(key);
+    }
+  }
+  return closestMatches;
+}
+
+/**
+ * Searches a Map for the given key. Uses an implementation of the Levenshtein distance algorithm
+ * @param word {string} the word to search for.
+ * @param wordsArray {Array<>} An array containing all the valid words.
+ * @param levenThreashold {Number?} "The maximum threshold to include.
+ * @returns {String | null} The single closest match or null if no closest match could be found.
+ */
+function getAssumptionMultipleMethods(word, wordsArray, levenThreashold) {
+  let assumption;
+  assumption = getAssumption(word, wordsArray);
+  if (!assumption) {
+    const assumptionArr = getAssumptionUsingLeven(word, wordsArray, levenThreashold);
+    if (assumptionArr.length === 1) assumption = assumptionArr[0];
+  }
+  return assumption;
 }
 
 /**
@@ -133,4 +174,4 @@ async function runUniversalSearchCommand(message, server, sheetName, providedStr
   if (botInVC(!message)) server.userKeys.clear();
 }
 
-module.exports = {runSearchCommand, getAssumption, runUniversalSearchCommand};
+module.exports = {runSearchCommand, runUniversalSearchCommand, getAssumptionMultipleMethods};

@@ -456,6 +456,7 @@ async function runCommandCases(message) {
   case 's':
   case 'r':
   case 'mr':
+    if (!args[1] && !botInVC(message) && statement.length < 3) return;
     commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id),
       server).then();
     break;
@@ -497,7 +498,6 @@ async function runCommandCases(message) {
     break;
     // .keys is personal keys
   case 'key':
-  case 'k':
   case 'keys':
   case 'playlist':
   case 'playlists':
@@ -1661,7 +1661,8 @@ process
 function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
   console.log('error message: ', e.message);
-  logError(`Uncaught Exception (djs14):\n${e.message}`);
+  if (e.message === 'Unknown Message') return;
+  logError(`Uncaught Exception:\n${e.stack}`);
 }
 
 // The main method

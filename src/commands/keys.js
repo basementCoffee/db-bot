@@ -1,6 +1,6 @@
 const {botInVC, isPersonalSheet, universalLinkFormatter, linkValidator} = require('../utils/utils');
 const {getXdb2, getSettings} = require('../database/retrieval');
-const {getAssumption} = require('./search');
+const {getAssumptionMultipleMethods} = require('./search');
 const {reactions} = require('../utils/lib/reactions');
 const {botID} = require('../utils/lib/constants');
 const {isAdmin} = require('../utils/permissions');
@@ -120,7 +120,7 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
         const pArrayUpper = xdb.playlistArray.map((i) => i.toUpperCase());
         let index = pArrayUpper.indexOf(specificPage.toUpperCase());
         if (index === -1) {
-          const ss = getAssumption(specificPage, Array.from(xdb.playlists, ([name]) => name));
+          const ss = getAssumptionMultipleMethods(specificPage, Array.from(xdb.playlists, ([name]) => name));
           // ss should be uppercase since Map has names in uppercase
           if (ss) index = pArrayUpper.indexOf(ss);
         }

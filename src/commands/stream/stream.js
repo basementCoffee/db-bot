@@ -21,7 +21,7 @@ const processStats = require('../../utils/lib/ProcessStats');
 const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/lib/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
-const {getAssumption} = require('../search');
+const {getAssumptionMultipleMethods} = require('../search');
 const {getXdb2} = require('../../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil} = require('./utils');
@@ -925,7 +925,12 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
     }
   });
   collector.on('end', () => {
-    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then();
+    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then().catch(e => {
+      if (e.toString().toLowerCase().includes('permissions') && !server.errors.permissionReaction) {
+        server.errors.permissionReaction = true;
+        sentMsg.channel.send('\`permissions error: cannot remove reactions (field: Manage Messages)\`');
+      }
+    });
   });
 }
 
@@ -953,7 +958,7 @@ async function addRandomToQueue(message, numOfTimes, cdb, server, isPlaylist, ad
     if (cdb) {
       playlistUrl = cdb.get(numOfTimes.toUpperCase()) || (() => {
         // tries to get a close match
-        const assumption = getAssumption(numOfTimes, [...cdb.values()].map((item) => item.name));
+        const assumption = getAssumptionMultipleMethods(numOfTimes, [...cdb.values()].map((item) => item.name));
         if (assumption) {
           message.channel.send(`could not find '${numOfTimes}'. **Assuming '${assumption}'**`);
           return cdb.get(assumption.toUpperCase());
