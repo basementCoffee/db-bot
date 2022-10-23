@@ -1,10 +1,10 @@
 const ytsr = require('ytsr');
 const {playLinkToVC} = require('./stream');
-const {MessageEmbed} = require('discord.js');
 const {adjustQueueForPlayNow, createQueueItem} = require('../../utils/utils');
 const {StreamType, botID} = require('../../utils/lib/constants');
 const {updateActiveEmbed} = require('../../utils/embed');
 const {reactions} = require('../../utils/lib/reactions');
+const {EmbedBuilderLocal} = require('../../utils/lib/EmbedBuilderLocal');
 
 /**
  * Function for searching for message contents on YouTube for playback.
@@ -134,12 +134,12 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
           i++;
           return finalString += i + '. ' + x + '\n';
         });
-        const playlistEmebed = new MessageEmbed()
+        const playlistEmebed = new EmbedBuilderLocal()
           .setTitle('Pick a different video')
           .setColor('#ffffff')
           // eslint-disable-next-line max-len
           .setDescription(`${finalString}\n***What would you like me to play? (1-${res.length})*** [or type 'q' to quit]`);
-        playlistMsg = await message.channel.send({embeds: [playlistEmebed]});
+        playlistMsg = await playlistEmebed.send(message.channel);
       }
       if (notActive) {
         notActive = false;

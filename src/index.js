@@ -5,7 +5,6 @@ const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
 const {exec} = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
-const {MessageEmbed} = require('discord.js');
 const buildNo = require('./utils/lib/BuildNumber');
 const processStats = require('./utils/lib/ProcessStats');
 const {gsrun, deleteRows} = require('./database/api/api');
@@ -34,8 +33,10 @@ const {sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2}
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
 const {runDeleteKeyCommand_P} = require('./database/delete');
-const {parent_thread} = require('./threads/parent_thread');
+const {parentThread} = require('./threads/parentThread');
 const {getVoiceConnection} = require('@discordjs/voice');
+const {shuffleQueue} = require('./commands/runRandomToQueue');
+const {EmbedBuilderLocal} = require('./utils/lib/EmbedBuilderLocal');
 
 process.setMaxListeners(0);
 
@@ -106,7 +107,7 @@ async function runPlayNowCommand(message, args, mgid, server, sheetName, seekSec
 
 
 /**
- * The execution for all bot commands
+ * The execution for all bot commands within a server.
  * @param message the message that triggered the bot
  * @returns {Promise<void>}
  */
@@ -286,13 +287,14 @@ async function runCommandCases(message) {
   case 'e':
     commandHandlerCommon.stopPlaying(mgid, message.member.voice?.channel, false, server, message, message.member);
     break;
-  case 'autoplay':
-  case 'sp':
-  case 'smartp':
   case 'smartplay':
+  case 'autoplay':
+  case 'auto':
+  case 'sp':
+  case 'ap':
     if (!botInVC(message)) {
       // avoid sending a message for smaller command names
-      if (args[0].length > 2) message.channel.send('must be playing something to use smartplay');
+      if (args[0].length > 4) message.channel.send('must be playing something to use smartplay');
       return;
     }
     if (server.autoplay) {
@@ -334,7 +336,7 @@ async function runCommandCases(message) {
     break;
   case 'lyric':
   case 'lyrics':
-    commandHandlerCommon.lyrics(message, args, server);
+    commandHandlerCommon.lyrics(message.channel.id, message.member.id, args, server.queue[0]);
     break;
     // test purposes - run database links
   case 'gd':
@@ -454,10 +456,13 @@ async function runCommandCases(message) {
   case 's':
   case 'r':
   case 'mr':
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id), server).then();
+    if (!args[1] && !botInVC(message) && statement.length < 3) return;
+    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id),
+      server).then();
     break;
   case 'mshuffle':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id), server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id),
+      server).then();
     break;
   case 'mrn':
   case 'mrandnow':
@@ -493,7 +498,6 @@ async function runCommandCases(message) {
     break;
     // .keys is personal keys
   case 'key':
-  case 'k':
   case 'keys':
   case 'playlist':
   case 'playlists':
@@ -641,11 +645,10 @@ async function runCommandCases(message) {
     tempAuditArray.sort((a, b) => {
       return b.index - a.index;
     }); // sort by times played
-    message.channel.send({embeds: [
-      createVisualEmbed('Link Frequency',
-        ((await createVisualText(server, tempAuditArray,
-          (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links')),
-    ]});
+    createVisualEmbed('Link Frequency',
+      ((await createVisualText(server, tempAuditArray,
+        (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links'))
+      .send(message.channel).then();
     break;
   case 'purge':
     if (!args[1]) return message.channel.send('*input a term to purge from the queue*');
@@ -735,12 +738,15 @@ async function runCommandCases(message) {
     // !pa
   case 'stop':
   case 'pause':
+  case 'pa':
+    if (statement.length < 3 && !botInVC(message)) return;
     commandHandlerCommon.pauseStream(message, message.member, server);
     break;
     // !pl
   case 'pl':
   case 'res':
   case 'resume':
+    if (statement.length < 3 && !botInVC(message)) return;
     commandHandlerCommon.resumeStream(message, message.member, server);
     break;
   case 'gzconvert':
@@ -942,30 +948,31 @@ async function runCommandCases(message) {
     break;
     // print out the version number
   case 'version':
-    const vEmbed = new MessageEmbed();
-    vEmbed.setTitle('Version').setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)');
-    message.channel.send({embeds: [vEmbed]});
+    new EmbedBuilderLocal()
+      .setTitle('Version')
+      .setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)')
+      .send(message.channel).then();
     break;
   case 'gzmem':
-    message.channel.send({embeds: [await createMemoryEmbed()]});
+    (await createMemoryEmbed()).send(message.channel).then();
     break;
-  case 'congratulate':
+    case 'congratulate':
     // congratulate a friend
     if (!args[1]) return message.channel.send('*no friend provided*');
     const friend = message.mentions.users.first();
     if (!friend) return message.channel.send('*no friend provided*');
     const friendName = friend.username;
     const friendAvatar = friend.avatarURL();
-    const friendEmbed = new MessageEmbed();
-    friendEmbed.setTitle('Congrats!').setDescription(`${friendName} has been congratulated!`);
-    friendEmbed.setThumbnail(friendAvatar);
-    friendEmbed.setColor('#00ff00');
-    friendEmbed.setFooter(`By ${message.author.username}`, message.author.avatarURL());
-    message.channel.send({embeds: [friendEmbed]});
+    new EmbedBuilderLocal()
+      .setTitle('Congrats!').setDescription(`${friendName} has been congratulated!`)
+      .setThumbnail(friendAvatar)
+      .setColor('#00ff00')
+      .setFooter(`By ${message.author.username}`, message.author.avatarURL())
+      .send(message.channel).then();
     break;
     // dev commands for testing purposes
-  case 'gzh':
-    const devCEmbed = new MessageEmbed()
+    case 'gzh':
+    new EmbedBuilderLocal()
       .setTitle('Dev Commands')
       .setDescription(
         '**active bot commands**' +
@@ -989,8 +996,8 @@ async function runCommandCases(message) {
           `\n ${prefixString} gzid - guild, bot, and member id` +
           `\n ${prefixString} devadd - access the database`,
       )
-      .setFooter({text: `version: ${version}`});
-    message.channel.send({embeds: [devCEmbed]});
+      .setFooter({text: `version: ${version}`})
+      .send(message.channel).then();
     break;
   case 'gzcpf':
     if (processStats.devMode) {
@@ -1005,8 +1012,7 @@ async function runCommandCases(message) {
     }
     break;
   case 'gznuke':
-    parent_thread('gzn', message.id, message.channel.id,
-      [message.channel.id, parseInt(args[1]) || 1, args[2] === 'db']);
+    parentThread('gzn', {}, [message.channel.id, parseInt(args[1]) || 1, args[2] === 'db']);
     break;
   case 'gzupdate':
     devUpdateCommand(message, args.splice(1));
@@ -1019,7 +1025,6 @@ async function runCommandCases(message) {
     }
     break;
   case 'gzc':
-    const commandsMapEmbed = new MessageEmbed();
     let commandsMapString = '';
     const commandsMapArray = [];
     let CMAInt = 0;
@@ -1030,8 +1035,8 @@ async function runCommandCases(message) {
     commandsMapArray.forEach((val) => {
       commandsMapString += val[1] + ' - ' + val[0] + '\n';
     });
-    commandsMapEmbed.setTitle('Commands Usage - Stats').setDescription(commandsMapString);
-    message.channel.send({embeds: [commandsMapEmbed]});
+    (new EmbedBuilderLocal()).setTitle('Commands Usage - Stats').setDescription(commandsMapString)
+      .send(message.channel).then();
     break;
   case 'gzq':
     if (bot.voice.adapters.size > 0 && args[1] !== 'force') {
@@ -1060,7 +1065,7 @@ async function runCommandCases(message) {
     } else message.channel.send('*there is no startup message right now*');
     break;
   case 'gzs':
-    const embed = new MessageEmbed()
+    new EmbedBuilderLocal()
       .setTitle('db vibe - statistics')
       .setDescription(`version: ${version} (${buildNo.getBuildNo()})` +
           `\nprocess: ${process.pid.toString()}` +
@@ -1071,8 +1076,7 @@ async function runCommandCases(message) {
           `\nup since: ${bot.readyAt.toString().substring(0, 21)}` +
           `\nnumber of streams: ${processStats.getActiveStreamSize()}` +
           `\nactive voice channels: ${bot.voice.adapters.size}`,
-      );
-    message.channel.send({embeds: [embed]});
+      ).send(message.channel).then();
     break;
   case 'gzr':
     if (!args[1] || !parseInt(args[1])) return;
@@ -1193,7 +1197,7 @@ bot.once('ready', () => {
         console.log('could not run test, please provide channel id');
       } else {
         bot.channels.fetch(process.argv[index+1]).then((channel) => {
-          if (channel.isText) {
+          if (channel.lastMessageId) {
             channel.send('=test').then();
           } else {
             console.log('not a text channel');
@@ -1529,14 +1533,14 @@ async function devProcessCommands(message) {
     }
     break;
   default:
-    if (processStats.devMode && !processStats.isInactive) return runCommandCases(message);
+    if (processStats.devMode && !processStats.isInactive && message.guild) return runCommandCases(message);
     break;
   }
 }
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
-  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id.toString()) || message.member.id === botID) {
+  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id) || message.author.id === botID) {
     return devProcessCommands(message);
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
@@ -1566,7 +1570,7 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
  */
 async function updateVoiceState(oldState, newState, server) {
   if (!server) return;
-  // if bot
+  // if the bot is leaving
   if (oldState.member.id === botID) {
     // if the bot joined then ignore
     if (newState.channel?.members.get(botID)) return;
@@ -1612,7 +1616,8 @@ async function updateVoiceState(oldState, newState, server) {
     if (oldState.channel?.members.filter((x) => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
-      if (server.audio.resource && !server.audio.resource.ended) leaveVCInt = 420000;
+      if (server.audio.resource && !server.audio.resource.ended &&
+        processStats.activeStreamsMap.get(newState.guild.id)) leaveVCInt = 420000;
       // clear if timeout exists, set new timeout
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
@@ -1658,6 +1663,8 @@ process
 function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
   console.log('error message: ', e.message);
+  if (e.message === 'Unknown Message') return;
+  logError(`Uncaught Exception:\n${e.stack}`);
 }
 
 // The main method

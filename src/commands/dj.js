@@ -1,5 +1,5 @@
-const {MessageEmbed} = require('discord.js');
 const {formatDuration, botInVC, notInVoiceChannelErrorMsg, getVCMembers} = require('../utils/utils');
+const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
 
 /**
  * Run the command to enable a music mode allowing only one user to control music commands in a server.
@@ -38,11 +38,11 @@ function runDictatorCommand(message, mgid, prefixString, server) {
     message.channel.send('***' + (message.member.nickname ?
       message.member.nickname : message.member.user.username) + ', you are the dictator.***');
   }
-  const dictatorEmbed = new MessageEmbed();
-  dictatorEmbed.setTitle('Dictator Commands')
+  new EmbedBuilderLocal()
+    .setTitle('Dictator Commands')
     .setDescription('\`resign\` - forfeit being dictator')
-    .setFooter('The dictator has control over all music commands for the session. Enjoy!');
-  message.channel.send({embeds: [dictatorEmbed]});
+    .setFooter('The dictator has control over all music commands for the session. Enjoy!')
+    .send(message.channel).then();
 }
 
 /**
@@ -139,15 +139,16 @@ function runDJCommand(message, server) {
     message.channel.send('***' + (currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
       'the DJ.*** *(' + getTimeLeft(server.djTimer.duration, server.djTimer.startTime).split(' ')[0] + ' remaining)*');
   }
-  const msgEmbed = new MessageEmbed();
-  msgEmbed.setTitle('DJ Commands').setDescription('\`forceskip\` - force skip a track [fs]\n' +
+  new EmbedBuilderLocal()
+    .setTitle('DJ Commands')
+    .setDescription('\`forceskip\` - force skip a track [fs]\n' +
     '\`forcerewind\`- force rewind a track [fr]\n' +
     '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
     '\`lock-queue\` - Prevent the queue from being added to [toggle]\n' +
     '\`resign\` - forfeit DJ permissions')
     .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
-      'The DJ can override voting by using the force commands above.');
-  message.channel.send({embeds: [msgEmbed]});
+      'The DJ can override voting by using the force commands above.')
+    .send(message.channel).then();
 }
 
 /**

@@ -1,5 +1,5 @@
 const {getXdb2} = require('../database/retrieval');
-const {getAssumption} = require('./search');
+const {getAssumptionMultipleMethods} = require('./search');
 const {playLinkToVC} = require('./stream/stream');
 const {
   botInVC, setSeamless, resetSession, verifyPlaylist, createQueueItem, adjustQueueForPlayNow,
@@ -33,7 +33,7 @@ async function playPlaylistDB(args, message, sheetName, playRightNow, printError
   for (const playlistName of args) {
     playlistMap = xdb.playlists.get(playlistName.toUpperCase());
     if (!playlistMap) {
-      const assumption = getAssumption(playlistName, xdb.playlistArray);
+      const assumption = getAssumptionMultipleMethods(playlistName, xdb.playlistArray);
       if (assumption) {
         playlistMap = xdb.playlists.get(assumption.toUpperCase());
         assumptionList.push(playlistName, assumption);
@@ -160,7 +160,7 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
   } else {
     tempUrl = xdb.globalKeys.get(args[1].toUpperCase())?.link;
     if (!tempUrl) {
-      const ss = getAssumption(args[1], [...xdb.globalKeys.values()].map((item) => item.name));
+      const ss = getAssumptionMultipleMethods(args[1], [...xdb.globalKeys.values()].map((item) => item.name));
       if (ss) {
         message.channel.send('could not find \'' + args[1] + '\'. **Assuming \'' + ss + '\'**');
         tempUrl = xdb.globalKeys.get(ss.toUpperCase())?.link;

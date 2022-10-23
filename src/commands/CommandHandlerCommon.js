@@ -6,7 +6,7 @@ const {runInsertCommand} = require('./insert');
 const {joinVoiceChannelSafe} = require('./join');
 const {getJoke} = require('./joke');
 const {runKeysCommand} = require('./keys');
-const {parent_thread} = require('../threads/parent_thread');
+const {parentThread} = require('../threads/parentThread');
 const {runMoveItemCommand, moveKeysWrapper} = require('./move');
 const {runWhatsPCommand} = require('./now-playing');
 const {pauseCommandUtil, playCommandUtil, stopPlayingUtil} = require('./stream/utils');
@@ -134,13 +134,14 @@ class CommandHandlerCommon {
 
   /**
    * Gets the lyrics of what is playing and returns it in the text channel.
-   * @param message The message object.
-   * @param args The args with the message content
-   * @param server The server object.
+   * @param channelId {string} The channel id.
+   * @param memberId {string} The member id.
+   * @param args The args with the message content.
+   * @param queueItem {any} The queueItem object of the link to get the lyrics of.
    * @returns {void}
    */
-  lyrics(message, args, server) {
-    parent_thread('lyrics', message.id, message.channel.id, [args, server.queue[0], message.member.id]);
+  lyrics(channelId, memberId, args, queueItem) {
+    parentThread('lyrics', {channelId}, [args, queueItem, memberId]);
   }
 
   /**

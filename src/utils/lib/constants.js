@@ -1,12 +1,12 @@
 // the max size of the queue
-const {Client, Intents} = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 // the db bot instance
 const bot = new Client({
-  intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_INVITES, Intents.FLAGS.GUILDS,
-    Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES,
-    Intents.FLAGS.GUILD_PRESENCES, Intents.FLAGS.GUILD_INTEGRATIONS, Intents.FLAGS.GUILD_MESSAGES,
-    Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.DIRECT_MESSAGE_REACTIONS],
-  partials: ['MESSAGE', 'CHANNEL', 'REACTION'],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildInvites,
+    GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildPresences, GatewayIntentBits.GuildIntegrations, GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.DirectMessageReactions, GatewayIntentBits.MessageContent],
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User],
 });
 // the id of the bot
 const botID = '987108278486065283';

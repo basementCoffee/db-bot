@@ -1,4 +1,4 @@
-const {MessageEmbed} = require('discord.js');
+const {EmbedBuilderLocal} = require('./lib/EmbedBuilderLocal');
 
 /**
  * Full description of the help list.
@@ -7,9 +7,11 @@ const {MessageEmbed} = require('discord.js');
  * @returns {Array<string>} an array of strings representing the help list.
  */
 function getPages(ps, version) {
+  // example of help list change-log highlight
+  // '***[NEW]** - revamped playlists (May 2022)*\n\n' +
   return [
     // PAGE 1
-    '***[NEW]** - revamped playlists (May 2022)*\n\n' +
+    '***[NEW]** - update underlying framework (August 2022)*\n\n' +
     '--------------  **Music Commands** --------------\n' +
     `\`${ps}play [word] \` Searches YouTube and plays *[p]* \n` +
     `\`${ps}play [link] \` Play YT/Spotify/SoundCloud/Twitch link *[p]* \n` +
@@ -96,7 +98,7 @@ function getTitleArray() {
  * @param {string} prefixString the prefix in string format
  * @param numOfPages {number} optional - the number of embeds to generate
  * @param version {string} the current version of the db vibe
- * @returns {Array<Discord.MessageEmbed>} an array of embeds representing the help list.
+ * @returns {Array<import('discord.js').EmbedBuilderLocal>} an array of embeds representing the help list.
  */
 function getHelpList(prefixString, numOfPages, version) {
   const pages = getPages(prefixString, version);
@@ -104,8 +106,7 @@ function getHelpList(prefixString, numOfPages, version) {
   const titleArray = getTitleArray();
   if (!numOfPages || numOfPages > pages.length) numOfPages = pages.length;
   for (let i = 0; i < numOfPages; i++) {
-    const helpListEmbed = new MessageEmbed();
-    helpListEmbed
+    const helpListEmbed = new EmbedBuilderLocal()
       .setTitle(titleArray[i] || titleArray.slice(-1)[0])
       .setDescription(pages[i])
       .setFooter({text: `(${i + 1}/${numOfPages})`});

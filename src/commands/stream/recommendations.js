@@ -32,24 +32,24 @@ async function sendRecommendationWrapper(message, args, uManager, server) {
 
 /**
  * Send a recommendation to a user. EXPERIMENTAL.
- * @param message The message metadata.
- * @param content Optional - text to add to the recommendation.
- * @param url The url to recommend.
+ * @param message {import('discord.js').Message} The message metadata.
+ * @param content {string?} Optional - Text/description to add to the recommendation.
+ * @param url {string} The url to recommend.
  * @param uManager bot.users
  * @param infos {Object?} Optional - The url infos data.
  * @returns {Promise<void>}
  */
-async function sendRecommendation(message, content, url, uManager, infos) {
-  if (!isCoreAdmin(message.member.id)) return;
+async function sendRecommendation(message, content = '', url, uManager, infos) {
+  if (!isCoreAdmin(message.author.id)) return;
   if (!url) return;
   else url = url.trim();
   try {
-    const recUser = await uManager.fetch((message.member.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]));
+    const recUser = await uManager.fetch((message.author.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]));
     // formatting for the content
-    const desc = (content ? `:\n*${content.trim()}*` : '');
+    const desc = (content.trim() ? `:\n*${content.trim()}*` : '');
     await recUser.send({
-      content: `**${message.member.user.username}** has a recommendation for you${desc}\n\<${url}\>`,
-      embeds: [(await createEmbed(url, infos)).embed],
+      content: `**${message.author.username}** has a recommendation for you${desc}\n\<${url}\>`,
+      embeds: [(await createEmbed(url, infos)).embed.build()],
     });
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
   } catch (e) {

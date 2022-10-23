@@ -1,9 +1,9 @@
 const {botID, MAX_QUEUE_S} = require('../utils/lib/constants');
 const {botInVC, getTitle, createQueueItem, getSheetName} = require('../utils/utils');
-const {MessageEmbed} = require('discord.js');
 const {reactions} = require('../utils/lib/reactions');
 const {updateActiveEmbed} = require('../utils/embed');
 const {runInsertCommand} = require('./insert');
+const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
 
 /**
  * Displays the queue in the channel.
@@ -31,7 +31,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
    */
   async function generateQueue(startingIndex, notFirstRun, sentMsg, sentMsgArray) {
     let queueSB = '';
-    const queueMsgEmbed = new MessageEmbed();
+    const queueMsgEmbed = new EmbedBuilderLocal();
     if (!authorName) {
       authorName = await getTitle(serverQueue[0], 50);
     }
@@ -63,9 +63,9 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
     }
     if (tempMsg?.deletable) tempMsg.delete();
     if (sentMsg?.deletable) {
-      await sentMsg.edit({embeds: [queueMsgEmbed]});
+      await queueMsgEmbed.edit(sentMsg)
     } else {
-      sentMsg = await message.channel.send({embeds: [queueMsgEmbed]});
+      sentMsg = await queueMsgEmbed.send(message.channel);
       sentMsgArray.push(sentMsg);
     }
     if (sentMsg.reactions.cache.size < 1) {

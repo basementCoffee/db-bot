@@ -21,8 +21,7 @@ const processStats = require('../../utils/lib/ProcessStats');
 const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/lib/reactions');
 const {getPlaylistItems} = require('../../utils/playlist');
-const {MessageEmbed} = require('discord.js');
-const {getAssumption} = require('../search');
+const {getAssumptionMultipleMethods} = require('../search');
 const {getXdb2} = require('../../database/retrieval');
 const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil} = require('./utils');
@@ -34,6 +33,7 @@ const {
 } = require('@discordjs/voice');
 const CH = require('../../../channel.json');
 const fluentFfmpeg = require('fluent-ffmpeg');
+const {EmbedBuilderLocal} = require('../../utils/lib/EmbedBuilderLocal');
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -56,6 +56,10 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   if (processStats.isInactive) {
     message.channel.send(`*${message.guild.me.user.username} has been updated*`);
     return stopPlayingUtil(message.guild.id, vc, false, server);
+  }
+  if (server.leaveVCTimeout) {
+    clearTimeout(server.leaveVCTimeout);
+    server.leaveVCTimeout = null;
   }
   // the queue item's formal url (can be of any type)
   let whatToPlay = queueItem?.url;
@@ -103,10 +107,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       server.startUpMessage = true;
       message.channel.send(processStats.startUpMessage);
     }
-  }
-  if (server.leaveVCTimeout) {
-    clearTimeout(server.leaveVCTimeout);
-    server.leaveVCTimeout = null;
   }
   if (!queueItem.type) queueItem.type = getLinkType(whatToPlay);
   if (queueItem.type === StreamType.SPOTIFY) {
@@ -236,7 +236,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       // noinspection JSUnresolvedFunction
       logError(
         {
-          embeds: [(new MessageEmbed()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
+          embeds: [(new EmbedBuilderLocal()).setTitle('Dispatcher Error').setDescription(`url: ${urlAlt}
         timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)],
         },
       );
@@ -250,7 +250,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         try {
           // noinspection JSUnresolvedFunction
           logError(errString);
-          if (CORE_ADM.includes(message.member.id.toString())) {
+          if (CORE_ADM.includes(message.member.id)) {
             message.channel.send(errString);
           }
         } catch (e) {
@@ -267,16 +267,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       } else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
       } else {
-        server.queueHistory.push(server.queue.shift());
-        if (server.queue.length > 0) {
-          playLinkToVC(message, server.queue[0], vc, server, undefined, undefined);
-        } else if (server.autoplay) {
-          runAutoplayCommand(message, server, vc, queueItem);
-        } else {
-          endAudioDuringSession(server);
-          server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, connection),
-            LEAVE_VC_TIMEOUT);
-        }
+        skipLink(message, vc, false, server, false);
       }
       if (server?.followUpMessage) {
         server.followUpMessage.delete();
@@ -497,28 +488,36 @@ async function checkStatusOfYtdl(server, message) {
 async function skipLink(message, voiceChannel, playMessageToChannel, server, noHistory) {
   // if server queue is not empty
   if (server.streamData.type === StreamType.TWITCH) endStream(server);
-  if (server.queue.length > 0 && botInVC(message)) {
-    let link;
-    if (noHistory) server.queue.shift();
-    else {
-      link = server.queue[0];
-      server.queueHistory.push(server.queue.shift());
+  if (!botInVC(message)) return;
+  if (server.followUpMessage) {
+    server.followUpMessage.delete();
+    server.followUpMessage = undefined;
+  }
+  if (server.queue.length > 0) {
+    const skippedLink = server.queue.shift();
+    if (!noHistory) {
+      server.queueHistory.push(skippedLink);
     }
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
       await playLinkToVC(message, server.queue[0], voiceChannel, server);
-    } else if (server.autoplay && link) {
-      runAutoplayCommand(message, server, voiceChannel, server.queueHistory[server.queueHistory.length - 1]).then();
+    } else if (server.autoplay) {
+      runAutoplayCommand(message, server, voiceChannel, skippedLink).then();
     } else {
       stopPlayingUtil(message.guild.id, voiceChannel, true, server, message, message.member);
+      if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
+      server.leaveVCTimeout = setTimeout(
+        () => processStats.disconnectConnection(server, getVoiceConnection(message.guildId)),
+        LEAVE_VC_TIMEOUT);
     }
   } else {
     stopPlayingUtil(message.guild.id, voiceChannel, true, server, message, message.member);
-  }
-  if (server.followUpMessage) {
-    server.followUpMessage.delete();
-    server.followUpMessage = undefined;
+    if (!server.leaveVCTimeout) {
+      server.leaveVCTimeout = setTimeout(
+        () => processStats.disconnectConnection(server, getVoiceConnection(message.guildId)),
+        LEAVE_VC_TIMEOUT);
+    }
   }
 }
 
@@ -741,7 +740,12 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
     queueItem.embed = embedData;
   }
   const timeMS = embedData.timeMS;
-  const embed = new MessageEmbed(embedData.embed);
+  const embed = new EmbedBuilderLocal()
+    .setTitle(embedData.embed.data.title)
+    .setURL(embedData.embed.data.url)
+    .setColor(embedData.embed.data.color)
+    .addFields([...embedData.embed.data.fields])
+    .setThumbnail(embedData.embed.data.thumbnail.url)
   queueItem.infos = embedData.infos;
   let showButtons = true;
   if (botInVC(message)) {
@@ -769,7 +773,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
   if (server.queue.length < 1 || server.queue[0]?.url === url) {
     if (server.numSinceLastEmbed < 5 && !forceEmbed && server.currentEmbed?.deletable) {
       try {
-        const sentMsg = await server.currentEmbed.edit({embeds: [embed]});
+        const sentMsg = await embed.edit(server.currentEmbed);
         if (sentMsg.reactions.cache.size < 1 && showButtons && server.audio.player) {
           generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild.id);
         }
@@ -791,7 +795,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
  * Discord's Channel object. Used for sending the new embed.
  * @param server The server.
  * @param forceEmbed {Boolean} If to keep the old embed and send a new one.
- * @param embed The embed to send.
+ * @param embed {EmbedBuilderLocal} The embed to send.
  * @returns {Promise<any>} The new message that was sent.
  */
 async function sendEmbedUpdate(channel, server, forceEmbed, embed) {
@@ -804,7 +808,7 @@ async function sendEmbedUpdate(channel, server, forceEmbed, embed) {
     }
   }
   // noinspection JSUnresolvedFunction
-  const sentMsg = await channel.send({embeds: [embed]});
+  const sentMsg = await embed.send(channel);
   server.currentEmbed = sentMsg;
   return sentMsg;
 }
@@ -921,7 +925,12 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
     }
   });
   collector.on('end', () => {
-    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then();
+    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then().catch(e => {
+      if (e.toString().toLowerCase().includes('permissions') && !server.errors.permissionReaction) {
+        server.errors.permissionReaction = true;
+        sentMsg.channel.send('\`permissions error: cannot remove reactions (field: Manage Messages)\`');
+      }
+    });
   });
 }
 
@@ -949,7 +958,7 @@ async function addRandomToQueue(message, numOfTimes, cdb, server, isPlaylist, ad
     if (cdb) {
       playlistUrl = cdb.get(numOfTimes.toUpperCase()) || (() => {
         // tries to get a close match
-        const assumption = getAssumption(numOfTimes, [...cdb.values()].map((item) => item.name));
+        const assumption = getAssumptionMultipleMethods(numOfTimes, [...cdb.values()].map((item) => item.name));
         if (assumption) {
           message.channel.send(`could not find '${numOfTimes}'. **Assuming '${assumption}'**`);
           return cdb.get(assumption.toUpperCase());

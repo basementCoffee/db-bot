@@ -1,7 +1,6 @@
 /* eslint-disable camelcase */
 const fetch = require('isomorphic-unfetch');
 const {getData} = require('spotify-url-info')(fetch);
-const {MessageEmbed} = require('discord.js');
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
@@ -14,6 +13,7 @@ const os = require('os');
 const CH = require('../../channel.json');
 const processStats = require('./lib/ProcessStats');
 const {getVoiceConnection} = require('@discordjs/voice');
+const {EmbedBuilderLocal} = require('./lib/EmbedBuilderLocal');
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -230,11 +230,12 @@ const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 10
 
 /**
  * Creates an embed regarding memory usage.
+ * @return {Promise<EmbedBuilderLocal>}
  */
 async function createMemoryEmbed() {
   const memUsage = process.memoryUsage();
   const cpuUsage = await cpu.usage();
-  return new MessageEmbed()
+  return new EmbedBuilderLocal()
     .setTitle('Memory Usage')
     .setDescription(`rss -  ${formatMemoryUsage(memUsage.rss)} MB\nheap -  ` +
       `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB ` +
@@ -517,10 +518,10 @@ function getVCMembers(guildId) {
  * @param title {string} The title of the embed.
  * @param text {string} The text of the embed.
  * @param color {string?} The color of the embed.
- * @return {MessageEmbed} The embed.
+ * @return {import('discord.js').EmbedBuilderLocal} The embed.
  */
 function createVisualEmbed(title, text, color) {
-  return new MessageEmbed()
+  return new EmbedBuilderLocal()
     .setTitle(title)
     .setDescription(text)
     .setColor(color || '#0099ff');

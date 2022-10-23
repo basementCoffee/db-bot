@@ -9,13 +9,13 @@ const parser = new xml2js.Parser();
 // Genius imports
 const Genius = require('genius-lyrics');
 const {reactions} = require('../utils/lib/reactions');
-const {MessageEmbed} = require('discord.js');
+const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
 const GeniusClient = new Genius.Client();
 
 /**
  * Returns lyrics for what is currently playing in a server.
  * @param channel The channel metadata
- * @param reactionCallback A callback for when the lyrics (text) is sent within the channel.
+ * @param reactionCallback Optional - A callback for when the lyrics (text) is sent within the channel. [USED FOR THREADS]
  * @param args The args with the message content
  * @param queueItem The queueItem to get the lyrics of.
  * @param messageMemberId The id of the member that sent the command.
@@ -157,9 +157,8 @@ async function sendSongLyrics(message, searchTerm, messageMemberId, reactionCall
           lyrics = '*could not retrieve*';
         }
         // send the lyrics text on reaction click
-        const lyricsEmbed = new MessageEmbed();
-        lyricsEmbed.setDescription((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics));
-        const sentLyricsMsg = await message.channel.send({embeds: [lyricsEmbed]});
+        const sentLyricsMsg = await (new EmbedBuilderLocal())
+          .setDescription((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics)).send(message.channel);
         reactionCallback();
         // start reactionCollector for lyrics
         sentLyricsMsg.react(reactions.X).then();
@@ -239,7 +238,7 @@ function getYoutubeSubtitles(message, url, infos, reactionCallback) {
 
                 collector.once('collect', () => {
                   message.edit(`***Captions from YouTube***\n${finalString}`);
-                  reactionCallback();
+                  if (reactionCallback) reactionCallback();
                 });
               });
             }
