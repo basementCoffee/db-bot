@@ -1663,9 +1663,8 @@ process
 function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
   console.log('error message: ', e.message);
-  logError(
-    `Uncaught Exception:\n${e.message}` + `\nstack:${e.stack}`
-  );
+  if (e.message === 'Unknown Message') return;
+  logError(`Uncaught Exception:\n${e.stack}`);
 }
 
 // The main method
