@@ -7,17 +7,15 @@ const worker = new Worker(__dirname + '/worker.js');
 /**
  * Send computationally heavy commands to a worker process.
  * @param commandName {string} A unique name/id of the command to execute. This name should be expected by the worker.
- * @param messageId {string} The message id.
- * @param channelId {string} The channel id.
- * @param commandArgs {any} A list of arguments to pass to a function.
+ * @param cReqs {{channelId?: string | null, messageId?: string | null}} Data requirements for proper setup of the command args.
+ * @param commandArgs {Array<any>} A list of arguments to pass to a function.
  */
-function parent_thread(commandName, messageId, channelId, commandArgs = []) {
+function parentThread(commandName, cReqs, commandArgs = []) {
   worker.postMessage({
     content: {
       commandName,
-      messageId: messageId,
-      channelId: channelId,
-      commandArgs: commandArgs,
+      cReqs,
+      commandArgs,
     },
   });
 }
@@ -48,4 +46,4 @@ function initialize() {
 
 initialize();
 
-module.exports = {parent_thread};
+module.exports = {parentThread: parentThread};

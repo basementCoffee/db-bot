@@ -11,7 +11,7 @@ parentPort.on('message', async (m) => {
   try {
     switch (m.content.commandName) {
     case 'lyrics':
-      bot.channels.fetch(m.content.channelId).then((channel) => {
+      bot.channels.fetch(m.content.cReqs.channelId).then((channel) => {
         if (channel) {
           const reactionsCallback = () => {
             parentPort.postMessage({
