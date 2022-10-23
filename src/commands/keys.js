@@ -23,7 +23,7 @@ const getTips = (prefixS) => ['click on the arrow keys!', 'the gear icon is page
  * @param server the server object
  * @param sheetName the name of the sheet
  * @param iconUrl Optional - An icon to display alongside the key embed.
- * @returns {Promise<*[]>}
+ * @returns {Promise<Array<import('discord.js').EmbedBuilder>>}
  */
 async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, server, sheetName, iconUrl) {
   let playlistString = '';
