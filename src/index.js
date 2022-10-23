@@ -33,7 +33,7 @@ const {sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2}
 const {isAdmin, hasDJPermissions} = require('./utils/permissions');
 const {dmHandler, sendMessageToUser} = require('./utils/dms');
 const {runDeleteKeyCommand_P} = require('./database/delete');
-const {parent_thread} = require('./threads/parent_thread');
+const {parentThread} = require('./threads/parentThread');
 const {getVoiceConnection} = require('@discordjs/voice');
 const {shuffleQueue} = require('./commands/runRandomToQueue');
 const {EmbedBuilderLocal} = require('./utils/lib/EmbedBuilderLocal');
@@ -336,7 +336,7 @@ async function runCommandCases(message) {
     break;
   case 'lyric':
   case 'lyrics':
-    commandHandlerCommon.lyrics(message, args, server);
+    commandHandlerCommon.lyrics(message.channel.id, message.member.id, args, server.queue[0]);
     break;
     // test purposes - run database links
   case 'gd':
@@ -1009,8 +1009,7 @@ async function runCommandCases(message) {
     }
     break;
   case 'gznuke':
-    parent_thread('gzn', message.id, message.channel.id,
-      [message.channel.id, parseInt(args[1]) || 1, args[2] === 'db']);
+    parentThread('gzn', {}, [message.channel.id, parseInt(args[1]) || 1, args[2] === 'db']);
     break;
   case 'gzupdate':
     devUpdateCommand(message, args.splice(1));
