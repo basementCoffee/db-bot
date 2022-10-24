@@ -1132,7 +1132,7 @@ async function runCommandCases(message) {
     } else {
       if (message.member?.voice?.channel) {
         try {
-          let gmArray = Array.from(bot.channels.cache.get(message.member.voice.channel.id).members);
+          let gmArray = Array.from(bot.channels.cache.get(message.member.voice.channel.id.toString()).members);
           gmArray = gmArray.map((item) => item[1].nickname || item[1].user.username);
           if (gmArray < 1) {
             return message.channel.send('Need at least 1 person in a voice channel.');
@@ -1645,6 +1645,7 @@ async function updateVoiceState(oldState, newState, server) {
 bot.on('error', (e) => {
   console.log('BOT ERROR:');
   console.log(e);
+  logError(`BOT ERROR: ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 });
 process.on('error', (e) => {
   console.log('PROCESS ERROR:');
@@ -1664,7 +1665,7 @@ function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
   console.log('error message: ', e.message);
   if (e.message === 'Unknown Message') return;
-  logError(`Uncaught Exception${processStats.devMode ? ' (development)' : ''}:\n${e.stack}`);
+  logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 }
 
 // The main method
