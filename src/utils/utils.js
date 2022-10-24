@@ -508,9 +508,16 @@ function isPersonalSheet(sheetName) {
  * @return {Array<*>}} The members of the voice channel.
  */
 function getVCMembers(guildId) {
-  const gmArray = Array.from(bot.channels.cache.get(getVoiceConnection(guildId).joinConfig.channelId).members);
-  gmArray.map((item) => item[1].user.username);
-  return gmArray[0];
+  const voiceConnection = getVoiceConnection(guildId);
+  if (voiceConnection) {
+    const collectionOfMembers = bot.channels.cache.get(voiceConnection.joinConfig.channelId)?.members
+    if (collectionOfMembers) {
+      const gmArray = Array.from(collectionOfMembers);
+      gmArray.map((item) => item[1].user.username);
+      return gmArray[0];
+    }
+  }
+  return [];
 }
 
 /**
