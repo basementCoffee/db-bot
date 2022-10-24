@@ -6,7 +6,7 @@ const CH = require('../../channel.json');
 
 /**
  * Handles message requests.
- * @param message The message metadata.
+ * @param message {import('discord.js').Message} The message metadata.
  * @param messageContent {string} The content of the message.
  * @returns {*}
  */
@@ -35,7 +35,7 @@ function dmHandler(message, messageContent) {
 
       collector.on('collect', (reaction, user) => {
         if (reaction.emoji.name === mb) {
-          sendMessageToUser(msg, message.author.id, user.id);
+          sendMessageToUser(msg, message.author.id.toString(), user.id);
           reaction.users.remove(user).then();
         }
       });
@@ -47,8 +47,8 @@ function dmHandler(message, messageContent) {
 
 /**
  * Prompts the text channel for a response to forward to the given user.
- * @param message The original message that activates the bot.
- * @param userID The ID of the user to send the reply to.
+ * @param message {import('discord.js').Message} The original message that activates the bot.
+ * @param userID {string} The ID of the user to send the reply to.
  * @param reactionUserID Optional - The ID of a user who can reply to the prompt besides the message author
  */
 function sendMessageToUser(message, userID, reactionUserID) {
