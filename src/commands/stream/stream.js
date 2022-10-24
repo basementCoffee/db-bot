@@ -750,7 +750,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
   let showButtons = true;
   if (botInVC(message)) {
     if (server.currentEmbedChannelId !== message.channel.id) {
-      server.currentEmbedChannelId = message.channel.id;
+      server.currentEmbedChannelId = message.channel.id.toString();
       server.numSinceLastEmbed += 10;
     }
     embed.addFields(
@@ -867,7 +867,7 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
       }
       break;
     case reactions.PPAUSE:
-      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id);
+      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id.toString());
       if (!server.audio.status) {
         playCommandUtil(sentMsg, tempUser, server, true, false, true);
         if (server.voteAdmin.length < 1 && !server.dictator) {
