@@ -132,9 +132,15 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   }
   if (server.streamData.type === StreamType.YOUTUBE) {
     try {
-      await server.streamData.stream.destroy();
+      if (server.isFluent) {
+        server.streamData.stream.kill();
+      }
+      else {
+        await server.streamData.stream.destroy();
+      }
     } catch (e) {}
   } else if (server.streamData.stream) endStream(server);
+  server.streamData = {};
   if (whatToPlay !== whatspMap[vc.id]) return;
   try {
     let playbackTimeout;
@@ -182,13 +188,13 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       whatspMap[vc.id] = whatToPlay;
       stream = await m3u8stream(twitchEncoded.url);
       server.streamData.type = StreamType.TWITCH;
-      server.streamData.stream = stream;
     } else if (seekSec) {
       // set the video start time
       stream = fluentFfmpeg({source: (await ytdl_core(urlAlt, {filter: 'audioonly'}))})
         .toFormat('mp3')
         .setStartTime(Math.ceil(seekSec));
       server.streamData.type = StreamType.YOUTUBE;
+      server.streamData.isFluent = true;
       queueItem.urlAlt = urlAlt;
     } else {
       stream = await ytdl(urlAlt, {
@@ -197,6 +203,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       });
       audioResourceOptions = {inputType: VoiceStreamType.Opus};
       queueItem.urlAlt = urlAlt;
+      server.streamData.type = StreamType.YOUTUBE;
     }
     server.streamData.stream = stream;
 
@@ -245,19 +252,8 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     });
     // similar to on 'finish'
     player.once('idle', () => {
-      if (whatToPlay !== whatspMap[vc.id]) {
-        const errString = `There was a mismatch -----------\n old url: ${whatToPlay}\n current url: ${whatspMap[vc.id]}`;
-        console.log(errString);
-        try {
-          // noinspection JSUnresolvedFunction
-          logError(errString);
-          if (CORE_ADM.includes(message.member.id)) {
-            message.channel.send(errString);
-          }
-        } catch (e) {
-          console.log(e);
-        }
-      }
+      // if there is a mismatch then don't change anything
+      if (whatToPlay !== whatspMap[vc.id]) return;
       server.mapFinishedLinks.set(whatToPlay,
         {
           queueItem,

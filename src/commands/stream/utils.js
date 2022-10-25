@@ -51,7 +51,7 @@ function voteSystem(message, mgid, commandName, voter, votes, server) {
  * @param server The server playback metadata
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
- * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
+ * @param noPrintMsg Optional - Whether to NOT print a message to the channel [DJ mode will set this to true]
  * @returns {boolean} if successful
  */
 function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg) {
@@ -68,12 +68,14 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
       }
     }
     pauseComputation(server);
-    if (noPrintMsg) return true;
-    if (server.followUpMessage) {
-      server.followUpMessage.delete();
-      server.followUpMessage = undefined;
+    if (!noPrintMsg) {
+      // if we are printing a message then delete previous playback status
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+      message.channel.send('*paused*');
     }
-    message.channel.send('*paused*');
     return true;
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
@@ -88,8 +90,8 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
  * @param server The server playback metadata
  * @param noErrorMsg {*?} Optional - If to avoid an error message if nothing is playing
  * @param force {*?} Optional - Skips the voting system if DJ mode is on
- * @param noPrintMsg {*?} Optional - Whether to print a message to the channel when not in DJ mode
- * @returns {boolean}
+ * @param noPrintMsg {*?} Optional - Whether to NOT print a message to the channel [DJ mode will set this to true]
+ * @returns {boolean} if the request was successful
  */
 function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg) {
   if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
@@ -105,12 +107,14 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
       }
     }
     playComputation(server);
-    if (noPrintMsg) return true;
-    if (server.followUpMessage) {
-      server.followUpMessage.delete();
-      server.followUpMessage = undefined;
+    if (!noPrintMsg) {
+      // if we are printing a message then delete previous playback status
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+      message.channel.send('*playing*');
     }
-    message.channel.send('*playing*');
     return true;
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');

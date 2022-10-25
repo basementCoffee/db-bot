@@ -10,14 +10,13 @@ const processStats = require('./utils/lib/ProcessStats');
 const {gsrun, deleteRows} = require('./database/api/api');
 const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
-  formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
-  unshiftQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
-  removeFormattingLink, getSheetName, linkValidator, createVisualEmbed, getTitle,
+  formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive,
+  removeFormattingLink, getSheetName, createVisualEmbed, getTitle,
 } = require('./utils/utils');
 const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
 const {
-  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG,
-  PREFIX_SN, startupTest,
+  bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG, PREFIX_SN,
+  startupTest,
 } = require('./utils/lib/constants');
 const {reactions} = require('./utils/lib/reactions');
 const {updateActiveEmbed, sessionEndEmbed} = require('./utils/embed');
@@ -26,7 +25,6 @@ const {
 } = require('./commands/stream/stream');
 const {shutdown} = require('./utils/shutdown');
 const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
-const {addLinkToQueue} = require('./utils/playlist');
 const {checkToSeeActive} = require('./process/checkToSeeActive');
 const {runQueueCommand, createVisualText} = require('./commands/generateQueue');
 const {sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2} = require('./database/retrieval');
@@ -40,70 +38,6 @@ const {EmbedBuilderLocal} = require('./utils/lib/EmbedBuilderLocal');
 
 process.setMaxListeners(0);
 
-/**
- * Runs the play now command.
- * @param message the message that triggered the bot
- * @param args the message split into an array (ignores the first argument)
- * @param mgid the message guild id
- * @param server The server playback metadata
- * @param sheetName the name of the sheet to reference
- * @param seekSec {number?} Optional - The amount of time to seek in seconds
- * @param adjustQueue {boolean?} Whether to adjust the queue (is true by default).
- */
-async function runPlayNowCommand(message, args, mgid, server, sheetName, seekSec, adjustQueue = true) {
-  const voiceChannel = message.member.voice?.channel;
-  if (!voiceChannel) {
-    const sentMsg = await message.channel.send('must be in a voice channel to play');
-    if (!botInVC(message) && args[1]) {
-      setSeamless(server, runPlayNowCommand, [message, args, mgid, server, sheetName], sentMsg);
-    }
-    return;
-  }
-  if (server.dictator && message.member.id !== server.dictator.id) {
-    return message.channel.send('only the dictator can play perform this action');
-  }
-  if (server.lockQueue && server.voteAdmin.filter((x) => x.id === message.member.id).length === 0) {
-    return message.channel.send('the queue is locked: only the dj can play and add links');
-  }
-  if (!args[1]) {
-    return message.channel.send('What should I play now? Put a link or some words after the command.');
-  }
-  // in case of force disconnect
-  if (!botInVC(message)) {
-    resetSession(server);
-  } else if (server.queue.length >= MAX_QUEUE_S) {
-    return message.channel.send('*max queue size has been reached*');
-  }
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
-    return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  }
-  if (server.followUpMessage) {
-    server.followUpMessage.delete();
-    server.followUpMessage = undefined;
-  }
-  server.numSinceLastEmbed += 2;
-  if (args[1].includes('.')) {
-    if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
-      args[1] = args[1].substr(1, args[1].length - 2);
-    }
-    if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
-      return commandHandlerCommon.playFromWord(message, args, sheetName, server, mgid, true);
-    }
-  } else return commandHandlerCommon.playFromWord(message, args, sheetName, server, mgid, true);
-  // places the currently playing into the queue history if played long enough
-  if (adjustQueue) adjustQueueForPlayNow(server.audio.resource, server);
-  // counter to iterate over all args - excluding args[0]
-  let linkItem = args.length - 1;
-  if (adjustQueue) {
-    while (linkItem > 0) {
-      let url = args[linkItem];
-      if (url[url.length - 1] === ',') url = url.replace(/,/, '');
-      await addLinkToQueue(url, message, server, mgid, true, unshiftQueue);
-      linkItem--;
-    }
-  }
-  playLinkToVC(message, server.queue[0], voiceChannel, server, 0, seekSec);
-}
 
 
 /**
@@ -227,54 +161,23 @@ async function runCommandCases(message) {
     // test purposes - play now command
   case 'gpnow':
   case 'gpn':
-    runPlayNowCommand(message, args, mgid, server, 'entries').then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, 'entries').then();
     break;
     // the play now command
   case 'pnow':
   case 'playnow':
   case 'pn':
-    runPlayNowCommand(message, args, mgid, server, undefined).then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, undefined).then();
     break;
     // the personal play now command
   case 'mplaynow':
   case 'mpnow':
   case 'mpn':
-    runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
     // allows seeking of YouTube and Spotify links
   case 'seek':
-    const SEEK_ERR_MSG = '*provide a seek timestamp (ex: seek 5m32s)*';
-    if (args[1]) {
-      if (args[2]) {
-        // assume exactly two arguments is provided
-        const validLink = linkValidator(args[1]);
-        const numSeconds = convertSeekFormatToSec(args[2]);
-        if (validLink && numSeconds) {
-          server.numSinceLastEmbed -= 2;
-          args.splice(2, args.length - 1);
-          await runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id), numSeconds, true);
-          if (numSeconds > 1200) message.channel.send('*seeking...*');
-          return;
-        }
-      } else {
-        // provided one argument
-        if (!server.queue[0]) {
-          return message.channel.send(`*provide a seek link and timestamp (ex: ${args[0]} [link] 5m32s)*`);
-        }
-        // continues if only one argument was provided
-        const numSeconds = convertSeekFormatToSec(args[1]);
-        if (numSeconds) {
-          server.numSinceLastEmbed -= 2;
-          args.splice(1, 1);
-          args.push(server.queue[0].url);
-          await runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id), numSeconds, false);
-          if (numSeconds > 1200) message.channel.send('*seeking...*');
-          return;
-        }
-      }
-    }
-    // if successful then execution should not reach here
-    message.channel.send(SEEK_ERR_MSG);
+    commandHandlerCommon.playWithSeek(message, server, args, mgid).then();
     break;
   case 'join':
     commandHandlerCommon.joinVoiceChannelSafe(message, server).then();
@@ -356,7 +259,7 @@ async function runCommandCases(message) {
   case 'kn':
   case 'dnow':
   case 'dn':
-    runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'pd':
   case 'dd':
@@ -379,7 +282,7 @@ async function runCommandCases(message) {
   case 'mknow':
   case 'mdnow':
   case 'mdn':
-    runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'shuffle':
     if (!args[1]) {

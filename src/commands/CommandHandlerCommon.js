@@ -10,15 +10,15 @@ const {parentThread} = require('../threads/parentThread');
 const {runMoveItemCommand, moveKeysWrapper} = require('./move');
 const {runWhatsPCommand} = require('./now-playing');
 const {pauseCommandUtil, playCommandUtil, stopPlayingUtil} = require('./stream/utils');
-const {playFromWord} = require('./playFromWord');
 const {runPurgeCommand} = require('./purge');
 const {runRemoveCommand, removePlaylist} = require('./remove');
 const {runUniversalSearchCommand} = require('./search');
 const {runRestartCommand} = require('./restart');
 const {renameKey, renamePlaylist} = require('./rename');
 const {runRandomToQueue} = require('./runRandomToQueue');
-const {runPlayLinkCommand} = require('./playLink');
+const {runPlayLinkCommand, playLinkNow} = require('./playLink');
 const {ZWSP} = require('../utils/lib/constants');
+const {runSeekCommand} = require('./seek');
 
 
 // A common handler for user commands.
@@ -210,6 +210,20 @@ class CommandHandlerCommon {
   }
 
   /**
+   * Runs the play now command.
+   * @param message the message that triggered the bot
+   * @param args the message split into an array (ignores the first argument)
+   * @param mgid the message guild id
+   * @param server The server playback metadata
+   * @param sheetName the name of the sheet to reference
+   * @param seekSec {number?} Optional - The amount of time to seek in seconds
+   * @param adjustQueue {boolean?} Whether to adjust the queue (is true by default).
+   */
+  async playLinkNow(message, args, mgid, server, sheetName, seekSec, adjustQueue) {
+    return playLinkNow(message, args, mgid, server, sheetName, seekSec, adjustQueue);
+  }
+
+  /**
    * Purges the queue of all items that contain the term.
    * @param message The message object.
    * @param server The server object.
@@ -326,18 +340,8 @@ class CommandHandlerCommon {
     return runDatabasePlayCommand(args, message, sheetName, playRightNow, printErrorMsg, server);
   }
 
-  /**
-   * Determines what to play from a word, dependent on sheetName. The word is provided from args[1].
-   * Uses the database if a sheetName is provided, else uses YouTube.
-   * @param message The message metadata.
-   * @param args The args pertaining the content.
-   * @param sheetName Optional - The sheet to reference.
-   * @param server The server data.
-   * @param mgid The guild id.
-   * @param playNow Whether to play now.
-   */
-  playFromWord(message, args, sheetName, server, mgid, playNow) {
-    playFromWord(message, args, sheetName, server, mgid, playNow);
+  async playWithSeek(message, server, args, mgid) {
+    return runSeekCommand(message, server, args, mgid);
   }
 
   /**
@@ -350,6 +354,7 @@ class CommandHandlerCommon {
   async searchForKeyUniversal(message, server, sheetName, providedString) {
     return runUniversalSearchCommand(message, server, sheetName, providedString);
   }
+
   /**
    * Stops playing in the given voice channel and leaves. This is intended for when a user attempts to alter a session.
    * @param mgid The current guild id
