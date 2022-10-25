@@ -39,7 +39,7 @@ function getPages(ps, version) {
     '-----------  **Keys**  -----------\n' +
     '*Keys are ways to save your favorite links as words.*\n' +
     '*Keys are saved within playlists*\n' +
-    `\`${ps}keys \` See all of your keys / playlists *[k]*\n` +
+    `\`${ps}keys \` See all of your keys / playlists\n` +
     `\`${ps}d [key] \` Play any of your keys \n` +
     `\`${ps}dnow [key] \` Play key immediately, overrides queue *[kn]* \n` +
     `\`${ps}s [# of keys] \` shuffle and play random keys  *[r]*\n` +

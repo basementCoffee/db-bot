@@ -184,9 +184,10 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       server.streamData.type = StreamType.TWITCH;
       server.streamData.stream = stream;
     } else if (seekSec) {
-      stream = await ytdl_core(urlAlt, {filter: 'audioonly'});
       // set the video start time
-      stream = fluentFfmpeg({source: stream}).toFormat('mp3').setStartTime(Math.ceil(seekSec));
+      stream = fluentFfmpeg({source: (await ytdl_core(urlAlt, {filter: 'audioonly'}))})
+        .toFormat('mp3')
+        .setStartTime(Math.ceil(seekSec));
       server.streamData.type = StreamType.YOUTUBE;
       queueItem.urlAlt = urlAlt;
     } else {
