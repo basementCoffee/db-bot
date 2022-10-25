@@ -132,7 +132,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   }
   if (server.streamData.type === StreamType.YOUTUBE) {
     try {
-      if (server.isFluent) {
+      if (server.streamData.isFluent) {
         server.streamData.stream.kill();
       }
       else {
