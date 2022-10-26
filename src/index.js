@@ -33,7 +33,6 @@ const {dmHandler, sendMessageToUser} = require('./utils/dms');
 const {runDeleteKeyCommand_P} = require('./database/delete');
 const {parentThread} = require('./threads/parentThread');
 const {getVoiceConnection} = require('@discordjs/voice');
-const {shuffleQueue} = require('./commands/runRandomToQueue');
 const {EmbedBuilderLocal} = require('./utils/lib/EmbedBuilderLocal');
 
 process.setMaxListeners(0);
@@ -259,21 +258,25 @@ async function runCommandCases(message) {
   case 'kn':
   case 'dnow':
   case 'dn':
+    if (isShortCommandNoArgs(args, message, statement)) return;
     commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'pd':
   case 'dd':
+    if (isShortCommandNoArgs(args, message, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id),
       false, true, server).then();
     break;
   case 'ps':
   case 'pshuffle':
+    if (isShortCommand(message, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id), false,
       true, server, true).then();
     break;
     // .md is retrieves and plays from the keys list
   case 'md':
   case 'd':
+    if (isShortCommandNoArgs(args, message, statement)) return;
     commandHandlerCommon.playDBKeys(args, message, getSheetName(message.member.id), false,
       true, server).then();
     break;
@@ -285,16 +288,12 @@ async function runCommandCases(message) {
     commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'shuffle':
-    if (!args[1]) {
-      shuffleQueue(server, message);
-    } else {
-      commandHandlerCommon.addRandomKeysToQueue(args[1], message, mgid, server).then();
-    }
+    commandHandlerCommon.shuffleQueueOrPlayRandom([args[1]], message, getSheetName(message.member.id), server);
     break;
   case 'rn':
   case 'randnow':
   case 'randomnow':
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, mgid, server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id), server, true).then();
     break;
   case 'sync':
     // assume that there is something playing
@@ -341,40 +340,38 @@ async function runCommandCases(message) {
     break;
   case 'shufflen':
   case 'shufflenow':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, mgid, server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id), server, true).then();
     break;
     // test purposes - random command
   case 'grand':
   case 'gr':
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, 'entries', server).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, 'entries', server).then();
     break;
   case 'gshuffle':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, 'entries', server).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, 'entries', server).then();
     break;
     // .mr is the personal random that works with the normal queue
     // .r is a random that works with the normal queue
   case 'random':
   case 'rand':
-  case 'ds':
-  case 's':
   case 'r':
   case 'mr':
-    if (!args[1] && !botInVC(message) && statement.length < 3) return;
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id),
+    if (isShortCommandNoArgs(args, message, statement)) return;
+    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id),
       server).then();
     break;
   case 'mshuffle':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id),
+    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id),
       server).then();
     break;
   case 'mrn':
   case 'mrandnow':
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id),
+    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id),
       server, true).then();
     break;
   case 'mshufflen':
   case 'mshufflenow':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id),
+    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id),
       server, true).then();
     break;
   case 'rename-key':
@@ -462,7 +459,7 @@ async function runCommandCases(message) {
   case 'nowplaying':
   case 'playing':
   case 'now':
-    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], mgid, '');
+    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], getSheetName(message.member.id), '');
     break;
   case 'g?':
     await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
@@ -595,7 +592,7 @@ async function runCommandCases(message) {
   case 'fsk':
   case 'forcesk':
   case 'forceskip':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       runSkipCommand(message, message.member.voice?.channel, server, args[1], true, true, message.member);
     }
     break;
@@ -603,26 +600,26 @@ async function runCommandCases(message) {
   case 'frw':
   case 'forcerw':
   case 'forcerewind':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       runRewindCommand(message, mgid, message.member.voice?.channel, args[1], true, false, message.member, server);
     }
     break;
   case 'fp':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       message.channel.send('use \'fpl\' to force play and \'fpa\' to force pause.');
     }
     break;
   case 'fpl':
   case 'forcepl':
   case 'forceplay':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       commandHandlerCommon.resumeStream(message, message.member, server, false, true);
     }
     break;
   case 'fpa':
   case 'forcepa':
   case 'forcepause':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       commandHandlerCommon.pauseStream(message, message.member, server, false, true);
     }
     break;
@@ -642,14 +639,14 @@ async function runCommandCases(message) {
   case 'stop':
   case 'pause':
   case 'pa':
-    if (statement.length < 3 && !botInVC(message)) return;
+    if (isShortCommand(message, statement)) return;
     commandHandlerCommon.pauseStream(message, message.member, server);
     break;
     // !pl
   case 'pl':
   case 'res':
   case 'resume':
-    if (statement.length < 3 && !botInVC(message)) return;
+    if (isShortCommand(message, statement)) return;
     commandHandlerCommon.resumeStream(message, message.member, server);
     break;
   case 'gzconvert':
@@ -1052,6 +1049,13 @@ async function runCommandCases(message) {
     }
     break;
   }
+} // end switch
+
+function isShortCommand(message, statement) {
+  return !botInVC(message) && statement.length < 3;
+}
+function isShortCommandNoArgs(args, message, statement) {
+  return (!args[1] && isShortCommand(message, statement));
 }
 
 /**

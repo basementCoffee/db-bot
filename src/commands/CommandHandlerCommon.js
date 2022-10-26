@@ -15,10 +15,10 @@ const {runRemoveCommand, removePlaylist} = require('./remove');
 const {runUniversalSearchCommand} = require('./search');
 const {runRestartCommand} = require('./restart');
 const {renameKey, renamePlaylist} = require('./rename');
-const {runRandomToQueue} = require('./runRandomToQueue');
 const {runPlayLinkCommand, playLinkNow} = require('./playLink');
 const {ZWSP} = require('../utils/lib/constants');
 const {runSeekCommand} = require('./seek');
+const {runRandomToQueue, shuffleQueue} = require('./playRandomKeys');
 
 
 // A common handler for user commands.
@@ -52,13 +52,13 @@ class CommandHandlerCommon {
 
   /**
    * Runs the checks to add random songs to the queue
-   * @param num The number of songs to be added to random, could be string
+   * @param num {Array<string>} The arguments of what to play: can be a number, keys, or a playlist-name with a number
    * @param message The message that triggered the bot
    * @param sheetName The name of the sheet to reference
    * @param server The server playback metadata
    * @param addToFront Optional - true if to add to the front
    */
-  async addRandomKeysToQueue(num, message, sheetName, server, addToFront) {
+  async addRandomKeysToQueue(num, message, sheetName, server, addToFront = false) {
     return runRandomToQueue(num, message, sheetName, server, addToFront);
   }
 
@@ -353,6 +353,31 @@ class CommandHandlerCommon {
    */
   async searchForKeyUniversal(message, server, sheetName, providedString) {
     return runUniversalSearchCommand(message, server, sheetName, providedString);
+  }
+
+  /**
+   * Shuffles the queue.
+   * @param server
+   * @param message
+   */
+  shuffleQueue(server, message) {
+    shuffleQueue(server, message);
+  }
+
+  /**
+   * Shuffles the queue if no argument provided, otherwise shuffles a random playlist key or number of keys.
+   * @param wildcardRandomArr {Array<string>} An array containing a number, keys, or a playlist with a number
+   * @param message
+   * @param sheetName
+   * @param server
+   */
+  shuffleQueueOrPlayRandom(wildcardRandomArr = [], message, sheetName, server) {
+    wildcardRandomArr = wildcardRandomArr.filter(x => x);
+    if (wildcardRandomArr.length < 1) {
+      this.shuffleQueue(server, message);
+    } else {
+      this.addRandomKeysToQueue(wildcardRandomArr, message, sheetName, server, false).then();
+    }
   }
 
   /**

@@ -1,15 +1,14 @@
 const {
-  botInVC, setSeamless, resetSession, removeFormattingLink, verifyPlaylist, verifyUrl, pushQueue,
+  botInVC, setSeamless, removeFormattingLink, verifyPlaylist, verifyUrl, pushQueue,
   adjustQueueForPlayNow, unshiftQueue,
 } = require('../utils/utils');
-const {MAX_QUEUE_S} = require('../utils/lib/constants');
-const {hasDJPermissions} = require('../utils/permissions');
 const {addLinkToQueue} = require('../utils/playlist');
 const {playLinkToVC} = require('./stream/stream');
 const {updateActiveEmbed} = require('../utils/embed');
 const {playCommandUtil} = require('./stream/utils');
 const {runDatabasePlayCommand} = require('./databasePlayCommand');
 const {runYoutubeSearch} = require('./stream/youtubeSearch');
+const {isValidRequestWPlay} = require('../utils/validation');
 
 /**
  * Runs the commands and checks to play a link
@@ -27,7 +26,7 @@ async function runPlayLinkCommand(message, args, mgid, server, sheetName) {
     }
     return;
   }
-  if (!isValidRequest(server, message, args[1])) return;
+  if (!isValidRequestPlayLink(server, message, args[1])) return;
   if (args[1].includes('.')) {
     args[1] = removeFormattingLink(args[1]);
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
@@ -78,7 +77,7 @@ async function playLinkNow(message, args, mgid, server, sheetName, seekSec, adju
     }
     return;
   }
-  if (!isValidRequest(server, message, args[1])) return;
+  if (!isValidRequestPlayLink(server, message, args[1])) return;
   if (server.followUpMessage) {
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
@@ -124,32 +123,15 @@ function playFromWord(message, args, sheetName, server, mgid, playNow) {
 }
 
 /**
- * Determines whether to proceed with the play command, based on the request.
- * @param server
- * @param message
- * @param link
- * @return {boolean} Returns true if the command should NOT proceed.
+ * Determines whether to proceed with the play command, based on the request. Specific for playLink.
+ * @return {boolean} If the request is valid.
  */
-function isValidRequest(server, message, link) {
-  if (server.dictator && message.member.id !== server.dictator.id) {
-    message.channel.send('only the dictator can perform this action');
-    return false;
-  }
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
-    message.channel.send('the queue is locked: only the DJ can add to the queue');
-    return false;
-  }
+function isValidRequestPlayLink(server, message, link) {
+  if (!isValidRequestWPlay(server, message, 'add a link')) return false;
   if (!link) {
     if (!playCommandUtil(message, message.member, server, true)) {
       message.channel.send('What should I play? Put a link or some words after the command.');
     }
-    return false;
-  }
-  // in case of force disconnect
-  if (!botInVC(message)) {
-    resetSession(server);
-  } else if (server.queue.length >= MAX_QUEUE_S) {
-    message.channel.send('*max queue size has been reached*');
     return false;
   }
   return true;

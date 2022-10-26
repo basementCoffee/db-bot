@@ -1,9 +1,10 @@
-const {botID, MAX_QUEUE_S} = require('../utils/lib/constants');
+const {botID} = require('../utils/lib/constants');
 const {botInVC, getTitle, createQueueItem, getSheetName} = require('../utils/utils');
 const {reactions} = require('../utils/lib/reactions');
 const {updateActiveEmbed} = require('../utils/embed');
 const {runInsertCommand} = require('./insert');
 const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
+const {isValidRequestWPlay} = require('../utils/validation');
 
 /**
  * Displays the queue in the channel.
@@ -127,13 +128,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
         }
         generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
       } else if (reaction.emoji.name === reactions.INBOX) {
-        if (server.dictator && reactionCollector.id !== server.dictator.id) {
-          return message.channel.send('only the dictator can insert');
-        }
-        if (server.lockQueue && server.voteAdmin.filter((x) => x.id === reactionCollector.id).length === 0) {
-          return message.channel.send('the queue is locked: only the dj can insert');
-        }
-        if (serverQueue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
+        if(!isValidRequestWPlay(server, message, 'insert')) return;
         let link;
         message.channel.send('What link would you like to insert [or type \'q\' to quit]').then((msg) => {
           const filter = (m) => {

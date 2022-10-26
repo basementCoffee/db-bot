@@ -2,11 +2,12 @@ const {getXdb2} = require('../database/retrieval');
 const {getAssumptionMultipleMethods} = require('./search');
 const {playLinkToVC} = require('./stream/stream');
 const {
-  botInVC, setSeamless, resetSession, verifyPlaylist, createQueueItem, adjustQueueForPlayNow,
+  botInVC, setSeamless, verifyPlaylist, createQueueItem, adjustQueueForPlayNow,
 } = require('../utils/utils');
 const {MAX_QUEUE_S} = require('../utils/lib/constants');
 const {updateActiveEmbed} = require('../utils/embed');
 const {addPlaylistToQueue} = require('../utils/playlist');
+const {isValidRequestWPlay} = require('../utils/validation');
 
 /**
  * Plays an entire custom playlist.
@@ -89,13 +90,7 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
     }
     return true;
   }
-  // in case of force disconnect
-  if (!botInVC(message)) {
-    resetSession(server);
-  } else if (server.queue.length >= MAX_QUEUE_S) {
-    message.channel.send('*max queue size has been reached*');
-    return true;
-  }
+  if (!isValidRequestWPlay(server, message, 'add keys')) return true;
   server.numSinceLastEmbed++;
   let tempMsg;
   if (args.length > 100) tempMsg = await message.channel.send('*getting keys...*');

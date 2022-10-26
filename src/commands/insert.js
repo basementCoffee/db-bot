@@ -6,6 +6,7 @@ const {
 const {addPlaylistToQueue} = require('../utils/playlist');
 const ytpl = require('ytpl');
 const {updateActiveEmbed} = require('../utils/embed');
+const {isValidRequestWPlay} = require('../utils/validation');
 
 /**
  * Inserts a term into position into the queue. Accepts a valid link or key.
@@ -119,13 +120,7 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
  */
 function insertCommandVerification(message, server, args) {
   if (!message.member.voice?.channel) return message.channel.send('must be in a voice channel');
-  if (server.dictator && message.member.id !== server.dictator.id) {
-    return message.channel.send('only the dictator can insert');
-  }
-  if (server.lockQueue && server.voteAdmin.filter((x) => x.id === message.member.id).length === 0) {
-    return message.channel.send('the queue is locked: only the dj can insert');
-  }
-  if (server.queue.length > MAX_QUEUE_S) return message.channel.send('*max queue size has been reached*');
+  if(!isValidRequestWPlay(server, message, 'insert')) return;
   if (server.queue.length < 1) {
     return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
   }

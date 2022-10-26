@@ -1,11 +1,11 @@
 /* eslint-disable camelcase */
 const {
   botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
-  playComputation, logError, formatDuration, createQueueItem, getQueueText, verifyPlaylist, getSheetName, resetSession,
+  playComputation, logError, formatDuration, createQueueItem, getQueueText, getSheetName, resetSession,
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
-  LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID, CORE_ADM,
+  LEAVE_VC_TIMEOUT, bot, MAX_QUEUE_S, botID,
 } = require('../../utils/lib/constants');
 const fetch = require('isomorphic-unfetch');
 const {getData} = require('spotify-url-info')(fetch);
@@ -16,14 +16,11 @@ const ytsr = require('ytsr');
 const twitch = require('twitch-m3u8');
 const {SoundCloud: scdl} = require('scdl-core');
 scdl.connect();
-const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
+const {createEmbed} = require('../../utils/embed');
 const processStats = require('../../utils/lib/ProcessStats');
 const {shutdown} = require('../../utils/shutdown');
 const {reactions} = require('../../utils/lib/reactions');
-const {getPlaylistItems} = require('../../utils/playlist');
-const {getAssumptionMultipleMethods} = require('../search');
 const {getXdb2} = require('../../database/retrieval');
-const {hasDJPermissions} = require('../../utils/permissions');
 const {stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil} = require('./utils');
 const {runKeysCommand} = require('../keys');
 const {
@@ -916,7 +913,7 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
     case reactions.BOOK_O:
       const tempUserBook = await sentMsg.guild.members.fetch(reactionCollector.id);
       runKeysCommand(sentMsg, server,
-        getSheetName(reactionCollector.id), reactionCollector, undefined, tempUserBook.nickname).then();
+        getSheetName(reactionCollector.id.toString()), reactionCollector, undefined, tempUserBook.nickname).then();
       server.numSinceLastEmbed += 5;
       break;
     }
@@ -931,153 +928,6 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
   });
 }
 
-/**
- * Adds a number of items from the database to the queue randomly.
- * @param message The message that triggered the bot
- * @param numOfTimes The number of items to add to the queue, or a playlist url if isPlaylist
- * @param cdb {Map}  The database to reference, should be mapped to keyObjects (see getXdb2)
- * @param server The server playback metadata
- * @param isPlaylist Optional - True if to randomize just a playlist
- * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
- */
-async function addRandomToQueue(message, numOfTimes, cdb, server, isPlaylist, addToFront = 0) {
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
-    return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  }
-  // the playlist url
-  let playlistUrl;
-  let sentMsg;
-  // array of links
-  let valArray;
-  if (isPlaylist) {
-    // if given a cdb then it is a key-name, else it is a url
-    // playlist name is passed from numOfTimes argument
-    if (cdb) {
-      playlistUrl = cdb.get(numOfTimes.toUpperCase()) || (() => {
-        // tries to get a close match
-        const assumption = getAssumptionMultipleMethods(numOfTimes, [...cdb.values()].map((item) => item.name));
-        if (assumption) {
-          message.channel.send(`could not find '${numOfTimes}'. **Assuming '${assumption}'**`);
-          return cdb.get(assumption.toUpperCase());
-        }
-        return null;
-      })();
-      if (playlistUrl) playlistUrl = playlistUrl.link;
-    } else playlistUrl = numOfTimes;
-    if (!playlistUrl) return message.channel.send(`*could not find **${numOfTimes}** in the keys list*`);
-    numOfTimes = 1;
-    if (verifyPlaylist(playlistUrl)) sentMsg = message.channel.send('randomizing your playlist...');
-  } else {
-    valArray = [];
-    cdb.forEach((value) => valArray.push(value.link));
-    if (valArray.length < 1) {
-      const pf = server.prefix;
-      return message.channel.send('Your saved-links list is empty *(Try  `' + pf + 'add` to add to a list)*');
-    }
-    if (numOfTimes > 50) sentMsg = message.channel.send('generating random from your keys...');
-  }
-  // boolean to add all from cdb, if numOfTimes is negative
-  let addAll = false;
-  if (numOfTimes < 0) {
-    addAll = true;
-    numOfTimes = cdb.size; // number of times is now the size of the db
-  }
-  // mutate numberOfTimes to not exceed MAX_QUEUE_S
-  if (numOfTimes + server.queue.length > MAX_QUEUE_S) {
-    numOfTimes = MAX_QUEUE_S - server.queue.length;
-    if (numOfTimes < 1) return message.channel.send('*max queue size has been reached*');
-    addAll = false; // no longer want to add all
-  }
-  const queueWasEmpty = server.queue.length < 1;
-  // place a filler string in the queue to show that it will no longer be empty
-  // in case of another function call at the same time
-  if (queueWasEmpty && !addToFront) server.queue[0] = 'filler link';
-  try {
-    let tempArray;
-    for (let i = 0; i < numOfTimes;) {
-      if (isPlaylist) tempArray = [playlistUrl];
-      else tempArray = [...valArray];
-      // continues until numOfTimes is 0 or the tempArray is completed
-      let url;
-      while (tempArray.length > 0 && (i < numOfTimes)) {
-        const randomNumber = Math.floor(Math.random() * tempArray.length);
-        url = tempArray[randomNumber];
-        if (url.url) {
-          // if it is a queueItem
-          if (addToFront) {
-            server.queue.splice(addToFront - 1, 0, url);
-            addToFront++;
-          } else server.queue.push(url);
-          i++;
-        } else if (verifyPlaylist(url)) {
-          // if it is a playlist, un-package the playlist
-          // the number of items added to tempArray
-          const addedItems = await getPlaylistItems(url, tempArray);
-          if (isPlaylist || addAll) {
-            if (addAll) numOfTimes += addedItems - 1; // subtract the playlist link
-            else numOfTimes = addedItems; // numOfTimes is new definitive value
-            if ((server.queue.length + numOfTimes - i) > MAX_QUEUE_S) {
-              // reduce numOfTimes if greater than MAX_QUEUE_S
-              // add i because numOfTimes is in respect to i, which is num added so far
-              numOfTimes = Math.max(MAX_QUEUE_S + i - server.queue.length, 0);
-            }
-            if (server.queue[0] === 'filler link') {
-              server.queue.shift();
-              numOfTimes++;
-            }
-          }
-        } else if (url) {
-          // add url to queue
-          if (addToFront) {
-            server.queue.splice(addToFront - 1, 0, createQueueItem(url, getLinkType(url), null));
-            addToFront++;
-          } else server.queue.push(createQueueItem(url, getLinkType(url), null));
-          i++;
-        }
-        // remove added item from tempArray
-        tempArray.splice(randomNumber, 1);
-      }
-    }
-    // here - queue should have all the items
-  } catch (e) {
-    console.log('error in random: ', e);
-    if (isPlaylist) return;
-    const rn = Math.floor(Math.random() * valArray.length);
-    sentMsg = await sentMsg;
-    if (sentMsg?.deletable) sentMsg.delete();
-    if (verifyPlaylist(valArray[rn])) {
-      return message.channel.send('There was an error.');
-    }
-    server.queue.push(createQueueItem(valArray[rn], null, null));
-  }
-  // remove the filler string
-  if (server.queue[0] === 'filler link') server.queue.shift();
-  if (addToFront || (queueWasEmpty && server.queue.length === numOfTimes)) {
-    await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else if (!botInVC(message)) {
-    if (botInVC(message)) {
-      updatedQueueMessage(message.channel, `*added ${numOfTimes} to queue*`, server);
-    } else {
-      await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-    }
-  } else {
-    updatedQueueMessage(message.channel, `*added ${numOfTimes} to queue*`, server);
-  }
-  sentMsg = await sentMsg;
-  if (sentMsg?.deletable) sentMsg.delete();
-}
-
-/**
- * Sends a message that the queue was updated and then updates the active embed.
- * @param channel The channel object.
- * @param messageText The text to send to the channel.
- * @param server The server object.
- */
-function updatedQueueMessage(channel, messageText, server) {
-  channel.send(messageText);
-  updateActiveEmbed(server).then();
-}
-
 module.exports = {
-  playLinkToVC, checkStatusOfYtdl, skipLink, runSkipCommand, runRewindCommand, sendLinkAsEmbed, addRandomToQueue,
+  playLinkToVC, checkStatusOfYtdl, skipLink, runSkipCommand, runRewindCommand, sendLinkAsEmbed,
 };
