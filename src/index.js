@@ -935,9 +935,12 @@ async function runCommandCases(message) {
       commandsMapArray[CMAInt++] = [key, value];
     });
     commandsMapArray.sort((a, b) => b[1] - a[1]);
-    commandsMapArray.forEach((val) => {
-      commandsMapString += val[1] + ' - ' + val[0] + '\n';
-    });
+    if (commandsMapArray.length < 1) commandsMapString = '*empty*';
+    else {
+      commandsMapArray.forEach((val) => {
+        commandsMapString += val[1] + ' - ' + val[0] + '\n';
+      });
+    }
     (new EmbedBuilderLocal()).setTitle('Commands Usage - Stats').setDescription(commandsMapString)
       .send(message.channel).then();
     break;
