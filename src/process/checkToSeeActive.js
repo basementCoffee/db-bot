@@ -1,9 +1,9 @@
-const {setOfBotsOn, bot, PREFIX_SN} = require('../utils/lib/constants');
+const { setOfBotsOn, bot, PREFIX_SN } = require('../utils/lib/constants');
 const CH = require('../../channel.json');
 const processStats = require('../utils/lib/ProcessStats');
 const buildNo = require('../utils/lib/BuildNumber');
-const {shutdown} = require('../utils/shutdown');
-const {gsrun} = require('../database/api/api');
+const { shutdown } = require('../utils/shutdown');
+const { gsrun } = require('../database/api/api');
 
 let resHandlerTimeout = null;
 
@@ -40,7 +40,8 @@ async function responseHandler() {
     setTimeout(() => {
       if (processStats.isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 18) + 9) * 1000)); // 9 - 27 seconds
-  } else if (setOfBotsOn.size > 1) {
+  }
+  else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     // noinspection JSUnresolvedFunction
     bot.channels.fetch(CH.process)
@@ -48,11 +49,12 @@ async function responseHandler() {
     setTimeout(() => {
       if (processStats.isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
-  } else if (process.pid === 4) {
+  }
+  else if (process.pid === 4) {
     if ((new Date()).getHours() === 5 && bot.uptime > 3600000 && bot.voice.adapters.size < 1) {
       shutdown('HOUR(05)')();
     }
   }
 }
 
-module.exports = {checkToSeeActive};
+module.exports = { checkToSeeActive };

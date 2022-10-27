@@ -2,38 +2,38 @@
 'use strict';
 require('dotenv').config();
 const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
-const {exec} = require('child_process');
+const { exec } = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
 const buildNo = require('./utils/lib/BuildNumber');
 const processStats = require('./utils/lib/ProcessStats');
-const {gsrun, deleteRows} = require('./database/api/api');
+const { gsrun, deleteRows } = require('./database/api/api');
 const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
   formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive,
   removeFormattingLink, getSheetName, createVisualEmbed, getTitle,
 } = require('./utils/utils');
-const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
+const { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } = require('./commands/dj');
 const {
   bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG, PREFIX_SN,
   startupTest,
 } = require('./utils/lib/constants');
-const {reactions} = require('./utils/lib/reactions');
-const {updateActiveEmbed, sessionEndEmbed} = require('./utils/embed');
+const { reactions } = require('./utils/lib/reactions');
+const { updateActiveEmbed, sessionEndEmbed } = require('./utils/embed');
 const {
   checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand,
 } = require('./commands/stream/stream');
-const {shutdown} = require('./utils/shutdown');
-const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
-const {checkToSeeActive} = require('./process/checkToSeeActive');
-const {runQueueCommand, createVisualText} = require('./commands/generateQueue');
-const {sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2} = require('./database/retrieval');
-const {isAdmin, hasDJPermissions} = require('./utils/permissions');
-const {dmHandler, sendMessageToUser} = require('./utils/dms');
-const {runDeleteKeyCommand_P} = require('./database/delete');
-const {parentThread} = require('./threads/parentThread');
-const {getVoiceConnection} = require('@discordjs/voice');
-const {EmbedBuilderLocal} = require('./utils/lib/EmbedBuilderLocal');
+const { shutdown } = require('./utils/shutdown');
+const { playRecommendation, sendRecommendationWrapper } = require('./commands/stream/recommendations');
+const { checkToSeeActive } = require('./process/checkToSeeActive');
+const { runQueueCommand, createVisualText } = require('./commands/generateQueue');
+const { sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2 } = require('./database/retrieval');
+const { isAdmin, hasDJPermissions } = require('./utils/permissions');
+const { dmHandler, sendMessageToUser } = require('./utils/dms');
+const { runDeleteKeyCommand_P } = require('./database/delete');
+const { parentThread } = require('./threads/parentThread');
+const { getVoiceConnection } = require('@discordjs/voice');
+const { EmbedBuilderLocal } = require('./utils/lib/EmbedBuilderLocal');
 
 process.setMaxListeners(0);
 
@@ -75,7 +75,8 @@ async function runCommandCases(message) {
     if (!isAdmin(message.member.id)) {
       return;
     }
-  } else {
+  }
+  else {
     commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
   }
   if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
@@ -111,7 +112,8 @@ async function runCommandCases(message) {
       const excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
       if (excludedWords.includes(name)) name = '';
       if (name && name.length > 1) name = name.substring(0, 1).toUpperCase() + name.substr(1);
-    } else {
+    }
+    else {
       name = '';
     }
     commandsMap.set('congrats', (commandsMap.get('congrats') || 0) + 1);
@@ -119,7 +121,8 @@ async function runCommandCases(message) {
     const congratsLink = (statement.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
     if (server.queue[0]?.url !== congratsLink) {
       server.queue.unshift(createQueueItem(congratsLink, StreamType.YOUTUBE, null));
-    } else return;
+    }
+    else {return;}
     if (message.member.voice?.channel) {
       const vc = message.member.voice.channel;
       setTimeout(() => {
@@ -201,7 +204,8 @@ async function runCommandCases(message) {
     if (server.autoplay) {
       server.autoplay = false;
       message.channel.send('*smartplay turned off*');
-    } else {
+    }
+    else {
       server.autoplay = true;
       message.channel.send('*smartplay turned on*');
     }
@@ -216,7 +220,8 @@ async function runCommandCases(message) {
     if (server.loop) {
       server.loop = false;
       await message.channel.send('*looping disabled*');
-    } else {
+    }
+    else {
       await message.channel.send('*looping is already off*');
     }
     break;
@@ -230,7 +235,8 @@ async function runCommandCases(message) {
     if (server.loop) {
       server.loop = false;
       await message.channel.send('*looping disabled*');
-    } else {
+    }
+    else {
       server.loop = true;
       await message.channel.send('*looping enabled (occurs on finish)*');
     }
@@ -334,7 +340,8 @@ async function runCommandCases(message) {
             }, 5000);
           }
         }, (seconds * 1000) + 1000); // convert seconds to ms and add another second
-      } else message.channel.send('no active link is playing');
+      }
+      else {message.channel.send('no active link is playing');}
     }
     break;
   case 'shufflen':
@@ -449,7 +456,8 @@ async function runCommandCases(message) {
       args[0] = '';
       dmHandler(message, args.join(''));
       message.channel.send('Your message has been sent');
-    } else return message.channel.send('*input a message after the command to submit a request/issue*');
+    }
+    else {return message.channel.send('*input a message after the command to submit a request/issue*');}
     break;
     // !? is the command for what's playing?
   case 'current':
@@ -474,7 +482,8 @@ async function runCommandCases(message) {
     if (!args[1]) {
       if (server.queue[0] && message.member.voice.channel) {
         return message.channel.send(server.queue[0].url);
-      } else {
+      }
+      else {
         return message.channel.send('*add a key to get it\'s ' + statement.substr(1) +
         ' \`(i.e. ' + statement + ' [key])\`*');
       }
@@ -486,7 +495,8 @@ async function runCommandCases(message) {
     if (!args[1]) {
       if (server.queue[0] && message.member.voice.channel) {
         return message.channel.send(server.queue[0].url);
-      } else {
+      }
+      else {
         return message.channel.send('*add a key to get it\'s ' + statement +
         ' \`(i.e. ' + statement + ' [key])\`*');
       }
@@ -539,7 +549,7 @@ async function runCommandCases(message) {
   case 'frequency':
     const tempAuditArray = [];
     for (const [key, value] of server.mapFinishedLinks) {
-      tempAuditArray.push({url: key, title: (await getTitle(value.queueItem)), index: value.numOfPlays});
+      tempAuditArray.push({ url: key, title: (await getTitle(value.queueItem)), index: value.numOfPlays });
     }
     tempAuditArray.sort((a, b) => {
       return b.index - a.index;
@@ -627,7 +637,8 @@ async function runCommandCases(message) {
       if (server.lockQueue) message.channel.send('***the queue has been unlocked:*** *any user can add to it*');
       else message.channel.send('***the queue has been locked:*** *only the dj can add to it*');
       server.lockQueue = !server.lockQueue;
-    } else {
+    }
+    else {
       message.channel.send('only a dj can lock the queue');
     }
     break;
@@ -659,7 +670,7 @@ async function runCommandCases(message) {
     };
     let valStr = '';
     oldDB.congratsDatabase.forEach((val, key) => {
-      keysObj.ks.push({kn: key});
+      keysObj.ks.push({ kn: key });
       valStr += val + ', ';
     });
     if (valStr.length > 1) {
@@ -671,16 +682,18 @@ async function runCommandCases(message) {
   case 'ts':
   case 'time':
   case 'timestamp':
-    if (!message.member.voice?.channel) message.channel.send('must be in a voice channel');
+    if (!message.member.voice?.channel) {message.channel.send('must be in a voice channel');}
     else if (server.audio.isVoiceChannelMember(message.member)) {
       message.channel.send('timestamp: ' + formatDuration(server.audio.resource?.playbackDuration));
-    } else message.channel.send('nothing is playing right now');
+    }
+    else {message.channel.send('nothing is playing right now');}
     break;
   case 'verbose':
     if (!server.verbose) {
       server.verbose = true;
       message.channel.send('***verbose mode enabled***, *embeds will be kept during this listening session*');
-    } else {
+    }
+    else {
       server.verbose = false;
       message.channel.send('***verbose mode disabled***');
     }
@@ -688,7 +701,8 @@ async function runCommandCases(message) {
   case 'unverbose':
     if (!server.verbose) {
       message.channel.send('*verbose mode is not currently enabled*');
-    } else {
+    }
+    else {
       server.verbose = false;
       message.channel.send('***verbose mode disabled***');
     }
@@ -779,7 +793,8 @@ async function runCommandCases(message) {
       args[1] = `https://www.${TWITCH_BASE_LINK}/${args[1]}`;
       server.queue.unshift(createQueueItem(args[1], StreamType.TWITCH, null));
       playLinkToVC(message, args[1], message.member.voice.channel, server);
-    } else {
+    }
+    else {
       message.channel.send('*must be in a voice channel*');
     }
     break;
@@ -895,7 +910,7 @@ async function runCommandCases(message) {
           `\n ${prefixString} gzid - guild, bot, and member id` +
           `\n ${prefixString} devadd - access the database`,
       )
-      .setFooter({text: `version: ${version}`})
+      .setFooter({ text: `version: ${version}` })
       .send(message.channel).then();
     break;
   case 'gzcpf':
@@ -903,10 +918,12 @@ async function runCommandCases(message) {
       if (args[1]) {
         server.prefix = args[1];
         message.channel.send('*prefix has been changed*');
-      } else {
+      }
+      else {
         message.channel.send('*must provide prefix argument*');
       }
-    } else {
+    }
+    else {
       message.channel.send('*can only be performed in devmode*');
     }
     break;
@@ -919,7 +936,8 @@ async function runCommandCases(message) {
   case 'gzdebug':
     if (server.queue[0]) {
       message.channel.send(`url: ${server.queue[0].url}\nurlAlt: ${server.queue[0].urlAlt}`);
-    } else {
+    }
+    else {
       message.channel.send('nothing is playing right now');
     }
     break;
@@ -931,7 +949,7 @@ async function runCommandCases(message) {
       commandsMapArray[CMAInt++] = [key, value];
     });
     commandsMapArray.sort((a, b) => b[1] - a[1]);
-    if (commandsMapArray.length < 1) commandsMapString = '*empty*';
+    if (commandsMapArray.length < 1) {commandsMapString = '*empty*';}
     else {
       commandsMapArray.forEach((val) => {
         commandsMapString += val[1] + ' - ' + val[0] + '\n';
@@ -943,7 +961,8 @@ async function runCommandCases(message) {
   case 'gzq':
     if (bot.voice.adapters.size > 0 && args[1] !== 'force') {
       message.channel.send('People are using the bot. Use this command again with \'force\' to restart the bot');
-    } else {
+    }
+    else {
       message.channel.send('restarting the bot... (may only shutdown)').then(() => {
         shutdown('USER')();
       });
@@ -961,10 +980,12 @@ async function runCommandCases(message) {
       processStats.startUpMessage = message.content.substr(message.content.indexOf(args[1]));
       Object.values(processStats.servers).forEach((x) => x.startUpMessage = false);
       message.channel.send('*new startup message is set*');
-    } else if (processStats.startUpMessage) {
+    }
+    else if (processStats.startUpMessage) {
       const gzsmsClearMsg = '*type **gzsm clear** to clear the startup message*';
       message.channel.send(`***current start up message:***\n${processStats.startUpMessage}\n${gzsmsClearMsg}`);
-    } else message.channel.send('*there is no startup message right now*');
+    }
+    else {message.channel.send('*there is no startup message right now*');}
     break;
   case 'gzs':
     new EmbedBuilderLocal()
@@ -989,7 +1010,8 @@ async function runCommandCases(message) {
       message.channel.send('active process #' + process.pid.toString() + ' is in ' +
       bot.voice.adapters.size + ' servers.');
       break;
-    } else if (args[1] === 'update') {
+    }
+    else if (args[1] === 'update') {
       if (process.pid === 4 || (args[2] && args[2] === 'force')) {
         const updateMsg = 'db vibe is about to be updated. This may lead to a temporary interruption.';
         bot.voice.adapters.forEach((x, g) => {
@@ -998,17 +1020,21 @@ async function runCommandCases(message) {
             const currentEmbedChannelId = processStats.servers.get(guildToUpdate.id).currentEmbedChannelId;
             if (currentEmbedChannelId && bot.channels.cache.get(currentEmbedChannelId)) {
               bot.channels.cache.get(currentEmbedChannelId).send(updateMsg);
-            } else {
+            }
+            else {
               bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).guild.systemChannel.send(updateMsg);
             }
-          } catch (e) {}
+          }
+          catch (e) {}
         });
         message.channel.send('*update message sent to ' + bot.voice.adapters.size + ' channels*');
-      } else {
+      }
+      else {
         message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
             'To still send out an update use \'gzm update force\'');
       }
-    } else if (args[1] === 'listu') {
+    }
+    else if (args[1] === 'listu') {
       let gx = '';
       bot.voice.adapters.forEach((x, g) => {
         try {
@@ -1016,7 +1042,8 @@ async function runCommandCases(message) {
           gx += `${gmArray[0][1].guild.name}: *`;
           gmArray.map((item) => item[1].user.username).forEach((x) => gx += `${x}, `);
           gx = `${gx.substring(0, gx.length - 2)}*\n`;
-        } catch (e) {}
+        }
+        catch (e) {}
       });
       if (gx) message.channel.send(gx);
       else message.channel.send('none found');
@@ -1031,20 +1058,21 @@ async function runCommandCases(message) {
       }
       const randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
       message.channel.send(`*guessing from 1-${numToCheck}... chosen: **${randomInt2}***`);
-    } else {
-      if (message.member?.voice?.channel) {
-        try {
-          let gmArray = Array.from(bot.channels.cache.get(message.member.voice.channel.id.toString()).members);
-          gmArray = gmArray.map((item) => item[1].nickname || item[1].user.username);
-          if (gmArray < 1) {
-            return message.channel.send('Need at least 1 person in a voice channel.');
-          }
-          const randomInt = Math.floor(Math.random() * gmArray.length) + 1;
-          message.channel.send(`*chosen voice channel member: **${gmArray[randomInt - 1]}***`);
-        } catch (e) {}
-      } else {
-        message.channel.send('need to be in a voice channel for this command');
+    }
+    else if (message.member?.voice?.channel) {
+      try {
+        let gmArray = Array.from(bot.channels.cache.get(message.member.voice.channel.id.toString()).members);
+        gmArray = gmArray.map((item) => item[1].nickname || item[1].user.username);
+        if (gmArray < 1) {
+          return message.channel.send('Need at least 1 person in a voice channel.');
+        }
+        const randomInt = Math.floor(Math.random() * gmArray.length) + 1;
+        message.channel.send(`*chosen voice channel member: **${gmArray[randomInt - 1]}***`);
       }
+      catch (e) {}
+    }
+    else {
+      message.channel.send('need to be in a voice channel for this command');
     }
     break;
   }
@@ -1102,22 +1130,25 @@ bot.once('ready', () => {
     processStats.setProcessActive();
     if (startupTest) {
       const index = process.argv.indexOf('--test');
-      if (index === process.argv.length-1) {
+      if (index === process.argv.length - 1) {
         console.log('could not run test, please provide channel id');
-      } else {
-        bot.channels.fetch(process.argv[index+1]).then((channel) => {
+      }
+      else {
+        bot.channels.fetch(process.argv[index + 1]).then((channel) => {
           if (channel.lastMessageId) {
             channel.send('=test').then();
-          } else {
+          }
+          else {
             console.log('not a text channel');
           }
         });
       }
     }
-  } else {
+  }
+  else {
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
     setProcessInactiveAndMonitor();
-    bot.user.setActivity('beats | .db-vibe', {type: 'PLAYING'});
+    bot.user.setActivity('beats | .db-vibe', { type: 'PLAYING' });
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
@@ -1147,7 +1178,8 @@ bot.on('messageCreate', async (message) => {
           if (bot.uptime > 7200000 && process.pid !== 4 &&
             parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))) {
             devUpdateCommand();
-          } else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.getBuildNo().substring(0, 6))) {
+          }
+          else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.getBuildNo().substring(0, 6))) {
             clearInterval(processStats.checkActiveInterval);
             // offset for process timer is 3.5 seconds - 5.9 minutes
             const offset = Math.floor(((Math.random() * 100) + 1) / 17 * 60000);
@@ -1156,16 +1188,19 @@ bot.on('messageCreate', async (message) => {
           }
         }
       }
-    } else if (message.content.substr(11, 4) === '-off') {
+    }
+    else if (message.content.substr(11, 4) === '-off') {
       // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
       // compare process IDs
       if (message.content.substr(24).trim() !== process.pid.toString()) {
         setProcessInactiveAndMonitor();
-      } else {
+      }
+      else {
         processStats.setProcessActive();
       }
     }
-  } else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
+  }
+  else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
     // view the build number of the starting process, if newer version then update
     if (bot.uptime > 7200000 && process.pid !== 4) {
       const regExp = /\[(\d+)\]/;
@@ -1196,7 +1231,8 @@ function devUpdateCommand(message, args = []) {
   if (bot.voice.adapters.size > 0) {
     if (args[0] === 'force') {
       args.splice(0, 1);
-    } else {
+    }
+    else {
       message?.channel.send(
         '***people are using the bot:*** *to force an update type \`force\` immediately after the command*',
       );
@@ -1206,7 +1242,8 @@ function devUpdateCommand(message, args = []) {
   if (!args[0]) {
     processStats.setProcessInactive();
     exec('git stash && git pull && npm i && pm2 restart vibe');
-  } else {
+  }
+  else {
     switch (args[0]) {
     case 'update':
     case 'upgrade':
@@ -1220,7 +1257,8 @@ function devUpdateCommand(message, args = []) {
     case 'custom':
       if (args[1]) {
         exec(args.slice(1).join(' '));
-      } else {
+      }
+      else {
         response = '*must provide script after \'custom\'*';
       }
       break;
@@ -1252,18 +1290,20 @@ async function devProcessCommands(message) {
       let dm;
       if (processStats.devMode) {
         dm = ' (dev mode)';
-      } else {
+      }
+      else {
         dm = bot.voice.adapters.size ? ' (VCs: ' + bot.voice.adapters.size + ')' : '';
       }
       // the process message: [sidelined / active] [process number] [version number]
       const procMsg = () => {
         return (processStats.isInactive ? 'sidelined: ' : (processStats.devMode ? 'active: ' : '**active: **')) +
-        process.pid +' (' + version + ')' + dm;
+        process.pid + ' (' + version + ')' + dm;
       };
       message.channel.send(procMsg()).then((sentMsg) => {
         if (processStats.devMode) {
           sentMsg.react(reactions.O_DIAMOND);
-        } else {
+        }
+        else {
           sentMsg.react(reactions.GEAR);
         }
 
@@ -1271,22 +1311,24 @@ async function devProcessCommands(message) {
           return user.id !== botID && user.id === message.member.id &&
               [reactions.GEAR, reactions.O_DIAMOND].includes(reaction.emoji.name);
         };
-          // updates the existing gzk message
+        // updates the existing gzk message
         const updateMessage = () => {
           if (processStats.devMode) {
             dm = ' (dev mode)';
-          } else {
+          }
+          else {
             dm = bot.voice.adapters.size ? ' (VCs: ' + bot.voice.adapters.size + ')' : '';
           }
           try {
             sentMsg.edit(procMsg());
-          } catch (e) {
+          }
+          catch (e) {
             const updatedMsg =
             '*db vibe ' + process.pid + (processStats.isInactive ? ' has been sidelined*' : ' is now active*');
             message.channel.send(updatedMsg);
           }
         };
-        const collector = sentMsg.createReactionCollector({filter, time: 30000});
+        const collector = sentMsg.createReactionCollector({ filter, time: 30000 });
         let prevVCSize = bot.voice.adapters.size;
         let prevStatus = processStats.isInactive;
         let prevDevMode = processStats.devMode;
@@ -1323,7 +1365,8 @@ async function devProcessCommands(message) {
             }
             if (processStats.isInactive) {
               processStats.setProcessActive();
-            } else {
+            }
+            else {
               setProcessInactiveAndMonitor();
             }
 
@@ -1331,7 +1374,8 @@ async function devProcessCommands(message) {
               updateMessage();
               reaction.users.remove(user.id);
             }
-          } else if (reaction.emoji.name === reactions.O_DIAMOND) {
+          }
+          else if (reaction.emoji.name === reactions.O_DIAMOND) {
             if (processStats.devMode) {
               processStats.devMode = false;
               setProcessInactiveAndMonitor();
@@ -1347,16 +1391,19 @@ async function devProcessCommands(message) {
           }
         });
       });
-    } else if (zargs[1] === 'all') {
+    }
+    else if (zargs[1] === 'all') {
       setProcessInactiveAndMonitor();
-    } else {
+    }
+    else {
       let i = 1;
       while (zargs[i]) {
         if (zargs[i].replace(/,/g, '') === process.pid.toString()) {
           if (processStats.isInactive) {
             processStats.setProcessActive();
             message.channel.send('*db vibe ' + process.pid + ' is now active*');
-          } else {
+          }
+          else {
             setProcessInactiveAndMonitor();
             message.channel.send('*db vibe ' + process.pid + ' has been sidelined*');
           }
@@ -1378,7 +1425,8 @@ async function devProcessCommands(message) {
       setProcessInactiveAndMonitor();
       processStats.servers.delete(message.guild.id);
       return message.channel.send(`*devmode is off ${process.pid}*`);
-    } else if (zargs[1] === process.pid.toString()) {
+    }
+    else if (zargs[1] === process.pid.toString()) {
       processStats.devMode = true;
       processStats.servers.delete(message.guild.id);
       if (processStats.checkActiveInterval) {
@@ -1398,7 +1446,8 @@ async function devProcessCommands(message) {
     if (!processStats.devMode && zargs[1] !== process.pid.toString()) return;
     if (bot.voice.adapters.size > 0 && (!zargs[2] || zargs[2] !== 'force')) {
       message.channel.send('People are using the bot. Use force as the second argument.').then();
-    } else {
+    }
+    else {
       message.channel.send('restarting the bot... (may only shutdown)').then(() =>
         setTimeout(() => {
           process.exit();
@@ -1428,16 +1477,21 @@ async function devProcessCommands(message) {
         if (zargs[2] === '+') {
           if (buildNo.incrementBuildNo()) {
             message.channel.send(`*build no incremented (${buildNo.getBuildNo()})*`);
-          } else message.channel.send(`*could not increment (${buildNo.getBuildNo()})*`);
-        } else if (zargs[2] === '-') {
+          }
+          else {message.channel.send(`*could not increment (${buildNo.getBuildNo()})*`);}
+        }
+        else if (zargs[2] === '-') {
           if (buildNo.decrementBuildNo()) {
             message.channel.send(`*build no decremented (${buildNo.getBuildNo()})*`);
-          } else message.channel.send(`*could not decrement (${buildNo.getBuildNo()})*`);
+          }
+          else {message.channel.send(`*could not decrement (${buildNo.getBuildNo()})*`);}
         }
-      } else {
+      }
+      else {
         message.channel.send('try again followed by a \'+\' or \'-\' to increment or decrement.');
       }
-    } else {
+    }
+    else {
       message.channel.send(`*process ${process.pid} (${buildNo.getBuildNo()})*`);
     }
     break;
@@ -1455,7 +1509,8 @@ bot.on('messageCreate', (message) => {
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
   if (message.channel.type === 'DM') {
     return dmHandler(message, message.content);
-  } else {
+  }
+  else {
     return runCommandCases(message);
   }
 });
@@ -1465,7 +1520,8 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
   if (processStats.isInactive) {
     try {
       server.collector.stop();
-    } catch (e) {}
+    }
+    catch (e) {}
     return;
   }
   updateVoiceState(oldState, newState, server).then();
@@ -1510,7 +1566,8 @@ async function updateVoiceState(oldState, newState, server) {
     if (server.currentEmbed?.reactions) {
       try {
         server.collector?.stop();
-      } catch (e) {}
+      }
+      catch (e) {}
     }
     server.currentEmbed = null;
     if (server.followUpMessage) {
@@ -1521,7 +1578,8 @@ async function updateVoiceState(oldState, newState, server) {
       whatspMap.clear();
       server.audio.reset();
     }
-  } else if (botInVC(newState)) {
+  }
+  else if (botInVC(newState)) {
     if (oldState.channel?.members.filter((x) => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
@@ -1537,14 +1595,16 @@ async function updateVoiceState(oldState, newState, server) {
         }
       }, leaveVCInt);
     }
-  } else if (server.seamless.function && !oldState.member.user.bot) {
+  }
+  else if (server.seamless.function && !oldState.member.user.bot) {
     if (server.seamless.timeout) {
       clearTimeout(server.seamless.timeout);
       server.seamless.timeout = null;
     }
     try {
       server.seamless.function(...server.seamless.args);
-    } catch (e) {}
+    }
+    catch (e) {}
     server.seamless.function = null;
     server.seamless.message.delete();
     server.seamless.message = null;

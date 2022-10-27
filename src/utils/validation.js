@@ -1,6 +1,6 @@
-const {hasDJPermissions} = require('./permissions');
-const {botInVC, resetSession} = require('./utils');
-const {MAX_QUEUE_S} = require('./lib/constants');
+const { hasDJPermissions } = require('./permissions');
+const { botInVC, resetSession } = require('./utils');
+const { MAX_QUEUE_S } = require('./lib/constants');
 
 /**
  * Determines whether to proceed with the command, based on the request.
@@ -48,7 +48,8 @@ function isValidRequestWPlay(server, message, actionDescription) {
   // in case of force disconnect
   if (!botInVC(message)) {
     resetSession(server);
-  } else if (server.queue.length >= MAX_QUEUE_S) {
+  }
+  else if (server.queue.length >= MAX_QUEUE_S) {
     message.channel.send('*max queue size has been reached*');
     return false;
   }
@@ -56,4 +57,4 @@ function isValidRequestWPlay(server, message, actionDescription) {
 }
 
 
-module.exports = {isValidRequest, isValidRequestWPlay};
+module.exports = { isValidRequest, isValidRequestWPlay };

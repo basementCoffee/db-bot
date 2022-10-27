@@ -1,6 +1,6 @@
-const {gsrun, gsUpdateOverwrite, gsUpdateAdd} = require('../database/api/api');
-const {PREFIX_SN} = require('../utils/lib/constants');
-const {getBotDisplayName} = require('../utils/utils');
+const { gsrun, gsUpdateOverwrite, gsUpdateAdd } = require('../database/api/api');
+const { PREFIX_SN } = require('../utils/lib/constants');
+const { getBotDisplayName } = require('../utils/utils');
 
 /**
  * Changes the server's prefix.
@@ -38,10 +38,11 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
       gsrun('A', 'B', PREFIX_SN).then(async (xdb) => {
         server.prefix = xdb.congratsDatabase.get(message.guild.id);
         if (server.prefix === newPrefix) {
-          prefixMsg.edit({content: `Prefix successfully changed to: ${server.prefix}`});
-        } else {
+          prefixMsg.edit({ content: `Prefix successfully changed to: ${server.prefix}` });
+        }
+        else {
           console.log(server.prefix);
-          prefixMsg.edit({content: `\`There was an error - prefix is set to ${server.prefix}\``});
+          prefixMsg.edit({ content: `\`There was an error - prefix is set to ${server.prefix}\`` });
           return;
         }
         let name = 'db vibe';
@@ -54,9 +55,11 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
         async function changeNamePrefix() {
           if (!message.guild.me.nickname) {
             await message.guild.me.setNickname('[' + newPrefix + '] ' + 'db vibe');
-          } else if (message.guild.me.nickname.indexOf('[') > -1 && message.guild.me.nickname.indexOf(']') > -1) {
+          }
+          else if (message.guild.me.nickname.indexOf('[') > -1 && message.guild.me.nickname.indexOf(']') > -1) {
             await message.guild.me.setNickname('[' + newPrefix + '] ' + message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 2));
-          } else {
+          }
+          else {
             await message.guild.me.setNickname('[' + newPrefix + '] ' + message.guild.me.nickname);
           }
         }
@@ -66,13 +69,14 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
           message.channel.send('----------------------\nWould you like me to update my name to reflect this? (yes or no)\nFrom **' +
             (getBotDisplayName(message.guild)) + '**  -->  **[' + newPrefix + '] ' + name + '**').then(() => {
             const filter = (m) => message.author.id === m.author.id;
-            message.channel.awaitMessages({filter, time: 30000, max: 1, errors: ['time']})
+            message.channel.awaitMessages({ filter, time: 30000, max: 1, errors: ['time'] })
               .then(async (messages) => {
                 // message.channel.send(`You've entered: ${messages.first().content}`);
                 if (messages.first().content.toLowerCase() === 'yes' || messages.first().content.toLowerCase() === 'y') {
                   await changeNamePrefix();
                   message.channel.send('name has been updated, prefix is: ' + newPrefix);
-                } else {
+                }
+                else {
                   message.channel.send('ok, prefix is: ' + newPrefix);
                 }
               })
@@ -80,7 +84,8 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
                 message.channel.send('prefix is now: ' + newPrefix);
               });
           });
-        } else if (message.guild.me.nickname.substring(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
+        }
+        else if (message.guild.me.nickname.substring(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
           await changeNamePrefix();
         }
       });
@@ -88,4 +93,4 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
   });
 }
 
-module.exports = {changePrefix};
+module.exports = { changePrefix };

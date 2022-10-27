@@ -1,11 +1,11 @@
-const {getAssumptionMultipleMethods} = require('./search');
-const {verifyPlaylist, createQueueItem, getLinkType, botInVC, setSeamless} = require('../utils/utils');
-const {MAX_QUEUE_S} = require('../utils/lib/constants');
-const {getPlaylistItems} = require('../utils/playlist');
-const {updateActiveEmbed} = require('../utils/embed');
-const {playLinkToVC} = require('./stream/stream');
-const {getXdb2} = require('../database/retrieval');
-const {isValidRequestWPlay} = require('../utils/validation');
+const { getAssumptionMultipleMethods } = require('./search');
+const { verifyPlaylist, createQueueItem, getLinkType, botInVC, setSeamless } = require('../utils/utils');
+const { MAX_QUEUE_S } = require('../utils/lib/constants');
+const { getPlaylistItems } = require('../utils/playlist');
+const { updateActiveEmbed } = require('../utils/embed');
+const { playLinkToVC } = require('./stream/stream');
+const { getXdb2 } = require('../database/retrieval');
+const { isValidRequestWPlay } = require('../utils/validation');
 
 /**
  * Runs the checks to add random songs to the queue
@@ -48,7 +48,8 @@ async function runRandomToQueue(wArray, message, sheetName, server, addToFront =
   const xdb = await getXdb2(server, sheetName, true);
   if (isPlaylist) {
     playRandomKeys(message, origArg, xdb.globalKeys, server, true, addToFront).then();
-  } else {
+  }
+  else {
     if (firstWord > MAX_QUEUE_S) {
       message.channel.send('*max limit for random is ' + MAX_QUEUE_S + '*');
       firstWord = MAX_QUEUE_S;
@@ -119,11 +120,13 @@ async function playRandomKeys(message, numOfTimes, cdb, server, isPlaylist, addT
         return null;
       })();
       if (playlistUrl) playlistUrl = playlistUrl.link;
-    } else playlistUrl = numOfTimes;
+    }
+    else {playlistUrl = numOfTimes;}
     if (!playlistUrl) return message.channel.send(`*could not find **${numOfTimes}** in the keys list*`);
     numOfTimes = 1;
     if (verifyPlaylist(playlistUrl)) sentMsg = message.channel.send('randomizing your playlist...');
-  } else {
+  }
+  else {
     valArray = [];
     cdb.forEach((value) => valArray.push(value.link));
     if (valArray.length < 1) {
@@ -163,9 +166,11 @@ async function playRandomKeys(message, numOfTimes, cdb, server, isPlaylist, addT
           if (addToFront) {
             server.queue.splice(addToFront - 1, 0, url);
             addToFront++;
-          } else server.queue.push(url);
+          }
+          else {server.queue.push(url);}
           i++;
-        } else if (verifyPlaylist(url)) {
+        }
+        else if (verifyPlaylist(url)) {
           // if it is a playlist, un-package the playlist
           // the number of items added to tempArray
           const addedItems = await getPlaylistItems(url, tempArray);
@@ -182,12 +187,14 @@ async function playRandomKeys(message, numOfTimes, cdb, server, isPlaylist, addT
               numOfTimes++;
             }
           }
-        } else if (url) {
+        }
+        else if (url) {
           // add url to queue
           if (addToFront) {
             server.queue.splice(addToFront - 1, 0, createQueueItem(url, getLinkType(url), null));
             addToFront++;
-          } else server.queue.push(createQueueItem(url, getLinkType(url), null));
+          }
+          else {server.queue.push(createQueueItem(url, getLinkType(url), null));}
           i++;
         }
         // remove added item from tempArray
@@ -195,7 +202,8 @@ async function playRandomKeys(message, numOfTimes, cdb, server, isPlaylist, addT
       }
     }
     // here - queue should have all the items
-  } catch (e) {
+  }
+  catch (e) {
     console.log('error in random: ', e);
     if (isPlaylist) return;
     const rn = Math.floor(Math.random() * valArray.length);
@@ -210,13 +218,16 @@ async function playRandomKeys(message, numOfTimes, cdb, server, isPlaylist, addT
   if (server.queue[0] === 'filler link') server.queue.shift();
   if (addToFront || (queueWasEmpty && server.queue.length === numOfTimes)) {
     await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else if (!botInVC(message)) {
+  }
+  else if (!botInVC(message)) {
     if (botInVC(message)) {
       updatedQueueMessage(message.channel, `*added ${numOfTimes} to queue*`, server);
-    } else {
+    }
+    else {
       await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
     }
-  } else {
+  }
+  else {
     updatedQueueMessage(message.channel, `*added ${numOfTimes} to queue*`, server);
   }
   sentMsg = await sentMsg;
@@ -234,4 +245,4 @@ function updatedQueueMessage(channel, messageText, server) {
   updateActiveEmbed(server).then();
 }
 
-module.exports = {runRandomToQueue, shuffleQueue};
+module.exports = { runRandomToQueue, shuffleQueue };

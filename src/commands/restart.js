@@ -1,4 +1,4 @@
-const {playLinkToVC} = require('./stream/stream');
+const { playLinkToVC } = require('./stream/stream');
 
 /**
  * Restarts the song playing and what was within an older session.
@@ -18,12 +18,14 @@ async function runRestartCommand(message, mgid, keyword, server) {
   }
   if (server.queue[0]) {
     await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else if (server.queueHistory.length > 0) {
+  }
+  else if (server.queueHistory.length > 0) {
     server.queue.unshift(server.queueHistory.pop());
     await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else {
+  }
+  else {
     message.channel.send('there is nothing to ' + keyword);
   }
 }
 
-module.exports = {runRestartCommand};
+module.exports = { runRestartCommand };

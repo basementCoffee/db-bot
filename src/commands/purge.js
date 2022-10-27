@@ -1,4 +1,4 @@
-const {getTitle} = require('../utils/utils');
+const { getTitle } = require('../utils/utils');
 
 /**
  * Purges an item from the queue.
@@ -32,4 +32,4 @@ async function purgeItem(array, arrayItemApplicator) {
 }
 
 
-module.exports = {runPurgeCommand};
+module.exports = { runPurgeCommand };

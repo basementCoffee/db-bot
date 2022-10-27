@@ -1,13 +1,13 @@
-const {getXdb2} = require('../database/retrieval');
-const {getAssumptionMultipleMethods} = require('./search');
-const {playLinkToVC} = require('./stream/stream');
+const { getXdb2 } = require('../database/retrieval');
+const { getAssumptionMultipleMethods } = require('./search');
+const { playLinkToVC } = require('./stream/stream');
 const {
   botInVC, setSeamless, verifyPlaylist, createQueueItem, adjustQueueForPlayNow,
 } = require('../utils/utils');
-const {MAX_QUEUE_S} = require('../utils/lib/constants');
-const {updateActiveEmbed} = require('../utils/embed');
-const {addPlaylistToQueue} = require('../utils/playlist');
-const {isValidRequestWPlay} = require('../utils/validation');
+const { MAX_QUEUE_S } = require('../utils/lib/constants');
+const { updateActiveEmbed } = require('../utils/embed');
+const { addPlaylistToQueue } = require('../utils/playlist');
+const { isValidRequestWPlay } = require('../utils/validation');
 
 /**
  * Plays an entire custom playlist.
@@ -38,7 +38,8 @@ async function playPlaylistDB(args, message, sheetName, playRightNow, printError
       if (assumption) {
         playlistMap = xdb.playlists.get(assumption.toUpperCase());
         assumptionList.push(playlistName, assumption);
-      } else {
+      }
+      else {
         unfoundPlaylists.push(playlistName);
         continue;
       }
@@ -114,7 +115,8 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
       incrementor = () => --dbAddInt;
       whileExpression = () => dbAddInt;
       addQICallback = (queueItem) => server.queue.unshift(queueItem);
-    } else {
+    }
+    else {
       dbAddInt = 1;
       incrementor = () => ++dbAddInt;
       whileExpression = () => dbAddInt < args.length;
@@ -127,7 +129,8 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
         // push to queue
         dbAddedToQueue += await addLinkToQueueSimple(message, server, playRightNow, tempUrl, addQICallback);
         if (server.queue.length >= MAX_QUEUE_S) break;
-      } else {
+      }
+      else {
         if (firstUnfoundRan) {
           unFoundString = unFoundString.concat(', ');
         }
@@ -143,16 +146,19 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
     if (playRightNow) {
       playLinkToVC(message, server.queue[0], voiceChannel, server);
       return true;
-    } else {
+    }
+    else {
       const msgTxt = '*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*';
       if (tempMsg && tempMsg.deletable) {
         tempMsg.edit(msgTxt);
-      } else {
+      }
+      else {
         message.channel.send(msgTxt);
       }
       await updateActiveEmbed(server);
     }
-  } else {
+  }
+  else {
     tempUrl = xdb.globalKeys.get(args[1].toUpperCase())?.link;
     if (!tempUrl) {
       const ss = getAssumptionMultipleMethods(args[1], [...xdb.globalKeys.values()].map((item) => item.name));
@@ -164,46 +170,54 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
           adjustQueueForPlayNow(server.audio.resource, server);
           if (playlistType) {
             await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-          } else {
+          }
+          else {
             server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
           }
           playLinkToVC(message, server.queue[0], voiceChannel, server);
           message.channel.send('*playing now*');
           return true;
-        } else {
-          if (playlistType) {
-            dbAddedToQueue = await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-          } else {
-            server.queue.push(createQueueItem(tempUrl, playlistType, null));
-          }
         }
-      } else if (!printErrorMsg) {
-        message.channel.send(`*could not find **${args[1]}** in the keys list*`);
-        return true;
-      } else if (ss?.length > 0) {
-        message.channel.send('*could not find \'' + args[1] + '\' in database*\n*Did you mean: ' + ss + '*');
-        return true;
-      } else {
+        else if (playlistType) {
+          dbAddedToQueue = await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
+        }
+        else {
+          server.queue.push(createQueueItem(tempUrl, playlistType, null));
+        }
+      }
+      else if (!printErrorMsg) {
         message.channel.send(`*could not find **${args[1]}** in the keys list*`);
         return true;
       }
-    } else { // did find in database
+      else if (ss?.length > 0) {
+        message.channel.send('*could not find \'' + args[1] + '\' in database*\n*Did you mean: ' + ss + '*');
+        return true;
+      }
+      else {
+        message.channel.send(`*could not find **${args[1]}** in the keys list*`);
+        return true;
+      }
+    }
+    else { // did find in database
       const playlistType = verifyPlaylist(tempUrl);
       if (playRightNow) { // push to queue and play
         await adjustQueueForPlayNow(server.audio.resource, server);
         if (playlistType) {
           await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-        } else {
+        }
+        else {
           server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
         }
         playLinkToVC(message, server.queue[0], voiceChannel, server);
         message.channel.send('*playing now*');
         return true;
-      } else {
+      }
+      else {
         // push to queue
         if (playlistType) {
           await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-        } else {
+        }
+        else {
           server.queue.push(createQueueItem(tempUrl, playlistType, null));
         }
       }
@@ -212,7 +226,8 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
       const msgTxt = '*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*';
       if (tempMsg && tempMsg.deletable) {
         tempMsg.edit(msgTxt);
-      } else {
+      }
+      else {
         message.channel.send(msgTxt);
       }
       await updateActiveEmbed(server);
@@ -239,11 +254,12 @@ async function addLinkToQueueSimple(message, server, addToFront, tempUrl, addQIC
   const playlistType = verifyPlaylist(tempUrl);
   if (playlistType) {
     dbAddedToQueue += await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, addToFront);
-  } else {
+  }
+  else {
     addQICallback(createQueueItem(tempUrl, playlistType, null));
     dbAddedToQueue++;
   }
   return dbAddedToQueue;
 }
 
-module.exports = {runDatabasePlayCommand, playPlaylistDB};
+module.exports = { runDatabasePlayCommand, playPlaylistDB };

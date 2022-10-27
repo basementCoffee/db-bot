@@ -1,12 +1,12 @@
-const {verifyUrl, verifyPlaylist, linkFormatter, createQueueItem} = require('../utils/utils');
-const {getXdb2} = require('../database/retrieval');
+const { verifyUrl, verifyPlaylist, linkFormatter, createQueueItem } = require('../utils/utils');
+const { getXdb2 } = require('../database/retrieval');
 const {
   SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, MAX_QUEUE_S,
 } = require('../utils/lib/constants');
-const {addPlaylistToQueue} = require('../utils/playlist');
+const { addPlaylistToQueue } = require('../utils/playlist');
 const ytpl = require('ytpl');
-const {updateActiveEmbed} = require('../utils/embed');
-const {isValidRequestWPlay} = require('../utils/validation');
+const { updateActiveEmbed } = require('../utils/embed');
+const { isValidRequestWPlay } = require('../utils/validation');
 
 /**
  * Inserts a term into position into the queue. Accepts a valid link or key.
@@ -26,9 +26,10 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
   if (num) {
     links = args.filter((item) => item !== num);
     num = parseInt(num);
-  } else {
+  }
+  else {
     links = args;
-    if (server.queue.length === 1) num = 1;
+    if (server.queue.length === 1) {num = 1;}
     else {
       // insert question
       const insertQ = 'What position would you like to insert? (1-' +
@@ -37,12 +38,13 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
       const filter = (m) => {
         return (message.author.id === m.author.id);
       };
-      const messages = await sentMsg.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']});
+      const messages = await sentMsg.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] });
       num = messages.first().content.trim();
       if (num.toLowerCase() === 'q') {
         message.channel.send('*cancelled*');
         return -1;
-      } else {
+      }
+      else {
         num = parseInt(num);
       }
       if (!num) {
@@ -72,7 +74,8 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
       if (!link) {
         notFoundString += `${tempLink}, `;
         links.splice(i, 1);
-      } else links[i] = link;
+      }
+      else {links[i] = link;}
     }
   }
   if (notFoundString.length) {
@@ -89,17 +92,21 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
       if (link.includes(SPOTIFY_BASE_LINK)) {
         link = linkFormatter(link, SPOTIFY_BASE_LINK);
         pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SPOTIFY, false, num);
-      } else if (ytpl.validateID(link)) {
+      }
+      else if (ytpl.validateID(link)) {
         pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.YOUTUBE, false, num);
-      } else if (link.includes(SOUNDCLOUD_BASE_LINK)) {
+      }
+      else if (link.includes(SOUNDCLOUD_BASE_LINK)) {
         link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
         pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SOUNDCLOUD, false, num);
-      } else {
+      }
+      else {
         server.queue.splice(num, 0,
           createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined));
         pNums++;
       }
-    } catch (e) {
+    }
+    catch (e) {
       failedLinks += `<${link}>, `;
     }
   }
@@ -130,4 +137,4 @@ function insertCommandVerification(message, server, args) {
   return 1;
 }
 
-module.exports = {runInsertCommand};
+module.exports = { runInsertCommand };

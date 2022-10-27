@@ -1,5 +1,5 @@
-const {updateActiveEmbed} = require('../utils/embed');
-const {serializeAndUpdate} = require('../database/utils');
+const { updateActiveEmbed } = require('../utils/embed');
+const { serializeAndUpdate } = require('../database/utils');
 
 /**
  * Removes an item from the queue. Does not allow for the currently playing item to be removed from the queue (index 0).
@@ -21,7 +21,7 @@ async function runRemoveCommand(message, server, itemPosition) {
   if (server.queue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
   let rNum = parseInt(itemPosition);
   if (!rNum) {
-    if (server.queue.length === 2) rNum = 1;
+    if (server.queue.length === 2) {rNum = 1;}
     else {
       const example = '\` Ex: remove 2\`';
       return message.channel.send((`Needed a position in the queue to remove (1-${(server.queue.length - 1)})\n` +
@@ -57,4 +57,4 @@ async function removePlaylist(server, sheetName, playlistName, xdb, channel) {
   return true;
 }
 
-module.exports = {runRemoveCommand, removePlaylist};
+module.exports = { runRemoveCommand, removePlaylist };

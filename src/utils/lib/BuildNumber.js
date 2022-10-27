@@ -1,4 +1,4 @@
-const {version} = require('../../../package.json');
+const { version } = require('../../../package.json');
 
 // A class allowing for retrieval and change of the build number.
 class BuildNumber {

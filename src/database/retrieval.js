@@ -1,8 +1,8 @@
 /* eslint-disable camelcase */
-const {botInVC, isPersonalSheet} = require('../utils/utils');
-const {gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite} = require('./api/api');
+const { botInVC, isPersonalSheet } = require('../utils/utils');
+const { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } = require('./api/api');
 const processStats = require('../process/checkToSeeActive');
-const {PREFIX_SN} = require('../utils/lib/constants');
+const { PREFIX_SN } = require('../utils/lib/constants');
 
 // eslint-disable-next-line valid-jsdoc
 /**
@@ -96,15 +96,17 @@ async function getServerPrefix(server, mgid) {
       server.prefix = '.';
       try {
         gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);
-      } catch (e) {
+      }
+      catch (e) {
         console.log(e);
       }
     }
-  } catch (e) {
+  }
+  catch (e) {
     console.log(e);
     server.prefix = '.';
     gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);
   }
 }
 
-module.exports = {getXdb, sendListSize, getServerPrefix, getXdb2, getSettings, setSettings};
+module.exports = { getXdb, sendListSize, getServerPrefix, getXdb2, getSettings, setSettings };

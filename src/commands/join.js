@@ -1,6 +1,6 @@
-const {LEAVE_VC_TIMEOUT} = require('../utils/lib/constants');
-const {sessionEndEmbed} = require('../utils/embed');
-const {resetSession, pauseComputation, botInVC, catchVCJoinError} = require('../utils/utils');
+const { LEAVE_VC_TIMEOUT } = require('../utils/lib/constants');
+const { sessionEndEmbed } = require('../utils/embed');
+const { resetSession, pauseComputation, botInVC, catchVCJoinError } = require('../utils/utils');
 const processStats = require('../utils/lib/ProcessStats');
 /**
  * Joins the voice channel of the message member (if applicable).
@@ -31,12 +31,13 @@ async function joinVoiceChannelSafe(message, server) {
       server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, server.connection),
         LEAVE_VC_TIMEOUT);
       return true;
-    } catch (e) {
+    }
+    catch (e) {
       catchVCJoinError(e, message.channel);
     }
   }
   return false;
 }
 
-module.exports = {joinVoiceChannelSafe};
+module.exports = { joinVoiceChannelSafe };
 

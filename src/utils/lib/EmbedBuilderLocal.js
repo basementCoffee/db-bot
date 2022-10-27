@@ -1,4 +1,4 @@
-const {EmbedBuilder} = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 /**
  * Local wrapper for EmbedBuilder.
@@ -88,13 +88,13 @@ class EmbedBuilderLocal {
    * @return {Promise<*>}
    */
   async send(channel) {
-    return channel.send({embeds: [this.build()]});
+    return channel.send({ embeds: [this.build()] });
   }
 
   async edit(message) {
-    return message.edit({embeds: [this.build()]});
+    return message.edit({ embeds: [this.build()] });
   }
 }
 
 
-module.exports = {EmbedBuilderLocal};
+module.exports = { EmbedBuilderLocal };

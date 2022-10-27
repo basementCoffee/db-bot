@@ -1,4 +1,4 @@
-const {EmbedBuilderLocal} = require('./lib/EmbedBuilderLocal');
+const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
 
 /**
  * Full description of the help list.
@@ -108,11 +108,11 @@ function getHelpList(prefixString, numOfPages, version) {
     const helpListEmbed = new EmbedBuilderLocal()
       .setTitle(titleArray[i] || titleArray.slice(-1)[0])
       .setDescription(pages[i])
-      .setFooter({text: `(${i + 1}/${numOfPages})`});
+      .setFooter({ text: `(${i + 1}/${numOfPages})` });
     embedPages.push(helpListEmbed);
   }
 
   return embedPages;
 }
 
-module.exports = {getHelpList};
+module.exports = { getHelpList };

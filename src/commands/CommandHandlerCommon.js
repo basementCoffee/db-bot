@@ -1,24 +1,24 @@
-const {addCustomPlaylist, runAddCommandWrapper_P} = require('./add');
-const {changePrefix} = require('./changePrefix');
-const {playPlaylistDB, runDatabasePlayCommand} = require('./databasePlayCommand');
-const {runHelpCommand} = require('./help');
-const {runInsertCommand} = require('./insert');
-const {joinVoiceChannelSafe} = require('./join');
-const {getJoke} = require('./joke');
-const {runKeysCommand} = require('./keys');
-const {parentThread} = require('../threads/parentThread');
-const {runMoveItemCommand, moveKeysWrapper} = require('./move');
-const {runWhatsPCommand} = require('./now-playing');
-const {pauseCommandUtil, playCommandUtil, stopPlayingUtil} = require('./stream/utils');
-const {runPurgeCommand} = require('./purge');
-const {runRemoveCommand, removePlaylist} = require('./remove');
-const {runUniversalSearchCommand} = require('./search');
-const {runRestartCommand} = require('./restart');
-const {renameKey, renamePlaylist} = require('./rename');
-const {runPlayLinkCommand, playLinkNow} = require('./playLink');
-const {ZWSP} = require('../utils/lib/constants');
-const {runSeekCommand} = require('./seek');
-const {runRandomToQueue, shuffleQueue} = require('./playRandomKeys');
+const { addCustomPlaylist, runAddCommandWrapper_P } = require('./add');
+const { changePrefix } = require('./changePrefix');
+const { playPlaylistDB, runDatabasePlayCommand } = require('./databasePlayCommand');
+const { runHelpCommand } = require('./help');
+const { runInsertCommand } = require('./insert');
+const { joinVoiceChannelSafe } = require('./join');
+const { getJoke } = require('./joke');
+const { runKeysCommand } = require('./keys');
+const { parentThread } = require('../threads/parentThread');
+const { runMoveItemCommand, moveKeysWrapper } = require('./move');
+const { runWhatsPCommand } = require('./now-playing');
+const { pauseCommandUtil, playCommandUtil, stopPlayingUtil } = require('./stream/utils');
+const { runPurgeCommand } = require('./purge');
+const { runRemoveCommand, removePlaylist } = require('./remove');
+const { runUniversalSearchCommand } = require('./search');
+const { runRestartCommand } = require('./restart');
+const { renameKey, renamePlaylist } = require('./rename');
+const { runPlayLinkCommand, playLinkNow } = require('./playLink');
+const { ZWSP } = require('../utils/lib/constants');
+const { runSeekCommand } = require('./seek');
+const { runRandomToQueue, shuffleQueue } = require('./playRandomKeys');
 
 
 // A common handler for user commands.
@@ -141,7 +141,7 @@ class CommandHandlerCommon {
    * @returns {void}
    */
   lyrics(channelId, memberId, args, queueItem) {
-    parentThread('lyrics', {channelId}, [args, queueItem, memberId]);
+    parentThread('lyrics', { channelId }, [args, queueItem, memberId]);
   }
 
   /**
@@ -375,7 +375,8 @@ class CommandHandlerCommon {
     wildcardRandomArr = wildcardRandomArr.filter((x) => x);
     if (wildcardRandomArr.length < 1) {
       this.shuffleQueue(server, message);
-    } else {
+    }
+    else {
       this.addRandomKeysToQueue(wildcardRandomArr, message, sheetName, server, false).then();
     }
   }

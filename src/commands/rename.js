@@ -1,5 +1,5 @@
-const {getXdb2} = require('../database/retrieval');
-const {serializeAndUpdate} = require('../database/utils');
+const { getXdb2 } = require('../database/retrieval');
+const { serializeAndUpdate } = require('../database/utils');
 
 /**
  * Renames a playlist.
@@ -67,7 +67,8 @@ async function renameKey(channel, server, sheetName, oldName, newName) {
     if (key === oldNameUpper) {
       val.name = newName;
       replacementMap.set(newNameUpper, val);
-    } else {
+    }
+    else {
       replacementMap.set(key, val);
     }
   });
@@ -80,4 +81,4 @@ async function renameKey(channel, server, sheetName, oldName, newName) {
   return true;
 }
 
-module.exports = {renamePlaylist, renameKey};
+module.exports = { renamePlaylist, renameKey };

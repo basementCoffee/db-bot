@@ -1,4 +1,4 @@
-const {CORE_ADM} = require('./lib/constants');
+const { CORE_ADM } = require('./lib/constants');
 
 /**
  * Returns whether a given ID has Admin rights.
@@ -31,10 +31,11 @@ function isCoreAdmin(id) {
 function hasDJPermissions(channel, memberID, printErrMsg, voteAdminList) {
   if (voteAdminList.length < 1 || voteAdminList.filter((x) => x.id === memberID).length > 0) {
     return true;
-  } else if (printErrMsg) {
+  }
+  else if (printErrMsg) {
     channel.send('*you do not have the necessary permissions to perform this action*');
   }
   return false;
 }
 
-module.exports = {isAdmin, isCoreAdmin, hasDJPermissions};
+module.exports = { isAdmin, isCoreAdmin, hasDJPermissions };

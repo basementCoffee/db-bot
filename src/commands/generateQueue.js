@@ -1,10 +1,10 @@
-const {botID} = require('../utils/lib/constants');
-const {botInVC, getTitle, createQueueItem, getSheetName} = require('../utils/utils');
-const {reactions} = require('../utils/lib/reactions');
-const {updateActiveEmbed} = require('../utils/embed');
-const {runInsertCommand} = require('./insert');
-const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
-const {isValidRequestWPlay} = require('../utils/validation');
+const { botID } = require('../utils/lib/constants');
+const { botInVC, getTitle, createQueueItem, getSheetName } = require('../utils/utils');
+const { reactions } = require('../utils/lib/reactions');
+const { updateActiveEmbed } = require('../utils/embed');
+const { runInsertCommand } = require('./insert');
+const { EmbedBuilderLocal } = require('../utils/lib/EmbedBuilderLocal');
+const { isValidRequestWPlay } = require('../utils/validation');
 
 /**
  * Displays the queue in the channel.
@@ -45,7 +45,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
       tempMsg = await message.channel.send(msgTxt);
     }
     queueMsgEmbed.setTitle('Up Next')
-      .setAuthor({name: `playing:  ${authorName}`})
+      .setAuthor({ name: `playing:  ${authorName}` })
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
     let sizeConstraint = 0;
     const qIterations = Math.min(serverQueue.length, startingIndex + 11);
@@ -60,12 +60,13 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
     }
     queueMsgEmbed.setDescription(queueSB);
     if (serverQueue.length > 11) {
-      queueMsgEmbed.setFooter({text: 'use \'insert\' & \'remove\' to edit the queue'});
+      queueMsgEmbed.setFooter({ text: 'use \'insert\' & \'remove\' to edit the queue' });
     }
     if (tempMsg?.deletable) tempMsg.delete();
     if (sentMsg?.deletable) {
       await queueMsgEmbed.edit(sentMsg);
-    } else {
+    }
+    else {
       sentMsg = await queueMsgEmbed.send(message.channel);
       sentMsgArray.push(sentMsg);
     }
@@ -83,7 +84,8 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
             }
           });
         });
-      } else {
+      }
+      else {
         sentMsg.react(reactions.INBOX).then(() => {
           if (server.queue.length > 0) sentMsg.react(reactions.OUTBOX);
         });
@@ -100,7 +102,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
       }
       return false;
     };
-    const collector = sentMsg.createReactionCollector({filter, time: 300000, dispose: true});
+    const collector = sentMsg.createReactionCollector({ filter, time: 300000, dispose: true });
     const arrowReactionTimeout = setTimeout(() => {
       sentMsg.reactions.removeAll();
     }, 300500);
@@ -113,7 +115,8 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
         if (startingIndex <= 0) {
           const lastDigit = Number(serverQueue.length.toString().slice(-1)[0]);
           newStartingIndex = serverQueue.length - (lastDigit > 1 ? lastDigit : 10);
-        } else {
+        }
+        else {
           newStartingIndex = Math.max(0, startingIndex - 10);
         }
         generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
@@ -127,14 +130,15 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
           newStartingIndex = 0;
         }
         generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
-      } else if (reaction.emoji.name === reactions.INBOX) {
+      }
+      else if (reaction.emoji.name === reactions.INBOX) {
         if (!isValidRequestWPlay(server, message, 'insert')) return;
         let link;
         message.channel.send('What link would you like to insert [or type \'q\' to quit]').then((msg) => {
           const filter = (m) => {
             return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
-          message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
+          message.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
             .then(async (messages) => {
               link = messages.first().content.split(' ')[0].trim();
               if (link.toLowerCase() === 'q') {
@@ -157,7 +161,8 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
                 // update the local queue
                 serverQueue = server.queue.map((x) => x);
                 generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray).then();
-              } else {
+              }
+              else {
                 message.channel.send('*cancelled*');
                 msg.delete();
               }
@@ -166,7 +171,8 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
               msg.delete();
             });
         });
-      } else if (reaction.emoji.name === reactions.OUTBOX) {
+      }
+      else if (reaction.emoji.name === reactions.OUTBOX) {
         if (server.dictator && reactionCollector.id !== server.dictator.id) {
           return message.channel.send('only the dictator can remove from the queue');
         }
@@ -180,7 +186,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
           const filter = (m) => {
             return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
-          message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
+          message.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
             .then(async (messages) => {
               let num = messages.first().content.trim();
               if (num.toLowerCase() === 'q') {
@@ -207,7 +213,8 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
                 clearTimeout(arrowReactionTimeout);
                 collector.stop();
                 return generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
-              } else msg.delete();
+              }
+              else {msg.delete();}
             }).catch(() => {
               message.channel.send('*cancelled*');
               msg.delete();
@@ -233,4 +240,4 @@ async function createVisualText(server, arrayOfItems, stringCallback) {
   return finalText;
 }
 
-module.exports = {runQueueCommand, createVisualText};
+module.exports = { runQueueCommand, createVisualText };

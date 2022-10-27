@@ -1,5 +1,5 @@
-const {linkValidator, convertSeekFormatToSec, getSheetName} = require('../utils/utils');
-const {playLinkNow} = require('./playLink');
+const { linkValidator, convertSeekFormatToSec, getSheetName } = require('../utils/utils');
+const { playLinkNow } = require('./playLink');
 
 /**
  * Plays the link at a specific timestamp.
@@ -23,7 +23,8 @@ async function runSeekCommand(message, server, args, mgid) {
         if (numSeconds > 1200) message.channel.send('*seeking...*');
         return;
       }
-    } else {
+    }
+    else {
       // provided one argument
       if (!server.queue[0]) {
         return message.channel.send(`*provide a seek link and timestamp (ex: ${args[0]} [link] 5m32s)*`);
@@ -44,4 +45,4 @@ async function runSeekCommand(message, server, args, mgid) {
   message.channel.send(SEEK_ERR_MSG);
 }
 
-module.exports = {runSeekCommand};
+module.exports = { runSeekCommand };

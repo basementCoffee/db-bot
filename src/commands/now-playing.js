@@ -1,6 +1,6 @@
-const {getXdb2} = require('../database/retrieval');
-const {runSearchCommand} = require('./search');
-const {sendLinkAsEmbed} = require('./stream/stream');
+const { getXdb2 } = require('../database/retrieval');
+const { runSearchCommand } = require('./search');
+const { sendLinkAsEmbed } = require('./stream/stream');
 
 /**
  * Runs the what's playing command. Can also look up database values if args[2] is present.
@@ -25,19 +25,23 @@ async function runWhatsPCommand(server, message, voiceChannel, keyName, sheetNam
     }
     if (link) {
       return message.channel.send(link);
-    } else {
+    }
+    else {
       // not found msg
       const notFound = `Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`;
       message.channel.send(notFound);
       return sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, true);
     }
-  } else if (!voiceChannel) {
+  }
+  else if (!voiceChannel) {
     return message.channel.send('must be in a voice channel');
-  } else if (server.queue[0]) {
+  }
+  else if (server.queue[0]) {
     return sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, true);
-  } else {
+  }
+  else {
     return message.channel.send('nothing is playing right now');
   }
 }
 
-module.exports = {runWhatsPCommand};
+module.exports = { runWhatsPCommand };

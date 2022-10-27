@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 const fetch = require('isomorphic-unfetch');
-const {getData} = require('spotify-url-info')(fetch);
+const { getData } = require('spotify-url-info')(fetch);
 const ytdl = require('ytdl-core-discord');
 const ytpl = require('ytpl');
 const {
@@ -12,8 +12,8 @@ const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
 const processStats = require('./lib/ProcessStats');
-const {getVoiceConnection} = require('@discordjs/voice');
-const {EmbedBuilderLocal} = require('./lib/EmbedBuilderLocal');
+const { getVoiceConnection } = require('@discordjs/voice');
+const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -54,7 +54,8 @@ function convertYTFormatToMS(durationArray) {
       duration += durationArray[0] * 1000;
       return duration;
     }
-  } catch (e) {}
+  }
+  catch (e) {}
   return 0;
 }
 
@@ -68,7 +69,8 @@ function convertSeekFormatToSec(seekString) {
   let numSeconds;
   if (Number(seekString)) {
     numSeconds = seekString;
-  } else {
+  }
+  else {
     const array = [];
     const testVals = ['h', 'm', 's'];
     const convertToArray = (formattedNum) => {
@@ -103,7 +105,8 @@ function botInVC_Guild(guild) {
   try {
     const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId)?.members;
     return bot.voice.adapters.get(guild.id) && members && members.has(bot.user.id);
-  } catch (e) {
+  }
+  catch (e) {
     return false;
   }
 }
@@ -155,12 +158,15 @@ function verifyPlaylist(url) {
       if (url.includes('/playlist') || url.includes('/album')) {
         return StreamType.SPOTIFY;
       }
-    } else if (url.includes(SOUNDCLOUD_BASE_LINK) && scdl.isPlaylistURL(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
+    }
+    else if (url.includes(SOUNDCLOUD_BASE_LINK) && scdl.isPlaylistURL(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
       return StreamType.SOUNDCLOUD;
-    } else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) {
+    }
+    else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) {
       return StreamType.YOUTUBE;
     }
-  } catch (e) {}
+  }
+  catch (e) {}
   return false;
 }
 
@@ -200,18 +206,22 @@ async function getTitle(queueItem, cutoff) {
     if (queueItem.type === StreamType.SPOTIFY) {
       if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await getData(queueItem.url));
       title = queueItem.infos.name;
-    } else if (queueItem.type === StreamType.SOUNDCLOUD) {
+    }
+    else if (queueItem.type === StreamType.SOUNDCLOUD) {
       if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await scdl.getInfo(queueItem.url));
       title = queueItem.infos.title;
-    } else if (queueItem.type === StreamType.TWITCH) {
+    }
+    else if (queueItem.type === StreamType.TWITCH) {
       title = 'twitch livestream';
-    } else {
+    }
+    else {
       if (isEmptyQueueItem) {
         queueItem.infos = Object.assign(queueItem.infos || {}, await ytdl.getBasicInfo(queueItem.url));
       }
       title = queueItem.infos.videoDetails?.title || queueItem.infos.title;
     }
-  } catch (e) {
+  }
+  catch (e) {
     console.log('broken_url', e);
     title = 'broken_url';
   }
@@ -261,11 +271,13 @@ function endStream(server) {
         server.streamData.stream.end();
         server.streamData.stream.destroy();
       }
-    } else if (server.streamData.type === StreamType.TWITCH) {
+    }
+    else if (server.streamData.type === StreamType.TWITCH) {
       server.streamData.stream.end();
       unpipe(server.streamData.stream);
     }
-  } catch (e) {
+  }
+  catch (e) {
     console.log('Error: attempt stream close - ', e);
   }
   server.streamData.stream = null;
@@ -344,14 +356,15 @@ function setSeamless(server, fName, args, message) {
 function removeDBMessage(channelID, deleteNum = 1, onlyDB) {
   let firstRun = true;
   try {
-    bot.channels.fetch(channelID).then((x) =>
-      x.messages.fetch(30).then(async (x) => {
-        for (const [, item] of x) {
+    bot.channels.fetch(channelID).then((channel) =>
+      channel.messages.fetch(30).then(async (msgs) => {
+        for (const [, item] of msgs) {
           if (item.deletable) {
             if (firstRun) {
               firstRun = false;
               await item.delete();
-            } else if (!onlyDB || item?.member?.id === botID) {
+            }
+            else if (!onlyDB || item?.member?.id === botID) {
               await item.delete();
               deleteNum--;
             }
@@ -359,7 +372,8 @@ function removeDBMessage(channelID, deleteNum = 1, onlyDB) {
           }
         }
       }));
-  } catch (e) {}
+  }
+  catch (e) {}
 }
 
 /**
@@ -379,8 +393,8 @@ function logError(msgTxt) {
  */
 function catchVCJoinError(error, textChannel) {
   const eMsg = error.toString();
-  if (eMsg.includes('it is full')) textChannel.send('\`error: cannot join voice channel; it is full\`');
-  else if (eMsg.includes('VOICE_JOIN_CHANNEL')) textChannel.send('\`permissions error: cannot join voice channel\`');
+  if (eMsg.includes('it is full')) {textChannel.send('\`error: cannot join voice channel; it is full\`');}
+  else if (eMsg.includes('VOICE_JOIN_CHANNEL')) {textChannel.send('\`permissions error: cannot join voice channel\`');}
   else {
     textChannel.send('error when joining your VC:\n`' + error.message + '`');
     logError(`voice channel join error:\n\`${error.message}\``);
@@ -442,7 +456,8 @@ function playComputation(server, force) {
 function getTimeActive() {
   if (processStats.dateActive) {
     return formatDuration(processStats.activeMS + Date.now() - processStats.dateActive);
-  } else {
+  }
+  else {
     return formatDuration(processStats.activeMS);
   }
 }
@@ -455,7 +470,8 @@ function getTimeActive() {
 function universalLinkFormatter(link) {
   if (link[0] === '[' && link[link.length - 1] === ']') {
     link = link.substring(1, link.length - 1);
-  } else if (link[0] === '<' && link[link.length - 1] === '>') {
+  }
+  else if (link[0] === '<' && link[link.length - 1] === '>') {
     link = link.substring(1, link.length - 1);
   }
   if (link.includes(SPOTIFY_BASE_LINK)) link = linkFormatter(link, SPOTIFY_BASE_LINK);

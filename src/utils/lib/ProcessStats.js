@@ -1,5 +1,5 @@
-const {startupDevMode} = require('./constants');
-const {AudioImpl} = require('./AudioImpl');
+const { startupDevMode } = require('./constants');
+const { AudioImpl } = require('./AudioImpl');
 
 // process related statistics
 class ProcessStats {

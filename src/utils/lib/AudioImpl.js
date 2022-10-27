@@ -1,4 +1,4 @@
-const {joinVoiceChannel} = require('@discordjs/voice');
+const { joinVoiceChannel } = require('@discordjs/voice');
 
 // Audio Implementation
 class AudioImpl {
@@ -13,17 +13,14 @@ class AudioImpl {
   // the VoiceConnection
   connection;
 
-  constructor() {
-
-  }
-
   // reset all property values
   reset() {
     if (this.connection) {
       try {
         this.connection.destroy();
         this.connection.disconnect();
-      } catch (e) {}
+      }
+      catch (e) {}
     }
     this.player = undefined;
     this.resource = undefined;
@@ -68,4 +65,4 @@ class AudioImpl {
   }
 }
 
-module.exports = {AudioImpl};
+module.exports = { AudioImpl };

@@ -1,8 +1,8 @@
 const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
-const {bot, botID} = require('../utils/lib/constants');
-const {runLyricsCommand} = require('../commands/lyrics');
-const {removeDBMessage, logError} = require('../utils/utils');
-const {parentPort} = require('worker_threads');
+const { bot, botID } = require('../utils/lib/constants');
+const { runLyricsCommand } = require('../commands/lyrics');
+const { removeDBMessage, logError } = require('../utils/utils');
+const { parentPort } = require('worker_threads');
 
 let loggedIn = false;
 
@@ -32,7 +32,8 @@ parentPort.on('message', async (m) => {
     default:
       console.log(`invalid command name: ${m.content.commandName}`);
     }
-  } catch (e) {}
+  }
+  catch (e) {}
 });
 
 /**

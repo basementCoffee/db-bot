@@ -1,6 +1,6 @@
-const {botID} = require('../utils/lib/constants');
-const {getHelpList} = require('../utils/help');
-const {reactions} = require('../utils/lib/reactions');
+const { botID } = require('../utils/lib/constants');
+const { getHelpList } = require('../utils/help');
+const { reactions } = require('../utils/lib/reactions');
 
 /**
  * Produces the help list and manages its reactions.
@@ -19,7 +19,7 @@ function runHelpCommand(message, server, version) {
       return user.id !== botID;
     };
 
-    const collector = sentMsg.createReactionCollector({filter, time: 600000, dispose: true});
+    const collector = sentMsg.createReactionCollector({ filter, time: 600000, dispose: true });
     collector.on('collect', (reaction, user) => {
       if (user.bot) return;
       if (reaction.emoji.name === reactions.ARROW_R) {
@@ -37,4 +37,4 @@ function runHelpCommand(message, server, version) {
   });
 }
 
-module.exports = {runHelpCommand};
+module.exports = { runHelpCommand };

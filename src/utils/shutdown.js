@@ -1,7 +1,7 @@
-const {bot} = require('./lib/constants');
+const { bot } = require('./lib/constants');
 const CH = require('../../channel.json');
 const processStats = require('./lib/ProcessStats');
-const {getVoiceConnection} = require('@discordjs/voice');
+const { getVoiceConnection } = require('@discordjs/voice');
 
 /**
  * Shuts down the current process.
@@ -19,7 +19,8 @@ function shutdown(type) {
         bot.channels.fetch(CH.process).then((channel) => channel.send(`shutting down: '${process.pid}' (${type})`));
         if (wasActive) bot.channels.fetch(CH.process).then((channel) => channel.send('=gzz'));
       }
-    } catch (e) {}
+    }
+    catch (e) {}
     const activeCSize = bot.voice.adapters.size;
     if (activeCSize > 0) {
       console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? 's' : ''}`);
@@ -35,7 +36,8 @@ function shutdown(type) {
               if (currentEmbed) currentEmbed.channel.send('db vibe is restarting... (this will be quick)');
               else if (server.queue[0]) guild.systemChannel.send('db vibe is restarting... (this will be quick)').then();
               processStats.disconnectConnection(server, server.audio.connection);
-            } catch (e) {
+            }
+            catch (e) {
               guild.systemChannel.send('db vibe is restarting... (this will be quick)').then();
             }
           });
@@ -44,9 +46,10 @@ function shutdown(type) {
         });
       }
       setTimeout(() => process.exit(), 4500);
-    } else setTimeout(() => process.exit(), 1500);
+    }
+    else {setTimeout(() => process.exit(), 1500);}
     process.exitCode = 0;
   };
 }
 
-module.exports = {shutdown};
+module.exports = { shutdown };

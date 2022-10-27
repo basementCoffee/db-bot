@@ -1,10 +1,10 @@
 const ytsr = require('ytsr');
-const {playLinkToVC} = require('./stream');
-const {adjustQueueForPlayNow, createQueueItem} = require('../../utils/utils');
-const {StreamType, botID} = require('../../utils/lib/constants');
-const {updateActiveEmbed} = require('../../utils/embed');
-const {reactions} = require('../../utils/lib/reactions');
-const {EmbedBuilderLocal} = require('../../utils/lib/EmbedBuilderLocal');
+const { playLinkToVC } = require('./stream');
+const { adjustQueueForPlayNow, createQueueItem } = require('../../utils/utils');
+const { StreamType, botID } = require('../../utils/lib/constants');
+const { updateActiveEmbed } = require('../../utils/embed');
+const { reactions } = require('../../utils/lib/reactions');
+const { EmbedBuilderLocal } = require('../../utils/lib/EmbedBuilderLocal');
 
 /**
  * Function for searching for message contents on YouTube for playback.
@@ -23,14 +23,15 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
   const NUM_SEARCH_RES = 5;
   if (!searchResult) {
     indexToLookup = 0;
-    searchResult = (await ytsr(searchTerm, {pages: 1})).items.filter((x) => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);
+    searchResult = (await ytsr(searchTerm, { pages: 1 })).items.filter((x) => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);
     if (!searchResult[0]) {
       if (!searchTerm.includes('video')) {
         return runYoutubeSearch(message, playNow, server, `${searchTerm} video`, indexToLookup, null, playlistMsg);
       }
       return message.channel.send('could not find video');
     }
-  } else {
+  }
+  else {
     indexToLookup = parseInt(indexToLookup);
     if (!indexToLookup) indexToLookup = 1;
     indexToLookup--;
@@ -43,26 +44,31 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
     server.queue.unshift(createQueueItem(ytLink, StreamType.YOUTUBE, searchResult[indexToLookup]));
     try {
       await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-    } catch (e) {
+    }
+    catch (e) {
       console.log(e);
       return;
     }
-  } else {
+  }
+  else {
     const queueItem = createQueueItem(ytLink, StreamType.YOUTUBE, searchResult[indexToLookup]);
     server.queue.push(queueItem);
     if (server.queue.length === 1) {
       try {
         await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-      } catch (e) {
+      }
+      catch (e) {
         return;
       }
-    } else {
+    }
+    else {
       const foundTitle = searchResult[indexToLookup].title;
       let sentMsg;
       if (foundTitle.charCodeAt(0) < 120) {
         sentMsg = await message.channel.send('*added **' + foundTitle.replace(/\*/g, '') + '** to queue*');
         await updateActiveEmbed(server);
-      } else {
+      }
+      else {
         const infos = await ytdl.getBasicInfo(ytLink);
         sentMsg = await message.channel.send('*added **' + infos.videoDetails.title.replace(/\*/g, '') + '** to queue*');
         await updateActiveEmbed(server);
@@ -71,7 +77,7 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
       const filter = (reaction, user) => {
         return user.id === message.member.id && [reactions.X].includes(reaction.emoji.name);
       };
-      const collector = sentMsg.createReactionCollector({filter, time: 12000, dispose: true});
+      const collector = sentMsg.createReactionCollector({ filter, time: 12000, dispose: true });
       collector.once('collect', () => {
         if (!collector.ended) collector.stop();
         const queueStartIndex = server.queue.length - 1;
@@ -94,13 +100,14 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
   if ((playNow || server.queue.length < 2) && !playlistMsg) {
     try {
       await message.react(reactions.PAGE_C);
-    } catch (e) {
+    }
+    catch (e) {
 
     }
     let collector;
     if (server.searchReactionTimeout) clearTimeout(server.searchReactionTimeout);
     server.searchReactionTimeout = setTimeout(() => {
-      if (collector) collector.stop();
+      if (collector) {collector.stop();}
       else {
         if (playlistMsg && playlistMsg.deletable) {
           playlistMsg.delete().then(() => {
@@ -121,7 +128,7 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
       }
       return false;
     };
-    collector = message.createReactionCollector({filter, time: 100000, dispose: true});
+    collector = message.createReactionCollector({ filter, time: 100000, dispose: true });
     let res;
     let notActive = true;
     let reactionCollector2;
@@ -141,7 +148,7 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
         const playlistEmebed = new EmbedBuilderLocal()
           .setTitle('Pick a different video')
           .setColor('#ffffff')
-          // eslint-disable-next-line max-len
+        // eslint-disable-next-line max-len
           .setDescription(`${finalString}\n***What would you like me to play? (1-${res.length})*** [or type 'q' to quit]`);
         playlistMsg = await playlistEmebed.send(message.channel);
       }
@@ -151,14 +158,15 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
         const filter = (m) => {
           return (m.author.id !== botID && reactionCollector.id === m.author.id);
         };
-        message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
+        message.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
           .then((messages) => {
             if (!reactionCollector2) return;
             const playNum = parseInt(messages.first().content && messages.first().content.trim());
             if (playNum) {
               if (playNum < 1 || playNum > res.length) {
                 message.channel.send('*invalid number*');
-              } else {
+              }
+              else {
                 server.queueHistory.push(server.queue.shift());
                 runYoutubeSearch(message, true, server, searchTerm, playNum + 1, searchResult, playlistMsg);
               }
@@ -199,4 +207,4 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
   }
 }
 
-module.exports = {runYoutubeSearch};
+module.exports = { runYoutubeSearch };

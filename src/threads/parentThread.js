@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
-const {Worker} = require('worker_threads');
+const { Worker } = require('worker_threads');
 const processStats = require('../utils/lib/ProcessStats');
-const {logError} = require('../utils/utils');
+const { logError } = require('../utils/utils');
 const worker = new Worker(__dirname + '/worker.js');
 
 /**
@@ -46,4 +46,4 @@ function initialize() {
 
 initialize();
 
-module.exports = {parentThread};
+module.exports = { parentThread };

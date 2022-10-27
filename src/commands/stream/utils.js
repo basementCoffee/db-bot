@@ -1,7 +1,7 @@
-const {botID} = require('../../utils/lib/constants');
-const {pauseComputation, playComputation, botInVC} = require('../../utils/utils');
-const {createEmbed, updateActiveEmbed} = require('../../utils/embed');
-const {getVoiceConnection} = require('@discordjs/voice');
+const { botID } = require('../../utils/lib/constants');
+const { pauseComputation, playComputation, botInVC } = require('../../utils/utils');
+const { createEmbed, updateActiveEmbed } = require('../../utils/embed');
+const { getVoiceConnection } = require('@discordjs/voice');
 const processStats = require('../../utils/lib/ProcessStats');
 
 /**
@@ -60,12 +60,11 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
       return message.channel.send('only the dictator can pause');
     }
     if (server.voteAdmin.length > 0) {
-      if (force) server.votePlayPauseMembersId = [];
-      else {
-        if (voteSystem(message, message.guild.id, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
-          noPrintMsg = true;
-        } else return false;
+      if (force) {server.votePlayPauseMembersId = [];}
+      else if (voteSystem(message, message.guild.id, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
+        noPrintMsg = true;
       }
+      else {return false;}
     }
     pauseComputation(server);
     if (!noPrintMsg) {
@@ -77,7 +76,8 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
       message.channel.send('*paused*');
     }
     return true;
-  } else if (!noErrorMsg) {
+  }
+  else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     return false;
   }
@@ -99,12 +99,11 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
       return message.channel.send('only the dictator can play');
     }
     if (server.voteAdmin.length > 0) {
-      if (force) server.votePlayPauseMembersId = [];
-      else {
-        if (voteSystem(message, message.guild.id, 'play', actionUser, server.votePlayPauseMembersId, server)) {
-          noPrintMsg = true;
-        } else return false;
+      if (force) {server.votePlayPauseMembersId = [];}
+      else if (voteSystem(message, message.guild.id, 'play', actionUser, server.votePlayPauseMembersId, server)) {
+        noPrintMsg = true;
       }
+      else {return false;}
     }
     playComputation(server);
     if (!noPrintMsg) {
@@ -116,7 +115,8 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
       message.channel.send('*playing*');
     }
     return true;
-  } else if (!noErrorMsg) {
+  }
+  else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     return false;
   }
@@ -150,7 +150,8 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
     setTimeout(() => {
       processStats.disconnectConnection(server, getVoiceConnection(mgid));
     }, 600);
-  } else {
+  }
+  else {
     if (server.currentEmbed) {
       createEmbed(lastPlayed.url, lastPlayed.infos).then((e) => {
         e.embed.addFields({
@@ -175,7 +176,8 @@ function endAudioDuringSession(server) {
   pauseComputation(server); // active stream should be removed here
   try {
     server.collector?.stop();
-  } catch (e) {}
+  }
+  catch (e) {}
 }
 
 module.exports = {

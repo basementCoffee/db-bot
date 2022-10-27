@@ -2,13 +2,13 @@ const {
   botInVC, setSeamless, removeFormattingLink, verifyPlaylist, verifyUrl, pushQueue,
   adjustQueueForPlayNow, unshiftQueue,
 } = require('../utils/utils');
-const {addLinkToQueue} = require('../utils/playlist');
-const {playLinkToVC} = require('./stream/stream');
-const {updateActiveEmbed} = require('../utils/embed');
-const {playCommandUtil} = require('./stream/utils');
-const {runDatabasePlayCommand} = require('./databasePlayCommand');
-const {runYoutubeSearch} = require('./stream/youtubeSearch');
-const {isValidRequestWPlay} = require('../utils/validation');
+const { addLinkToQueue } = require('../utils/playlist');
+const { playLinkToVC } = require('./stream/stream');
+const { updateActiveEmbed } = require('../utils/embed');
+const { playCommandUtil } = require('./stream/utils');
+const { runDatabasePlayCommand } = require('./databasePlayCommand');
+const { runYoutubeSearch } = require('./stream/youtubeSearch');
+const { isValidRequestWPlay } = require('../utils/validation');
 
 /**
  * Runs the commands and checks to play a link
@@ -32,7 +32,8 @@ async function runPlayLinkCommand(message, args, mgid, server, sheetName) {
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
       return playFromWord(message, args, sheetName, server, mgid, false);
     }
-  } else return playFromWord(message, args, sheetName, server, mgid, false);
+  }
+  else {return playFromWord(message, args, sheetName, server, mgid, false);}
   // valid link
   let queueWasEmpty = false;
   if (server.queue.length < 1) {
@@ -51,7 +52,8 @@ async function runPlayLinkCommand(message, args, mgid, server, sheetName) {
   // if queue was empty then play
   if (queueWasEmpty) {
     playLinkToVC(message, server.queue[0], message.member.voice?.channel, server, 0).then();
-  } else {
+  }
+  else {
     message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
     await updateActiveEmbed(server);
   }
@@ -88,7 +90,8 @@ async function playLinkNow(message, args, mgid, server, sheetName, seekSec, adju
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
       return playFromWord(message, args, sheetName, server, mgid, true);
     }
-  } else return playFromWord(message, args, sheetName, server, mgid, true);
+  }
+  else {return playFromWord(message, args, sheetName, server, mgid, true);}
   // places the currently playing into the queue history if played long enough
   if (adjustQueue) adjustQueueForPlayNow(server.audio.resource, server);
   // counter to iterate over all args - excluding args[0]
@@ -117,7 +120,8 @@ async function playLinkNow(message, args, mgid, server, sheetName, seekSec, adju
 function playFromWord(message, args, sheetName, server, mgid, playNow) {
   if (sheetName) {
     runDatabasePlayCommand(args, message, sheetName, playNow, false, server).then();
-  } else {
+  }
+  else {
     runYoutubeSearch(message, playNow, server, args.map((x) => x).splice(1).join('')).then();
   }
 }
@@ -138,4 +142,4 @@ function isValidRequestPlayLink(server, message, link) {
 }
 
 
-module.exports = {runPlayLinkCommand, playLinkNow};
+module.exports = { runPlayLinkCommand, playLinkNow };
