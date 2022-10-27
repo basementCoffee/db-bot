@@ -131,8 +131,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     try {
       if (server.streamData.isFluent) {
         server.streamData.stream.kill();
-      }
-      else {
+      } else {
         await server.streamData.stream.destroy();
       }
     } catch (e) {}
@@ -739,7 +738,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
     .setURL(embedData.embed.data.url)
     .setColor(embedData.embed.data.color)
     .addFields([...embedData.embed.data.fields])
-    .setThumbnail(embedData.embed.data.thumbnail.url)
+    .setThumbnail(embedData.embed.data.thumbnail.url);
   queueItem.infos = embedData.infos;
   let showButtons = true;
   if (botInVC(message)) {
@@ -919,12 +918,14 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
     }
   });
   collector.on('end', () => {
-    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) sentMsg.reactions.removeAll().then().catch(e => {
-      if (e.toString().toLowerCase().includes('permissions') && !server.errors.permissionReaction) {
-        server.errors.permissionReaction = true;
-        sentMsg.channel.send('\`permissions error: cannot remove reactions (field: Manage Messages)\`');
-      }
-    });
+    if (server.currentEmbed?.deletable && sentMsg.deletable && sentMsg.reactions) {
+      sentMsg.reactions.removeAll().then().catch((e) => {
+        if (e.toString().toLowerCase().includes('permissions') && !server.errors.permissionReaction) {
+          server.errors.permissionReaction = true;
+          sentMsg.channel.send('\`permissions error: cannot remove reactions (field: Manage Messages)\`');
+        }
+      });
+    }
   });
 }
 

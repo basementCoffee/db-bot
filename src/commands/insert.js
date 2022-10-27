@@ -120,7 +120,7 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
  */
 function insertCommandVerification(message, server, args) {
   if (!message.member.voice?.channel) return message.channel.send('must be in a voice channel');
-  if(!isValidRequestWPlay(server, message, 'insert')) return;
+  if (!isValidRequestWPlay(server, message, 'insert')) return;
   if (server.queue.length < 1) {
     return message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
   }

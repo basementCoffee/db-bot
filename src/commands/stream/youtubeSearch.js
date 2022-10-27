@@ -94,7 +94,7 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
   if ((playNow || server.queue.length < 2) && !playlistMsg) {
     try {
       await message.react(reactions.PAGE_C);
-    } catch(e) {
+    } catch (e) {
 
     }
     let collector;

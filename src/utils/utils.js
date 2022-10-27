@@ -510,7 +510,7 @@ function isPersonalSheet(sheetName) {
 function getVCMembers(guildId) {
   const voiceConnection = getVoiceConnection(guildId);
   if (voiceConnection) {
-    const collectionOfMembers = bot.channels.cache.get(voiceConnection.joinConfig.channelId)?.members
+    const collectionOfMembers = bot.channels.cache.get(voiceConnection.joinConfig.channelId)?.members;
     if (collectionOfMembers) {
       const gmArray = Array.from(collectionOfMembers);
       gmArray.map((item) => item[1].user.username);

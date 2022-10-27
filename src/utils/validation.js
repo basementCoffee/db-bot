@@ -56,4 +56,4 @@ function isValidRequestWPlay(server, message, actionDescription) {
 }
 
 
-module.exports = {isValidRequest, isValidRequestWPlay}
+module.exports = {isValidRequest, isValidRequestWPlay};

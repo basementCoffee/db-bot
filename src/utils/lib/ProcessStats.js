@@ -194,8 +194,8 @@ class ProcessStats {
       // error manager - keep track of errors
       errors: {
         // if a reaction permissions error occurred
-        permissionReaction: false
-      }
+        permissionReaction: false,
+      },
     });
   }
 }

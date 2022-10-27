@@ -38,7 +38,6 @@ const {EmbedBuilderLocal} = require('./utils/lib/EmbedBuilderLocal');
 process.setMaxListeners(0);
 
 
-
 /**
  * The execution for all bot commands within a server.
  * @param message the message that triggered the bot
@@ -856,7 +855,7 @@ async function runCommandCases(message) {
   case 'gzmem':
     (await createMemoryEmbed()).send(message.channel).then();
     break;
-    case 'congratulate':
+  case 'congratulate':
     // congratulate a friend
     if (!args[1]) return message.channel.send('*no friend provided*');
     const friend = message.mentions.users.first();
@@ -871,7 +870,7 @@ async function runCommandCases(message) {
       .send(message.channel).then();
     break;
     // dev commands for testing purposes
-    case 'gzh':
+  case 'gzh':
     new EmbedBuilderLocal()
       .setTitle('Dev Commands')
       .setDescription(

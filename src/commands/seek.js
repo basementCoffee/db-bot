@@ -44,4 +44,4 @@ async function runSeekCommand(message, server, args, mgid) {
   message.channel.send(SEEK_ERR_MSG);
 }
 
-module.exports = {runSeekCommand}
+module.exports = {runSeekCommand};

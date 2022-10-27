@@ -64,7 +64,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
     }
     if (tempMsg?.deletable) tempMsg.delete();
     if (sentMsg?.deletable) {
-      await queueMsgEmbed.edit(sentMsg)
+      await queueMsgEmbed.edit(sentMsg);
     } else {
       sentMsg = await queueMsgEmbed.send(message.channel);
       sentMsgArray.push(sentMsg);
@@ -128,7 +128,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
         }
         generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
       } else if (reaction.emoji.name === reactions.INBOX) {
-        if(!isValidRequestWPlay(server, message, 'insert')) return;
+        if (!isValidRequestWPlay(server, message, 'insert')) return;
         let link;
         message.channel.send('What link would you like to insert [or type \'q\' to quit]').then((msg) => {
           const filter = (m) => {

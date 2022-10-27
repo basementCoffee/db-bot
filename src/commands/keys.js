@@ -33,11 +33,11 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
   const settings = await getSettings(server, sheetName);
   embedPages.push(
     new EmbedBuilderLocal()
-    .setTitle(`----- ${title} playlists -----`)
-    .setDescription(playlistString)
-    .setColor(keyEmbedColor)
-    .setFooter({text: `${getTips(prefixString)[Math.floor(Math.random() * getTips().length)]}`, iconURL: iconUrl})
-    .setThumbnail(settings.splash).build()
+      .setTitle(`----- ${title} playlists -----`)
+      .setDescription(playlistString)
+      .setColor(keyEmbedColor)
+      .setFooter({text: `${getTips(prefixString)[Math.floor(Math.random() * getTips().length)]}`, iconURL: iconUrl})
+      .setThumbnail(settings.splash).build(),
   );
   let keysString;
   // iterate over playlists
@@ -54,10 +54,10 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
     }
     embedPages.push(
       (new EmbedBuilderLocal())
-      .setTitle(key)
-      .setDescription(keysString)
-      .setColor(keyEmbedColor)
-      .setFooter({text: `play command: ${prefixString}d [key]`}).build()
+        .setTitle(key)
+        .setDescription(keysString)
+        .setColor(keyEmbedColor)
+        .setFooter({text: `play command: ${prefixString}d [key]`}).build(),
     );
   });
   return embedPages;
@@ -157,7 +157,7 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
               `Rename a key -> \` ${prefixString}rename-key [old-name] [new]\`\n\n` +
               `Create a playlist -> \` ${prefixString}add-playlist [playlist]\`\n` +
               `Delete a playlist -> \` ${prefixString}del-playlist [playlist]\`\n` +
-              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n`
+              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n`,
             )
             .setFooter(
               `play a key ->  ${prefixString}d [key]\n` +

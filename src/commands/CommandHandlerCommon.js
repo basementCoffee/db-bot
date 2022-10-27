@@ -372,7 +372,7 @@ class CommandHandlerCommon {
    * @param server
    */
   shuffleQueueOrPlayRandom(wildcardRandomArr = [], message, sheetName, server) {
-    wildcardRandomArr = wildcardRandomArr.filter(x => x);
+    wildcardRandomArr = wildcardRandomArr.filter((x) => x);
     if (wildcardRandomArr.length < 1) {
       this.shuffleQueue(server, message);
     } else {

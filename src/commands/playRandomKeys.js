@@ -16,7 +16,7 @@ const {isValidRequestWPlay} = require('../utils/validation');
  * @param addToFront Optional - true if to add to the front
  */
 async function runRandomToQueue(wArray, message, sheetName, server, addToFront = false) {
-  wArray = wArray.filter(x => x);
+  wArray = wArray.filter((x) => x);
   if (wArray.length < 1) {
     message.channel.send('must provide an argument (can be a number, key, or playlist-link)');
     return;
@@ -234,4 +234,4 @@ function updatedQueueMessage(channel, messageText, server) {
   updateActiveEmbed(server).then();
 }
 
-module.exports = {runRandomToQueue, shuffleQueue}
+module.exports = {runRandomToQueue, shuffleQueue};
