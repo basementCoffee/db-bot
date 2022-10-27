@@ -98,26 +98,24 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
     }
   }
   if ((playNow || server.queue.length < 2) && !playlistMsg) {
+    let collector;
     try {
       await message.react(reactions.PAGE_C);
-    }
-    catch (e) {
-
-    }
-    let collector;
-    if (server.searchReactionTimeout) clearTimeout(server.searchReactionTimeout);
-    server.searchReactionTimeout = setTimeout(() => {
-      if (collector) {collector.stop();}
-      else {
-        if (playlistMsg && playlistMsg.deletable) {
-          playlistMsg.delete().then(() => {
-            playlistMsg = undefined;
-          });
+      if (server.searchReactionTimeout) clearTimeout(server.searchReactionTimeout);
+      server.searchReactionTimeout = setTimeout(() => {
+        if (collector) {collector.stop();}
+        else {
+          if (playlistMsg && playlistMsg.deletable) {
+            playlistMsg.delete().then(() => {
+              playlistMsg = undefined;
+            });
+          }
+          message.reactions.removeAll();
+          server.searchReactionTimeout = null;
         }
-        message.reactions.removeAll();
-        server.searchReactionTimeout = null;
-      }
-    }, 22000);
+      }, 22000);
+    }
+    catch (e) {}
     const filter = (reaction, user) => {
       if (message.member.voice?.channel) {
         for (const mem of message.member.voice.channel.members) {
