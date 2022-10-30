@@ -298,7 +298,8 @@ async function runCommandCases(message) {
   case 'rn':
   case 'randnow':
   case 'randomnow':
-    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id), server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id), server,
+      true, false).then();
     break;
   case 'sync':
     // assume that there is something playing
@@ -346,15 +347,18 @@ async function runCommandCases(message) {
     break;
   case 'shufflen':
   case 'shufflenow':
-    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id), server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id), server,
+      true, true).then();
     break;
     // test purposes - random command
   case 'grand':
   case 'gr':
-    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, 'entries', server).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, 'entries', server,
+      false, false).then();
     break;
   case 'gshuffle':
-    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, 'entries', server).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, 'entries', server,
+      false, true).then();
     break;
     // .mr is the personal random that works with the normal queue
     // .r is a random that works with the normal queue
@@ -363,22 +367,25 @@ async function runCommandCases(message) {
   case 'r':
   case 'mr':
     if (isShortCommandNoArgs(args, message, statement)) return;
-    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id),
-      server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
+      server, false, false).then();
     break;
   case 'mshuffle':
-    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id),
-      server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
+      server, false, true).then();
     break;
   case 'mrn':
   case 'mrandnow':
-    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id),
-      server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
+      server, true, false).then();
     break;
   case 'mshufflen':
   case 'mshufflenow':
-    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id),
-      server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
+      server, true, true).then();
+    break;
+  case 'rename':
+    if (botInVC(message)) message.channel.send('try `rename-key` or `rename-playlist` with the old name followed by the new name');
     break;
   case 'rename-key':
   case 'rename-keys':
@@ -485,7 +492,7 @@ async function runCommandCases(message) {
       }
       else {
         return message.channel.send('*add a key to get it\'s ' + statement.substr(1) +
-        ' \`(i.e. ' + statement + ' [key])\`*');
+            ' \`(i.e. ' + statement + ' [key])\`*');
       }
     }
     await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
@@ -498,7 +505,7 @@ async function runCommandCases(message) {
       }
       else {
         return message.channel.send('*add a key to get it\'s ' + statement +
-        ' \`(i.e. ' + statement + ' [key])\`*');
+            ' \`(i.e. ' + statement + ' [key])\`*');
       }
     }
     await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel,
@@ -758,6 +765,8 @@ async function runCommandCases(message) {
     // .del deletes database entries
   case 'del':
   case 'delete':
+  case 'delete-key':
+  case 'remove-key':
     if (!args[1]) return message.channel.send('*no args provided*');
     runDeleteKeyCommand_P(message, args[1], getSheetName(message.member.id), server);
     break;
@@ -1008,7 +1017,7 @@ async function runCommandCases(message) {
   case 'gzm':
     if (!args[1]) {
       message.channel.send('active process #' + process.pid.toString() + ' is in ' +
-      bot.voice.adapters.size + ' servers.');
+          bot.voice.adapters.size + ' servers.');
       break;
     }
     else if (args[1] === 'update') {
