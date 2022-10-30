@@ -417,7 +417,7 @@ function notInVoiceChannelErrorMsg(guild) {
  * @returns {string} The display name of the bot.
  */
 function getBotDisplayName(guild) {
-  return guild.me.nickname || guild.me.user.username;
+  return guild.members.me.nickname || guild.members.me.user.username;
 }
 
 /**

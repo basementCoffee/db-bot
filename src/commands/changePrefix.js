@@ -46,26 +46,26 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
           return;
         }
         let name = 'db vibe';
-        if (message.guild.me.nickname) {
-          name = message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 1);
+        if (message.guild.members.members.me.nickname) {
+          name = message.guild.members.me.nickname.substring(message.guild.members.me.nickname.indexOf(']') + 1);
         }
         /**
          * Changes the prefix of the bot.
          */
         async function changeNamePrefix() {
-          if (!message.guild.me.nickname) {
-            await message.guild.me.setNickname('[' + newPrefix + '] ' + 'db vibe');
+          if (!message.guild.members.me.nickname) {
+            await message.guild.members.me.setNickname('[' + newPrefix + '] ' + 'db vibe');
           }
-          else if (message.guild.me.nickname.indexOf('[') > -1 && message.guild.me.nickname.indexOf(']') > -1) {
-            await message.guild.me.setNickname('[' + newPrefix + '] ' + message.guild.me.nickname.substring(message.guild.me.nickname.indexOf(']') + 2));
+          else if (message.guild.members.me.nickname.indexOf('[') > -1 && message.guild.members.me.nickname.indexOf(']') > -1) {
+            await message.guild.members.me.setNickname('[' + newPrefix + '] ' + message.guild.members.me.nickname.substring(message.guild.members.me.nickname.indexOf(']') + 2));
           }
           else {
-            await message.guild.me.setNickname('[' + newPrefix + '] ' + message.guild.me.nickname);
+            await message.guild.members.me.setNickname('[' + newPrefix + '] ' + message.guild.members.me.nickname);
           }
         }
 
-        if (!message.guild.me.nickname || (message.guild.me.nickname.substring(0, 1) !== '[' &&
-          message.guild.me.nickname.substr(2, 1) !== ']')) {
+        if (!message.guild.members.me.nickname || (message.guild.members.me.nickname.substring(0, 1) !== '[' &&
+          message.guild.members.me.nickname.substr(2, 1) !== ']')) {
           message.channel.send('----------------------\nWould you like me to update my name to reflect this? (yes or no)\nFrom **' +
             (getBotDisplayName(message.guild)) + '**  -->  **[' + newPrefix + '] ' + name + '**').then(() => {
             const filter = (m) => message.author.id === m.author.id;
@@ -85,7 +85,7 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
               });
           });
         }
-        else if (message.guild.me.nickname.substring(0, 1) === '[' && message.guild.me.nickname.substr(2, 1) === ']') {
+        else if (message.guild.members.me.nickname.substring(0, 1) === '[' && message.guild.members.me.nickname.substr(2, 1) === ']') {
           await changeNamePrefix();
         }
       });

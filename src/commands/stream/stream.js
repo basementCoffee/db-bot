@@ -51,7 +51,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     }
   }
   if (processStats.isInactive) {
-    message.channel.send(`*${message.guild.me.user.username} has been updated*`);
+    message.channel.send(`*${message.guild.members.me.user.username} has been updated*`);
     return stopPlayingUtil(message.guild.id, vc, false, server);
   }
   if (server.leaveVCTimeout) {
