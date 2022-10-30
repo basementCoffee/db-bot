@@ -8,7 +8,9 @@
     "dev": "node --trace-warnings ./src/index.js --dev",
     "dev-test": "node --trace-warnings ./src/index.js --dev --test 987120641549430824",
     "pm2": "echo running pm2 script...\npm2 start src/index.js --watch --name vibe",
-    "test": "jest --detectOpenHandles --setupFiles dotenv/config --forceExit"
+    "pm2-dev": "pm2 delete vibeDEV && echo running pm2 script...\npm2 start src/index.js --name vibeDEV -- --dev && pm2 monit",
+    "test": "jest --detectOpenHandles --setupFiles dotenv/config --forceExit",
+    "format": "npx eslint src/ --fix"
   },
   "engines": {
     "node": ">=18.x"
@@ -16,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@discordjs/opus": "~0.8.0",
+    "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": "^0.13.0",
     "cheerio": "^1.0.0-rc.12",
     "discord.js": "^14.6.0",
@@ -25,7 +27,7 @@
     "ffmpeg-static": "^4.4.1",
     "fluent-ffmpeg": "^2.1.2",
     "genius-lyrics": "^4.4.0",
-    "googleapis": "^108.0.1",
+    "googleapis": "^109.0.0",
     "isomorphic-unfetch": "^3.1.0",
     "leven": "~3.1.0",
     "libsodium": "^0.7.10",
@@ -34,7 +36,6 @@
     "node-gyp": "^9.3.0",
     "node-os-utils": "^1.3.7",
     "opusscript": "^0.0.8",
-    "play-dl": "^1.9.5",
     "scdl-core": "^1.1.0",
     "soundcloud-downloader": "^1.0.0",
     "spotify-url-info": "^3.1.9",
