@@ -2,7 +2,7 @@ const { setOfBotsOn, bot, PREFIX_SN } = require('../utils/lib/constants');
 const CH = require('../../channel.json');
 const processStats = require('../utils/lib/ProcessStats');
 const buildNo = require('../utils/lib/BuildNumber');
-const { shutdown } = require('../utils/shutdown');
+const { shutdown } = require('./shutdown');
 const { gsrun } = require('../database/api/api');
 
 let resHandlerTimeout = null;

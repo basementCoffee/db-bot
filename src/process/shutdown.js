@@ -1,7 +1,8 @@
-const { bot } = require('./lib/constants');
+const { bot } = require('../utils/lib/constants');
 const CH = require('../../channel.json');
-const processStats = require('./lib/ProcessStats');
+const processStats = require('../utils/lib/ProcessStats');
 const { getVoiceConnection } = require('@discordjs/voice');
+const {parentThread} = require('../threads/parentThread');
 
 /**
  * Shuts down the current process.
@@ -10,6 +11,7 @@ const { getVoiceConnection } = require('@discordjs/voice');
  */
 function shutdown(type) {
   return () => {
+    parentThread('SHUTDOWN', {}, []);
     const wasActive = !processStats.isInactive;
     processStats.setProcessInactive();
     console.log('shutting down...');

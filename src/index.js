@@ -23,7 +23,7 @@ const { updateActiveEmbed, sessionEndEmbed } = require('./utils/embed');
 const {
   checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand,
 } = require('./commands/stream/stream');
-const { shutdown } = require('./utils/shutdown');
+const { shutdown } = require('./process/shutdown');
 const { playRecommendation, sendRecommendationWrapper } = require('./commands/stream/recommendations');
 const { checkToSeeActive } = require('./process/checkToSeeActive');
 const { runQueueCommand, createVisualText } = require('./commands/generateQueue');
@@ -34,6 +34,7 @@ const { runDeleteKeyCommand_P } = require('./database/delete');
 const { parentThread } = require('./threads/parentThread');
 const { getVoiceConnection } = require('@discordjs/voice');
 const { EmbedBuilderLocal } = require('./utils/lib/EmbedBuilderLocal');
+const { ActivityType } = require('discord.js');
 
 process.setMaxListeners(0);
 
@@ -1124,6 +1125,7 @@ bot.on('guildCreate', (guild) => {
 });
 
 bot.once('ready', () => {
+  parentThread('STARTUP', {}, []);
   // bot starts up as inactive, if no response from the channel then activates itself
   if (process.pid === 4) {
     if (processStats.devMode) {
@@ -1157,7 +1159,7 @@ bot.once('ready', () => {
   else {
     checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
     setProcessInactiveAndMonitor();
-    bot.user.setActivity('beats | .db-vibe', { type: 'PLAYING' });
+    bot.user.setActivity('beats | .db-vibe', { type: ActivityType.PLAYING });
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
@@ -1168,18 +1170,18 @@ bot.once('ready', () => {
   }
 });
 
-// calibrate on startup
-bot.on('messageCreate', async (message) => {
-  if (processStats.devMode) return;
-  if (message.channel.id !== CH.process) return;
-  // ~db-process (standard)[11] | -on [3] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
-  // turn off active bots -- activates on '~db-process'
+
+function processHandler(message) {
+  // ON: (ex: ~db-process-on012345678verzzz)
+  // ~db-process (standard)[11] | -on [14] | 1 or 0 (vc size)[15] | 12345678 (build no)[23] | ver [26] | (process) [n]
+  // OFF: (~db-process-off12345678-zzz)
+  // ~db-process (standard)[11] | -off [15] | 12345678 (build no)[23] | - [24] | (process) [n]
   if (message.content.substring(0, 11) === '~db-process') {
     // if seeing bots that are on
-    if (message.content.substr(11, 3) === '-on') {
-      const oBuildNo = message.content.substr(15, 8);
+    if (message.content.substring(11, 14) === '-on') {
+      const oBuildNo = message.content.substring(15, 23);
       // compare versions || check if actively being used (if so: keep on)
-      if (parseInt(oBuildNo) >= parseInt(buildNo.getBuildNo()) || message.content.substr(14, 1) !== '0') {
+      if (parseInt(oBuildNo) >= parseInt(buildNo.getBuildNo()) || message.content.substring(14, 15) !== '0') {
         setOfBotsOn.add(message.content.substring(26));
         // update this process if out-of-date or reset process interval if an up-to-date process has queried
         if (processStats.isInactive) {
@@ -1198,15 +1200,17 @@ bot.on('messageCreate', async (message) => {
         }
       }
     }
-    else if (message.content.substr(11, 4) === '-off') {
-      // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
+    else if (message.content.substring(11, 15) === '-off') {
       // compare process IDs
-      if (message.content.substr(24).trim() !== process.pid.toString()) {
+      if (message.content.substring(24).trim() !== process.pid.toString()) {
         setProcessInactiveAndMonitor();
       }
       else {
         processStats.setProcessActive();
       }
+    }
+    else {
+      throw new Error('invalid db-process command');
     }
   }
   else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
@@ -1220,7 +1224,7 @@ bot.on('messageCreate', async (message) => {
       }
     }
   }
-});
+}
 
 /**
  * Manages a custom or PM2 update command. Does not work with the heroku process.
@@ -1306,7 +1310,7 @@ async function devProcessCommands(message) {
       // the process message: [sidelined / active] [process number] [version number]
       const procMsg = () => {
         return (processStats.isInactive ? 'sidelined: ' : (processStats.devMode ? 'active: ' : '**active: **')) +
-        process.pid + ' (' + version + ')' + dm;
+            process.pid + ' (' + version + ')' + dm;
       };
       message.channel.send(procMsg()).then((sentMsg) => {
         if (processStats.devMode) {
@@ -1320,7 +1324,7 @@ async function devProcessCommands(message) {
           return user.id !== botID && user.id === message.member.id &&
               [reactions.GEAR, reactions.O_DIAMOND].includes(reaction.emoji.name);
         };
-        // updates the existing gzk message
+          // updates the existing gzk message
         const updateMessage = () => {
           if (processStats.devMode) {
             dm = ' (dev mode)';
@@ -1333,7 +1337,7 @@ async function devProcessCommands(message) {
           }
           catch (e) {
             const updatedMsg =
-            '*db vibe ' + process.pid + (processStats.isInactive ? ' has been sidelined*' : ' is now active*');
+                '*db vibe ' + process.pid + (processStats.isInactive ? ' has been sidelined*' : ' is now active*');
             message.channel.send(updatedMsg);
           }
         };
@@ -1343,7 +1347,7 @@ async function devProcessCommands(message) {
         let prevDevMode = processStats.devMode;
         const statusInterval = setInterval(() => {
           if (!(bot.voice.adapters.size === prevVCSize && prevStatus === processStats.isInactive &&
-            prevDevMode === processStats.devMode)) {
+              prevDevMode === processStats.devMode)) {
             prevVCSize = bot.voice.adapters.size;
             prevDevMode = processStats.devMode;
             prevStatus = processStats.isInactive;
@@ -1513,7 +1517,13 @@ async function devProcessCommands(message) {
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
   if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id) || message.author.id === botID) {
-    return devProcessCommands(message);
+    devProcessCommands(message);
+    if (message.channel.id === CH.process) {
+      if (!processStats.devMode) {
+        processHandler(message);
+      }
+    }
+    return;
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
   if (message.channel.type === 'DM') {
@@ -1592,8 +1602,9 @@ async function updateVoiceState(oldState, newState, server) {
     if (oldState.channel?.members.filter((x) => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
-      if (server.audio.resource && !server.audio.resource.ended &&
-        processStats.activeStreamsMap.get(newState.guild.id)) leaveVCInt = 420000;
+      if (server.audio.resource && !server.audio.resource.ended && server.queue.length > 0) {
+        leaveVCInt = 420000;
+      }
       // clear if timeout exists, set new timeout
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
@@ -1621,13 +1632,11 @@ async function updateVoiceState(oldState, newState, server) {
 }
 
 bot.on('error', (e) => {
-  console.log('BOT ERROR:');
-  console.log(e);
+  console.log('BOT ERROR:\n', e);
   logError(`BOT ERROR: ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 });
 process.on('error', (e) => {
-  console.log('PROCESS ERROR:');
-  console.log(e);
+  console.log('PROCESS ERROR:\n', e);
 });
 
 process

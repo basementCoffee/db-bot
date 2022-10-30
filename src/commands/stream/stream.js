@@ -18,7 +18,7 @@ const { SoundCloud: scdl } = require('scdl-core');
 scdl.connect();
 const { createEmbed } = require('../../utils/embed');
 const processStats = require('../../utils/lib/ProcessStats');
-const { shutdown } = require('../../utils/shutdown');
+const { shutdown } = require('../../process/shutdown');
 const { reactions } = require('../../utils/lib/reactions');
 const { getXdb2 } = require('../../database/retrieval');
 const { stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil } = require('./utils');
