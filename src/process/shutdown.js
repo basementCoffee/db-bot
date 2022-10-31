@@ -2,7 +2,7 @@ const { bot } = require('../utils/lib/constants');
 const CH = require('../../channel.json');
 const processStats = require('../utils/lib/ProcessStats');
 const { getVoiceConnection } = require('@discordjs/voice');
-const {parentThread} = require('../threads/parentThread');
+const { parentThread } = require('../threads/parentThread');
 
 /**
  * Shuts down the current process.
