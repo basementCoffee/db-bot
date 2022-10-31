@@ -111,7 +111,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   if (!queueItem.type) queueItem.type = getLinkType(whatToPlay);
   if (queueItem.type === StreamType.SPOTIFY) {
     whatToPlay = linkFormatter(whatToPlay, SPOTIFY_BASE_LINK);
-    const urlRes = await getYTUrlFromSpotifyUrl(message, queueItem, vc, server, whatToPlay);
+    const urlRes = await getYTUrlFromSpotifyUrl(queueItem, whatToPlay);
     if (urlRes.ok) {
       urlAlt = urlRes.url; // the alternative url to play
     }
@@ -361,11 +361,11 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     const nextQueueItem = server.queue[1];
     // the next link to play, formatted
     const whatToPlay2Formatted = linkFormatter(nextQueueItem.url, SPOTIFY_BASE_LINK);
-    getYTUrlFromSpotifyUrl(message, nextQueueItem, vc, server, whatToPlay2Formatted);
+    getYTUrlFromSpotifyUrl(nextQueueItem, whatToPlay2Formatted);
   }
 }
 
-async function getYTUrlFromSpotifyUrl(message, queueItem, vc, server, whatToPlay) {
+async function getYTUrlFromSpotifyUrl(queueItem, whatToPlay) {
   if (!queueItem.urlAlt) {
     let itemIndex = 0;
     if (!queueItem.infos) {
