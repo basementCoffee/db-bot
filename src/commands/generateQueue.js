@@ -135,10 +135,10 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
         if (!isValidRequestWPlay(server, message, 'insert')) return;
         let link;
         message.channel.send('What link would you like to insert [or type \'q\' to quit]').then((msg) => {
-          const filter = (m) => {
+          const insertFilter = (m) => {
             return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
-          message.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
+          message.channel.awaitMessages({ filter: insertFilter, time: 60000, max: 1, errors: ['time'] })
             .then(async (messages) => {
               link = messages.first().content.split(' ')[0].trim();
               if (link.toLowerCase() === 'q') {
@@ -183,10 +183,10 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
         // remove question
         const rq = 'What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'q\']';
         message.channel.send(rq).then((msg) => {
-          const filter = (m) => {
+          const removeFilter = (m) => {
             return (reactionCollector.id === m.author.id && m.author.id !== botID);
           };
-          message.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
+          message.channel.awaitMessages({ filter: removeFilter, time: 60000, max: 1, errors: ['time'] })
             .then(async (messages) => {
               let num = messages.first().content.trim();
               if (num.toLowerCase() === 'q') {

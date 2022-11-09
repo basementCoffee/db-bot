@@ -400,10 +400,6 @@ const gsUpdateAdd2 = async (givenValue, firstColumnLetter, nameOfSheet) => {
  * @param row2 The second row to update
  */
 const gsUpdateOverwrite = (values, nameOfSheet, column1 = 'D', row1 = 1, column2, row2) => {
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: client2,
-  });
   const range = `${nameOfSheet}!${column1}${row1}` + (row2 ? `:${column2}${row2}` : '');
   gsapi.spreadsheets.values
     .update({

@@ -35,8 +35,8 @@ function changePrefix(message, server, oldPrefix, newPrefix) {
       }
       index += 2;
       await gsUpdateOverwrite([message.guild.id, newPrefix], PREFIX_SN, 'A', index, 'B', index);
-      gsrun('A', 'B', PREFIX_SN).then(async (xdb) => {
-        server.prefix = xdb.congratsDatabase.get(message.guild.id);
+      gsrun('A', 'B', PREFIX_SN).then(async (xdb2) => {
+        server.prefix = xdb2.congratsDatabase.get(message.guild.id);
         if (server.prefix === newPrefix) {
           prefixMsg.edit({ content: `Prefix successfully changed to: ${server.prefix}` });
         }

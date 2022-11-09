@@ -1,4 +1,4 @@
-const { addCustomPlaylist, runAddCommandWrapper_P } = require('./add');
+const { addCustomPlaylist, runAddCommandWrapper } = require('./add');
 const { changePrefix } = require('./changePrefix');
 const { playPlaylistDB, runDatabasePlayCommand } = require('./databasePlayCommand');
 const { runHelpCommand } = require('./help');
@@ -47,7 +47,7 @@ class CommandHandlerCommon {
    * @returns {*}
    */
   async addKeyToDB(channel, args, sheetName, printMsgToChannel, server, member) {
-    return runAddCommandWrapper_P(channel, args, sheetName, printMsgToChannel, server, member);
+    return runAddCommandWrapper(channel, args, sheetName, printMsgToChannel, server, member);
   }
 
   /**
