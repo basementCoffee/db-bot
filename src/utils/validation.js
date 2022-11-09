@@ -5,9 +5,9 @@ const { MAX_QUEUE_S } = require('./lib/constants');
 /**
  * Determines whether to proceed with the command, based on the request.
  * Will inform the user of the issue if not a valid request.
- * @param server
- * @param channel
- * @param memberId
+ * @param server The local server object.
+ * @param channel The text channel that triggered the bot.
+ * @param memberId The member performing the request.
  * @param actionDescription A brief description of the command/action.
  * @return {boolean} Returns true if the command should NOT proceed.
  */
@@ -26,8 +26,8 @@ function isValidRequestSpecific(server, channel, memberId, actionDescription) {
 /**
  * Determines whether to proceed with the command, based on the request.
  * Will inform the user of the issue if not a valid request.
- * @param server
- * @param message
+ * @param server The local server object.
+ * @param message The message metadata.
  * @param actionDescription A brief description of the command/action.
  * @return {boolean} Returns true if the command should NOT proceed.
  */
@@ -38,8 +38,8 @@ function isValidRequest(server, message, actionDescription) {
 /**
  * A wrapper for isValidRequest which also assumes that the user is attempting to play or add to the queue.
  * Will inform the user of the issue if not a valid request.
- * @param server
- * @param message
+ * @param server The local server object.
+ * @param message The message metadata.
  * @param actionDescription A brief description of the command/action.
  * @return {boolean} Returns true if the command should NOT proceed.
  */
@@ -57,4 +57,4 @@ function isValidRequestWPlay(server, message, actionDescription) {
 }
 
 
-module.exports = { isValidRequest, isValidRequestWPlay };
+module.exports = { isValidRequestWPlay };

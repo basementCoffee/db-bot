@@ -14,6 +14,7 @@ const getTips = (prefixS) => ['click on the arrow keys!', 'the gear icon is page
   `add an icon using ${prefixS}splash [url]`, `${prefixS}ps [playlist] -> is the playlist shuffle command`,
   `${prefixS}random [num] -> plays random keys`, `${prefixS}pd [playlist] -> plays a playlist`];
 
+// eslint-disable-next-line valid-jsdoc
 /**
  * Generates the full keys-list embed pages.
  * @param title the title of the embed
@@ -41,10 +42,10 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
   );
   let keysString;
   // iterate over playlists
-  xdb.playlists.forEach((val, key) => {
+  xdb.playlists.forEach((playlist, key) => {
     keysString = '';
     // iterate over a single playlist
-    val.forEach((val) => {
+    playlist.forEach((val) => {
       keysString = `${val.name}, ${keysString}`;
     });
     if (keysString.length) {
@@ -112,6 +113,7 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
     }
     let pageIndex = 0;
     let embedPages = await createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, server, sheetName);
+    // eslint-disable-next-line valid-jsdoc
     /**
      * Generates the keys list embed.
      * @param requiresUpdate {boolean?} If to grab new data for the embed.
@@ -146,14 +148,14 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
     keysMsg.edit({ content: ' ', embeds: [await generateKeysEmbed()] }).then(async (sentMsg) => {
       sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() =>
         sentMsg.react(reactions.QUESTION)).then(() => sentMsg.react(reactions.GEAR));
-      const filter = (reaction, user) => {
-        return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R,
+      const filter = (reaction, user2) => {
+        return user2.id !== botID && [reactions.QUESTION, reactions.ARROW_R,
           reactions.ARROW_L, reactions.GEAR, reactions.SHUFFLE].includes(reaction.emoji.name);
       };
       const keysButtonCollector = sentMsg.createReactionCollector({ filter, time: 1200000 });
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
         if (reaction.emoji.name === reactions.QUESTION) {
-          const embed = new EmbedBuilderLocal()
+          new EmbedBuilderLocal()
             .setTitle('How to add/delete')
             .setDescription(
               '*Keys allow you to save a link as a playable word* \n' +
@@ -169,28 +171,26 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
               `play a key ->  ${prefixString}d [key]\n` +
               `play a playlist -> ${prefixString}pd [playlist]`,
             )
-            .send(message.channel);
+            .send(message.channel).then();
         }
-        else {
+        else if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isAdmin(user.id))) {
           // if it is not a personal sheet then it is a global sheet (which is in testing)
-          if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isAdmin(user.id))) {
-            if (reaction.emoji.name === reactions.ARROW_R) {
-              pageIndex += 1;
-              sentMsg.edit({ embeds: [await generateKeysEmbed()] });
-              await reaction.users.remove(user.id);
-            }
-            else if (reaction.emoji.name === reactions.ARROW_L) {
-              pageIndex -= 1;
-              sentMsg.edit({ embeds: [await generateKeysEmbed()] });
-              await reaction.users.remove(user.id);
-            }
-            else if (reaction.emoji.name === reactions.GEAR) {
-              // allow for adding / removal of a playlist / queue
-              await reaction.users.remove(user.id);
-              const wasChanged = await addRemoveWizard(message.channel, user, server,
-                await getXdb2(server, sheetName), pageIndex, sheetName);
-              if (wasChanged) sentMsg.edit(await generateKeysEmbed(true));
-            }
+          if (reaction.emoji.name === reactions.ARROW_R) {
+            pageIndex += 1;
+            sentMsg.edit({ embeds: [await generateKeysEmbed()] });
+            await reaction.users.remove(user.id);
+          }
+          else if (reaction.emoji.name === reactions.ARROW_L) {
+            pageIndex -= 1;
+            sentMsg.edit({ embeds: [await generateKeysEmbed()] });
+            await reaction.users.remove(user.id);
+          }
+          else if (reaction.emoji.name === reactions.GEAR) {
+            // allow for adding / removal of a playlist / queue
+            await reaction.users.remove(user.id);
+            const wasChanged = await addRemoveWizard(message.channel, user, server,
+              await getXdb2(server, sheetName), pageIndex, sheetName);
+            if (wasChanged) sentMsg.edit(await generateKeysEmbed(true));
           }
         }
       });

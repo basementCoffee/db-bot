@@ -357,8 +357,8 @@ class CommandHandlerCommon {
 
   /**
    * Shuffles the queue.
-   * @param server
-   * @param message
+   * @param server The server playback metadata
+   * @param message The message metadata.
    */
   shuffleQueue(server, message) {
     shuffleQueue(server, message);
@@ -367,9 +367,9 @@ class CommandHandlerCommon {
   /**
    * Shuffles the queue if no argument provided, otherwise shuffles a random playlist key or number of keys.
    * @param wildcardRandomArr {Array<string>} An array containing a number, keys, or a playlist with a number
-   * @param message
-   * @param sheetName
-   * @param server
+   * @param message The message metadata.
+   * @param sheetName The sheet name to use for db retrieval
+   * @param server The server playback metadata
    */
   shuffleQueueOrPlayRandom(wildcardRandomArr = [], message, sheetName, server) {
     wildcardRandomArr = wildcardRandomArr.filter((x) => x);

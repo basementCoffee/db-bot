@@ -541,7 +541,7 @@ function getVCMembers(guildId) {
  * @param title {string} The title of the embed.
  * @param text {string} The text of the embed.
  * @param color {string?} The color of the embed.
- * @return {import('discord.js').EmbedBuilderLocal} The embed.
+ * @return {EmbedBuilderLocal} The embed.
  */
 function createVisualEmbed(title, text, color) {
   return new EmbedBuilderLocal()

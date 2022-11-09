@@ -7,7 +7,7 @@ const worker = new Worker(__dirname + '/worker.js');
 /**
  * Send computationally heavy commands to a worker process.
  * @param commandName {string} A unique name/id of the command to execute. This name should be expected by the worker.
- * @param cReqs {{channelId?: string | null, messageId?: string | null}} Data requirements for proper setup of the command args.
+ * @param cReqs {{channelId?: string | null, messageId?: string | null}} Additional data pass-through.
  * @param commandArgs {Array<any>} A list of arguments to pass to a function.
  */
 function parentThread(commandName, cReqs, commandArgs = []) {

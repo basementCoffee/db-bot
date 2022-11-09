@@ -37,18 +37,20 @@ async function responseHandler() {
     // noinspection JSUnresolvedFunction
     bot.channels.fetch(CH.process)
       .then((channel) => channel.send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString()));
+    // waits 9 - 27 seconds
     setTimeout(() => {
       if (processStats.isInactive) checkToSeeActive();
-    }, ((Math.floor(Math.random() * 18) + 9) * 1000)); // 9 - 27 seconds
+    }, ((Math.floor(Math.random() * 18) + 9) * 1000));
   }
   else if (setOfBotsOn.size > 1) {
     setOfBotsOn.clear();
     // noinspection JSUnresolvedFunction
     bot.channels.fetch(CH.process)
       .then((channel) => channel.send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString()));
+    // waits 3 - 7 seconds
     setTimeout(() => {
       if (processStats.isInactive) checkToSeeActive();
-    }, ((Math.floor(Math.random() * 5) + 3) * 1000)); // 3 - 7 seconds
+    }, ((Math.floor(Math.random() * 5) + 3) * 1000));
   }
   else if (process.pid === 4) {
     if ((new Date()).getHours() === 5 && bot.uptime > 3600000 && bot.voice.adapters.size < 1) {

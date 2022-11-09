@@ -5,7 +5,8 @@ const bot = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildInvites,
     GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildPresences, GatewayIntentBits.GuildIntegrations, GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.DirectMessageReactions, GatewayIntentBits.MessageContent],
+    GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.DirectMessageReactions,
+    GatewayIntentBits.MessageContent],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User],
 });
 // the id of the bot

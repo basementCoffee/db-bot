@@ -49,7 +49,10 @@ async function runCommandCases(message) {
   // the server guild playback data
   if (!processStats.servers.get(mgid)) processStats.initializeServer(mgid);
   const server = processStats.servers.get(mgid);
-  if (processStats.devMode && !server.prefix) server.prefix = '='; // devmode prefix
+  if (processStats.devMode && !server.prefix) {
+    // devmode prefix
+    server.prefix = '=';
+  }
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed++;
   }
@@ -318,8 +321,8 @@ async function runCommandCases(message) {
         commandHandlerCommon.pauseStream(...playArgs);
         const streamTime = server.audio.resource.playbackDuration;
         if (!streamTime) return message.channel.send('*could not find a valid stream time*');
-        // the seconds shown to the user
-        const streamTimeSeconds = (streamTime / 1000) % 60 + 1; // add 1 to get user ahead of actual stream
+        // the seconds shown to the user (added 1 to get user ahead of actual stream)
+        const streamTimeSeconds = (streamTime / 1000) % 60 + 1;
         // the formatted duration (with seconds supposed to be replaced)
         const duration = formatDuration(streamTime);
         const vals = duration.split(' ');
@@ -331,6 +334,8 @@ async function runCommandCases(message) {
           `timestamp is **${vals.join(' ')}**` +
             `\naudio will resume when I say 'now' (~${seconds} seconds)`,
         );
+        // convert seconds to ms and add another second
+        const syncTimeMS = (seconds * 1000) + 1000;
         setTimeout(async () => {
           if (!server.audio.status) {
             const newMsgStr = `timestamp is **${vals.join(' ')}**` + '\n***---now---***';
@@ -341,7 +346,7 @@ async function runCommandCases(message) {
               if (syncMsg.deletable) syncMsg.delete();
             }, 5000);
           }
-        }, (seconds * 1000) + 1000); // convert seconds to ms and add another second
+        }, syncTimeMS);
       }
       else {message.channel.send('no active link is playing');}
     }
@@ -559,9 +564,10 @@ async function runCommandCases(message) {
     for (const [key, value] of server.mapFinishedLinks) {
       tempAuditArray.push({ url: key, title: (await getTitle(value.queueItem)), index: value.numOfPlays });
     }
+    // sort by times played
     tempAuditArray.sort((a, b) => {
       return b.index - a.index;
-    }); // sort by times played
+    });
     createVisualEmbed('Link Frequency',
       ((await createVisualText(server, tempAuditArray,
         (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links'))
@@ -1050,7 +1056,7 @@ async function runCommandCases(message) {
         try {
           const gmArray = Array.from(bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).members);
           gx += `${gmArray[0][1].guild.name}: *`;
-          gmArray.map((item) => item[1].user.username).forEach((x) => gx += `${x}, `);
+          gmArray.map((item) => item[1].user.username).forEach((y) => gx += `${y}, `);
           gx = `${gx.substring(0, gx.length - 2)}*\n`;
         }
         catch (e) {}
@@ -1086,7 +1092,8 @@ async function runCommandCases(message) {
     }
     break;
   }
-} // end switch
+// end switch
+}
 
 function isShortCommand(message, statement) {
   return !botInVC(message) && statement.length < 3;

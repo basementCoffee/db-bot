@@ -21,7 +21,8 @@ async function runPurgeCommand(message, server, term) {
  * @param arrayItemApplicator A function that determines if the term is within an array item.
  */
 async function purgeItem(array, arrayItemApplicator) {
-  let counter = 0; // counter for how many items were purged
+  // counter for how many items were purged
+  let counter = 0;
   for (let i = 1; i < array.length; i++) {
     if (await arrayItemApplicator(array[i])) {
       array.splice(i, 1);

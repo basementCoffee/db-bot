@@ -26,8 +26,9 @@ function runDictatorCommand(message, mgid, prefixString, server) {
       const dic = server.dictator;
       for (const i of vcMembersId) {
         if (i === dic.id) {
-          return message.channel.send((dic.nickname ? dic.nickname : dic.user.username) + ' is the dictator, and has control over ' +
-            (message.guild.members.me.nickname ? message.guild.members.me.nickname : message.guild.members.me.user.username));
+          return (message.channel.send((dic.nickname ? dic.nickname : dic.user.username) +
+            ' is the dictator, and has control over ' + (message.guild.members.me.nickname ?
+            message.guild.members.me.nickname : message.guild.members.me.user.username)));
         }
       }
       server.dictator = message.member;

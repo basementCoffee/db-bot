@@ -166,7 +166,8 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
         message.channel.send('could not find \'' + args[1] + '\'. **Assuming \'' + ss + '\'**');
         tempUrl = xdb.globalKeys.get(ss.toUpperCase())?.link;
         const playlistType = verifyPlaylist(tempUrl);
-        if (playRightNow) { // push to queue and play
+        if (playRightNow) {
+          // push to queue and play
           adjustQueueForPlayNow(server.audio.resource, server);
           if (playlistType) {
             await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
@@ -198,9 +199,11 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
         return true;
       }
     }
-    else { // did find in database
+    else {
+      // if it was found within the database
       const playlistType = verifyPlaylist(tempUrl);
-      if (playRightNow) { // push to queue and play
+      if (playRightNow) {
+        // push to queue and play
         await adjustQueueForPlayNow(server.audio.resource, server);
         if (playlistType) {
           await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
@@ -212,14 +215,12 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
         message.channel.send('*playing now*');
         return true;
       }
-      else {
+      else if (playlistType) {
         // push to queue
-        if (playlistType) {
-          await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
-        }
-        else {
-          server.queue.push(createQueueItem(tempUrl, playlistType, null));
-        }
+        await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
+      }
+      else {
+        server.queue.push(createQueueItem(tempUrl, playlistType, null));
       }
     }
     if (!queueWasEmpty) {

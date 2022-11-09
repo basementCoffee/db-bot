@@ -89,11 +89,11 @@ async function addToDatabase_P(server, keysList, channel, sheetName, printMsgToC
   if (!xdb) xdb = await getXdb2(server, sheetName, false);
   const playlist = xdb.playlists.get(playlistName.toUpperCase()) ||
     (() => {
-    	const tempMap = new Map();
-    	xdb.playlists.set(playlistName.toUpperCase(), tempMap);
-    	xdb.playlistArray.push(playlistName);
-    	gsUpdateOverwrite([xdb.playlistArray.length + 1], sheetName);
-    	return tempMap;
+      const tempMap = new Map();
+      xdb.playlists.set(playlistName.toUpperCase(), tempMap);
+      xdb.playlistArray.push(playlistName);
+      gsUpdateOverwrite([xdb.playlistArray.length + 1], sheetName);
+      return tempMap;
     })();
   while (keysList[z] && keysList[z + 1]) {
     let linkZ = keysList[z + 1];

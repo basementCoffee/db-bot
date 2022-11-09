@@ -113,7 +113,8 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     whatToPlay = linkFormatter(whatToPlay, SPOTIFY_BASE_LINK);
     const urlRes = await getYTUrlFromSpotifyUrl(queueItem, whatToPlay);
     if (urlRes.ok) {
-      urlAlt = urlRes.url; // the alternative url to play
+      // the alternative url to play
+      urlAlt = urlRes.url;
     }
     else {
       if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
@@ -354,7 +355,8 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     // noinspection JSUnresolvedFunction
     logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
     logError(e.toString().substring(0, 1910));
-  } // end of try catch
+    // end of try catch
+  }
   // load the next link if conditions are met
   if (server.queue[1]?.type === StreamType.SPOTIFY && !server.queue[1].urlAlt) {
     // the next link to play
@@ -715,7 +717,8 @@ async function runAutoplayCommand(message, server, vc, queueItem) {
       if (uniqueVid) {
         server.queue.push(createQueueItem(uniqueVid, StreamType.YOUTUBE));
         playLinkToVC(message, server.queue[0], vc, server);
-        return; // EXIT on SUCCESS
+        // EXIT on SUCCESS
+        return;
       }
     }
     catch (e) {}
@@ -891,7 +894,8 @@ function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, mgid) 
   timeMS += 7200000;
   const collector = sentMsg.createReactionCollector({ filter, time: timeMS, dispose: true });
   server.collector = collector;
-  let processingReaction = false; // if the bot is processing a reaction
+  // true if the bot is processing a reaction
+  let processingReaction = false;
   collector.on('collect', async (reaction, reactionCollector) => {
     if (!server.audio.player || !voiceChannel) return;
     switch (reaction.emoji.name) {

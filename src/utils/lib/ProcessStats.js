@@ -24,7 +24,6 @@ class ProcessStats {
   // is null | XDB of the server prefixes. (see database/api for XDB reference)
   serverPrefixes;
 
-  constructor() {}
 
   // adds an active stream
   addActiveStream(gid) {

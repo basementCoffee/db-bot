@@ -15,7 +15,7 @@ const GeniusClient = new Genius.Client();
 /**
  * Returns lyrics for what is currently playing in a server.
  * @param channel The channel metadata
- * @param reactionCallback Optional - A callback for when the lyrics (text) is sent within the channel. [USED FOR THREADS]
+ * @param reactionCallback Optional - A callback for when the lyrics (text) is sent within the channel. [FOR THREADS]
  * @param args The args with the message content
  * @param queueItem The queueItem to get the lyrics of.
  * @param messageMemberId The id of the member that sent the command.

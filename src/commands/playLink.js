@@ -126,9 +126,13 @@ function playFromWord(message, args, sheetName, server, mgid, playNow) {
   }
 }
 
+
 /**
  * Determines whether to proceed with the play command, based on the request. Specific for playLink.
- * @return {boolean} If the request is valid.
+ * @param server The local server object.
+ * @param message The message metadata.
+ * @param link {string} The link to validate.
+ * @returns {boolean} If the request is valid.
  */
 function isValidRequestPlayLink(server, message, link) {
   if (!isValidRequestWPlay(server, message, 'add a link')) return false;

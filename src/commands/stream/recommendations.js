@@ -81,7 +81,8 @@ async function playRecommendation(message, server, args) {
   const user = await bot.users.fetch(message.member.id);
   const channel = await user.createDM();
   let num = parseInt(args[1]);
-  let isRelevant = () => {}; // will be redefined
+  // hot-swap function on whether a link is relevant/applicable
+  let isRelevant = () => {return null;};
   if (num < 1) {
     message.channel.send('*provided number must be positive*');
     return;

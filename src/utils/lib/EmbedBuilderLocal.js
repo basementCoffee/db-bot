@@ -84,7 +84,7 @@ class EmbedBuilderLocal {
 
   /**
    * Sends the embed to the channel.
-   * @param channel
+   * @param channel The text channel to send the embed to.
    * @return {Promise<*>}
    */
   async send(channel) {

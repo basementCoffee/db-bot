@@ -9,7 +9,7 @@ const { isValidRequestWPlay } = require('../utils/validation');
 
 /**
  * Runs the checks to add random songs to the queue
- * @param wArray {Array<string>} The arguments of what to play: can be a number, keys, or a playlist-name with a number todo: finish implementation
+ * @param wArray {Array<string>} The arguments of what to play: can be a number, keys, or a playlist-name with a number
  * @param message The message that triggered the bot
  * @param sheetName The name of the sheet to reference
  * @param server The server playback metadata
@@ -98,8 +98,10 @@ function shuffleQueue(server, message) {
  * @returns {void}
  */
 function shuffleArray(array) {
-  let currentIndex = array.length; let randomIndex; // indices for shuffling
-  // don't include what's actively playing
+  // indices for shuffling
+  let currentIndex = array.length;
+  let randomIndex;
+  // exclude what's actively playing (at index 0)
   while (currentIndex > 0) {
     randomIndex = Math.floor(Math.random() * currentIndex) + 1;
     currentIndex--;
@@ -111,10 +113,10 @@ function shuffleArray(array) {
 /**
  *
  * @param input {string} can be a number or a word
- * @param cdb
- * @param serverQueue
- * @param prefix
- * @param isPlaylist
+ * @param cdb The database data.
+ * @param serverQueue The server queue.
+ * @param prefix The server-specific prefix.
+ * @param isPlaylist {boolean} if it is a playlist link or playlist world (from db).
  * @return {Promise<{err: string}|{keys: *[], update: string}>}
  */
 async function getRandomKeys(input, cdb, serverQueue, prefix, isPlaylist) {
@@ -163,7 +165,8 @@ async function getRandomKeys(input, cdb, serverQueue, prefix, isPlaylist) {
   let numOfTimes = Math.floor(Number(input));
   if (!numOfTimes) {
     addAll = true;
-    numOfTimes = cdb.size; // number of times is now the size of the db
+    // number of times is now the size of the db
+    numOfTimes = cdb.size;
   }
   // mutate numberOfTimes to not exceed MAX_QUEUE_S
   if ((numOfTimes + serverQueue.length) > MAX_QUEUE_S) {
@@ -173,7 +176,7 @@ async function getRandomKeys(input, cdb, serverQueue, prefix, isPlaylist) {
         err: '*max queue size has been reached*',
       };
     }
-    addAll = false; // no longer want to add all
+    addAll = false;
   }
   try {
     let tempArray;

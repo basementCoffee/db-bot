@@ -1,8 +1,8 @@
-const {formatDuration} = require('../src/utils/utils');
-const {bot} = require('../src/utils/lib/constants');
-const {runMoveItemCommand} = require('../src/commands/move');
+const { formatDuration } = require('../src/utils/utils');
+const { bot } = require('../src/utils/lib/constants');
+const { runMoveItemCommand } = require('../src/commands/move');
 const utils = require('../src/utils/utils');
-const {revokeClient} = require('../src/database/api/api');
+const { revokeClient } = require('../src/database/api/api');
 
 let arr;
 const destroyBot = () => bot.destroy();
@@ -10,7 +10,7 @@ const destroyBot = () => bot.destroy();
 class MockVoice {
   channel;
 
-  constructor (channel) {
+  constructor(channel) {
     this.channel = channel;
   }
 }
@@ -18,7 +18,7 @@ class MockVoice {
 class MockGuild {
   voice;
 
-  constructor (voice) {
+  constructor(voice) {
     this.voice = voice;
   }
 }
@@ -26,17 +26,16 @@ class MockGuild {
 class MockChannel {
   sentMsg;
 
-  constructor () {}
 
-  send (msg) {
+  send(msg) {
     this.sentMsg = msg;
   }
 
-  getContent () {
+  getContent() {
     return this.sentMsg;
   }
 
-  clearSent () {
+  clearSent() {
     this.sentMsg = undefined;
   }
 }
@@ -45,16 +44,16 @@ class MockMessage {
   channel;
   guild;
 
-  constructor (channel, guild) {
+  constructor(channel, guild) {
     this.channel = channel;
     this.guild = guild;
   }
 
-  getContent () {
+  getContent() {
     return this.channel.getContent();
   }
 
-  clearSent () {
+  clearSent() {
     return this.channel.clearSent();
   }
 }
@@ -68,7 +67,7 @@ beforeEach(() => {
 
 describe('startup', () => {
   it('should login to googleapis', async () => {
-    await new Promise(res => setTimeout(res, 1100));
+    await new Promise((res) => setTimeout(res, 1100));
     expect(true).toEqual(true);
   });
 });
@@ -87,7 +86,6 @@ describe('test formatDuration', () => {
     expect(formatDuration(undefined)).toEqual('0m 0s');
     expect(formatDuration(null)).toEqual('0m 0s');
   });
-
 });
 describe('test runMoveItemCommand', () => {
   const botInVCSpy = jest.spyOn(utils, 'botInVC');
@@ -120,7 +118,6 @@ describe('test runMoveItemCommand', () => {
   });
 
   it('invalid - positions', () => {
-
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(message, arr, 0, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
@@ -163,12 +160,11 @@ describe('test runMoveItemCommand', () => {
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
   });
-
 });
 
 afterAll(async () => {
   destroyBot();
   await revokeClient();
-  await new Promise(res => setTimeout(res, 2000));
+  await new Promise((res) => setTimeout(res, 2000));
 });
 
