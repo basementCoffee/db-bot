@@ -568,7 +568,7 @@ function runRewindCommand(message, mgid, voiceChannel, numberOfTimes, ignoreSing
     return message.channel.send('only the dictator can perform this action');
   }
   // boolean to determine if there is a song
-  let queueItem;
+  let isQueueItem;
   let rewindTimes = 1;
   try {
     if (numberOfTimes) {
@@ -594,20 +594,19 @@ function runRewindCommand(message, mgid, voiceChannel, numberOfTimes, ignoreSing
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
     // assumes there is no queueItem to enter while
-    queueItem = false;
+    isQueueItem = false;
     // remove undefined links from queueHistory
-    while (server.queueHistory.length > 0 && !queueItem) {
-      queueItem = server.queueHistory.pop();
+    while (server.queueHistory.length > 0 && !isQueueItem) {
+      isQueueItem = server.queueHistory.pop();
     }
-    if (queueItem) server.queue.unshift(queueItem);
+    if (isQueueItem) server.queue.unshift(isQueueItem);
     rwIncrementor++;
   }
-  if (queueItem) {
-    if (ignoreSingleRewind) {}
-    else {
+  if (isQueueItem) {
+    if (!ignoreSingleRewind) {
       message.channel.send('*rewound' + (rewindTimes === 1 ? '*' : ` ${rwIncrementor} times*`));
     }
-    playLinkToVC(message, queueItem, voiceChannel, server);
+    playLinkToVC(message, isQueueItem, voiceChannel, server);
   }
   else if (server.queue[0]) {
     playLinkToVC(message, server.queue[0], voiceChannel, server);
