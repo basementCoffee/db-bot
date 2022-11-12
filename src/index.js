@@ -74,7 +74,7 @@ async function runCommandCases(message) {
   }
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   // the command name
-  const statement = args[0].substr(1).toLowerCase();
+  const statement = args[0].substring(1).toLowerCase();
   if (statement.substring(0, 1) === 'g' && statement !== 'guess') {
     if (!isAdmin(message.member.id)) {
       return;
@@ -115,7 +115,7 @@ async function runCommandCases(message) {
       name = args2[parseInt(indexOfWord) + 1];
       const excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
       if (excludedWords.includes(name)) name = '';
-      if (name && name.length > 1) name = name.substring(0, 1).toUpperCase() + name.substr(1);
+      if (name && name.length > 1) name = name.substring(0, 1).toUpperCase() + name.substring(1);
     }
     else {
       name = '';
@@ -303,7 +303,7 @@ async function runCommandCases(message) {
   case 'randnow':
   case 'randomnow':
     commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id), server,
-      true, false).then();
+      true).then();
     break;
   case 'sync':
     // assume that there is something playing
@@ -354,17 +354,17 @@ async function runCommandCases(message) {
   case 'shufflen':
   case 'shufflenow':
     commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id), server,
-      true, true).then();
+      true).then();
     break;
     // test purposes - random command
   case 'grand':
   case 'gr':
     commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, 'entries', server,
-      false, false).then();
+      false).then();
     break;
   case 'gshuffle':
     commandHandlerCommon.addRandomKeysToQueue([args[1]], message, 'entries', server,
-      false, true).then();
+      false).then();
     break;
     // .mr is the personal random that works with the normal queue
     // .r is a random that works with the normal queue
@@ -374,21 +374,21 @@ async function runCommandCases(message) {
   case 'mr':
     if (isShortCommandNoArgs(args, message, statement)) return;
     commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, false, false).then();
+      server, false).then();
     break;
   case 'mshuffle':
     commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, false, true).then();
+      server, false).then();
     break;
   case 'mrn':
   case 'mrandnow':
     commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, true, false).then();
+      server, true).then();
     break;
   case 'mshufflen':
   case 'mshufflenow':
     commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, true, true).then();
+      server, true).then();
     break;
   case 'rename':
     if (botInVC(message)) message.channel.send('try `rename-key` or `rename-playlist` with the old name followed by the new name');
@@ -643,7 +643,7 @@ async function runCommandCases(message) {
   case 'forcepa':
   case 'forcepause':
     if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
-      commandHandlerCommon.pauseStream(message, message.member, server, false, true);
+      commandHandlerCommon.pauseStream(message, message.member, server, false, true, false);
     }
     break;
   case 'lock-queue':
@@ -664,7 +664,7 @@ async function runCommandCases(message) {
   case 'pause':
   case 'pa':
     if (isShortCommand(message, statement)) return;
-    commandHandlerCommon.pauseStream(message, message.member, server);
+    commandHandlerCommon.pauseStream(message, message.member, server, false, false, false);
     break;
     // !pl
   case 'pl':
@@ -993,7 +993,7 @@ async function runCommandCases(message) {
         processStats.startUpMessage = '';
         return message.channel.send('start up message is cleared');
       }
-      processStats.startUpMessage = message.content.substr(message.content.indexOf(args[1]));
+      processStats.startUpMessage = message.content.substring(message.content.indexOf(args[1]));
       Object.values(processStats.servers).forEach((x) => x.startUpMessage = false);
       message.channel.send('*new startup message is set*');
     }
@@ -1028,14 +1028,16 @@ async function runCommandCases(message) {
       break;
     }
     else if (args[1] === 'update') {
-      if (process.pid === 4 || (args[2] && args[2] === 'force')) {
-        const updateMsg = 'db vibe is about to be updated. This may lead to a temporary interruption.';
+      if (process.pid === 4 || args[2] === 'force') {
+        const updateMsg = '`NOTICE: db vibe is about to be updated. Expect a brief interruption within 5 minutes.`';
         bot.voice.adapters.forEach((x, g) => {
           try {
-            const guildToUpdate = bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).guild;
-            const currentEmbedChannelId = processStats.servers.get(guildToUpdate.id).currentEmbedChannelId;
-            if (currentEmbedChannelId && bot.channels.cache.get(currentEmbedChannelId)) {
-              bot.channels.cache.get(currentEmbedChannelId).send(updateMsg);
+            const guildToUpdate = bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId)?.guild;
+            const currentEmbedChannelId = guildToUpdate ?
+              processStats.servers.get(guildToUpdate.id).currentEmbedChannelId : null;
+            const currentTextChannel = currentEmbedChannelId ? bot.channels.cache.get(currentEmbedChannelId) : null;
+            if (currentTextChannel) {
+              bot.channels.cache.get(currentEmbedChannelId)?.send(updateMsg);
             }
             else {
               bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).guild.systemChannel.send(updateMsg);
@@ -1047,7 +1049,7 @@ async function runCommandCases(message) {
       }
       else {
         message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
-            'To still send out an update use \'gzm update force\'');
+            'To still send out an update use \`gzm update force\`');
       }
     }
     else if (args[1] === 'listu') {
@@ -1524,7 +1526,7 @@ async function devProcessCommands(message) {
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
   if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id) || message.author.id === botID) {
-    devProcessCommands(message);
+    void devProcessCommands(message);
     if (message.channel.id === CH.process) {
       if (!processStats.devMode) {
         processHandler(message);
