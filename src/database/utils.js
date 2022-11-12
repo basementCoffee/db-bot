@@ -33,7 +33,7 @@ function serializeData(keysMap, playlistName) {
 module.exports = {
   /**
    * Serialize and update the playlist within the database. Uses xdb.playlists and xdb.playlistArray for updated data.
-   * @param server The server object.
+   * @param server {LocalServer} The server object.
    * @param sheetName The name of the sheet.
    * @param playlistName The name of the playlist.
    * @param xdb - the XDB data - is required

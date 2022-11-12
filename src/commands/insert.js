@@ -13,7 +13,7 @@ const { isValidRequestWPlay } = require('../utils/validation');
  * @param message The message metadata.
  * @param mgid The message guild id.
  * @param args {string[]} An array of string args to parse, can include multiple terms and a position.
- * @param server The server to use.
+ * @param server {LocalServer} The server to use.
  * @param sheetName {string} The sheet name to use.
  * @returns {Promise<number>} The position to insert or a negative if failed.
  */
@@ -121,7 +121,7 @@ async function runInsertCommand(message, mgid, args, server, sheetName) {
 /**
  * Helper for runInsertCommand. Does some preliminary verification.
  * @param message The message object.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param args {Array<string>} args[1] being the term, args[2] being the position.
  * @returns {*} 1 if passed
  */

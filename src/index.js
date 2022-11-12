@@ -1559,7 +1559,7 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
  * Updates the bots voice state depending on the update occurring.
  * @param oldState The old voice-state update metadata.
  * @param newState The new voice-state update metadata.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  */
 async function updateVoiceState(oldState, newState, server) {
   if (!server) return;

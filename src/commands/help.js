@@ -5,7 +5,7 @@ const { reactions } = require('../utils/lib/reactions');
 /**
  * Produces the help list and manages its reactions.
  * @param message The message instance.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param version {string} The version.
  */
 function runHelpCommand(message, server, version) {

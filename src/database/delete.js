@@ -69,7 +69,7 @@ async function runDeleteKeyCommand_P(message, keyName, sheetName, server) {
  * Attempts to delete the key. Returns true if successful.
  * @param keyName {string}
  * @param sheetName {string}
- * @param server The server object
+ * @param server {LocalServer} The server object
  * @returns {Promise<boolean>} if the key was found
  */
 async function deleteKey(keyName, sheetName, server) {

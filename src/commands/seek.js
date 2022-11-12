@@ -4,7 +4,7 @@ const { playLinkNow } = require('./playLink');
 /**
  * Plays the link at a specific timestamp.
  * @param message The message metadata.
- * @param server The local server object.
+ * @param server {LocalServer} The local server object.
  * @param args {Array<string>} Ignores first argument. Must include a timestamp as an arg. Link is optional.
  * @param mgid The message guild id.
  * @return {Promise<void>}

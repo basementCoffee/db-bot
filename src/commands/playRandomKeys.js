@@ -12,7 +12,7 @@ const { isValidRequestWPlay } = require('../utils/validation');
  * @param wArray {Array<string>} The arguments of what to play: can be a number, keys, or a playlist-name with a number
  * @param message The message that triggered the bot
  * @param sheetName The name of the sheet to reference
- * @param server The server playback metadata
+ * @param server {LocalServer} The local server object
  * @param addToFront Optional - true if to add to the front
  * @param isShuffle {boolean} Whether it is a shuffle command (will shuffle the queue if no args are provided)
  */
@@ -114,7 +114,7 @@ function shuffleArray(array) {
  *
  * @param input {string} can be a number or a word
  * @param cdb The database data.
- * @param serverQueue The server queue.
+ * @param serverQueue {Array} The server queue.
  * @param prefix The server-specific prefix.
  * @param isPlaylist {boolean} if it is a playlist link or playlist world (from db).
  * @return {Promise<{err: string}|{keys: *[], update: string}>}
@@ -249,7 +249,7 @@ async function getRandomKeys(input, cdb, serverQueue, prefix, isPlaylist) {
  * @param message The message that triggered the bot
  * @param numOfTimes The number of items to add to the queue, or a playlist url if isPlaylist
  * @param cdb {Map}  The database to reference, should be mapped to keyObjects (see getXdb2)
- * @param server The server playback metadata
+ * @param server {LocalServer} The local server object
  * @param isPlaylist Optional - True if to randomize just a playlist
  * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
  */
@@ -309,7 +309,7 @@ async function playRandomKeysToVC(message, server, addToFront, keys) {
  * Sends a message that the queue was updated and then updates the active embed.
  * @param channel The channel object.
  * @param messageText The text to send to the channel.
- * @param server The server object.
+ * @param server {LocalServer} The server object.
  */
 function updatedQueueMessage(channel, messageText, server) {
   channel.send(messageText);

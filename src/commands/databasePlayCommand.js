@@ -16,7 +16,7 @@ const { isValidRequestWPlay } = require('../utils/validation');
  * @param sheetName {string} The name of the sheet to reference.
  * @param playRightNow {boolean} If the playlist should be played right now.
  * @param printErrorMsg {boolean} If an error message should be printed.
- * @param server {Server} The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param shuffle {boolean?}
  * @returns {Promise<void>}
  */
@@ -74,7 +74,7 @@ async function playPlaylistDB(args, message, sheetName, playRightNow, printError
  * @param {*} sheetName the name of the sheet to reference
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @returns {Promise<boolean>} whether the play command has been handled accordingly
  */
 async function runDatabasePlayCommand(args, message, sheetName, playRightNow, printErrorMsg, server) {
@@ -244,7 +244,7 @@ async function runDatabasePlayCommand(args, message, sheetName, playRightNow, pr
 /**
  * Pushes a link to the queue. Will add individual links if valid playlist is provided.
  * @param message The message object.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param addToFront If it should be added to the beginning of the queue.
  * @param tempUrl The url to add.
  * @param addQICallback A callback for the generated queueItem.

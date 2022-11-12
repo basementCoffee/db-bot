@@ -11,7 +11,7 @@ const { EmbedBuilderLocal } = require('../../utils/lib/EmbedBuilderLocal');
  * Does not check for force disconnect.
  * @param message The discord message
  * @param playNow Bool, whether to override the queue
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param searchTerm The specific phrase to search for, required if not provided a search result
  * @param indexToLookup {string | number?} The search index, requires searchResult to be valid
  * @param searchResult {Object?} The search results, used for recursive call with memoization

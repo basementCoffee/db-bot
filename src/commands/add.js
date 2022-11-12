@@ -45,7 +45,7 @@ async function addCustomPlaylist(server, channel, sheetName, playlistName) {
  * @param args {Array<string>} [playlist-name (optional), key-name, link]
  * @param sheetName The name of the sheet to add to
  * @param printMsgToChannel Whether to print a response to the channel
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param member The member that is requesting the add.
  * @returns {*}
  */

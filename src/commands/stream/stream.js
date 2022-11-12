@@ -37,7 +37,7 @@ const { EmbedBuilderLocal } = require('../../utils/lib/EmbedBuilderLocal');
  * @param message {import('discord.js').Message} The message that triggered the bot.
  * @param queueItem The queue item to play (see createQueueItem).
  * @param vc The voice channel to play the song in.
- * @param server The server playback metadata.
+ * @param server {LocalServer} The server playback metadata.
  * @param retries {number} Optional - Integer representing the number of retries.
  * @param seekSec {number} Optional - The amount to seek in seconds
  * @returns {Promise<void>}
@@ -442,7 +442,7 @@ async function getYTUrlFromSpotifyUrl(queueItem, whatToPlay) {
 /**
  * Searches the guild db and personal message db for a broken link
  * @param message The message
- * @param server The server
+ * @param server {LocalServer} The server
  * @param whatToPlayS The broken link provided as a string
  */
 function searchForBrokenLinkWithinDB(message, server, whatToPlayS) {
@@ -457,7 +457,7 @@ function searchForBrokenLinkWithinDB(message, server, whatToPlayS) {
 
 /**
  * Checks the status of ytdl-core-discord and exits the active process if the test link is unplayable.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param message The message metadata to send a response to the appropriate channel
  */
 async function checkStatusOfYtdl(server, message) {
@@ -506,7 +506,7 @@ async function checkStatusOfYtdl(server, message) {
  * @param message the message that triggered the bot
  * @param voiceChannel the voice channel that the bot is in
  * @param playMessageToChannel whether to play message on successful skip
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param noHistory Optional - true excludes link from the queue history
  */
 async function skipLink(message, voiceChannel, playMessageToChannel, server, noHistory) {
@@ -557,7 +557,7 @@ async function skipLink(message, voiceChannel, playMessageToChannel, server, noH
  * @param ignoreSingleRewind whether to print out the rewind text
  * @param force true can override votes during DJ mode
  * @param mem The metadata of the member using the command, used for DJ mode
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @returns {*}
  */
 function runRewindCommand(message, mgid, voiceChannel, numberOfTimes, ignoreSingleRewind, force, mem, server) {
@@ -626,7 +626,7 @@ function runRewindCommand(message, mgid, voiceChannel, numberOfTimes, ignoreSing
  * Recommended if voice channel is not present.
  * @param message the message that triggered the bot
  * @param voiceChannel The active voice channel
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param skipTimes Optional - the number of times to skip
  * @param sendSkipMsg Whether to send a 'skipped' message when a single link is skipped
  * @param forceSkip Optional - If there is a DJ, grants force skip abilities
@@ -696,7 +696,7 @@ async function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkip
 /**
  * Autoplay to the next recommendation. Assumes that the queue is empty.
  * @param message The message metadata.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param vc The voice channel to be played in.
  * @param queueItem The last queueItem.
  * @returns {Promise<void>}
@@ -754,7 +754,7 @@ async function getRecLink(whatToPlay, infos, index = 0) {
  * @param message {any} The message to send the channel to
  * @param queueItem {Object} the queueItem to generate the embed for
  * @param voiceChannel {any} the voice channel that the link is being played in, if playing
- * @param server {Object} The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param forceEmbed {Boolean} Force the embed to be re-sent in the text channel
  * @returns {Promise<any | void>} An updated queueItem (see createQueueItem) if successful.
  */
@@ -835,7 +835,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
  * Sends a new message embed to the channel. Is a helper for sendLinkAsEmbed.
  * @param channel {import(discord.js).TextChannel | import(discord.js).DMChannel | import(discord.js).NewsChannel}
  * Discord's Channel object. Used for sending the new embed.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param forceEmbed {Boolean} If to keep the old embed and send a new one.
  * @param embed {EmbedBuilderLocal} The embed to send.
  * @returns {Promise<any>} The new message that was sent.
@@ -859,7 +859,7 @@ async function sendEmbedUpdate(channel, server, forceEmbed, embed) {
 /**
  * Generates the playback reactions and handles the collection of the reactions.
  * @param sentMsg The message that the bot sent
- * @param server The server metadata
+ * @param server {LocalServer} The server metadata
  * @param voiceChannel The voice channel metadata
  * @param timeMS The time for the reaction collector
  * @param mgid The message guild id

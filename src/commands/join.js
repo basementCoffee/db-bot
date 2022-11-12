@@ -6,7 +6,7 @@ const processStats = require('../utils/lib/ProcessStats');
  * Joins the voice channel of the message member (if applicable).
  * If there is an error upon join attempt then it caught and forwarded to the user.
  * @param message The message metadata.
- * @param server The server object.
+ * @param server {LocalServer} The server object.
  * @returns {Promise<boolean>} True upon successful voice channel join.
  */
 async function joinVoiceChannelSafe(message, server) {

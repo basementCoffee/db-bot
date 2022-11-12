@@ -33,7 +33,7 @@ function runMoveItemCommand(channel, arr, posA, posB) {
 
 /**
  * Moves an item from one playlist to another.
- * @param server The server object.
+ * @param server {LocalServer} The local server object.
  * @param channel The channel to send the message to.
  * @param sheetName The name of the sheet.
  * @param xdb The database object.
@@ -60,7 +60,7 @@ function moveKeysWrapper(server, channel, sheetName, xdb, args) {
 
 /**
  * Move keys from one playlist to another.
- * @param server {any}
+ * @param server {LocalServer} The local server object.
  * @param channel {any}
  * @param sheetName {string}
  * @param xdb {any}

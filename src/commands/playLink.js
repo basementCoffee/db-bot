@@ -15,7 +15,7 @@ const { isValidRequestWPlay } = require('../utils/validation');
  * @param message The message that triggered the bot
  * @param args An array of given play parameters, should be links or keywords
  * @param mgid The message guild id
- * @param server The server playback metadata
+ * @param server {LocalServer} The local server object
  * @param sheetName The name of the sheet to reference
  */
 async function runPlayLinkCommand(message, args, mgid, server, sheetName) {
@@ -65,7 +65,7 @@ async function runPlayLinkCommand(message, args, mgid, server, sheetName) {
  * @param message the message that triggered the bot
  * @param args the message split into an array (ignores the first argument)
  * @param mgid the message guild id
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param sheetName the name of the sheet to reference
  * @param seekSec {number?} Optional - The amount of time to seek in seconds
  * @param adjustQueue {boolean?} Whether to adjust the queue (is true by default).
@@ -113,7 +113,7 @@ async function playLinkNow(message, args, mgid, server, sheetName, seekSec, adju
  * @param message The message metadata.
  * @param args The args pertaining the content.
  * @param sheetName Optional - The sheet to reference.
- * @param server The server data.
+ * @param server {LocalServer} The server data.
  * @param mgid The guild id.
  * @param playNow Whether to play now.
  */
@@ -129,7 +129,7 @@ function playFromWord(message, args, sheetName, server, mgid, playNow) {
 
 /**
  * Determines whether to proceed with the play command, based on the request. Specific for playLink.
- * @param server The local server object.
+ * @param server {LocalServer} The local server object.
  * @param message The message metadata.
  * @param link {string} The link to validate.
  * @returns {boolean} If the request is valid.

@@ -8,7 +8,7 @@ const { PREFIX_SN } = require('../utils/lib/constants');
 /**
  * [DEPRECATED] Get the keys and links from the database. Uses local storage if available.
  * If there is no current embed then also resorts to an API fetch.
- * @param server The server object.
+ * @param server {LocalServer} The server object.
  * @param sheetName {string} The name of the sheet to get info from.
  * @param save {Boolean=} Whether to save the fetch within the server.
  * @returns {Promise<{congratsDatabase: Map<>, referenceDatabase: Map<>, line: Array<>, dsInt: int} | undefined>}
@@ -26,7 +26,7 @@ async function getXdb(server, sheetName, save) {
 
 /**
  * Gets the user keys from the database.
- * @param server The server object.
+ * @param server {LocalServer} The server object.
  * @param sheetName {string} The name of the sheet to retrieve (for user data use getSheetName(userId))
  * @param save {any?} Whether to save the function to the server
  * @returns {Promise<{playlistArray: [], playlists: Map<unknown, unknown>, globalKeys: any}>}
@@ -69,7 +69,7 @@ async function setSettings(server, sheetName, settingsObj) {
 /**
  * Sends the list size of the sheet provided.
  * @param message The message that triggered the bot.
- * @param server The server object.
+ * @param server {LocalServer} The server object.
  * @param sheetName {string} The sheet to reference.
  * @returns {Promise<void>}
  */
@@ -82,7 +82,7 @@ async function sendListSize(message, server, sheetName) {
 /**
  * Gets the server prefix from the database and updates the server.prefix field.
  * If there is no prefix then the default is added to the database.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param mgid The guild id, used to get the prefix.
  * @returns {Promise<void>}
  */

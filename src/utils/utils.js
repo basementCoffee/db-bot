@@ -113,7 +113,7 @@ function botInVC_Guild(guild) {
 
 /**
  * Returns the queue display status.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @returns {string} The queue count/status.
  */
 function getQueueText(server) {
@@ -172,7 +172,7 @@ function verifyPlaylist(url) {
 
 /**
  * Resets server playback to default args. MUST occur before voice channel join, NOT after voice channel leave.
- * @param server The server to reset.
+ * @param server {LocalServer} The server to reset.
  */
 function resetSession(server) {
   server.queue = [];
@@ -185,7 +185,7 @@ function resetSession(server) {
 /**
  * Adjusts the queue for play now depending on the stream time.
  * @param dsp {import('@discordjs/voice').AudioResource} The dispatcher to reference.
- * @param server The server to use.
+ * @param server {LocalServer} The server to use.
  */
 function adjustQueueForPlayNow(dsp, server) {
   if (server.queue[0] && dsp?.playbackDuration && (dsp.playbackDuration > 21000)) {
@@ -255,7 +255,7 @@ async function createMemoryEmbed() {
 
 /**
  * Ends the stream if a configuration for it is available.
- * @param server The server in which to end the stream.
+ * @param server {LocalServer} The server in which to end the stream.
  */
 function endStream(server) {
   try {
@@ -333,7 +333,7 @@ const getLinkType = (url) => {
 /**
  * Sets seamless listening on voice channel error. Seamless listening allows the
  * bot to temporarily save a wanted command until voice channel join.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param fName The name of the function to play.
  * @param args The function parameters.
  * @param message A message to delete.
@@ -422,7 +422,7 @@ function getBotDisplayName(guild) {
 
 /**
  * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param force {boolean=} Ignores the status of the dispatcher.
  */
 function pauseComputation(server, force = false) {
@@ -437,7 +437,7 @@ function pauseComputation(server, force = false) {
 
 /**
  * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param force {boolean=} Ignores the status of the dispatcher.
  */
 function playComputation(server, force) {

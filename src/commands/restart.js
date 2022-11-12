@@ -5,7 +5,7 @@ const { playLinkToVC } = require('./stream/stream');
  * @param message The message that triggered the bot.
  * @param mgid The message guild id.
  * @param keyword Enum in string format, being either 'restart' or 'replay'.
- * @param server The server playback metadata.
+ * @param server {LocalServer} The local server object.
  * @returns {*}
  */
 async function runRestartCommand(message, mgid, keyword, server) {

@@ -8,7 +8,7 @@ const { isValidRequestWPlay } = require('../utils/validation');
 
 /**
  * Displays the queue in the channel.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param message The message that triggered the bot
  * @param mgid The message guild id
  * @param noErrorMsg {Boolean} True if to not send error msg (if not in a voice channel)

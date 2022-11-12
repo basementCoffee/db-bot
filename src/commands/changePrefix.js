@@ -5,7 +5,7 @@ const { getBotDisplayName } = require('../utils/utils');
 /**
  * Changes the server's prefix.
  * @param message The message content metadata
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param oldPrefix The old prefix.
  * @param newPrefix The new prefix.
  * @returns {*}

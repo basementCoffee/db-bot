@@ -135,7 +135,7 @@ async function createEmbed(url, infos) {
 /**
  * Sends an updated playback embed with the fields updated. Verifies that there is a currentEmbed within the server.
  * Assumes that a session is ongoing.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @returns {Promise<void>}
  */
 async function updateActiveEmbed(server) {
@@ -160,7 +160,7 @@ async function updateActiveEmbed(server) {
 
 /**
  * Sends a session ended embed.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param item The QueueItem to display.
  * @returns {Promise<void>}
  */

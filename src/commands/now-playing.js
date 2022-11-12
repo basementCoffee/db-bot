@@ -4,7 +4,7 @@ const { sendLinkAsEmbed } = require('./stream/stream');
 
 /**
  * Runs the what's playing command. Can also look up database values if args[2] is present.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param {*} message the message that activated the bot
  * @param {*} voiceChannel The active voice channel
  * @param keyName Optional - A key to search for to retrieve a link

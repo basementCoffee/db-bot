@@ -21,7 +21,7 @@ const getTips = (prefixS) => ['click on the arrow keys!', 'the gear icon is page
  * @param keyEmbedColor the color of the embed
  * @param prefixString the prefix string
  * @param xdb the xdb object
- * @param server the server object
+ * @param server {LocalServer} the server object
  * @param sheetName the name of the sheet
  * @param iconUrl Optional - An icon to display alongside the key embed.
  * @returns {Promise<Array<import('discord.js').EmbedBuilder>>}
@@ -68,7 +68,7 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
 /**
  * Grabs all the keys/names from the database.
  * @param message {any} The message trigger
- * @param server The server
+ * @param server {LocalServer} The server
  * @param sheetName {string} The name of the sheet to retrieve
  * @param user {any?} Optional - username, overrides the message owner's name
  * @param specificPage {string?} The name of the page to display (to show instead of the playlist-page).

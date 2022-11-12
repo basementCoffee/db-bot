@@ -4,7 +4,7 @@ const { serializeAndUpdate } = require('../database/utils');
 /**
  * Renames a playlist.
  * @param channel The channel to send the message to.
- * @param server The server to rename the playlist in.
+ * @param server {LocalServer} The local server object.
  * @param sheetName The name of the sheet to rename the playlist in.
  * @param oldName The old name of the playlist.
  * @param newName The new name of the playlist.
@@ -29,7 +29,7 @@ async function renamePlaylist(channel, server, sheetName, oldName, newName) {
 /**
  * Renames a key.
  * @param channel The channel to send the message to.
- * @param server  The server metadata.
+ * @param server {LocalServer}  The server metadata.
  * @param sheetName The name of the sheet to rename the key in.
  * @param oldName The old name of the key.
  * @param newName The new name of the key.

@@ -42,7 +42,7 @@ class CommandHandlerCommon {
    * @param args {Array<string>} [playlist-name (optional), key-name, link (optional if in a session)]
    * @param sheetName The name of the sheet to add to
    * @param printMsgToChannel Whether to print a response to the channel
-   * @param server The server.
+   * @param server {LocalServer} The server.
    * @param member The member that is requesting the add.
    * @returns {*}
    */
@@ -55,7 +55,7 @@ class CommandHandlerCommon {
    * @param num {Array<string>} The arguments of what to play: can be a number, keys, or a playlist-name with a number
    * @param message The message that triggered the bot
    * @param sheetName The name of the sheet to reference
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @param addToFront Optional - true if to add to the front
    */
   async addRandomKeysToQueue(num, message, sheetName, server, addToFront = false) {
@@ -65,7 +65,7 @@ class CommandHandlerCommon {
   /**
    * Changes the server's prefix.
    * @param message The message content metadata
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @param oldPrefix The old prefix.
    * @param newPrefix The new prefix.
    * @returns {*}
@@ -77,7 +77,7 @@ class CommandHandlerCommon {
   /**
    * Produces the help list and manages its reactions.
    * @param message The message instance.
-   * @param server The server.
+   * @param server {LocalServer} The server.
    * @param version {string} The version.
    * @returns {void}
    */
@@ -90,7 +90,7 @@ class CommandHandlerCommon {
    * @param message The message metadata.
    * @param mgid The message guild id.
    * @param args {string[]} An array of string args to parse, can include multiple terms and a position.
-   * @param server The server to use.
+   * @param server {LocalServer} The server to use.
    * @param sheetName {string} The sheet name to use.
    * @returns {Promise<number>} The position to insert or a negative if failed.
    */
@@ -102,7 +102,7 @@ class CommandHandlerCommon {
    * Joins the voice channel of the message member (if applicable).
    * If there is an error upon join attempt then it caught and forwarded to the user.
    * @param message The message metadata.
-   * @param server The server object.
+   * @param server {LocalServer} The server object.
    * @returns {Promise<boolean>} True upon successful voice channel join.
    */
   async joinVoiceChannelSafe(message, server) {
@@ -122,7 +122,7 @@ class CommandHandlerCommon {
   /**
    * Grabs all the keys/names from the database.
    * @param message {any} The message trigger
-   * @param server The server
+   * @param server {LocalServer} The server
    * @param sheetName {string} The name of the sheet to retrieve
    * @param user {any?} Optional - username, overrides the message owner's name
    * @param specificPage {string?} The name of the page to display (to show instead of the playlist-page).
@@ -147,7 +147,7 @@ class CommandHandlerCommon {
   /**
    * Moves an item in the queue from one position to another.
    * @param channel The channel object.
-   * @param server The server object.
+   * @param server {LocalServer} The server object.
    * @param posFrom {int} The position of the item to move.
    * @param posTo {int} The new position of the item.
    * @returns {void}
@@ -158,7 +158,7 @@ class CommandHandlerCommon {
 
   /**
    * Moves keys from one playlist to another.
-   * @param server The server object.
+   * @param server {LocalServer} The server object.
    * @param channel The channel to send the message to.
    * @param sheetName The name of the sheet.
    * @param xdb The database object.
@@ -171,7 +171,7 @@ class CommandHandlerCommon {
 
   /**
    * Runs the what's playing command. Can also look up database values if args[2] is present.
-   * @param server The server metadata.
+   * @param server {LocalServer} The server metadata.
    * @param {*} message the message that activated the bot
    * @param {*} voiceChannel The active voice channel
    * @param keyName Optional - A key to search for to retrieve a link
@@ -187,7 +187,7 @@ class CommandHandlerCommon {
    * Pauses the now playing, if playing.
    * @param message The message content metadata
    * @param actionUser The member that is performing the action
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
    * @param force Optional - Skips the voting system if DJ mode is on
    * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
@@ -202,7 +202,7 @@ class CommandHandlerCommon {
    * @param message The message that triggered the bot
    * @param args An array of given play parameters, should be links or keywords
    * @param mgid The message guild id
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @param sheetName The name of the sheet to reference
    */
   async playLink(message, args, mgid, server, sheetName) {
@@ -214,7 +214,7 @@ class CommandHandlerCommon {
    * @param message the message that triggered the bot
    * @param args the message split into an array (ignores the first argument)
    * @param mgid the message guild id
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @param sheetName the name of the sheet to reference
    * @param seekSec {number?} Optional - The amount of time to seek in seconds
    * @param adjustQueue {boolean?} Whether to adjust the queue (is true by default).
@@ -226,7 +226,7 @@ class CommandHandlerCommon {
   /**
    * Purges the queue of all items that contain the term.
    * @param message The message object.
-   * @param server The server object.
+   * @param server {LocalServer} The server object.
    * @param term {string} The term to purge.
    * @return {Promise<void>}
    */
@@ -238,7 +238,7 @@ class CommandHandlerCommon {
    * Removes an item from the queue. Does not allow for the currently playing item to be
    * removed from the queue (index 0).
    * @param message The message metadata.
-   * @param server The server metadata.
+   * @param server {LocalServer} The server metadata.
    * @param itemPosition The position in the queue to remove from (starting from 1).
    * @returns {Promise<*>}
    */
@@ -248,7 +248,7 @@ class CommandHandlerCommon {
 
   /**
    * Removes a playlist. Returns false if playlist could not be found. Sends the response to the channel.
-   * @param server The server metadata.
+   * @param server {LocalServer} The server metadata.
    * @param sheetName The sheetname to update.
    * @param playlistName The playlist to remove.
    * @param xdb The XDB.
@@ -262,7 +262,7 @@ class CommandHandlerCommon {
   /**
    * Renames a key.
    * @param channel The channel to send the message to.
-   * @param server  The server metadata.
+   * @param server {LocalServer}  The server metadata.
    * @param sheetName The name of the sheet to rename the key in.
    * @param oldName The old name of the key.
    * @param newName The new name of the key.
@@ -275,7 +275,7 @@ class CommandHandlerCommon {
   /**
    * Renames a playlist.
    * @param channel The channel to send the message to.
-   * @param server The server to rename the playlist in.
+   * @param server {LocalServer} The server to rename the playlist in.
    * @param sheetName The name of the sheet to rename the playlist in.
    * @param oldName The old name of the playlist.
    * @param newName The new name of the playlist.
@@ -290,7 +290,7 @@ class CommandHandlerCommon {
    * @param message The message that triggered the bot.
    * @param mgid The message guild id.
    * @param keyword Enum in string format, being either 'restart' or 'replay'.
-   * @param server The server playback metadata.
+   * @param server {LocalServer} The server playback metadata.
    * @returns {*}
    */
   async restartPlaying(message, mgid, keyword, server) {
@@ -301,7 +301,7 @@ class CommandHandlerCommon {
    * Plays the now playing if paused.
    * @param message The message content metadata
    * @param actionUser The member that is performing the action
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @param noErrorMsg {*?} Optional - If to avoid an error message if nothing is playing
    * @param force {*?} Optional - Skips the voting system if DJ mode is on
    * @param noPrintMsg {*?} Optional - Whether to print a message to the channel when not in DJ mode
@@ -318,7 +318,7 @@ class CommandHandlerCommon {
    * @param sheetName {string} The name of the sheet to reference.
    * @param playRightNow {boolean} If the playlist should be played right now.
    * @param printErrorMsg {boolean} If an error message should be printed.
-   * @param server {Server} The server metadata.
+   * @param server {LocalServer} The server metadata.
    * @param shuffle {boolean?}
    * @returns {Promise<void>}
    */
@@ -333,7 +333,7 @@ class CommandHandlerCommon {
    * @param {*} sheetName the name of the sheet to reference
    * @param playRightNow bool of whether to play now or now
    * @param printErrorMsg prints error message, should be true unless attempting a followup db run
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @returns {Promise<boolean>} whether the play command has been handled accordingly
    */
   async playDBKeys(args, message, sheetName, playRightNow, printErrorMsg, server) {
@@ -347,7 +347,7 @@ class CommandHandlerCommon {
   /**
    * A search command that searches both the server and personal database for the string.
    * @param message The message that triggered the bot.
-   * @param server The server.
+   * @param server {LocalServer} The server.
    * @param sheetName The guild id.
    * @param providedString The string to search for. Can contain multiple comma delineated strings.
    */
@@ -357,7 +357,7 @@ class CommandHandlerCommon {
 
   /**
    * Shuffles the queue.
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @param message The message metadata.
    */
   shuffleQueue(server, message) {
@@ -369,7 +369,7 @@ class CommandHandlerCommon {
    * @param wildcardRandomArr {Array<string>} An array containing a number, keys, or a playlist with a number
    * @param message The message metadata.
    * @param sheetName The sheet name to use for db retrieval
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    */
   shuffleQueueOrPlayRandom(wildcardRandomArr = [], message, sheetName, server) {
     wildcardRandomArr = wildcardRandomArr.filter((x) => x);
@@ -386,7 +386,7 @@ class CommandHandlerCommon {
    * @param mgid The current guild id
    * @param voiceChannel The current voice channel
    * @param stayInVC Whether to stay in the voice channel
-   * @param server The server playback metadata
+   * @param server {LocalServer} The server playback metadata
    * @param message Optional - The message metadata, used in the case of verifying a dj or dictator
    * @param actionUser Optional - The member requesting to stop playing, used in the case of verifying a dj or dictator
    * @returns {void}

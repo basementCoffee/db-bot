@@ -11,7 +11,7 @@ const processStats = require('../../utils/lib/ProcessStats');
  * @param commandName {string} The action for which the voting is for
  * @param voter The member that is doing the voting
  * @param votes {Array} An array representing the ids of the members who voted for the action
- * @param server The server to use.
+ * @param server {LocalServer} The server to use.
  * @returns {Boolean} If there are enough votes to perform the desired action.
  */
 function voteSystem(message, mgid, commandName, voter, votes, server) {
@@ -48,7 +48,7 @@ function voteSystem(message, mgid, commandName, voter, votes, server) {
  * Pauses the now playing, if playing.
  * @param message The message content metadata
  * @param actionUser The member that is performing the action
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
  * @param noPrintMsg Optional - Whether to NOT print a message to the channel [DJ mode will set this to true]
@@ -87,7 +87,7 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
  * Plays the now playing if paused.
  * @param message The message content metadata
  * @param actionUser The member that is performing the action
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param noErrorMsg {*?} Optional - If to avoid an error message if nothing is playing
  * @param force {*?} Optional - Skips the voting system if DJ mode is on
  * @param noPrintMsg {*?} Optional - Whether to NOT print a message to the channel [DJ mode will set this to true]
@@ -127,7 +127,7 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param message {any?} The message metadata, used in the case of verifying a dj or dictator
  * @param actionUser {any?} The member requesting to stop playing, used in the case of verifying a dj or dictator
  * @returns {void}
@@ -169,7 +169,7 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
 
 /**
  * Performs changes when there is (or should be) no now-playing during an active session.
- * @param server The server object.
+ * @param server {LocalServer} The server object.
  */
 function endAudioDuringSession(server) {
   updateActiveEmbed(server);

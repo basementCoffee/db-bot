@@ -174,7 +174,7 @@ async function addPlaylistToQueue(message, qArray, numItems, playlistUrl, linkTy
  * Adds the link to the queue. Also works for playlist links.
  * @param url The link to add to the queue.
  * @param message The message metadata.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param mgid The message guild id.
  * @param addToFront {boolean} If to add to the front.
  * @param queueFunction {(arr: Array, {type, url, infos})=>void}

@@ -3,7 +3,7 @@ const { getTitle } = require('../utils/utils');
 /**
  * Purges an item from the queue.
  * @param message The message object.
- * @param server The server object.
+ * @param server {LocalServer} The server object.
  * @param term {string} The term to purge.
  * @return {Promise<void>}
  */

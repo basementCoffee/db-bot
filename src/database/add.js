@@ -5,7 +5,7 @@ const { serializeAndUpdate } = require('./utils');
 
 /**
  * The command to add a key, value pair to a given database.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param {*} args The command arguments, ignores the first item
  * @param {*} message The message that triggered the command
  * @param {string} sheetName the name of the sheet to add to
@@ -73,12 +73,12 @@ function addToDatabase(server, args, message, sheetName, printMsgToChannel) {
 
 /**
  * creates a new playlist if a new playlist-name is provided
- * @param server {any}
+ * @param server {LocalServer} The server object.
  * @param keysList {Array<string>} - the list of keys and links (each key should be followed by a link)
- * @param channel {any}
- * @param sheetName {string}
- * @param printMsgToChannel {boolean}
- * @param playlistName {string}
+ * @param channel {any} The textchannel that is active.
+ * @param sheetName {string} The db sheet name to use.
+ * @param printMsgToChannel {boolean} Whether to print the response to the text channel.
+ * @param playlistName {string} The name of the word/playlist
  * @param xdb {any?} The XDB.
  * @returns {Promise<void>}
  */
