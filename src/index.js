@@ -47,8 +47,7 @@ process.setMaxListeners(0);
 async function runCommandCases(message) {
   const mgid = message.guild.id;
   // the server guild playback data
-  if (!processStats.servers.get(mgid)) processStats.initializeServer(mgid);
-  const server = processStats.servers.get(mgid);
+  const server = processStats.getServer(mgid);
   if (processStats.devMode && !server.prefix) {
     // devmode prefix
     server.prefix = '=';
@@ -1034,7 +1033,7 @@ async function runCommandCases(message) {
           try {
             const guildToUpdate = bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId)?.guild;
             const currentEmbedChannelId = guildToUpdate ?
-              processStats.servers.get(guildToUpdate.id).currentEmbedChannelId : null;
+              processStats.getServer(guildToUpdate.id).currentEmbedChannelId : null;
             const currentTextChannel = currentEmbedChannelId ? bot.channels.cache.get(currentEmbedChannelId) : null;
             if (currentTextChannel) {
               bot.channels.cache.get(currentEmbedChannelId)?.send(updateMsg);
@@ -1144,7 +1143,7 @@ bot.once('ready', () => {
     buildNo.decrementBuildNo();
   }
   // noinspection JSUnresolvedFunction
-  processStats.initializeServer(CH['check-in-guild']);
+  processStats.getServer(CH['check-in-guild']);
   if (processStats.devMode) {
     console.log('-devmode enabled-');
     processStats.setProcessActive();
@@ -1166,7 +1165,7 @@ bot.once('ready', () => {
     }
   }
   else {
-    checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
+    checkStatusOfYtdl(processStats.getServer(CH['check-in-guild'])).then();
     setProcessInactiveAndMonitor();
     bot.user.setActivity('beats | .db-vibe', { type: ActivityType.PLAYING });
     console.log('-starting up sidelined-');
@@ -1544,7 +1543,7 @@ bot.on('messageCreate', (message) => {
 });
 
 bot.on('voiceStateUpdate', (oldState, newState) => {
-  const server = processStats.servers.get(oldState.guild.id);
+  const server = processStats.getServer(oldState.guild.id.toString());
   if (processStats.isInactive) {
     try {
       server.collector.stop();

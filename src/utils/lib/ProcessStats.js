@@ -98,11 +98,17 @@ class ProcessStats {
   }
 
   /**
-   * Initializes the server with all the required params.
-   * @param mgid The message guild id.
+   * Retrieves the server for the provided guid id. Creates a new server if one does not exist.
+   * @param guildId {string} The guild id.
+   * @returns {LocalServer} The LocalServer object for the guild.
    */
-  initializeServer(mgid) {
-    this.servers.set(mgid, new LocalServer(mgid));
+  getServer(guildId) {
+    let localServer = this.servers.get(guildId);
+    if (!localServer) {
+      localServer = new LocalServer(guildId);
+      this.servers.set(guildId, localServer);
+    }
+    return localServer;
   }
 }
 

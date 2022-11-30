@@ -338,7 +338,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     if (server.skipTimes > 3) {
       processStats.disconnectConnection(server, connection);
       message.channel.send('***db vibe is facing some issues, may restart***');
-      checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild']), message).then();
+      checkStatusOfYtdl(processStats.getServer(CH['check-in-guild']), message).then();
       return;
     }
     else {

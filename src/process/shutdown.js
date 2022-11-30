@@ -29,7 +29,7 @@ function shutdown(type) {
       // noinspection JSUnresolvedFunction
       if (processStats.servers.size > 0) {
         bot.voice.adapters.forEach((x, guildId) => {
-          const server = processStats.servers.get(guildId);
+          const server = processStats.getServer(guildId);
           bot.guilds.fetch(guildId).then((guild) => {
             const currentEmbed = server.currentEmbed;
             getVoiceConnection(guildId)?.disconnect();
