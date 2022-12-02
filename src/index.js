@@ -1129,7 +1129,7 @@ bot.on('guildDelete', (guild) => {
 
 bot.on('guildCreate', (guild) => {
   if (processStats.isInactive || processStats.devMode) return;
-  guild.systemChannel.send('Type \'.help\' to see my commands.').then();
+  guild.systemChannel?.send('Type \'.help\' to see my commands.').then();
 });
 
 bot.once('ready', () => {
