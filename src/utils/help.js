@@ -40,10 +40,11 @@ function getPages(ps, version) {
     '*Keys are ways to save your favorite links as words.*\n' +
     '*Keys are saved within playlists*\n' +
     `\`${ps}keys \` See all of your keys / playlists\n` +
+    `\`${ps}add [key] [url] \` save a url as a playable key *[a]*\n` +
+    `\`${ps}add [playlist] [key] [url] \` save a url within a custom playlist *[a]*\n` +
     `\`${ps}d [key] \` Play any of your keys \n` +
     `\`${ps}dnow [key] \` Play key immediately, overrides queue *[kn]* \n` +
     `\`${ps}s [# of keys] \` shuffle and play random keys  *[r]*\n` +
-    `\`${ps}add [playlist] [key] [url] \` Add a key to a playlist (or general) *[a]*\n` +
     `\`${ps}delete [key] \` Deletes a link from the keys  *[del]*\n` +
     `\`${ps}find [key / link] \` See if a link/key is in the keys-list *[s]*\n` +
     `\`${ps}link [key] \` Get the full link of a specific key  *[url]*\n` +
