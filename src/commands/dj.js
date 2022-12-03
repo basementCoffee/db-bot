@@ -1,12 +1,12 @@
-const {formatDuration, botInVC, notInVoiceChannelErrorMsg, getVCMembers} = require('../utils/utils');
-const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
+const { formatDuration, botInVC, notInVoiceChannelErrorMsg, getVCMembers } = require('../utils/utils');
+const { EmbedBuilderLocal } = require('../utils/lib/EmbedBuilderLocal');
 
 /**
  * Run the command to enable a music mode allowing only one user to control music commands in a server.
  * @param message The message metadata
  * @param mgid The message guild id
  * @param prefixString The prefix string for the guild
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @returns {*}
  */
 function runDictatorCommand(message, mgid, prefixString, server) {
@@ -21,19 +21,22 @@ function runDictatorCommand(message, mgid, prefixString, server) {
   if (server.dictator) {
     if (server.dictator === message.member) {
       return message.channel.send('***You are the dictator.*** *If you want to forfeit your powers say \`' + prefixString + 'resign\`*');
-    } else {
+    }
+    else {
       const dic = server.dictator;
       for (const i of vcMembersId) {
         if (i === dic.id) {
-          return message.channel.send((dic.nickname ? dic.nickname : dic.user.username) + ' is the dictator, and has control over ' +
-            (message.guild.me.nickname ? message.guild.me.nickname : message.guild.me.user.username));
+          return (message.channel.send((dic.nickname ? dic.nickname : dic.user.username) +
+            ' is the dictator, and has control over ' + (message.guild.members.me.nickname ?
+            message.guild.members.me.nickname : message.guild.members.me.user.username)));
         }
       }
       server.dictator = message.member;
       message.channel.send('The dictator is missing! ***' + (message.member.nickname ?
         message.member.nickname : message.member.user.username) + ' is now the new dictator.***');
     }
-  } else {
+  }
+  else {
     server.dictator = message.member;
     message.channel.send('***' + (message.member.nickname ?
       message.member.nickname : message.member.user.username) + ', you are the dictator.***');
@@ -48,7 +51,7 @@ function runDictatorCommand(message, mgid, prefixString, server) {
 /**
  * Creates the DJ timer.
  * @param message The message for channel info
- * @param server The server info
+ * @param server {LocalServer} The server info
  * @param duration The duration of the timer
  */
 function createDJTimer(message, server, duration) {
@@ -58,7 +61,8 @@ function createDJTimer(message, server, duration) {
     let resignMsg;
     if (message.guild.voice.channel.members.map((x) => x.id).includes(mem.id)) {
       resignMsg = '*Time\'s up: ' + (mem.nickname ? mem.nickname : mem.user.username) + ' is no longer the DJ.*\n';
-    } else {
+    }
+    else {
       resignMsg = '*No DJ detected.*\n';
     }
     server.voteAdmin.pop();
@@ -100,7 +104,7 @@ function getTimeLeft(duration, startTime) {
 /**
  * Handles the validation and provision of DJ permissions to members within a server.
  * @param message The message metadata
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @returns {*}
  */
 function runDJCommand(message, server) {
@@ -115,7 +119,8 @@ function runDJCommand(message, server) {
     const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
     message.channel.send('***DJ mode has been enabled for this session (DJ: ' + dj + ')*** *[30 min]*');
     createDJTimer(message, server, 1800000);
-  } else {
+  }
+  else {
     let ix = 0;
     let newMemAdded = false;
     for (const x of server.voteAdmin) {
@@ -129,7 +134,8 @@ function runDJCommand(message, server) {
           message.channel.send('*DJ ' + oldMem + ' is missing.* ***' + newMem + ' is now the new DJ.***');
           createDJTimer(message, server, 1800000);
           newMemAdded = true;
-        } else {
+        }
+        else {
           message.channel.send('*DJ ' + oldMem + ' is also missing and has forfeit being DJ*');
         }
       }
@@ -154,20 +160,23 @@ function runDJCommand(message, server) {
 /**
  * Resigns the active DJ. Uses message.member.
  * @param message The message metadata.
- * @param server The server.
+ * @param server {LocalServer} The server.
  */
 function runResignCommand(message, server) {
   if (!server.voteAdmin.length && !server.dictator) {
     message.channel.send('There is no DJ or dictator right now');
-  } else if (server.dictator) {
+  }
+  else if (server.dictator) {
     if (message.member.id === server.dictator.id) {
       server.dictator = false;
       message.channel.send((message.member.nickname ? message.member.nickname : message.member.user.username) +
         ' has resigned from being the dictator!');
-    } else {
+    }
+    else {
       message.channel.send('Only the dictator can resign');
     }
-  } else if (server.voteAdmin.includes(message.member)) {
+  }
+  else if (server.voteAdmin.includes(message.member)) {
     server.voteAdmin.splice(server.voteAdmin.findIndex((val) => val.id === message.member.id), 1);
     let resignMsg = (message.member.nickname ? message.member.nickname : message.member.user.username) +
       ' has resigned from being DJ.';
@@ -179,9 +188,10 @@ function runResignCommand(message, server) {
       resignMsg += ' DJ mode disabled.';
     }
     message.channel.send(resignMsg);
-  } else {
+  }
+  else {
     message.channel.send('Only the DJ can resign');
   }
 }
 
-module.exports = {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand};
+module.exports = { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand };

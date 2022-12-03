@@ -1,5 +1,5 @@
-const {verifyUrl, verifyPlaylist, botInVC} = require('../utils/utils');
-const {getXdb2} = require('../database/retrieval');
+const { verifyUrl, verifyPlaylist, botInVC } = require('../utils/utils');
+const { getXdb2 } = require('../database/retrieval');
 const leven = require('leven');
 
 /**
@@ -61,12 +61,13 @@ function getAssumptionUsingLeven(keyName, keyArray, levenThreashold = 2) {
   let lowestValue = levenThreashold;
   let currentValue;
   for (const key of keyArray) {
-    currentValue = leven(keyName, key);
+    currentValue = leven(keyName.toLowerCase(), key.toLowerCase());
     if (currentValue < lowestValue) {
       lowestValue = currentValue;
       closestMatches.length = 0;
       closestMatches.push(key);
-    } else if (currentValue === lowestValue) {
+    }
+    else if (currentValue === lowestValue) {
       closestMatches.push(key);
     }
   }
@@ -98,7 +99,7 @@ function getAssumptionMultipleMethods(word, wordsArray, levenThreashold) {
  * @param message The message that triggered the bot.
  * @param sheetName The sheet name to use for the lookup.
  * @param providedString The string to search for.
- * @param server The server metadata.
+ * @param server {LocalServer} The local server object.
  * @returns {Promise<{valueObj: {ss: string, ssi: number}, link, message: string}|{message: string}|*|undefined>}
  */
 async function searchForSingleKey(message, sheetName, providedString, server) {
@@ -112,11 +113,13 @@ async function searchForSingleKey(message, sheetName, providedString, server) {
       link,
       message: `keys found: ${so.ss} ${(link ? `\n${link}` : '')}`,
     };
-  } else if (providedString.length < 2) {
+  }
+  else if (providedString.length < 2) {
     return {
       message: 'Did not find any keys that start with the given letter.',
     };
-  } else {
+  }
+  else {
     return {
       message: 'Did not find any keys that contain \'' + providedString + '\'',
     };
@@ -128,7 +131,7 @@ async function searchForSingleKey(message, sheetName, providedString, server) {
  * @param message The message metadata.
  * @param sheetName The sheet name to use for the lookup.
  * @param link The link to lookup. Defaults to server
- * @param server The server metadata.
+ * @param server {LocalServer} The local server object.
  * @returns {Promise<boolean>} If the request was a valid link.
  */
 async function runLookupLink(message, sheetName, link, server) {
@@ -147,7 +150,7 @@ async function runLookupLink(message, sheetName, link, server) {
 /**
  * A search command that searches both the server and personal database for the string.
  * @param message The message that triggered the bot.
- * @param server The server.
+ * @param server {LocalServer} The local server object.
  * @param sheetName The guild id.
  * @param providedString The string to search for. Can contain multiple comma delineated strings.
  */
@@ -158,7 +161,8 @@ async function runUniversalSearchCommand(message, server, sheetName, providedStr
   if (await runLookupLink(message, sheetName, words[0], server)) return;
   if (words.length === 1) {
     message.channel.send((await searchForSingleKey(message, sheetName, words[0], server)).message);
-  } else {
+  }
+  else {
     const BASE_KEYS_STRING = '**_Keys found_**\n';
     let finalString = BASE_KEYS_STRING;
     let obj;
@@ -174,4 +178,4 @@ async function runUniversalSearchCommand(message, server, sheetName, providedStr
   if (botInVC(!message)) server.userKeys.clear();
 }
 
-module.exports = {runSearchCommand, runUniversalSearchCommand, getAssumptionMultipleMethods};
+module.exports = { runSearchCommand, runUniversalSearchCommand, getAssumptionMultipleMethods };

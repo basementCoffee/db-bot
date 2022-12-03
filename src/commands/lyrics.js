@@ -1,21 +1,21 @@
 const ytdl = require('ytdl-core-discord');
 const fetch = require('isomorphic-unfetch');
-const {getData} = require('spotify-url-info')(fetch);
-const {botID, StreamType} = require('../utils/lib/constants');
+const { getData } = require('spotify-url-info')(fetch);
+const { botID, StreamType } = require('../utils/lib/constants');
 // imports for YouTube captions
 const https = require('https');
 const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 // Genius imports
 const Genius = require('genius-lyrics');
-const {reactions} = require('../utils/lib/reactions');
-const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
+const { reactions } = require('../utils/lib/reactions');
+const { EmbedBuilderLocal } = require('../utils/lib/EmbedBuilderLocal');
 const GeniusClient = new Genius.Client();
 
 /**
  * Returns lyrics for what is currently playing in a server.
  * @param channel The channel metadata
- * @param reactionCallback Optional - A callback for when the lyrics (text) is sent within the channel. [USED FOR THREADS]
+ * @param reactionCallback Optional - A callback for when the lyrics (text) is sent within the channel. [FOR THREADS]
  * @param args The args with the message content
  * @param queueItem The queueItem to get the lyrics of.
  * @param messageMemberId The id of the member that sent the command.
@@ -35,97 +35,101 @@ function runLyricsCommand(channel, reactionCallback, args, queueItem, messageMem
     if (args[1]) {
       args[0] = '';
       searchTerm = args.join(' ').trim();
-    } else {
-      if (queueItem.type === StreamType.SPOTIFY) {
-        infos = queueItem.infos || await getData(lUrl);
-        songName = infos.name.toLowerCase();
-        let songNameSubIndex = songName.search('[-]');
+    }
+    else if (queueItem.type === StreamType.SPOTIFY) {
+      infos = queueItem.infos || await getData(lUrl);
+      songName = infos.name.toLowerCase();
+      let songNameSubIndex = songName.search('[-]');
+      if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
+      songNameSubIndex = songName.search('[(]');
+      if (songNameSubIndex !== -1) {songName = songName.substring(0, songNameSubIndex);}
+      else {
+        songNameSubIndex = songName.search('[\[]');
         if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
-        songNameSubIndex = songName.search('[(]');
-        if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
+      }
+      artistName = infos.artists[0].name;
+      searchTerm = songName + ' ' + artistName;
+      if (infos.name.toLowerCase().includes('remix')) {
+        const remixArgs = infos.name.toLowerCase().split(' ');
+        const remixArgs2 = [];
+        let wordIndex = 0;
+        for (const i of remixArgs) {
+          if (i.includes('remix') && wordIndex !== 0) {
+            wordIndex--;
+            break;
+          }
+          remixArgs2[wordIndex] = remixArgs[wordIndex];
+          wordIndex++;
+        }
+        if (wordIndex) {
+          remixArgs2[wordIndex] = '';
+          searchTermRemix = remixArgs2.join(' ').trim() + ' ' +
+              remixArgs[wordIndex].replace('(', '').trim() +
+              ' remix';
+        }
+      }
+    }
+    else if (queueItem.type === StreamType.YOUTUBE) {
+      infos = queueItem.infos || await ytdl.getInfo(lUrl);
+      const title = infos.title || infos.videoDetails.title;
+      if (infos.videoDetails?.media && title.includes(infos.videoDetails.media.song)) {
+        // use video metadata
+        searchTerm = songName = infos.videoDetails.media.song;
+        let songNameSubIndex = songName.search('[(]');
+        if (songNameSubIndex !== -1) {songName = songName.substring(0, songNameSubIndex);}
         else {
           songNameSubIndex = songName.search('[\[]');
           if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
         }
-        artistName = infos.artists[0].name;
-        searchTerm = songName + ' ' + artistName;
-        if (infos.name.toLowerCase().includes('remix')) {
-          const remixArgs = infos.name.toLowerCase().split(' ');
-          const remixArgs2 = [];
-          let wordIndex = 0;
-          for (const i of remixArgs) {
-            if (i.includes('remix') && wordIndex !== 0) {
-              wordIndex--;
-              break;
-            }
-            remixArgs2[wordIndex] = remixArgs[wordIndex];
-            wordIndex++;
-          }
-          if (wordIndex) {
-            remixArgs2[wordIndex] = '';
-            searchTermRemix = remixArgs2.join(' ').trim() + ' ' +
-              remixArgs[wordIndex].replace('(', '').trim() +
-              ' remix';
-          }
-        }
-      } else if (queueItem.type === StreamType.YOUTUBE) {
-        infos = queueItem.infos || await ytdl.getInfo(lUrl);
-        const title = infos.title || infos.videoDetails.title;
-        if (infos.videoDetails?.media && title.includes(infos.videoDetails.media.song)) {
-          // use video metadata
-          searchTerm = songName = infos.videoDetails.media.song;
-          let songNameSubIndex = songName.search('[(]');
-          if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
+        artistName = infos.videoDetails.media.artist;
+        if (artistName) {
+          let artistNameSubIndex = artistName.search('ft.');
+          if (artistNameSubIndex !== -1) {artistName = artistName.substring(0, artistNameSubIndex);}
           else {
-            songNameSubIndex = songName.search('[\[]');
-            if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
-          }
-          artistName = infos.videoDetails.media.artist;
-          if (artistName) {
-            let artistNameSubIndex = artistName.search('ft.');
+            artistNameSubIndex = artistName.search(' feat');
             if (artistNameSubIndex !== -1) artistName = artistName.substring(0, artistNameSubIndex);
-            else {
-              artistNameSubIndex = artistName.search(' feat');
-              if (artistNameSubIndex !== -1) artistName = artistName.substring(0, artistNameSubIndex);
-            }
-            searchTerm = songName + ' ' + artistName;
           }
-        } else {
-          // use title
-          let songNameSubIndex = title.search('[(]');
-          if (songNameSubIndex !== -1) {
-            searchTerm = title.substring(0, songNameSubIndex);
-          } else {
-            songNameSubIndex = title.search('[\[]');
-            if (songNameSubIndex !== -1) searchTerm = title.substring(0, songNameSubIndex);
-            else searchTerm = title;
-          }
+          searchTerm = songName + ' ' + artistName;
         }
-        if (title.toLowerCase().includes('remix')) {
-          const remixArgs = title.toLowerCase().split(' ');
-          let wordIndex = 0;
-          for (const i of remixArgs) {
-            if (i.includes('remix') && wordIndex !== 0) {
-              wordIndex--;
-              break;
-            }
-            wordIndex++;
+      }
+      else {
+        // use title
+        let songNameSubIndex = title.search('[(]');
+        if (songNameSubIndex !== -1) {
+          searchTerm = title.substring(0, songNameSubIndex);
+        }
+        else {
+          songNameSubIndex = title.search('[\[]');
+          if (songNameSubIndex !== -1) searchTerm = title.substring(0, songNameSubIndex);
+          else searchTerm = title;
+        }
+      }
+      if (title.toLowerCase().includes('remix')) {
+        const remixArgs = title.toLowerCase().split(' ');
+        let wordIndex = 0;
+        for (const i of remixArgs) {
+          if (i.includes('remix') && wordIndex !== 0) {
+            wordIndex--;
+            break;
           }
-          if (wordIndex) {
-            searchTermRemix = (songName ? songName : searchTerm) + ' ' +
+          wordIndex++;
+        }
+        if (wordIndex) {
+          searchTermRemix = (songName ? songName : searchTerm) + ' ' +
               remixArgs[wordIndex].replace('(', '') +
               ' remix';
-          }
         }
-      } else return channel.send('*lyrics command not supported for this stream type*');
+      }
     }
+    else {return channel.send('*lyrics command not supported for this stream type*');}
     if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, messageMemberId, reactionCallback) &&
         !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), messageMemberId, reactionCallback) &&
         !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) :
       !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
         getYoutubeSubtitles(sentMsg, lUrl, infos, reactionCallback);
-      } else {
+      }
+      else {
         sentMsg.edit('no results found');
       }
     }
@@ -149,11 +153,12 @@ async function sendSongLyrics(message, searchTerm, messageMemberId, reactionCall
         return user.id !== botID && ['📄'].includes(reaction.emoji.name);
       };
       let lyrics;
-      const collector = sentMsg.createReactionCollector({filter, time: 300000});
+      const collector = sentMsg.createReactionCollector({ filter, time: 300000 });
       collector.once('collect', async () => {
         try {
           lyrics = await firstSong.lyrics();
-        } catch (e) {
+        }
+        catch (e) {
           lyrics = '*could not retrieve*';
         }
         // send the lyrics text on reaction click
@@ -178,7 +183,8 @@ async function sendSongLyrics(message, searchTerm, messageMemberId, reactionCall
       });
     });
     return true;
-  } catch (e) {
+  }
+  catch (e) {
     // GeniusClient.songs.search throws an error if the song is not found
     return false;
   }
@@ -207,7 +213,8 @@ function getYoutubeSubtitles(message, url, infos, reactionCallback) {
             if (err) {
               console.log('ERROR in getYouTubeSubtitles');
               return console.log(err);
-            } else {
+            }
+            else {
               let finalString = '';
               let prevDuration = 0;
               let newDuration;
@@ -217,7 +224,8 @@ function getYoutubeSubtitles(message, url, infos, reactionCallback) {
                   finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
                     i._;
                   prevDuration -= 5;
-                } else {
+                }
+                else {
                   newDuration = parseInt(i.$.start);
                   finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ') +
                     i._;
@@ -234,7 +242,7 @@ function getYoutubeSubtitles(message, url, infos, reactionCallback) {
                   return user.id !== botID && [mb].includes(reaction.emoji.name);
                 };
 
-                const collector = sentMsg.createReactionCollector({filter, time: 600000});
+                const collector = sentMsg.createReactionCollector({ filter, time: 600000 });
 
                 collector.once('collect', () => {
                   message.edit(`***Captions from YouTube***\n${finalString}`);
@@ -246,9 +254,10 @@ function getYoutubeSubtitles(message, url, infos, reactionCallback) {
         });
       }
     });
-  } catch (e) {
+  }
+  catch (e) {
     message.edit('no results found');
   }
 }
 
-module.exports = {runLyricsCommand};
+module.exports = { runLyricsCommand };

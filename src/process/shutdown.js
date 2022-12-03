@@ -1,7 +1,8 @@
-const {bot} = require('./lib/constants');
+const { bot } = require('../utils/lib/constants');
 const CH = require('../../channel.json');
-const processStats = require('./lib/ProcessStats');
-const {getVoiceConnection} = require('@discordjs/voice');
+const processStats = require('../utils/lib/ProcessStats');
+const { getVoiceConnection } = require('@discordjs/voice');
+const { parentThread } = require('../threads/parentThread');
 
 /**
  * Shuts down the current process.
@@ -10,6 +11,7 @@ const {getVoiceConnection} = require('@discordjs/voice');
  */
 function shutdown(type) {
   return () => {
+    parentThread('SHUTDOWN', {}, []);
     const wasActive = !processStats.isInactive;
     processStats.setProcessInactive();
     console.log('shutting down...');
@@ -19,14 +21,15 @@ function shutdown(type) {
         bot.channels.fetch(CH.process).then((channel) => channel.send(`shutting down: '${process.pid}' (${type})`));
         if (wasActive) bot.channels.fetch(CH.process).then((channel) => channel.send('=gzz'));
       }
-    } catch (e) {}
+    }
+    catch (e) {}
     const activeCSize = bot.voice.adapters.size;
     if (activeCSize > 0) {
       console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? 's' : ''}`);
       // noinspection JSUnresolvedFunction
       if (processStats.servers.size > 0) {
         bot.voice.adapters.forEach((x, guildId) => {
-          const server = processStats.servers.get(guildId);
+          const server = processStats.getServer(guildId);
           bot.guilds.fetch(guildId).then((guild) => {
             const currentEmbed = server.currentEmbed;
             getVoiceConnection(guildId)?.disconnect();
@@ -35,7 +38,8 @@ function shutdown(type) {
               if (currentEmbed) currentEmbed.channel.send('db vibe is restarting... (this will be quick)');
               else if (server.queue[0]) guild.systemChannel.send('db vibe is restarting... (this will be quick)').then();
               processStats.disconnectConnection(server, server.audio.connection);
-            } catch (e) {
+            }
+            catch (e) {
               guild.systemChannel.send('db vibe is restarting... (this will be quick)').then();
             }
           });
@@ -44,9 +48,10 @@ function shutdown(type) {
         });
       }
       setTimeout(() => process.exit(), 4500);
-    } else setTimeout(() => process.exit(), 1500);
+    }
+    else {setTimeout(() => process.exit(), 1500);}
     process.exitCode = 0;
   };
 }
 
-module.exports = {shutdown};
+module.exports = { shutdown };

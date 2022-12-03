@@ -1,11 +1,11 @@
 /* eslint-disable camelcase */
-const {gsrun, gsUpdateAdd, gsUpdateOverwrite} = require('./api/api');
-const {getXdb2} = require('./retrieval');
-const {serializeAndUpdate} = require('./utils');
+const { gsrun, gsUpdateAdd, gsUpdateOverwrite } = require('./api/api');
+const { getXdb2 } = require('./retrieval');
+const { serializeAndUpdate } = require('./utils');
 
 /**
  * The command to add a key, value pair to a given database.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param {*} args The command arguments, ignores the first item
  * @param {*} message The message that triggered the command
  * @param {string} sheetName the name of the sheet to add to
@@ -24,7 +24,8 @@ function addToDatabase(server, args, message, sheetName, printMsgToChannel) {
       if (args[z].includes('.') || args[z].includes(',')) {
         message.channel.send('did not add \'' + args[z] + '\', names cannot include \'.\' or \',\'');
         songsAddedInt--;
-      } else {
+      }
+      else {
         let alreadyExists = false;
         if (printMsgToChannel) {
           for (const x of xdb.congratsDatabase.keys()) {
@@ -55,11 +56,13 @@ function addToDatabase(server, args, message, sheetName, printMsgToChannel) {
         let typeString;
         if (databaseType === 'm') {
           typeString = 'your personal';
-        } else {
+        }
+        else {
           typeString = 'the server\'s';
         }
         message.channel.send(`*link added to ${typeString} keys list. (use \`${ps}d ${args[1]}\` to play)*`);
-      } else if (songsAddedInt > 1) {
+      }
+      else if (songsAddedInt > 1) {
         await new Promise((res) => setTimeout(res, 1000));
         gsUpdateOverwrite([xdb.dsInt + songsAddedInt], sheetName, xdb.dsInt);
         message.channel.send('*' + songsAddedInt + ' songs added to the keys list. (see \'' + ps + databaseType + 'keys\')*');
@@ -70,12 +73,12 @@ function addToDatabase(server, args, message, sheetName, printMsgToChannel) {
 
 /**
  * creates a new playlist if a new playlist-name is provided
- * @param server {any}
+ * @param server {LocalServer} The server object.
  * @param keysList {Array<string>} - the list of keys and links (each key should be followed by a link)
- * @param channel {any}
- * @param sheetName {string}
- * @param printMsgToChannel {boolean}
- * @param playlistName {string}
+ * @param channel {any} The textchannel that is active.
+ * @param sheetName {string} The db sheet name to use.
+ * @param printMsgToChannel {boolean} Whether to print the response to the text channel.
+ * @param playlistName {string} The name of the word/playlist
  * @param xdb {any?} The XDB.
  * @returns {Promise<void>}
  */
@@ -99,7 +102,8 @@ async function addToDatabase_P(server, keysList, channel, sheetName, printMsgToC
     }
     if (keysList[z].includes('.') || keysList[z].includes(',')) {
       channel.send('did not add \'' + keysList[z] + '\', names cannot include \'.\' or \',\'');
-    } else {
+    }
+    else {
       let alreadyExists = false;
       const existingKeyObj = xdb.globalKeys.get(keysList[z].toUpperCase());
       const existingPlaylist = xdb.playlists.get(keysList[z].toUpperCase());
@@ -107,7 +111,8 @@ async function addToDatabase_P(server, keysList, channel, sheetName, printMsgToC
         channel.send(`*'${existingKeyObj.name}' is already saved as a key*`);
         alreadyExists = true;
         break;
-      } else if (existingPlaylist) {
+      }
+      else if (existingPlaylist) {
         channel.send(`*'${keysList[z]}' cannot be used because it is a playlist*`);
         alreadyExists = true;
         break;
@@ -128,7 +133,8 @@ async function addToDatabase_P(server, keysList, channel, sheetName, printMsgToC
     const ps = server.prefix;
     if (songsAddedInt === 1) {
       channel.send(`*link added to your **${playlistName}** playlist. (use \`${ps}d ${keysList[0]}\` to play)*`);
-    } else if (songsAddedInt > 1) {
+    }
+    else if (songsAddedInt > 1) {
       await new Promise((res) => setTimeout(res, 1000));
       gsUpdateOverwrite(10, sheetName, xdb.dsInt);
       channel.send('*' + songsAddedInt + ' songs added to the keys list. (see \'' + ps + 'keys\')*');
@@ -136,4 +142,4 @@ async function addToDatabase_P(server, keysList, channel, sheetName, printMsgToC
   }
 }
 
-module.exports = {addToDatabase, addToDatabase_P};
+module.exports = { addToDatabase, addToDatabase_P };

@@ -1,4 +1,4 @@
-const {EmbedBuilder} = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 /**
  * Local wrapper for EmbedBuilder.
@@ -10,58 +10,58 @@ class EmbedBuilderLocal {
     this._embed = new EmbedBuilder();
   }
 
-  setTitle (value) {
+  setTitle(value) {
     this._embed.setTitle(value);
     return this;
   }
 
-  setDescription (value) {
+  setDescription(value) {
     this._embed.setDescription(value);
     return this;
   }
 
-  setColor (value) {
+  setColor(value) {
     this._embed.setColor(value);
     return this;
   }
 
-  setSplash (value) {
+  setSplash(value) {
     this.splash = value;
     this._embed.setSplash(value);
     return this;
   }
 
-  setURL (value) {
+  setURL(value) {
     this._embed.setURL(value);
     return this;
   }
 
-  setAuthor (value) {
+  setAuthor(value) {
     this._embed.setAuthor(value);
     return this;
   }
 
-  setFooter (value) {
+  setFooter(value) {
     this._embed.setFooter(value);
     return this;
   }
 
-  setImage (value) {
+  setImage(value) {
     this._embed.setImage(value);
     return this;
   }
 
-  addFields (...value) {
+  addFields(...value) {
     this._embed.addFields(...value);
     return this;
   }
 
-  setFields (...value) {
+  setFields(...value) {
     this._embed.setFields(...value);
     return this;
   }
 
-  setThumbnail (value) {
+  setThumbnail(value) {
     this._embed.setThumbnail(value);
     return this;
   }
@@ -84,18 +84,17 @@ class EmbedBuilderLocal {
 
   /**
    * Sends the embed to the channel.
-   * @param channel
+   * @param channel The text channel to send the embed to.
    * @return {Promise<*>}
    */
   async send(channel) {
-    return channel.send({embeds: [this.build()]});
+    return channel.send({ embeds: [this.build()] });
   }
 
   async edit(message) {
-    return message.edit({embeds: [this.build()]});
+    return message.edit({ embeds: [this.build()] });
   }
-
 }
 
 
-module.exports = {EmbedBuilderLocal}
+module.exports = { EmbedBuilderLocal };

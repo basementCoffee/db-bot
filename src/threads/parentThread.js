@@ -1,13 +1,13 @@
 /* eslint-disable camelcase */
-const {Worker} = require('worker_threads');
+const { Worker } = require('worker_threads');
 const processStats = require('../utils/lib/ProcessStats');
-const {logError} = require('../utils/utils');
+const { logError } = require('../utils/utils');
 const worker = new Worker(__dirname + '/worker.js');
 
 /**
  * Send computationally heavy commands to a worker process.
  * @param commandName {string} A unique name/id of the command to execute. This name should be expected by the worker.
- * @param cReqs {{channelId?: string | null, messageId?: string | null}} Data requirements for proper setup of the command args.
+ * @param cReqs {{channelId?: string | null, messageId?: string | null}} Additional data pass-through.
  * @param commandArgs {Array<any>} A list of arguments to pass to a function.
  */
 function parentThread(commandName, cReqs, commandArgs = []) {
@@ -28,7 +28,7 @@ function initialize() {
   worker.on('message', function(m) {
     switch (m.content.commandName) {
     case 'lyrics':
-      const server = processStats.servers.get(m.content.guildId);
+      const server = processStats.getServer(m.content.guildId);
       if (server) server.numSinceLastEmbed = 10;
       break;
     }
@@ -46,4 +46,4 @@ function initialize() {
 
 initialize();
 
-module.exports = {parentThread};
+module.exports = { parentThread };

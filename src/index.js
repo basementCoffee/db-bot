@@ -2,108 +2,41 @@
 'use strict';
 require('dotenv').config();
 const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
-const {exec} = require('child_process');
+const { exec } = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
 const buildNo = require('./utils/lib/BuildNumber');
 const processStats = require('./utils/lib/ProcessStats');
-const {gsrun, deleteRows} = require('./database/api/api');
+const { gsrun, deleteRows } = require('./database/api/api');
 const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
-  formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, endStream,
-  unshiftQueue, createQueueItem, createMemoryEmbed, convertSeekFormatToSec, logError, getTimeActive,
-  removeFormattingLink, getSheetName, linkValidator, createVisualEmbed, getTitle,
+  formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive,
+  removeFormattingLink, getSheetName, createVisualEmbed, getTitle,
 } = require('./utils/utils');
-const {runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand} = require('./commands/dj');
+const { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } = require('./commands/dj');
 const {
-  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG,
-  PREFIX_SN, startupTest,
+  bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG, PREFIX_SN,
+  startupTest,
 } = require('./utils/lib/constants');
-const {reactions} = require('./utils/lib/reactions');
-const {updateActiveEmbed, sessionEndEmbed} = require('./utils/embed');
+const { reactions } = require('./utils/lib/reactions');
+const { updateActiveEmbed, sessionEndEmbed } = require('./utils/embed');
 const {
   checkStatusOfYtdl, playLinkToVC, skipLink, runSkipCommand, sendLinkAsEmbed, runRewindCommand,
 } = require('./commands/stream/stream');
-const {shutdown} = require('./utils/shutdown');
-const {playRecommendation, sendRecommendationWrapper} = require('./commands/stream/recommendations');
-const {addLinkToQueue} = require('./utils/playlist');
-const {checkToSeeActive} = require('./process/checkToSeeActive');
-const {runQueueCommand, createVisualText} = require('./commands/generateQueue');
-const {sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2} = require('./database/retrieval');
-const {isAdmin, hasDJPermissions} = require('./utils/permissions');
-const {dmHandler, sendMessageToUser} = require('./utils/dms');
-const {runDeleteKeyCommand_P} = require('./database/delete');
-const {parentThread} = require('./threads/parentThread');
-const {getVoiceConnection} = require('@discordjs/voice');
-const {shuffleQueue} = require('./commands/runRandomToQueue');
-const {EmbedBuilderLocal} = require('./utils/lib/EmbedBuilderLocal');
+const { shutdown } = require('./process/shutdown');
+const { playRecommendation, sendRecommendationWrapper } = require('./commands/stream/recommendations');
+const { checkToSeeActive } = require('./process/checkToSeeActive');
+const { runQueueCommand, createVisualText } = require('./commands/generateQueue');
+const { sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2 } = require('./database/retrieval');
+const { isAdmin, hasDJPermissions } = require('./utils/permissions');
+const { dmHandler, sendMessageToUser } = require('./utils/dms');
+const { runDeleteKeyCommand_P } = require('./database/delete');
+const { parentThread } = require('./threads/parentThread');
+const { getVoiceConnection } = require('@discordjs/voice');
+const { EmbedBuilderLocal } = require('./utils/lib/EmbedBuilderLocal');
+const { ActivityType } = require('discord.js');
 
 process.setMaxListeners(0);
-
-/**
- * Runs the play now command.
- * @param message the message that triggered the bot
- * @param args the message split into an array (ignores the first argument)
- * @param mgid the message guild id
- * @param server The server playback metadata
- * @param sheetName the name of the sheet to reference
- * @param seekSec {number?} Optional - The amount of time to seek in seconds
- * @param adjustQueue {boolean?} Whether to adjust the queue (is true by default).
- */
-async function runPlayNowCommand(message, args, mgid, server, sheetName, seekSec, adjustQueue = true) {
-  const voiceChannel = message.member.voice?.channel;
-  if (!voiceChannel) {
-    const sentMsg = await message.channel.send('must be in a voice channel to play');
-    if (!botInVC(message) && args[1]) {
-      setSeamless(server, runPlayNowCommand, [message, args, mgid, server, sheetName], sentMsg);
-    }
-    return;
-  }
-  if (server.dictator && message.member.id !== server.dictator.id) {
-    return message.channel.send('only the dictator can play perform this action');
-  }
-  if (server.lockQueue && server.voteAdmin.filter((x) => x.id === message.member.id).length === 0) {
-    return message.channel.send('the queue is locked: only the dj can play and add links');
-  }
-  if (!args[1]) {
-    return message.channel.send('What should I play now? Put a link or some words after the command.');
-  }
-  // in case of force disconnect
-  if (!botInVC(message)) {
-    resetSession(server);
-  } else if (server.queue.length >= MAX_QUEUE_S) {
-    return message.channel.send('*max queue size has been reached*');
-  }
-  if (server.lockQueue && !hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
-    return message.channel.send('the queue is locked: only the DJ can add to the queue');
-  }
-  if (server.followUpMessage) {
-    server.followUpMessage.delete();
-    server.followUpMessage = undefined;
-  }
-  server.numSinceLastEmbed += 2;
-  if (args[1].includes('.')) {
-    if (args[1][0] === '<' && args[1][args[1].length - 1] === '>') {
-      args[1] = args[1].substr(1, args[1].length - 2);
-    }
-    if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
-      return commandHandlerCommon.playFromWord(message, args, sheetName, server, mgid, true);
-    }
-  } else return commandHandlerCommon.playFromWord(message, args, sheetName, server, mgid, true);
-  // places the currently playing into the queue history if played long enough
-  if (adjustQueue) adjustQueueForPlayNow(server.audio.resource, server);
-  // counter to iterate over all args - excluding args[0]
-  let linkItem = args.length - 1;
-  if (adjustQueue) {
-    while (linkItem > 0) {
-      let url = args[linkItem];
-      if (url[url.length - 1] === ',') url = url.replace(/,/, '');
-      await addLinkToQueue(url, message, server, mgid, true, unshiftQueue);
-      linkItem--;
-    }
-  }
-  playLinkToVC(message, server.queue[0], voiceChannel, server, 0, seekSec);
-}
 
 
 /**
@@ -114,9 +47,11 @@ async function runPlayNowCommand(message, args, mgid, server, sheetName, seekSec
 async function runCommandCases(message) {
   const mgid = message.guild.id;
   // the server guild playback data
-  if (!processStats.servers.get(mgid)) processStats.initializeServer(mgid);
-  const server = processStats.servers.get(mgid);
-  if (processStats.devMode && !server.prefix) server.prefix = '='; // devmode prefix
+  const server = processStats.getServer(mgid);
+  if (processStats.devMode && !server.prefix) {
+    // devmode prefix
+    server.prefix = '=';
+  }
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed++;
   }
@@ -138,12 +73,13 @@ async function runCommandCases(message) {
   }
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   // the command name
-  const statement = args[0].substr(1).toLowerCase();
+  const statement = args[0].substring(1).toLowerCase();
   if (statement.substring(0, 1) === 'g' && statement !== 'guess') {
     if (!isAdmin(message.member.id)) {
       return;
     }
-  } else {
+  }
+  else {
     commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
   }
   if (message.channel.id === server.currentEmbedChannelId) server.numSinceLastEmbed += 2;
@@ -178,8 +114,9 @@ async function runCommandCases(message) {
       name = args2[parseInt(indexOfWord) + 1];
       const excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
       if (excludedWords.includes(name)) name = '';
-      if (name && name.length > 1) name = name.substring(0, 1).toUpperCase() + name.substr(1);
-    } else {
+      if (name && name.length > 1) name = name.substring(0, 1).toUpperCase() + name.substring(1);
+    }
+    else {
       name = '';
     }
     commandsMap.set('congrats', (commandsMap.get('congrats') || 0) + 1);
@@ -187,7 +124,8 @@ async function runCommandCases(message) {
     const congratsLink = (statement.includes('omedetou') ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4' : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8');
     if (server.queue[0]?.url !== congratsLink) {
       server.queue.unshift(createQueueItem(congratsLink, StreamType.YOUTUBE, null));
-    } else return;
+    }
+    else {return;}
     if (message.member.voice?.channel) {
       const vc = message.member.voice.channel;
       setTimeout(() => {
@@ -227,54 +165,23 @@ async function runCommandCases(message) {
     // test purposes - play now command
   case 'gpnow':
   case 'gpn':
-    runPlayNowCommand(message, args, mgid, server, 'entries').then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, 'entries').then();
     break;
     // the play now command
   case 'pnow':
   case 'playnow':
   case 'pn':
-    runPlayNowCommand(message, args, mgid, server, undefined).then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, undefined).then();
     break;
     // the personal play now command
   case 'mplaynow':
   case 'mpnow':
   case 'mpn':
-    runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
     // allows seeking of YouTube and Spotify links
   case 'seek':
-    const SEEK_ERR_MSG = '*provide a seek timestamp (ex: seek 5m32s)*';
-    if (args[1]) {
-      if (args[2]) {
-        // assume exactly two arguments is provided
-        const validLink = linkValidator(args[1]);
-        const numSeconds = convertSeekFormatToSec(args[2]);
-        if (validLink && numSeconds) {
-          server.numSinceLastEmbed -= 2;
-          args.splice(2, args.length - 1);
-          await runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id), numSeconds, true);
-          if (numSeconds > 1200) message.channel.send('*seeking...*');
-          return;
-        }
-      } else {
-        // provided one argument
-        if (!server.queue[0]) {
-          return message.channel.send(`*provide a seek link and timestamp (ex: ${args[0]} [link] 5m32s)*`);
-        }
-        // continues if only one argument was provided
-        const numSeconds = convertSeekFormatToSec(args[1]);
-        if (numSeconds) {
-          server.numSinceLastEmbed -= 2;
-          args.splice(1, 1);
-          args.push(server.queue[0].url);
-          await runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id), numSeconds, false);
-          if (numSeconds > 1200) message.channel.send('*seeking...*');
-          return;
-        }
-      }
-    }
-    // if successful then execution should not reach here
-    message.channel.send(SEEK_ERR_MSG);
+    commandHandlerCommon.playWithSeek(message, server, args, mgid).then();
     break;
   case 'join':
     commandHandlerCommon.joinVoiceChannelSafe(message, server).then();
@@ -300,7 +207,8 @@ async function runCommandCases(message) {
     if (server.autoplay) {
       server.autoplay = false;
       message.channel.send('*smartplay turned off*');
-    } else {
+    }
+    else {
       server.autoplay = true;
       message.channel.send('*smartplay turned on*');
     }
@@ -315,7 +223,8 @@ async function runCommandCases(message) {
     if (server.loop) {
       server.loop = false;
       await message.channel.send('*looping disabled*');
-    } else {
+    }
+    else {
       await message.channel.send('*looping is already off*');
     }
     break;
@@ -329,7 +238,8 @@ async function runCommandCases(message) {
     if (server.loop) {
       server.loop = false;
       await message.channel.send('*looping disabled*');
-    } else {
+    }
+    else {
       server.loop = true;
       await message.channel.send('*looping enabled (occurs on finish)*');
     }
@@ -356,21 +266,25 @@ async function runCommandCases(message) {
   case 'kn':
   case 'dnow':
   case 'dn':
-    runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
+    if (isShortCommandNoArgs(args, message, statement)) return;
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'pd':
   case 'dd':
+    if (isShortCommandNoArgs(args, message, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id),
       false, true, server).then();
     break;
   case 'ps':
   case 'pshuffle':
+    if (isShortCommand(message, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id), false,
       true, server, true).then();
     break;
     // .md is retrieves and plays from the keys list
   case 'md':
   case 'd':
+    if (isShortCommandNoArgs(args, message, statement)) return;
     commandHandlerCommon.playDBKeys(args, message, getSheetName(message.member.id), false,
       true, server).then();
     break;
@@ -379,19 +293,16 @@ async function runCommandCases(message) {
   case 'mknow':
   case 'mdnow':
   case 'mdn':
-    runPlayNowCommand(message, args, mgid, server, getSheetName(message.member.id)).then();
+    commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'shuffle':
-    if (!args[1]) {
-      shuffleQueue(server, message);
-    } else {
-      commandHandlerCommon.addRandomKeysToQueue(args[1], message, mgid, server).then();
-    }
+    commandHandlerCommon.shuffleQueueOrPlayRandom([args[1]], message, getSheetName(message.member.id), server);
     break;
   case 'rn':
   case 'randnow':
   case 'randomnow':
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, mgid, server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, getSheetName(message.member.id), server,
+      true).then();
     break;
   case 'sync':
     // assume that there is something playing
@@ -409,8 +320,8 @@ async function runCommandCases(message) {
         commandHandlerCommon.pauseStream(...playArgs);
         const streamTime = server.audio.resource.playbackDuration;
         if (!streamTime) return message.channel.send('*could not find a valid stream time*');
-        // the seconds shown to the user
-        const streamTimeSeconds = (streamTime / 1000) % 60 + 1; // add 1 to get user ahead of actual stream
+        // the seconds shown to the user (added 1 to get user ahead of actual stream)
+        const streamTimeSeconds = (streamTime / 1000) % 60 + 1;
         // the formatted duration (with seconds supposed to be replaced)
         const duration = formatDuration(streamTime);
         const vals = duration.split(' ');
@@ -422,6 +333,8 @@ async function runCommandCases(message) {
           `timestamp is **${vals.join(' ')}**` +
             `\naudio will resume when I say 'now' (~${seconds} seconds)`,
         );
+        // convert seconds to ms and add another second
+        const syncTimeMS = (seconds * 1000) + 1000;
         setTimeout(async () => {
           if (!server.audio.status) {
             const newMsgStr = `timestamp is **${vals.join(' ')}**` + '\n***---now---***';
@@ -432,47 +345,52 @@ async function runCommandCases(message) {
               if (syncMsg.deletable) syncMsg.delete();
             }, 5000);
           }
-        }, (seconds * 1000) + 1000); // convert seconds to ms and add another second
-      } else message.channel.send('no active link is playing');
+        }, syncTimeMS);
+      }
+      else {message.channel.send('no active link is playing');}
     }
     break;
   case 'shufflen':
   case 'shufflenow':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, mgid, server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id), server,
+      true).then();
     break;
     // test purposes - random command
   case 'grand':
   case 'gr':
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, 'entries', server).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1] || 1], message, 'entries', server,
+      false).then();
     break;
   case 'gshuffle':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, 'entries', server).then();
+    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, 'entries', server,
+      false).then();
     break;
     // .mr is the personal random that works with the normal queue
     // .r is a random that works with the normal queue
   case 'random':
   case 'rand':
-  case 'ds':
-  case 's':
   case 'r':
   case 'mr':
-    if (!args[1] && !botInVC(message) && statement.length < 3) return;
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id),
-      server).then();
+    if (isShortCommandNoArgs(args, message, statement)) return;
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
+      server, false).then();
     break;
   case 'mshuffle':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id),
-      server).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
+      server, false).then();
     break;
   case 'mrn':
   case 'mrandnow':
-    commandHandlerCommon.addRandomKeysToQueue(args[1] || 1, message, getSheetName(message.member.id),
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
       server, true).then();
     break;
   case 'mshufflen':
   case 'mshufflenow':
-    commandHandlerCommon.addRandomKeysToQueue(args[1], message, getSheetName(message.member.id),
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
       server, true).then();
+    break;
+  case 'rename':
+    if (botInVC(message)) message.channel.send('try `rename-key` or `rename-playlist` with the old name followed by the new name');
     break;
   case 'rename-key':
   case 'rename-keys':
@@ -550,7 +468,8 @@ async function runCommandCases(message) {
       args[0] = '';
       dmHandler(message, args.join(''));
       message.channel.send('Your message has been sent');
-    } else return message.channel.send('*input a message after the command to submit a request/issue*');
+    }
+    else {return message.channel.send('*input a message after the command to submit a request/issue*');}
     break;
     // !? is the command for what's playing?
   case 'current':
@@ -559,7 +478,7 @@ async function runCommandCases(message) {
   case 'nowplaying':
   case 'playing':
   case 'now':
-    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], mgid, '');
+    await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], getSheetName(message.member.id), '');
     break;
   case 'g?':
     await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
@@ -575,9 +494,10 @@ async function runCommandCases(message) {
     if (!args[1]) {
       if (server.queue[0] && message.member.voice.channel) {
         return message.channel.send(server.queue[0].url);
-      } else {
+      }
+      else {
         return message.channel.send('*add a key to get it\'s ' + statement.substr(1) +
-        ' \`(i.e. ' + statement + ' [key])\`*');
+            ' \`(i.e. ' + statement + ' [key])\`*');
       }
     }
     await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1], 'entries', 'g');
@@ -587,9 +507,10 @@ async function runCommandCases(message) {
     if (!args[1]) {
       if (server.queue[0] && message.member.voice.channel) {
         return message.channel.send(server.queue[0].url);
-      } else {
+      }
+      else {
         return message.channel.send('*add a key to get it\'s ' + statement +
-        ' \`(i.e. ' + statement + ' [key])\`*');
+            ' \`(i.e. ' + statement + ' [key])\`*');
       }
     }
     await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel,
@@ -640,11 +561,12 @@ async function runCommandCases(message) {
   case 'frequency':
     const tempAuditArray = [];
     for (const [key, value] of server.mapFinishedLinks) {
-      tempAuditArray.push({url: key, title: (await getTitle(value.queueItem)), index: value.numOfPlays});
+      tempAuditArray.push({ url: key, title: (await getTitle(value.queueItem)), index: value.numOfPlays });
     }
+    // sort by times played
     tempAuditArray.sort((a, b) => {
       return b.index - a.index;
-    }); // sort by times played
+    });
     createVisualEmbed('Link Frequency',
       ((await createVisualText(server, tempAuditArray,
         (index, title, url) => `${index} | [${title}](${url})\n`)) || 'no completed links'))
@@ -692,7 +614,7 @@ async function runCommandCases(message) {
   case 'fsk':
   case 'forcesk':
   case 'forceskip':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       runSkipCommand(message, message.member.voice?.channel, server, args[1], true, true, message.member);
     }
     break;
@@ -700,27 +622,27 @@ async function runCommandCases(message) {
   case 'frw':
   case 'forcerw':
   case 'forcerewind':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       runRewindCommand(message, mgid, message.member.voice?.channel, args[1], true, false, message.member, server);
     }
     break;
   case 'fp':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       message.channel.send('use \'fpl\' to force play and \'fpa\' to force pause.');
     }
     break;
   case 'fpl':
   case 'forcepl':
   case 'forceplay':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
       commandHandlerCommon.resumeStream(message, message.member, server, false, true);
     }
     break;
   case 'fpa':
   case 'forcepa':
   case 'forcepause':
-    if (hasDJPermissions(message, message.member.id, true, server.voteAdmin)) {
-      commandHandlerCommon.pauseStream(message, message.member, server, false, true);
+    if (hasDJPermissions(message.channel, message.member.id, true, server.voteAdmin)) {
+      commandHandlerCommon.pauseStream(message, message.member, server, false, true, false);
     }
     break;
   case 'lock-queue':
@@ -728,7 +650,8 @@ async function runCommandCases(message) {
       if (server.lockQueue) message.channel.send('***the queue has been unlocked:*** *any user can add to it*');
       else message.channel.send('***the queue has been locked:*** *only the dj can add to it*');
       server.lockQueue = !server.lockQueue;
-    } else {
+    }
+    else {
       message.channel.send('only a dj can lock the queue');
     }
     break;
@@ -739,14 +662,14 @@ async function runCommandCases(message) {
   case 'stop':
   case 'pause':
   case 'pa':
-    if (statement.length < 3 && !botInVC(message)) return;
-    commandHandlerCommon.pauseStream(message, message.member, server);
+    if (isShortCommand(message, statement)) return;
+    commandHandlerCommon.pauseStream(message, message.member, server, false, false, false);
     break;
     // !pl
   case 'pl':
   case 'res':
   case 'resume':
-    if (statement.length < 3 && !botInVC(message)) return;
+    if (isShortCommand(message, statement)) return;
     commandHandlerCommon.resumeStream(message, message.member, server);
     break;
   case 'gzconvert':
@@ -760,7 +683,7 @@ async function runCommandCases(message) {
     };
     let valStr = '';
     oldDB.congratsDatabase.forEach((val, key) => {
-      keysObj.ks.push({kn: key});
+      keysObj.ks.push({ kn: key });
       valStr += val + ', ';
     });
     if (valStr.length > 1) {
@@ -772,16 +695,18 @@ async function runCommandCases(message) {
   case 'ts':
   case 'time':
   case 'timestamp':
-    if (!message.member.voice?.channel) message.channel.send('must be in a voice channel');
+    if (!message.member.voice?.channel) {message.channel.send('must be in a voice channel');}
     else if (server.audio.isVoiceChannelMember(message.member)) {
       message.channel.send('timestamp: ' + formatDuration(server.audio.resource?.playbackDuration));
-    } else message.channel.send('nothing is playing right now');
+    }
+    else {message.channel.send('nothing is playing right now');}
     break;
   case 'verbose':
     if (!server.verbose) {
       server.verbose = true;
       message.channel.send('***verbose mode enabled***, *embeds will be kept during this listening session*');
-    } else {
+    }
+    else {
       server.verbose = false;
       message.channel.send('***verbose mode disabled***');
     }
@@ -789,7 +714,8 @@ async function runCommandCases(message) {
   case 'unverbose':
     if (!server.verbose) {
       message.channel.send('*verbose mode is not currently enabled*');
-    } else {
+    }
+    else {
       server.verbose = false;
       message.channel.send('***verbose mode disabled***');
     }
@@ -845,6 +771,8 @@ async function runCommandCases(message) {
     // .del deletes database entries
   case 'del':
   case 'delete':
+  case 'delete-key':
+  case 'remove-key':
     if (!args[1]) return message.channel.send('*no args provided*');
     runDeleteKeyCommand_P(message, args[1], getSheetName(message.member.id), server);
     break;
@@ -880,7 +808,8 @@ async function runCommandCases(message) {
       args[1] = `https://www.${TWITCH_BASE_LINK}/${args[1]}`;
       server.queue.unshift(createQueueItem(args[1], StreamType.TWITCH, null));
       playLinkToVC(message, args[1], message.member.voice.channel, server);
-    } else {
+    }
+    else {
       message.channel.send('*must be in a voice channel*');
     }
     break;
@@ -956,7 +885,7 @@ async function runCommandCases(message) {
   case 'gzmem':
     (await createMemoryEmbed()).send(message.channel).then();
     break;
-    case 'congratulate':
+  case 'congratulate':
     // congratulate a friend
     if (!args[1]) return message.channel.send('*no friend provided*');
     const friend = message.mentions.users.first();
@@ -971,7 +900,7 @@ async function runCommandCases(message) {
       .send(message.channel).then();
     break;
     // dev commands for testing purposes
-    case 'gzh':
+  case 'gzh':
     new EmbedBuilderLocal()
       .setTitle('Dev Commands')
       .setDescription(
@@ -996,7 +925,7 @@ async function runCommandCases(message) {
           `\n ${prefixString} gzid - guild, bot, and member id` +
           `\n ${prefixString} devadd - access the database`,
       )
-      .setFooter({text: `version: ${version}`})
+      .setFooter({ text: `version: ${version}` })
       .send(message.channel).then();
     break;
   case 'gzcpf':
@@ -1004,10 +933,12 @@ async function runCommandCases(message) {
       if (args[1]) {
         server.prefix = args[1];
         message.channel.send('*prefix has been changed*');
-      } else {
+      }
+      else {
         message.channel.send('*must provide prefix argument*');
       }
-    } else {
+    }
+    else {
       message.channel.send('*can only be performed in devmode*');
     }
     break;
@@ -1020,7 +951,8 @@ async function runCommandCases(message) {
   case 'gzdebug':
     if (server.queue[0]) {
       message.channel.send(`url: ${server.queue[0].url}\nurlAlt: ${server.queue[0].urlAlt}`);
-    } else {
+    }
+    else {
       message.channel.send('nothing is playing right now');
     }
     break;
@@ -1032,16 +964,20 @@ async function runCommandCases(message) {
       commandsMapArray[CMAInt++] = [key, value];
     });
     commandsMapArray.sort((a, b) => b[1] - a[1]);
-    commandsMapArray.forEach((val) => {
-      commandsMapString += val[1] + ' - ' + val[0] + '\n';
-    });
+    if (commandsMapArray.length < 1) {commandsMapString = '*empty*';}
+    else {
+      commandsMapArray.forEach((val) => {
+        commandsMapString += val[1] + ' - ' + val[0] + '\n';
+      });
+    }
     (new EmbedBuilderLocal()).setTitle('Commands Usage - Stats').setDescription(commandsMapString)
       .send(message.channel).then();
     break;
   case 'gzq':
     if (bot.voice.adapters.size > 0 && args[1] !== 'force') {
       message.channel.send('People are using the bot. Use this command again with \'force\' to restart the bot');
-    } else {
+    }
+    else {
       message.channel.send('restarting the bot... (may only shutdown)').then(() => {
         shutdown('USER')();
       });
@@ -1056,13 +992,15 @@ async function runCommandCases(message) {
         processStats.startUpMessage = '';
         return message.channel.send('start up message is cleared');
       }
-      processStats.startUpMessage = message.content.substr(message.content.indexOf(args[1]));
+      processStats.startUpMessage = message.content.substring(message.content.indexOf(args[1]));
       Object.values(processStats.servers).forEach((x) => x.startUpMessage = false);
       message.channel.send('*new startup message is set*');
-    } else if (processStats.startUpMessage) {
+    }
+    else if (processStats.startUpMessage) {
       const gzsmsClearMsg = '*type **gzsm clear** to clear the startup message*';
       message.channel.send(`***current start up message:***\n${processStats.startUpMessage}\n${gzsmsClearMsg}`);
-    } else message.channel.send('*there is no startup message right now*');
+    }
+    else {message.channel.send('*there is no startup message right now*');}
     break;
   case 'gzs':
     new EmbedBuilderLocal()
@@ -1085,36 +1023,44 @@ async function runCommandCases(message) {
   case 'gzm':
     if (!args[1]) {
       message.channel.send('active process #' + process.pid.toString() + ' is in ' +
-      bot.voice.adapters.size + ' servers.');
+          bot.voice.adapters.size + ' servers.');
       break;
-    } else if (args[1] === 'update') {
-      if (process.pid === 4 || (args[2] && args[2] === 'force')) {
-        const updateMsg = 'db vibe is about to be updated. This may lead to a temporary interruption.';
+    }
+    else if (args[1] === 'update') {
+      if (process.pid === 4 || args[2] === 'force') {
+        const updateMsg = '`NOTICE: db vibe is about to be updated. Expect a brief interruption within 5 minutes.`';
         bot.voice.adapters.forEach((x, g) => {
           try {
-            const guildToUpdate = bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).guild;
-            const currentEmbedChannelId = processStats.servers.get(guildToUpdate.id).currentEmbedChannelId;
-            if (currentEmbedChannelId && bot.channels.cache.get(currentEmbedChannelId)) {
-              bot.channels.cache.get(currentEmbedChannelId).send(updateMsg);
-            } else {
+            const guildToUpdate = bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId)?.guild;
+            const currentEmbedChannelId = guildToUpdate ?
+              processStats.getServer(guildToUpdate.id).currentEmbedChannelId : null;
+            const currentTextChannel = currentEmbedChannelId ? bot.channels.cache.get(currentEmbedChannelId) : null;
+            if (currentTextChannel) {
+              bot.channels.cache.get(currentEmbedChannelId)?.send(updateMsg);
+            }
+            else {
               bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).guild.systemChannel.send(updateMsg);
             }
-          } catch (e) {}
+          }
+          catch (e) {}
         });
         message.channel.send('*update message sent to ' + bot.voice.adapters.size + ' channels*');
-      } else {
-        message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
-            'To still send out an update use \'gzm update force\'');
       }
-    } else if (args[1] === 'listu') {
+      else {
+        message.channel.send('The active bot is not running on Heroku so a git push would not interrupt listening.\n' +
+            'To still send out an update use \`gzm update force\`');
+      }
+    }
+    else if (args[1] === 'listu') {
       let gx = '';
       bot.voice.adapters.forEach((x, g) => {
         try {
           const gmArray = Array.from(bot.channels.cache.get(getVoiceConnection(g).joinConfig.channelId).members);
           gx += `${gmArray[0][1].guild.name}: *`;
-          gmArray.map((item) => item[1].user.username).forEach((x) => gx += `${x}, `);
+          gmArray.map((item) => item[1].user.username).forEach((y) => gx += `${y}, `);
           gx = `${gx.substring(0, gx.length - 2)}*\n`;
-        } catch (e) {}
+        }
+        catch (e) {}
       });
       if (gx) message.channel.send(gx);
       else message.channel.send('none found');
@@ -1129,23 +1075,32 @@ async function runCommandCases(message) {
       }
       const randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
       message.channel.send(`*guessing from 1-${numToCheck}... chosen: **${randomInt2}***`);
-    } else {
-      if (message.member?.voice?.channel) {
-        try {
-          let gmArray = Array.from(bot.channels.cache.get(message.member.voice.channel.id).members);
-          gmArray = gmArray.map((item) => item[1].nickname || item[1].user.username);
-          if (gmArray < 1) {
-            return message.channel.send('Need at least 1 person in a voice channel.');
-          }
-          const randomInt = Math.floor(Math.random() * gmArray.length) + 1;
-          message.channel.send(`*chosen voice channel member: **${gmArray[randomInt - 1]}***`);
-        } catch (e) {}
-      } else {
-        message.channel.send('need to be in a voice channel for this command');
+    }
+    else if (message.member?.voice?.channel) {
+      try {
+        let gmArray = Array.from(bot.channels.cache.get(message.member.voice.channel.id.toString()).members);
+        gmArray = gmArray.map((item) => item[1].nickname || item[1].user.username);
+        if (gmArray < 1) {
+          return message.channel.send('Need at least 1 person in a voice channel.');
+        }
+        const randomInt = Math.floor(Math.random() * gmArray.length) + 1;
+        message.channel.send(`*chosen voice channel member: **${gmArray[randomInt - 1]}***`);
       }
+      catch (e) {}
+    }
+    else {
+      message.channel.send('need to be in a voice channel for this command');
     }
     break;
   }
+// end switch
+}
+
+function isShortCommand(message, statement) {
+  return !botInVC(message) && statement.length < 3;
+}
+function isShortCommandNoArgs(args, message, statement) {
+  return (!args[1] && isShortCommand(message, statement));
 }
 
 /**
@@ -1174,10 +1129,11 @@ bot.on('guildDelete', (guild) => {
 
 bot.on('guildCreate', (guild) => {
   if (processStats.isInactive || processStats.devMode) return;
-  guild.systemChannel.send('Type \'.help\' to see my commands.').then();
+  guild.systemChannel?.send('Type \'.help\' to see my commands.').then();
 });
 
 bot.once('ready', () => {
+  parentThread('STARTUP', {}, []);
   // bot starts up as inactive, if no response from the channel then activates itself
   if (process.pid === 4) {
     if (processStats.devMode) {
@@ -1187,28 +1143,31 @@ bot.once('ready', () => {
     buildNo.decrementBuildNo();
   }
   // noinspection JSUnresolvedFunction
-  processStats.initializeServer(CH['check-in-guild']);
+  processStats.getServer(CH['check-in-guild']);
   if (processStats.devMode) {
     console.log('-devmode enabled-');
     processStats.setProcessActive();
     if (startupTest) {
       const index = process.argv.indexOf('--test');
-      if (index === process.argv.length-1) {
+      if (index === process.argv.length - 1) {
         console.log('could not run test, please provide channel id');
-      } else {
-        bot.channels.fetch(process.argv[index+1]).then((channel) => {
+      }
+      else {
+        bot.channels.fetch(process.argv[index + 1]).then((channel) => {
           if (channel.lastMessageId) {
             channel.send('=test').then();
-          } else {
+          }
+          else {
             console.log('not a text channel');
           }
         });
       }
     }
-  } else {
-    checkStatusOfYtdl(processStats.servers.get(CH['check-in-guild'])).then();
+  }
+  else {
+    checkStatusOfYtdl(processStats.getServer(CH['check-in-guild'])).then();
     setProcessInactiveAndMonitor();
-    bot.user.setActivity('beats | .db-vibe', {type: 'PLAYING'});
+    bot.user.setActivity('beats | .db-vibe', { type: ActivityType.PLAYING });
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
@@ -1219,18 +1178,18 @@ bot.once('ready', () => {
   }
 });
 
-// calibrate on startup
-bot.on('messageCreate', async (message) => {
-  if (processStats.devMode) return;
-  if (message.channel.id !== CH.process) return;
-  // ~db-process (standard)[11] | -on [3] | 1 or 0 (vc size)[1] | 12345678 (build no)[8]
-  // turn off active bots -- activates on '~db-process'
+
+function processHandler(message) {
+  // ON: (ex: ~db-process-on012345678verzzz)
+  // ~db-process (standard)[11] | -on [14] | 1 or 0 (vc size)[15] | 12345678 (build no)[23] | ver [26] | (process) [n]
+  // OFF: (~db-process-off12345678-zzz)
+  // ~db-process (standard)[11] | -off [15] | 12345678 (build no)[23] | - [24] | (process) [n]
   if (message.content.substring(0, 11) === '~db-process') {
     // if seeing bots that are on
-    if (message.content.substr(11, 3) === '-on') {
-      const oBuildNo = message.content.substr(15, 8);
+    if (message.content.substring(11, 14) === '-on') {
+      const oBuildNo = message.content.substring(15, 23);
       // compare versions || check if actively being used (if so: keep on)
-      if (parseInt(oBuildNo) >= parseInt(buildNo.getBuildNo()) || message.content.substr(14, 1) !== '0') {
+      if (parseInt(oBuildNo) >= parseInt(buildNo.getBuildNo()) || message.content.substring(14, 15) !== '0') {
         setOfBotsOn.add(message.content.substring(26));
         // update this process if out-of-date or reset process interval if an up-to-date process has queried
         if (processStats.isInactive) {
@@ -1238,7 +1197,8 @@ bot.on('messageCreate', async (message) => {
           if (bot.uptime > 7200000 && process.pid !== 4 &&
             parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))) {
             devUpdateCommand();
-          } else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.getBuildNo().substring(0, 6))) {
+          }
+          else if (parseInt(oBuildNo.substring(0, 6)) >= parseInt(buildNo.getBuildNo().substring(0, 6))) {
             clearInterval(processStats.checkActiveInterval);
             // offset for process timer is 3.5 seconds - 5.9 minutes
             const offset = Math.floor(((Math.random() * 100) + 1) / 17 * 60000);
@@ -1247,16 +1207,21 @@ bot.on('messageCreate', async (message) => {
           }
         }
       }
-    } else if (message.content.substr(11, 4) === '-off') {
-      // ~db-process [11] | -off [3] | 12345678 (build no) [8] | - [1]
+    }
+    else if (message.content.substring(11, 15) === '-off') {
       // compare process IDs
-      if (message.content.substr(24).trim() !== process.pid.toString()) {
+      if (message.content.substring(24).trim() !== process.pid.toString()) {
         setProcessInactiveAndMonitor();
-      } else {
+      }
+      else {
         processStats.setProcessActive();
       }
     }
-  } else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
+    else {
+      throw new Error('invalid db-process command');
+    }
+  }
+  else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
     // view the build number of the starting process, if newer version then update
     if (bot.uptime > 7200000 && process.pid !== 4) {
       const regExp = /\[(\d+)\]/;
@@ -1267,7 +1232,7 @@ bot.on('messageCreate', async (message) => {
       }
     }
   }
-});
+}
 
 /**
  * Manages a custom or PM2 update command. Does not work with the heroku process.
@@ -1287,7 +1252,8 @@ function devUpdateCommand(message, args = []) {
   if (bot.voice.adapters.size > 0) {
     if (args[0] === 'force') {
       args.splice(0, 1);
-    } else {
+    }
+    else {
       message?.channel.send(
         '***people are using the bot:*** *to force an update type \`force\` immediately after the command*',
       );
@@ -1297,7 +1263,8 @@ function devUpdateCommand(message, args = []) {
   if (!args[0]) {
     processStats.setProcessInactive();
     exec('git stash && git pull && npm i && pm2 restart vibe');
-  } else {
+  }
+  else {
     switch (args[0]) {
     case 'update':
     case 'upgrade':
@@ -1311,7 +1278,8 @@ function devUpdateCommand(message, args = []) {
     case 'custom':
       if (args[1]) {
         exec(args.slice(1).join(' '));
-      } else {
+      }
+      else {
         response = '*must provide script after \'custom\'*';
       }
       break;
@@ -1343,18 +1311,20 @@ async function devProcessCommands(message) {
       let dm;
       if (processStats.devMode) {
         dm = ' (dev mode)';
-      } else {
+      }
+      else {
         dm = bot.voice.adapters.size ? ' (VCs: ' + bot.voice.adapters.size + ')' : '';
       }
       // the process message: [sidelined / active] [process number] [version number]
       const procMsg = () => {
         return (processStats.isInactive ? 'sidelined: ' : (processStats.devMode ? 'active: ' : '**active: **')) +
-        process.pid +' (' + version + ')' + dm;
+            process.pid + ' (' + version + ')' + dm;
       };
       message.channel.send(procMsg()).then((sentMsg) => {
         if (processStats.devMode) {
           sentMsg.react(reactions.O_DIAMOND);
-        } else {
+        }
+        else {
           sentMsg.react(reactions.GEAR);
         }
 
@@ -1366,24 +1336,26 @@ async function devProcessCommands(message) {
         const updateMessage = () => {
           if (processStats.devMode) {
             dm = ' (dev mode)';
-          } else {
+          }
+          else {
             dm = bot.voice.adapters.size ? ' (VCs: ' + bot.voice.adapters.size + ')' : '';
           }
           try {
             sentMsg.edit(procMsg());
-          } catch (e) {
+          }
+          catch (e) {
             const updatedMsg =
-            '*db vibe ' + process.pid + (processStats.isInactive ? ' has been sidelined*' : ' is now active*');
+                '*db vibe ' + process.pid + (processStats.isInactive ? ' has been sidelined*' : ' is now active*');
             message.channel.send(updatedMsg);
           }
         };
-        const collector = sentMsg.createReactionCollector({filter, time: 30000});
+        const collector = sentMsg.createReactionCollector({ filter, time: 30000 });
         let prevVCSize = bot.voice.adapters.size;
         let prevStatus = processStats.isInactive;
         let prevDevMode = processStats.devMode;
         const statusInterval = setInterval(() => {
           if (!(bot.voice.adapters.size === prevVCSize && prevStatus === processStats.isInactive &&
-            prevDevMode === processStats.devMode)) {
+              prevDevMode === processStats.devMode)) {
             prevVCSize = bot.voice.adapters.size;
             prevDevMode = processStats.devMode;
             prevStatus = processStats.isInactive;
@@ -1414,7 +1386,8 @@ async function devProcessCommands(message) {
             }
             if (processStats.isInactive) {
               processStats.setProcessActive();
-            } else {
+            }
+            else {
               setProcessInactiveAndMonitor();
             }
 
@@ -1422,7 +1395,8 @@ async function devProcessCommands(message) {
               updateMessage();
               reaction.users.remove(user.id);
             }
-          } else if (reaction.emoji.name === reactions.O_DIAMOND) {
+          }
+          else if (reaction.emoji.name === reactions.O_DIAMOND) {
             if (processStats.devMode) {
               processStats.devMode = false;
               setProcessInactiveAndMonitor();
@@ -1438,16 +1412,19 @@ async function devProcessCommands(message) {
           }
         });
       });
-    } else if (zargs[1] === 'all') {
+    }
+    else if (zargs[1] === 'all') {
       setProcessInactiveAndMonitor();
-    } else {
+    }
+    else {
       let i = 1;
       while (zargs[i]) {
         if (zargs[i].replace(/,/g, '') === process.pid.toString()) {
           if (processStats.isInactive) {
             processStats.setProcessActive();
             message.channel.send('*db vibe ' + process.pid + ' is now active*');
-          } else {
+          }
+          else {
             setProcessInactiveAndMonitor();
             message.channel.send('*db vibe ' + process.pid + ' has been sidelined*');
           }
@@ -1469,7 +1446,8 @@ async function devProcessCommands(message) {
       setProcessInactiveAndMonitor();
       processStats.servers.delete(message.guild.id);
       return message.channel.send(`*devmode is off ${process.pid}*`);
-    } else if (zargs[1] === process.pid.toString()) {
+    }
+    else if (zargs[1] === process.pid.toString()) {
       processStats.devMode = true;
       processStats.servers.delete(message.guild.id);
       if (processStats.checkActiveInterval) {
@@ -1489,7 +1467,8 @@ async function devProcessCommands(message) {
     if (!processStats.devMode && zargs[1] !== process.pid.toString()) return;
     if (bot.voice.adapters.size > 0 && (!zargs[2] || zargs[2] !== 'force')) {
       message.channel.send('People are using the bot. Use force as the second argument.').then();
-    } else {
+    }
+    else {
       message.channel.send('restarting the bot... (may only shutdown)').then(() =>
         setTimeout(() => {
           process.exit();
@@ -1519,16 +1498,21 @@ async function devProcessCommands(message) {
         if (zargs[2] === '+') {
           if (buildNo.incrementBuildNo()) {
             message.channel.send(`*build no incremented (${buildNo.getBuildNo()})*`);
-          } else message.channel.send(`*could not increment (${buildNo.getBuildNo()})*`);
-        } else if (zargs[2] === '-') {
+          }
+          else {message.channel.send(`*could not increment (${buildNo.getBuildNo()})*`);}
+        }
+        else if (zargs[2] === '-') {
           if (buildNo.decrementBuildNo()) {
             message.channel.send(`*build no decremented (${buildNo.getBuildNo()})*`);
-          } else message.channel.send(`*could not decrement (${buildNo.getBuildNo()})*`);
+          }
+          else {message.channel.send(`*could not decrement (${buildNo.getBuildNo()})*`);}
         }
-      } else {
+      }
+      else {
         message.channel.send('try again followed by a \'+\' or \'-\' to increment or decrement.');
       }
-    } else {
+    }
+    else {
       message.channel.send(`*process ${process.pid} (${buildNo.getBuildNo()})*`);
     }
     break;
@@ -1541,22 +1525,30 @@ async function devProcessCommands(message) {
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
   if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id) || message.author.id === botID) {
-    return devProcessCommands(message);
+    void devProcessCommands(message);
+    if (message.channel.id === CH.process) {
+      if (!processStats.devMode) {
+        processHandler(message);
+      }
+    }
+    return;
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
   if (message.channel.type === 'DM') {
     return dmHandler(message, message.content);
-  } else {
+  }
+  else {
     return runCommandCases(message);
   }
 });
 
 bot.on('voiceStateUpdate', (oldState, newState) => {
-  const server = processStats.servers.get(oldState.guild.id);
+  const server = processStats.getServer(oldState.guild.id.toString());
   if (processStats.isInactive) {
     try {
       server.collector.stop();
-    } catch (e) {}
+    }
+    catch (e) {}
     return;
   }
   updateVoiceState(oldState, newState, server).then();
@@ -1566,7 +1558,7 @@ bot.on('voiceStateUpdate', (oldState, newState) => {
  * Updates the bots voice state depending on the update occurring.
  * @param oldState The old voice-state update metadata.
  * @param newState The new voice-state update metadata.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  */
 async function updateVoiceState(oldState, newState, server) {
   if (!server) return;
@@ -1601,7 +1593,8 @@ async function updateVoiceState(oldState, newState, server) {
     if (server.currentEmbed?.reactions) {
       try {
         server.collector?.stop();
-      } catch (e) {}
+      }
+      catch (e) {}
     }
     server.currentEmbed = null;
     if (server.followUpMessage) {
@@ -1612,12 +1605,14 @@ async function updateVoiceState(oldState, newState, server) {
       whatspMap.clear();
       server.audio.reset();
     }
-  } else if (botInVC(newState)) {
+  }
+  else if (botInVC(newState)) {
     if (oldState.channel?.members.filter((x) => !x.user.bot).size < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
-      if (server.audio.resource && !server.audio.resource.ended &&
-        processStats.activeStreamsMap.get(newState.guild.id)) leaveVCInt = 420000;
+      if (server.audio.resource && !server.audio.resource.ended && server.queue.length > 0) {
+        leaveVCInt = 420000;
+      }
       // clear if timeout exists, set new timeout
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => {
@@ -1628,14 +1623,16 @@ async function updateVoiceState(oldState, newState, server) {
         }
       }, leaveVCInt);
     }
-  } else if (server.seamless.function && !oldState.member.user.bot) {
+  }
+  else if (server.seamless.function && !oldState.member.user.bot) {
     if (server.seamless.timeout) {
       clearTimeout(server.seamless.timeout);
       server.seamless.timeout = null;
     }
     try {
       server.seamless.function(...server.seamless.args);
-    } catch (e) {}
+    }
+    catch (e) {}
     server.seamless.function = null;
     server.seamless.message.delete();
     server.seamless.message = null;
@@ -1643,12 +1640,11 @@ async function updateVoiceState(oldState, newState, server) {
 }
 
 bot.on('error', (e) => {
-  console.log('BOT ERROR:');
-  console.log(e);
+  console.log('BOT ERROR:\n', e);
+  logError(`BOT ERROR: ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 });
 process.on('error', (e) => {
-  console.log('PROCESS ERROR:');
-  console.log(e);
+  console.log('PROCESS ERROR:\n', e);
 });
 
 process
@@ -1664,7 +1660,7 @@ function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
   console.log('error message: ', e.message);
   if (e.message === 'Unknown Message') return;
-  logError(`Uncaught Exception:\n${e.stack}`);
+  logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 }
 
 // The main method

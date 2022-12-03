@@ -1,7 +1,7 @@
-const {botID} = require('../../utils/lib/constants');
-const {pauseComputation, playComputation, botInVC} = require('../../utils/utils');
-const {createEmbed, updateActiveEmbed} = require('../../utils/embed');
-const {getVoiceConnection} = require('@discordjs/voice');
+const { botID } = require('../../utils/lib/constants');
+const { pauseComputation, playComputation, botInVC } = require('../../utils/utils');
+const { createEmbed, updateActiveEmbed } = require('../../utils/embed');
+const { getVoiceConnection } = require('@discordjs/voice');
 const processStats = require('../../utils/lib/ProcessStats');
 
 /**
@@ -11,7 +11,7 @@ const processStats = require('../../utils/lib/ProcessStats');
  * @param commandName {string} The action for which the voting is for
  * @param voter The member that is doing the voting
  * @param votes {Array} An array representing the ids of the members who voted for the action
- * @param server The server to use.
+ * @param server {LocalServer} The server to use.
  * @returns {Boolean} If there are enough votes to perform the desired action.
  */
 function voteSystem(message, mgid, commandName, voter, votes, server) {
@@ -48,10 +48,10 @@ function voteSystem(message, mgid, commandName, voter, votes, server) {
  * Pauses the now playing, if playing.
  * @param message The message content metadata
  * @param actionUser The member that is performing the action
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param noErrorMsg Optional - If to avoid an error message if nothing is playing
  * @param force Optional - Skips the voting system if DJ mode is on
- * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
+ * @param noPrintMsg Optional - Whether to NOT print a message to the channel [DJ mode will set this to true]
  * @returns {boolean} if successful
  */
 function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg) {
@@ -60,22 +60,24 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
       return message.channel.send('only the dictator can pause');
     }
     if (server.voteAdmin.length > 0) {
-      if (force) server.votePlayPauseMembersId = [];
-      else {
-        if (voteSystem(message, message.guild.id, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
-          noPrintMsg = true;
-        } else return false;
+      if (force) {server.votePlayPauseMembersId = [];}
+      else if (voteSystem(message, message.guild.id, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
+        noPrintMsg = true;
       }
+      else {return false;}
     }
     pauseComputation(server);
-    if (noPrintMsg) return true;
-    if (server.followUpMessage) {
-      server.followUpMessage.delete();
-      server.followUpMessage = undefined;
+    if (!noPrintMsg) {
+      // if we are printing a message then delete previous playback status
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+      message.channel.send('*paused*');
     }
-    message.channel.send('*paused*');
     return true;
-  } else if (!noErrorMsg) {
+  }
+  else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     return false;
   }
@@ -85,11 +87,11 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
  * Plays the now playing if paused.
  * @param message The message content metadata
  * @param actionUser The member that is performing the action
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param noErrorMsg {*?} Optional - If to avoid an error message if nothing is playing
  * @param force {*?} Optional - Skips the voting system if DJ mode is on
- * @param noPrintMsg {*?} Optional - Whether to print a message to the channel when not in DJ mode
- * @returns {boolean}
+ * @param noPrintMsg {*?} Optional - Whether to NOT print a message to the channel [DJ mode will set this to true]
+ * @returns {boolean} if the request was successful
  */
 function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg) {
   if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
@@ -97,22 +99,24 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
       return message.channel.send('only the dictator can play');
     }
     if (server.voteAdmin.length > 0) {
-      if (force) server.votePlayPauseMembersId = [];
-      else {
-        if (voteSystem(message, message.guild.id, 'play', actionUser, server.votePlayPauseMembersId, server)) {
-          noPrintMsg = true;
-        } else return false;
+      if (force) {server.votePlayPauseMembersId = [];}
+      else if (voteSystem(message, message.guild.id, 'play', actionUser, server.votePlayPauseMembersId, server)) {
+        noPrintMsg = true;
       }
+      else {return false;}
     }
     playComputation(server);
-    if (noPrintMsg) return true;
-    if (server.followUpMessage) {
-      server.followUpMessage.delete();
-      server.followUpMessage = undefined;
+    if (!noPrintMsg) {
+      // if we are printing a message then delete previous playback status
+      if (server.followUpMessage) {
+        server.followUpMessage.delete();
+        server.followUpMessage = undefined;
+      }
+      message.channel.send('*playing*');
     }
-    message.channel.send('*playing*');
     return true;
-  } else if (!noErrorMsg) {
+  }
+  else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     return false;
   }
@@ -123,7 +127,7 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
  * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
- * @param server The server playback metadata
+ * @param server {LocalServer} The server playback metadata
  * @param message {any?} The message metadata, used in the case of verifying a dj or dictator
  * @param actionUser {any?} The member requesting to stop playing, used in the case of verifying a dj or dictator
  * @returns {void}
@@ -146,7 +150,8 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
     setTimeout(() => {
       processStats.disconnectConnection(server, getVoiceConnection(mgid));
     }, 600);
-  } else {
+  }
+  else {
     if (server.currentEmbed) {
       createEmbed(lastPlayed.url, lastPlayed.infos).then((e) => {
         e.embed.addFields({
@@ -164,14 +169,16 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
 
 /**
  * Performs changes when there is (or should be) no now-playing during an active session.
- * @param server The server object.
+ * @param server {LocalServer} The server object.
  */
 function endAudioDuringSession(server) {
   updateActiveEmbed(server);
-  pauseComputation(server); // active stream should be removed here
+  // active stream should be removed within pauseComputation
+  pauseComputation(server);
   try {
     server.collector?.stop();
-  } catch (e) {}
+  }
+  catch (e) {}
 }
 
 module.exports = {

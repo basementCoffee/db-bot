@@ -40,4 +40,4 @@ const reactions = {
   BOOK_O: '📙',
 };
 
-module.exports = {reactions};
+module.exports = { reactions };

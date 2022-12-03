@@ -1,10 +1,10 @@
-const {getXdb2} = require('../database/retrieval');
-const {serializeAndUpdate} = require('../database/utils');
+const { getXdb2 } = require('../database/retrieval');
+const { serializeAndUpdate } = require('../database/utils');
 
 /**
  * Renames a playlist.
  * @param channel The channel to send the message to.
- * @param server The server to rename the playlist in.
+ * @param server {LocalServer} The local server object.
  * @param sheetName The name of the sheet to rename the playlist in.
  * @param oldName The old name of the playlist.
  * @param newName The new name of the playlist.
@@ -29,7 +29,7 @@ async function renamePlaylist(channel, server, sheetName, oldName, newName) {
 /**
  * Renames a key.
  * @param channel The channel to send the message to.
- * @param server  The server metadata.
+ * @param server {LocalServer}  The server metadata.
  * @param sheetName The name of the sheet to rename the key in.
  * @param oldName The old name of the key.
  * @param newName The new name of the key.
@@ -67,7 +67,8 @@ async function renameKey(channel, server, sheetName, oldName, newName) {
     if (key === oldNameUpper) {
       val.name = newName;
       replacementMap.set(newNameUpper, val);
-    } else {
+    }
+    else {
       replacementMap.set(key, val);
     }
   });
@@ -80,4 +81,4 @@ async function renameKey(channel, server, sheetName, oldName, newName) {
   return true;
 }
 
-module.exports = {renamePlaylist, renameKey};
+module.exports = { renamePlaylist, renameKey };

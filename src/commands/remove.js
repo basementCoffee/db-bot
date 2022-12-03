@@ -1,10 +1,10 @@
-const {updateActiveEmbed} = require('../utils/embed');
-const {serializeAndUpdate} = require('../database/utils');
+const { updateActiveEmbed } = require('../utils/embed');
+const { serializeAndUpdate } = require('../database/utils');
 
 /**
  * Removes an item from the queue. Does not allow for the currently playing item to be removed from the queue (index 0).
  * @param message The message metadata.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param itemPosition The position in the queue to remove from (starting from 1).
  * @returns {Promise<*>}
  */
@@ -21,7 +21,7 @@ async function runRemoveCommand(message, server, itemPosition) {
   if (server.queue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
   let rNum = parseInt(itemPosition);
   if (!rNum) {
-    if (server.queue.length === 2) rNum = 1;
+    if (server.queue.length === 2) {rNum = 1;}
     else {
       const example = '\` Ex: remove 2\`';
       return message.channel.send((`Needed a position in the queue to remove (1-${(server.queue.length - 1)})\n` +
@@ -39,7 +39,7 @@ async function runRemoveCommand(message, server, itemPosition) {
 
 /**
  * Removes a playlist. Returns false if playlist could not be found. Sends the response to the channel.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param sheetName The sheetname to update.
  * @param playlistName The playlist to remove.
  * @param xdb The XDB.
@@ -57,4 +57,4 @@ async function removePlaylist(server, sheetName, playlistName, xdb, channel) {
   return true;
 }
 
-module.exports = {runRemoveCommand, removePlaylist};
+module.exports = { runRemoveCommand, removePlaylist };

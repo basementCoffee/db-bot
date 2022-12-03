@@ -1,4 +1,4 @@
-const {CORE_ADM} = require('./lib/constants');
+const { CORE_ADM } = require('./lib/constants');
 
 /**
  * Returns whether a given ID has Admin rights.
@@ -22,19 +22,20 @@ function isCoreAdmin(id) {
 
 /**
  * Verifies if a member is a vote admin (DJ moderator) or has the same permissions as a vote admin.
- * @param message The message metadata
+ * @param channel The text channel to send a response to
  * @param memberID The member id of the user to verify
  * @param printErrMsg True if to print an error if the user is not a vote admin
  * @param voteAdminList The list of admins for the DJ.
  * @returns {boolean} Returns true if the member has DJ permissions.
  */
-function hasDJPermissions(message, memberID, printErrMsg, voteAdminList) {
+function hasDJPermissions(channel, memberID, printErrMsg, voteAdminList) {
   if (voteAdminList.length < 1 || voteAdminList.filter((x) => x.id === memberID).length > 0) {
     return true;
-  } else if (printErrMsg) {
-    message.channel.send('*you do not have the necessary permissions to perform this action*');
+  }
+  else if (printErrMsg) {
+    channel.send('*you do not have the necessary permissions to perform this action*');
   }
   return false;
 }
 
-module.exports = {isAdmin, isCoreAdmin, hasDJPermissions};
+module.exports = { isAdmin, isCoreAdmin, hasDJPermissions };

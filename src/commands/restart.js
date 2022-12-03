@@ -1,11 +1,11 @@
-const {playLinkToVC} = require('./stream/stream');
+const { playLinkToVC } = require('./stream/stream');
 
 /**
  * Restarts the song playing and what was within an older session.
  * @param message The message that triggered the bot.
  * @param mgid The message guild id.
  * @param keyword Enum in string format, being either 'restart' or 'replay'.
- * @param server The server playback metadata.
+ * @param server {LocalServer} The local server object.
  * @returns {*}
  */
 async function runRestartCommand(message, mgid, keyword, server) {
@@ -18,12 +18,14 @@ async function runRestartCommand(message, mgid, keyword, server) {
   }
   if (server.queue[0]) {
     await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else if (server.queueHistory.length > 0) {
+  }
+  else if (server.queueHistory.length > 0) {
     server.queue.unshift(server.queueHistory.pop());
     await playLinkToVC(message, server.queue[0], message.member.voice?.channel, server);
-  } else {
+  }
+  else {
     message.channel.send('there is nothing to ' + keyword);
   }
 }
 
-module.exports = {runRestartCommand};
+module.exports = { runRestartCommand };

@@ -1,5 +1,5 @@
 const utils = require('../utils/utils');
-const {serializeAndUpdate} = require('../database/utils');
+const { serializeAndUpdate } = require('../database/utils');
 
 /**
  * Mutates the provided array by moving an element at posA to posB.
@@ -17,10 +17,12 @@ function runMoveItemCommand(channel, arr, posA, posB) {
   const MIN_ARR_SIZE = 3;
   if (!(posA && posB)) {
     channel.send('*two numbers expected: the position of the item to move and it\'s new position*\n`ex: move 1 5`');
-  } else if (arr.length < MIN_ARR_SIZE) channel.send('*not enough items in the queue*');
+  }
+  else if (arr.length < MIN_ARR_SIZE) {channel.send('*not enough items in the queue*');}
   else if (posA < MIN_POS || posB < MIN_POS) {
     channel.send(`positions must be greater than ${MIN_POS - 1}`);
-  } else {
+  }
+  else {
     if (posA > arr.length - 1) posA = arr.length - 1;
     if (posB > arr.length - 1) posB = arr.length - 1;
     const item = arr.splice(posA, 1)[0];
@@ -31,7 +33,7 @@ function runMoveItemCommand(channel, arr, posA, posB) {
 
 /**
  * Moves an item from one playlist to another.
- * @param server The server object.
+ * @param server {LocalServer} The local server object.
  * @param channel The channel to send the message to.
  * @param sheetName The name of the sheet.
  * @param xdb The database object.
@@ -58,7 +60,7 @@ function moveKeysWrapper(server, channel, sheetName, xdb, args) {
 
 /**
  * Move keys from one playlist to another.
- * @param server {any}
+ * @param server {LocalServer} The local server object.
  * @param channel {any}
  * @param sheetName {string}
  * @param xdb {any}
@@ -97,7 +99,8 @@ async function moveKeysCommand(server, channel, sheetName, xdb, listOfKeys, play
         fromPlaylist.delete(keyName.toUpperCase());
         removedPlaylistsSet.add(fromPlaylistName);
       }
-    } else {
+    }
+    else {
       errorKeys.push(keyName);
     }
   }
@@ -121,4 +124,4 @@ async function moveKeysCommand(server, channel, sheetName, xdb, listOfKeys, play
   }
 }
 
-module.exports = {runMoveItemCommand, moveKeysWrapper};
+module.exports = { runMoveItemCommand, moveKeysWrapper };

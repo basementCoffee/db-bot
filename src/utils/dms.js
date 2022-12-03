@@ -1,12 +1,12 @@
-const {version} = require('../../package.json');
-const {reactions} = require('./lib/reactions');
-const {bot, botID, INVITE_MSG} = require('./lib/constants');
-const {getHelpList} = require('./help');
+const { version } = require('../../package.json');
+const { reactions } = require('./lib/reactions');
+const { bot, botID, INVITE_MSG } = require('./lib/constants');
+const { getHelpList } = require('./help');
 const CH = require('../../channel.json');
 
 /**
  * Handles message requests.
- * @param message The message metadata.
+ * @param message {import('discord.js').Message} The message metadata.
  * @param messageContent {string} The content of the message.
  * @returns {*}
  */
@@ -16,7 +16,8 @@ function dmHandler(message, messageContent) {
   if (mc.length < 9) {
     if (mc.length < 7 && mc.includes('help ')) {
       return message.author.send(getHelpList('.', 1, version)[0], version);
-    } else if (mc.includes('invite ')) {
+    }
+    else if (mc.includes('invite ')) {
       return message.channel.send(INVITE_MSG);
     }
   }
@@ -31,11 +32,11 @@ function dmHandler(message, messageContent) {
         return user.id !== botID;
       };
 
-      const collector = msg.createReactionCollector({filter, time: 86400000});
+      const collector = msg.createReactionCollector({ filter, time: 86400000 });
 
       collector.on('collect', (reaction, user) => {
         if (reaction.emoji.name === mb) {
-          sendMessageToUser(msg, message.author.id, user.id);
+          sendMessageToUser(msg, message.author.id.toString(), user.id);
           reaction.users.remove(user).then();
         }
       });
@@ -47,8 +48,8 @@ function dmHandler(message, messageContent) {
 
 /**
  * Prompts the text channel for a response to forward to the given user.
- * @param message The original message that activates the bot.
- * @param userID The ID of the user to send the reply to.
+ * @param message {import('discord.js').Message} The original message that activates the bot.
+ * @param userID {string} The ID of the user to send the reply to.
  * @param reactionUserID Optional - The ID of a user who can reply to the prompt besides the message author
  */
 function sendMessageToUser(message, userID, reactionUserID) {
@@ -58,14 +59,15 @@ function sendMessageToUser(message, userID, reactionUserID) {
     const filter = (m) => {
       return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== botID);
     };
-    message.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']})
+    message.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
       .then((messages) => {
         if (messages.first().content && messages.first().content.trim() !== 'q') {
           user.send(messages.first().content).then(() => {
             message.channel.send('Message sent to ' + user.username + '.');
             message.react(reactions.CHECK).then();
           });
-        } else if (messages.first().content.trim().toLowerCase() === 'q') {
+        }
+        else if (messages.first().content.trim().toLowerCase() === 'q') {
           message.channel.send('No message sent.');
         }
         msg.delete();
@@ -76,4 +78,4 @@ function sendMessageToUser(message, userID, reactionUserID) {
   });
 }
 
-module.exports = {dmHandler, sendMessageToUser};
+module.exports = { dmHandler, sendMessageToUser };

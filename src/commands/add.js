@@ -1,9 +1,9 @@
 /* eslint-disable camelcase */
-const {botID, MAX_KEY_LENGTH} = require('../utils/lib/constants');
-const {reactions} = require('../utils/lib/reactions');
-const {addToDatabase_P} = require('../database/add');
-const {universalLinkFormatter, linkValidator} = require('../utils/utils');
-const {getXdb2} = require('../database/retrieval');
+const { botID, MAX_KEY_LENGTH } = require('../utils/lib/constants');
+const { reactions } = require('../utils/lib/reactions');
+const { addToDatabase_P } = require('../database/add');
+const { universalLinkFormatter, linkValidator } = require('../utils/utils');
+const { getXdb2 } = require('../database/retrieval');
 
 
 /**
@@ -45,11 +45,11 @@ async function addCustomPlaylist(server, channel, sheetName, playlistName) {
  * @param args {Array<string>} [playlist-name (optional), key-name, link]
  * @param sheetName The name of the sheet to add to
  * @param printMsgToChannel Whether to print a response to the channel
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param member The member that is requesting the add.
  * @returns {*}
  */
-async function runAddCommandWrapper_P(channel, args, sheetName, printMsgToChannel, server, member) {
+async function runAddCommandWrapper(channel, args, sheetName, printMsgToChannel, server, member) {
   let playlistName;
   let keyName = args[0];
   let link = args[1];
@@ -82,7 +82,8 @@ async function runAddCommandWrapper_P(channel, args, sheetName, printMsgToChanne
       const playlistArray = Array.from(xdb.playlists.keys());
       if (playlistArray.includes(link.toUpperCase())) {
         playlistName = link;
-      } else if (playlistArray.includes(keyName.toUpperCase())) {
+      }
+      else if (playlistArray.includes(keyName.toUpperCase())) {
         playlistName = keyName;
         keyName = link;
       }
@@ -96,13 +97,14 @@ async function runAddCommandWrapper_P(channel, args, sheetName, printMsgToChanne
           return botID !== user.id &&
           [reactions.CHECK, reactions.X].includes(reaction.emoji.name) && member.id === user.id;
         };
-        const collector = sentMsg.createReactionCollector({filter, time: 60000, dispose: true});
+        const collector = sentMsg.createReactionCollector({ filter, time: 60000, dispose: true });
         collector.once('collect', (reaction) => {
           sentMsg.delete();
           if (reaction.emoji.name === reactions.CHECK) {
             server.userKeys.set(sheetName, null);
             addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb);
-          } else {
+          }
+          else {
             channel.send('*cancelled*');
           }
         });
@@ -113,7 +115,8 @@ async function runAddCommandWrapper_P(channel, args, sheetName, printMsgToChanne
         });
       });
       return;
-    } else {
+    }
+    else {
       channel.send(`You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${server.prefix || ''}add [name] [link]\``);
       return;
     }
@@ -122,4 +125,4 @@ async function runAddCommandWrapper_P(channel, args, sheetName, printMsgToChanne
   else channel.send('Could not add to your keys list. Put a desired name followed by a link. *(ex:\` ' + server.prefix + 'add [key] [link]\`)*');
 }
 
-module.exports = {runAddCommandWrapper_P, addCustomPlaylist};
+module.exports = { runAddCommandWrapper, addCustomPlaylist };

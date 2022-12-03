@@ -1,11 +1,11 @@
-const {SoundCloud: scdl} = require('scdl-core');
+const { SoundCloud: scdl } = require('scdl-core');
 scdl.connect();
-const {createQueueItem, getLinkType, linkFormatter, verifyPlaylist} = require('./utils');
+const { createQueueItem, getLinkType, linkFormatter, verifyPlaylist } = require('./utils');
 const {
   StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK,
 } = require('./lib/constants');
 const fetch = require('isomorphic-unfetch');
-const {getData, getTracks} = require('spotify-url-info')(fetch);
+const { getData, getTracks } = require('spotify-url-info')(fetch);
 const ytpl = require('ytpl');
 
 /**
@@ -39,7 +39,8 @@ function getUrl(item, type) {
 async function getTracksWrapper(playlistUrl, retries = 0) {
   try {
     return await getTracks(playlistUrl);
-  } catch {
+  }
+  catch {
     if (retries < 2) return getTracksWrapper(playlistUrl, ++retries);
     else return [];
   }
@@ -64,7 +65,8 @@ async function getPlaylistItems(url, tempArray) {
         itemCounter++;
       }
     }
-  } catch (e) {
+  }
+  catch (e) {
     console.log(`Error in getPlaylistItems: ${url}\n`, e);
   }
   return itemCounter;
@@ -83,11 +85,11 @@ async function getPlaylistArray(playlistUrl, type) {
     const tracks = (await getTracksWrapper(playlistUrl)).filter((track) => track);
     if (tracks[0] && !tracks[0].album) {
       const firstTrack = await getData(playlistUrl);
-      tracks.map((item) => item.album = {images: firstTrack.images});
+      tracks.map((item) => item.album = { images: firstTrack.images });
     }
     return tracks;
   case StreamType.YOUTUBE:
-    const items = (await ytpl(playlistUrl, {pages: 5})).items;
+    const items = (await ytpl(playlistUrl, { pages: 5 })).items;
     // index of -1 means that items will repeat
     if (items[0].index === -1) items.splice(100);
     return items;
@@ -132,12 +134,14 @@ async function addPlaylistToQueue(message, qArray, numItems, playlistUrl, linkTy
             numItems++;
             itemsLeft--;
           }
-        } else {
+        }
+        else {
           message.channel.send('*queue is full*');
           break;
         }
       }
-    } else {
+    }
+    else {
       let itemsLeft = MAX_QUEUE_S - qArray.length;
       for (const pItem of playlist) {
         url = getUrl(pItem, linkType);
@@ -146,17 +150,20 @@ async function addPlaylistToQueue(message, qArray, numItems, playlistUrl, linkTy
             if (position && !(position > qArray.length)) {
               qArray.splice(position, 0, createQueueItem(url, linkType, pItem));
               position++;
-            } else qArray.push(createQueueItem(url, linkType, pItem));
+            }
+            else {qArray.push(createQueueItem(url, linkType, pItem));}
             numItems++;
             itemsLeft--;
           }
-        } else {
+        }
+        else {
           message.channel.send('*queue is full*');
           break;
         }
       }
     }
-  } catch (e) {
+  }
+  catch (e) {
     console.log(e);
     message.channel.send('there was an error');
   }
@@ -167,7 +174,7 @@ async function addPlaylistToQueue(message, qArray, numItems, playlistUrl, linkTy
  * Adds the link to the queue. Also works for playlist links.
  * @param url The link to add to the queue.
  * @param message The message metadata.
- * @param server The server.
+ * @param server {LocalServer} The server.
  * @param mgid The message guild id.
  * @param addToFront {boolean} If to add to the front.
  * @param queueFunction {(arr: Array, {type, url, infos})=>void}
@@ -178,20 +185,23 @@ async function addLinkToQueue(url, message, server, mgid, addToFront, queueFunct
   if (url.includes(SPOTIFY_BASE_LINK)) {
     url = linkFormatter(url, SPOTIFY_BASE_LINK);
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SPOTIFY, addToFront);
-  } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
+  }
+  else if (ytpl.validateID(url) || url.includes('music.youtube')) {
     url = url.replace(/music.youtube/, 'youtube');
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.YOUTUBE, addToFront);
-  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
+  }
+  else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
       url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
       return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SOUNDCLOUD, addToFront);
     }
     queueFunction(server.queue, createQueueItem(url, StreamType.SOUNDCLOUD, null));
-  } else {
+  }
+  else {
     queueFunction(server.queue,
       createQueueItem(url, (url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE), null));
   }
   return 1;
 }
 
-module.exports = {getPlaylistItems, addPlaylistToQueue, addLinkToQueue};
+module.exports = { getPlaylistItems, addPlaylistToQueue, addLinkToQueue };

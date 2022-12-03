@@ -1,9 +1,9 @@
 /* eslint-disable camelcase */
-const {gsrun, gsUpdateOverwrite, deleteRows} = require('./api/api');
-const {runSearchCommand} = require('../commands/search');
-const {getXdb2} = require('./retrieval');
-const {serializeAndUpdate} = require('./utils');
-const {isPersonalSheet} = require('../utils/utils');
+const { gsrun, gsUpdateOverwrite, deleteRows } = require('./api/api');
+const { runSearchCommand } = require('../commands/search');
+const { getXdb2 } = require('./retrieval');
+const { serializeAndUpdate } = require('./utils');
+const { isPersonalSheet } = require('../utils/utils');
 
 /**
  * Deletes an item from the database.
@@ -33,7 +33,8 @@ async function runDeleteCommand(message, keyName, sheetName, sendMsgToChannel) {
         const foundStrings = runSearchCommand(keyName, xdb.congratsDatabase).ss;
         if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
           message.channel.send('Could not find \'' + keyName + '\'\n*Did you mean: ' + foundStrings + '*');
-        } else {
+        }
+        else {
           let dbType = 'the server\'s';
           if (message.content.substr(1, 1).toLowerCase() === 'm') {
             dbType = 'your';
@@ -42,10 +43,9 @@ async function runDeleteCommand(message, keyName, sheetName, sendMsgToChannel) {
         }
       }
     });
-  } else {
-    if (sendMsgToChannel) {
-      message.channel.send('This command deletes keys from the keys-list. You need to specify the key to delete. (i.e. delete [link])');
-    }
+  }
+  else if (sendMsgToChannel) {
+    message.channel.send('This command deletes keys from the keys-list. You need to specify the key to delete. (i.e. delete [link])');
   }
 }
 
@@ -59,7 +59,8 @@ async function runDeleteCommand(message, keyName, sheetName, sendMsgToChannel) {
 async function runDeleteKeyCommand_P(message, keyName, sheetName, server) {
   if (await deleteKey(keyName, sheetName, server)) {
     message.channel.send(`*deleted ${keyName}*`);
-  } else {
+  }
+  else {
     message.channel.send(`*could not find **${keyName}** within the keys list*`);
   }
 }
@@ -68,7 +69,7 @@ async function runDeleteKeyCommand_P(message, keyName, sheetName, server) {
  * Attempts to delete the key. Returns true if successful.
  * @param keyName {string}
  * @param sheetName {string}
- * @param server The server object
+ * @param server {LocalServer} The server object
  * @returns {Promise<boolean>} if the key was found
  */
 async function deleteKey(keyName, sheetName, server) {
@@ -83,4 +84,4 @@ async function deleteKey(keyName, sheetName, server) {
   return true;
 }
 
-module.exports = {runDeleteCommand, runDeleteKeyCommand_P};
+module.exports = { runDeleteCommand, runDeleteKeyCommand_P };

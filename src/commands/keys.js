@@ -1,29 +1,30 @@
-const {botInVC, isPersonalSheet, universalLinkFormatter, linkValidator} = require('../utils/utils');
-const {getXdb2, getSettings} = require('../database/retrieval');
-const {getAssumptionMultipleMethods} = require('./search');
-const {reactions} = require('../utils/lib/reactions');
-const {botID} = require('../utils/lib/constants');
-const {isAdmin} = require('../utils/permissions');
-const {renameKey, renamePlaylist} = require('./rename');
-const {serializeAndUpdate} = require('../database/utils');
-const {removePlaylist} = require('./remove');
-const {EmbedBuilderLocal} = require('../utils/lib/EmbedBuilderLocal');
+const { botInVC, isPersonalSheet, universalLinkFormatter, linkValidator } = require('../utils/utils');
+const { getXdb2, getSettings } = require('../database/retrieval');
+const { getAssumptionMultipleMethods } = require('./search');
+const { reactions } = require('../utils/lib/reactions');
+const { botID } = require('../utils/lib/constants');
+const { isAdmin } = require('../utils/permissions');
+const { renameKey, renamePlaylist } = require('./rename');
+const { serializeAndUpdate } = require('../database/utils');
+const { removePlaylist } = require('./remove');
+const { EmbedBuilderLocal } = require('../utils/lib/EmbedBuilderLocal');
 
 // returns an array of tips
 const getTips = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-specific',
   `add an icon using ${prefixS}splash [url]`, `${prefixS}ps [playlist] -> is the playlist shuffle command`,
   `${prefixS}random [num] -> plays random keys`, `${prefixS}pd [playlist] -> plays a playlist`];
 
+// eslint-disable-next-line valid-jsdoc
 /**
  * Generates the full keys-list embed pages.
  * @param title the title of the embed
  * @param keyEmbedColor the color of the embed
  * @param prefixString the prefix string
  * @param xdb the xdb object
- * @param server the server object
+ * @param server {LocalServer} the server object
  * @param sheetName the name of the sheet
  * @param iconUrl Optional - An icon to display alongside the key embed.
- * @returns {Promise<*[]>}
+ * @returns {Promise<Array<import('discord.js').EmbedBuilder>>}
  */
 async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, server, sheetName, iconUrl) {
   let playlistString = '';
@@ -33,31 +34,32 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
   const settings = await getSettings(server, sheetName);
   embedPages.push(
     new EmbedBuilderLocal()
-    .setTitle(`----- ${title} playlists -----`)
-    .setDescription(playlistString)
-    .setColor(keyEmbedColor)
-    .setFooter({text: `${getTips(prefixString)[Math.floor(Math.random() * getTips().length)]}`, iconURL: iconUrl})
-    .setThumbnail(settings.splash).build()
+      .setTitle(`----- ${title} playlists -----`)
+      .setDescription(playlistString)
+      .setColor(keyEmbedColor)
+      .setFooter({ text: `${getTips(prefixString)[Math.floor(Math.random() * getTips().length)]}`, iconURL: iconUrl })
+      .setThumbnail(settings.splash).build(),
   );
   let keysString;
   // iterate over playlists
-  xdb.playlists.forEach((val, key) => {
+  xdb.playlists.forEach((playlist, key) => {
     keysString = '';
     // iterate over a single playlist
-    val.forEach((val) => {
+    playlist.forEach((val) => {
       keysString = `${val.name}, ${keysString}`;
     });
     if (keysString.length) {
       keysString = keysString.substring(0, keysString.length - 2);
-    } else {
+    }
+    else {
       keysString = ' *this playlist is empty* ';
     }
     embedPages.push(
       (new EmbedBuilderLocal())
-      .setTitle(key)
-      .setDescription(keysString)
-      .setColor(keyEmbedColor)
-      .setFooter({text: `play command: ${prefixString}d [key]`}).build()
+        .setTitle(key)
+        .setDescription(keysString)
+        .setColor(keyEmbedColor)
+        .setFooter({ text: `play command: ${prefixString}d [key]` }).build(),
     );
   });
   return embedPages;
@@ -66,7 +68,7 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
 /**
  * Grabs all the keys/names from the database.
  * @param message {any} The message trigger
- * @param server The server
+ * @param server {LocalServer} The server
  * @param sheetName {string} The name of the sheet to retrieve
  * @param user {any?} Optional - username, overrides the message owner's name
  * @param specificPage {string?} The name of the page to display (to show instead of the playlist-page).
@@ -74,7 +76,7 @@ async function createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, serv
  */
 async function runKeysCommand(message, server, sheetName, user, specificPage, overrideName) {
   if (!user) user = message.member.user;
-  const keysMsg = (botInVC(message) ? {edit: (editOptions) => message.channel.send(editOptions)} :
+  const keysMsg = (botInVC(message) ? { edit: (editOptions) => message.channel.send(editOptions) } :
     await message.channel.send('*getting keys...*'));
   let xdb = await getXdb2(server, sheetName, botInVC(message));
   const prefixString = server.prefix;
@@ -85,14 +87,16 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
   if (keyArray.length < 1) {
     keysMsg.edit('**Your saved-links list is empty.**\n*Save a link by putting a word followed by a link.' +
       '\nEx:* \` ' + prefixString + 'add [key] [link] \`');
-  } else {
+  }
+  else {
     const keyEmbedColors = ['#cdfc41', '#4192fc', '#fc4182', '#41fc9f', '#47fc41', '#41ecfc', '#90d5cf'];
     const keyEmbedColor = keyEmbedColors[Math.floor(Math.random() * keyEmbedColors.length)];
     let title = '';
     let name;
     if (overrideName) {
       name = overrideName;
-    } else {
+    }
+    else {
       user ? name = user.username : name = message.member.nickname;
       if (!name) {
         name = message.author.username;
@@ -100,13 +104,16 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
     }
     if (!isPersonalSheet(sheetName)) {
       title += '**Server**';
-    } else if (name) {
+    }
+    else if (name) {
       title += `**${name}'s**`;
-    } else {
+    }
+    else {
       title += '**Personal** ';
     }
     let pageIndex = 0;
     let embedPages = await createKeyEmbedPages(title, keyEmbedColor, prefixString, xdb, server, sheetName);
+    // eslint-disable-next-line valid-jsdoc
     /**
      * Generates the keys list embed.
      * @param requiresUpdate {boolean?} If to grab new data for the embed.
@@ -120,7 +127,7 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
         const pArrayUpper = xdb.playlistArray.map((i) => i.toUpperCase());
         let index = pArrayUpper.indexOf(specificPage.toUpperCase());
         if (index === -1) {
-          const ss = getAssumptionMultipleMethods(specificPage, Array.from(xdb.playlists, ([name]) => name));
+          const ss = getAssumptionMultipleMethods(specificPage, Array.from(xdb.playlists, ([name2]) => name2));
           // ss should be uppercase since Map has names in uppercase
           if (ss) index = pArrayUpper.indexOf(ss);
         }
@@ -128,7 +135,8 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
           pageIndex = index + 1;
         }
         specificPage = undefined;
-      } else if (requiresUpdate) {
+      }
+      else if (requiresUpdate) {
         xdb = await getXdb2(server, sheetName, botInVC(message));
         keyArray.length = 0;
         xdb.globalKeys.forEach((val) => keyArray.push(val.name));
@@ -137,17 +145,17 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
       }
       return embedPages[pageIndex];
     };
-    keysMsg.edit({content: ' ', embeds: [await generateKeysEmbed()]}).then(async (sentMsg) => {
+    keysMsg.edit({ content: ' ', embeds: [await generateKeysEmbed()] }).then(async (sentMsg) => {
       sentMsg.react(reactions.ARROW_L).then(() => sentMsg.react(reactions.ARROW_R)).then(() =>
         sentMsg.react(reactions.QUESTION)).then(() => sentMsg.react(reactions.GEAR));
-      const filter = (reaction, user) => {
-        return user.id !== botID && [reactions.QUESTION, reactions.ARROW_R,
+      const filter = (reaction, user2) => {
+        return user2.id !== botID && [reactions.QUESTION, reactions.ARROW_R,
           reactions.ARROW_L, reactions.GEAR, reactions.SHUFFLE].includes(reaction.emoji.name);
       };
-      const keysButtonCollector = sentMsg.createReactionCollector({filter, time: 1200000});
+      const keysButtonCollector = sentMsg.createReactionCollector({ filter, time: 1200000 });
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
         if (reaction.emoji.name === reactions.QUESTION) {
-          const embed = new EmbedBuilderLocal()
+          new EmbedBuilderLocal()
             .setTitle('How to add/delete')
             .setDescription(
               '*Keys allow you to save a link as a playable word* \n' +
@@ -157,31 +165,32 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
               `Rename a key -> \` ${prefixString}rename-key [old-name] [new]\`\n\n` +
               `Create a playlist -> \` ${prefixString}add-playlist [playlist]\`\n` +
               `Delete a playlist -> \` ${prefixString}del-playlist [playlist]\`\n` +
-              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n`
+              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n`,
             )
             .setFooter(
               `play a key ->  ${prefixString}d [key]\n` +
               `play a playlist -> ${prefixString}pd [playlist]`,
             )
-            .send(message.channel);
-        } else {
+            .send(message.channel).then();
+        }
+        else if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isAdmin(user.id))) {
           // if it is not a personal sheet then it is a global sheet (which is in testing)
-          if (reactionCollector.id === user.id || (!isPersonalSheet(sheetName) && isAdmin(user.id))) {
-            if (reaction.emoji.name === reactions.ARROW_R) {
-              pageIndex += 1;
-              sentMsg.edit({embeds: [await generateKeysEmbed()]});
-              await reaction.users.remove(user.id);
-            } else if (reaction.emoji.name === reactions.ARROW_L) {
-              pageIndex -= 1;
-              sentMsg.edit({embeds: [await generateKeysEmbed()]});
-              await reaction.users.remove(user.id);
-            } else if (reaction.emoji.name === reactions.GEAR) {
-              // allow for adding / removal of a playlist / queue
-              await reaction.users.remove(user.id);
-              const wasChanged = await addRemoveWizard(message.channel, user, server,
-                await getXdb2(server, sheetName), pageIndex, sheetName);
-              if (wasChanged) sentMsg.edit(await generateKeysEmbed(true));
-            }
+          if (reaction.emoji.name === reactions.ARROW_R) {
+            pageIndex += 1;
+            sentMsg.edit({ embeds: [await generateKeysEmbed()] });
+            await reaction.users.remove(user.id);
+          }
+          else if (reaction.emoji.name === reactions.ARROW_L) {
+            pageIndex -= 1;
+            sentMsg.edit({ embeds: [await generateKeysEmbed()] });
+            await reaction.users.remove(user.id);
+          }
+          else if (reaction.emoji.name === reactions.GEAR) {
+            // allow for adding / removal of a playlist / queue
+            await reaction.users.remove(user.id);
+            const wasChanged = await addRemoveWizard(message.channel, user, server,
+              await getXdb2(server, sheetName), pageIndex, sheetName);
+            if (wasChanged) sentMsg.edit(await generateKeysEmbed(true));
           }
         }
       });
@@ -218,7 +227,8 @@ async function addRemoveWizard(channel, user, server, xdb, pageIndex, sheetName)
     removeFunction = async () => removeKeyWizard(channel, user, server, xdb, sheetName);
     renameFunction = async (oldName, newName) => renameKey(channel, server, sheetName, oldName, newName);
     selection = `\`you are on the ${type} selection page (${playlistName.toUpperCase()}):\`\n`;
-  } else {
+  }
+  else {
     type = 'playlist';
     addFunction = async () => addPlaylistWizard(channel, user, server, xdb, sheetName);
     removeFunction = async () => removePlaylistWizard(channel, user, server, xdb, sheetName);
@@ -233,17 +243,22 @@ async function addRemoveWizard(channel, user, server, xdb, pageIndex, sheetName)
   if (res.toLowerCase() === 'q') {
     try {
       sentMsg.delete();
-    } catch (e) {
+    }
+    catch (e) {
       channel.send('*cancelled*');
     }
     return false;
-  } else if (res.toLowerCase() === 'add') {
+  }
+  else if (res.toLowerCase() === 'add') {
     await addFunction();
-  } else if (res.toLowerCase() === 'delete') {
+  }
+  else if (res.toLowerCase() === 'delete') {
     await removeFunction();
-  } else if (res.toLowerCase() === 'rename') {
+  }
+  else if (res.toLowerCase() === 'rename') {
     await renameWizard(channel, user, server, xdb, type, renameFunction);
-  } else {
+  }
+  else {
     channel.send('*cancelled*');
     return false;
   }
@@ -266,7 +281,8 @@ async function addPlaylistWizard(channel, user, server, xdb, sheetName) {
   if (res.toLowerCase() === 'q') {
     try {
       sentMsg.delete();
-    } catch (e) {
+    }
+    catch (e) {
       channel.send('*cancelled*');
     }
     return false;
@@ -302,7 +318,8 @@ async function addKeyWizard(channel, user, server, xdb, playlistName, sheetName)
   if (res.toLowerCase() === 'q') {
     try {
       sentMsg.delete();
-    } catch (e) {
+    }
+    catch (e) {
       channel.send('*cancelled*');
     }
     return false;
@@ -321,11 +338,12 @@ async function addKeyWizard(channel, user, server, xdb, playlistName, sheetName)
   }
   resLink = universalLinkFormatter(resLink);
   if (linkValidator(resLink)) {
-    existingPlaylist.set(res.toUpperCase(), {name: res, link: resLink, playlistName});
+    existingPlaylist.set(res.toUpperCase(), { name: res, link: resLink, playlistName });
     await serializeAndUpdate(server, sheetName, playlistName, xdb);
     channel.send(`*added key to your **${playlistName}** playlist*`);
     return true;
-  } else {
+  }
+  else {
     channel.send('*invalid link provided*');
   }
 }
@@ -347,7 +365,8 @@ async function renameWizard(channel, user, server, xdb, type, renameFunction) {
   if (res.toLowerCase() === 'q') {
     try {
       sentMsg.delete();
-    } catch (e) {
+    }
+    catch (e) {
       channel.send('*cancelled*');
     }
     return false;
@@ -379,7 +398,8 @@ async function removeKeyWizard(channel, user, server, xdb, sheetName) {
   if (res.toLowerCase() === 'q') {
     try {
       sentMsg.delete();
-    } catch (e) {
+    }
+    catch (e) {
       channel.send('*cancelled*');
     }
     return false;
@@ -412,7 +432,8 @@ async function removePlaylistWizard(channel, user, server, xdb, sheetName) {
   if (res.toLowerCase() === 'q') {
     try {
       sentMsg.delete();
-    } catch (e) {
+    }
+    catch (e) {
       channel.send('*cancelled*');
     }
     return false;
@@ -437,13 +458,14 @@ async function getMessageResponse(server, channel, user, sentMsg) {
   try {
     server.activeUserQuestion.get(user.id)?.delete();
     server.activeUserQuestion.set(user.id, sentMsg);
-    const messages = await sentMsg.channel.awaitMessages({filter, time: 60000, max: 1, errors: ['time']});
+    const messages = await sentMsg.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] });
     res = messages.first().content.trim();
-  } catch (e) {
+  }
+  catch (e) {
     server.activeUserQuestion.get(user.id)?.delete();
   }
   server.activeUserQuestion.delete(user.id);
   return res;
 }
 
-module.exports = {runKeysCommand};
+module.exports = { runKeysCommand };

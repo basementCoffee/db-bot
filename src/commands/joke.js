@@ -18,4 +18,4 @@ function getJoke() {
   });
 }
 
-module.exports = {getJoke};
+module.exports = { getJoke };

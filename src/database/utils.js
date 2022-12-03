@@ -1,4 +1,4 @@
-const {gsUpdateOverwrite, deleteRows} = require('./api/api');
+const { gsUpdateOverwrite, deleteRows } = require('./api/api');
 
 /**
  * Serialize data. Assumes that the playlist exists or will create a new playlist.
@@ -33,7 +33,7 @@ function serializeData(keysMap, playlistName) {
 module.exports = {
   /**
    * Serialize and update the playlist within the database. Uses xdb.playlists and xdb.playlistArray for updated data.
-   * @param server The server object.
+   * @param server {LocalServer} The server object.
    * @param sheetName The name of the sheet.
    * @param playlistName The name of the playlist.
    * @param xdb - the XDB data - is required
@@ -50,7 +50,8 @@ module.exports = {
     // delete or serialize the playlist
     if (removePlaylist) {
       await deleteRows(sheetName, row + 2);
-    } else {
+    }
+    else {
       serializedData = serializeData(xdb.playlists.get(playlistName.toUpperCase()), newPlaylist || playlistName);
       await gsUpdateOverwrite([serializedData.keysString, serializedData.valuesString],
         sheetName, 'E', row + 2, 'F', row + 2);

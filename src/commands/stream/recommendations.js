@@ -1,9 +1,9 @@
-const {botInVC, setSeamless, resetSession, pushQueue, verifyUrl} = require('../../utils/utils');
-const {bot, SPOTIFY_BASE_LINK, CORE_ADM} = require('../../utils/lib/constants');
-const {playLinkToVC} = require('./stream');
-const {updateActiveEmbed, createEmbed} = require('../../utils/embed');
-const {addLinkToQueue} = require('../../utils/playlist');
-const {isCoreAdmin} = require('../../utils/permissions');
+const { botInVC, setSeamless, resetSession, pushQueue, verifyUrl } = require('../../utils/utils');
+const { bot, SPOTIFY_BASE_LINK, CORE_ADM } = require('../../utils/lib/constants');
+const { playLinkToVC } = require('./stream');
+const { updateActiveEmbed, createEmbed } = require('../../utils/embed');
+const { addLinkToQueue } = require('../../utils/playlist');
+const { isCoreAdmin } = require('../../utils/permissions');
 
 /**
  * Sends a recommendation to a user. EXPERIMENTAL. This is a wrapper for sendRecommendation.
@@ -11,7 +11,7 @@ const {isCoreAdmin} = require('../../utils/permissions');
  * @param message The message metadata.
  * @param args The message contents in an array.
  * @param uManager bot.users
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @return {Promise<void>}
  */
 async function sendRecommendationWrapper(message, args, uManager, server) {
@@ -20,10 +20,12 @@ async function sendRecommendationWrapper(message, args, uManager, server) {
   if (args[1] && verifyUrl(args[1])) {
     url = args[1];
     args[1] = '';
-  } else if (args.length > 2 && verifyUrl(args[args.length - 1])) {
+  }
+  else if (args.length > 2 && verifyUrl(args[args.length - 1])) {
     url = args[args.length - 1];
     args[args.length - 1] = '';
-  } else {
+  }
+  else {
     url = server.queue[0]?.url;
     infos = server.queue[0]?.infos;
   }
@@ -52,7 +54,8 @@ async function sendRecommendation(message, content = '', url, uManager, infos) {
       embeds: [(await createEmbed(url, infos)).embed.build()],
     });
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
-  } catch (e) {
+  }
+  catch (e) {
     console.log(e);
   }
 }
@@ -61,7 +64,7 @@ async function sendRecommendation(message, content = '', url, uManager, infos) {
  * Plays a recommendation.
  * NOTE: Is in testing phase - allows only isCoreAdmin() usage.
  * @param message The message metadata.
- * @param server The server metadata.
+ * @param server {LocalServer} The server metadata.
  * @param args The message content in an array.
  * @returns {Promise<void>}
  */
@@ -78,12 +81,13 @@ async function playRecommendation(message, server, args) {
   const user = await bot.users.fetch(message.member.id);
   const channel = await user.createDM();
   let num = parseInt(args[1]);
-  let isRelevant = () => {}; // will be redefined
+  // hot-swap function on whether a link is relevant/applicable
+  let isRelevant = () => {return null;};
   if (num < 1) {
     message.channel.send('*provided number must be positive*');
     return;
   }
-  if (num) isRelevant = () => num > 0;
+  if (num) {isRelevant = () => num > 0;}
   else {
     num = 0;
     // if the message was created in the last 48 hours
@@ -91,7 +95,7 @@ async function playRecommendation(message, server, args) {
   }
   // attempts to get a valid url from a regex.exec or message
   const getUrl = (res, m) => {
-    if (res && res[1]) return res[1];
+    if (res && res[1]) {return res[1];}
     else if (m.embeds.length > 0) {
       return m.embeds[0].url;
     }
@@ -100,7 +104,7 @@ async function playRecommendation(message, server, args) {
   // links that should be forwarded by default (meet func criteria)
   const recs = [];
   // array of messages, the earliest message are in the front
-  const messages = await channel.messages.fetch({limit: 99});
+  const messages = await channel.messages.fetch({ limit: 99 });
   const filterUrlArgs = (link) => {
     if (link.includes(SPOTIFY_BASE_LINK) && link.includes('?si=')) return link.split('?si=')[0];
     else return link;
@@ -126,7 +130,8 @@ async function playRecommendation(message, server, args) {
       if (isRelevant(m)) {
         recs.push(url);
         num--;
-      } else {
+      }
+      else {
         isMore = true;
         break;
       }
@@ -135,7 +140,8 @@ async function playRecommendation(message, server, args) {
   if (recs.length < 1) {
     if (isMore) {
       message.channel.send('***no new recommendations***, *provide a number to get a specific number of recs*');
-    } else message.channel.send('*no more recommendations (the queue contains all of them)*');
+    }
+    else {message.channel.send('*no more recommendations (the queue contains all of them)*');}
     return;
   }
   const wasEmpty = !server.queue[0];
@@ -144,10 +150,11 @@ async function playRecommendation(message, server, args) {
   }
   if (!botInVC(message) || wasEmpty) {
     playLinkToVC(message, server.queue[0], message.member.voice.channel, server);
-  } else {
+  }
+  else {
     message.channel.send(`*added ${recs.length} recommendation${recs.length > 1 ? 's' : ''} to queue*`);
     updateActiveEmbed(server);
   }
 }
 
-module.exports = {playRecommendation, sendRecommendationWrapper};
+module.exports = { playRecommendation, sendRecommendationWrapper };
