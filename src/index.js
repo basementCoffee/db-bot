@@ -1598,7 +1598,6 @@ async function updateVoiceState(oldState, newState, server) {
     }
     if (bot.voice.adapters.size < 1) {
       whatspMap.clear();
-      server.audio.reset();
     }
   }
   else if (botInVC(newState)) {
