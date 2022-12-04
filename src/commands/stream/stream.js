@@ -222,13 +222,18 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       server.streamData.type = StreamType.YOUTUBE;
     }
     server.streamData.stream = stream;
-
-    const player = createAudioPlayer();
+    if (!server.audio.player) {
+      console.log('creating audio player...');
+      server.audio.player = createAudioPlayer();
+    }
+    else {
+      server.audio.player.removeAllListeners('idle');
+      server.audio.player.removeAllListeners('error');
+    }
     const resource = createAudioResource(stream, audioResourceOptions);
-    server.audio.connection.subscribe(player);
-    player.play(resource);
+    server.audio.connection.subscribe(server.audio.player);
+    server.audio.player.play(resource);
     server.audio.resource = resource;
-    server.audio.player = player;
     if (server.streamData?.type === StreamType.SOUNDCLOUD) {
       pauseComputation(server, true);
       await new Promise((res) => setTimeout(() => {
@@ -251,7 +256,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       queueItem = await sendLinkAsEmbed(message, queueItem, vc, server, false) || queueItem;
     }
     server.skipTimes = 0;
-    player.on('error', async (e) => {
+    server.audio.player.on('error', async (e) => {
       if (resource.playbackDuration < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise((res) => setTimeout(res, 500));
@@ -269,7 +274,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       console.log('dispatcher error: ', e);
     });
     // similar to on 'finish'
-    player.once('idle', () => {
+    server.audio.player.once('idle', () => {
       // if there is a mismatch then don't change anything
       if (whatToPlay !== whatspMap[vc.id]) return;
       server.mapFinishedLinks.set(whatToPlay,
@@ -659,7 +664,7 @@ async function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkip
     else {return;}
   }
   if (server.audio.player) {
-    pauseComputation(server);
+    pauseComputation(server, false);
     // add link to finished map if being played for over 100 seconds
     if (server.audio.resource?.playbackDuration > 100000 && server.queue[0]) {
       server.mapFinishedLinks.set(server.queue[0].url,
