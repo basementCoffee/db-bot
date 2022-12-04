@@ -182,6 +182,12 @@ async function sessionEndEmbed(server, queueItem) {
  * @returns {void}
  */
 function sessionEndEmbedWEmbed(server, embed) {
+  if (server.currentEmbed.reactions) {
+    if (server.collector) {
+      server.collector.stop();
+      server.collector = null;
+    }
+  }
   server.currentEmbedChannelId = '0';
   server.numSinceLastEmbed = 0;
   embed.addFields({
@@ -189,14 +195,10 @@ function sessionEndEmbedWEmbed(server, embed) {
     name: '-',
     value: 'Session ended',
   });
-  embed.edit(server.currentEmbed).then();
-  if (server.currentEmbed.reactions) {
-    if (server.collector) {
-      server.collector.stop();
-      server.collector = null;
-    }
-  }
-  server.currentEmbed = null;
+  embed.edit(server.currentEmbed);
+  setTimeout(() => {
+    server.currentEmbed = null;
+  }, 500);
 }
 
 module.exports = { updateActiveEmbed, createEmbed, sessionEndEmbed };
