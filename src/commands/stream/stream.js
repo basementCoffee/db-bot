@@ -72,6 +72,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     server.voteRewindMembersId.length = 0;
     server.votePlayPauseMembersId.length = 0;
   }
+  pauseComputation(server, false);
   // the alternative url to play
   let urlAlt = whatToPlay;
   if (!botInVC(message) || !server.audio.connection || await (async () => {
