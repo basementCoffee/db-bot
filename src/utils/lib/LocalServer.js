@@ -107,7 +107,7 @@ class LocalServer {
     this.loop = false;
     this.numSinceLastEmbed = 0;
     this.currentEmbed = undefined;
-    this.collector = false;
+    this.collector = undefined;
     this.followUpMessage = undefined;
     this.currentEmbedChannelId = undefined;
     this.verbose = false;

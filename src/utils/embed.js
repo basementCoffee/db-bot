@@ -2,7 +2,7 @@ const fetch = require('isomorphic-unfetch');
 const { getData } = require('spotify-url-info')(fetch);
 const scdl = require('soundcloud-downloader').default;
 const ytdl = require('ytdl-core-discord');
-const { formatDuration, getQueueText, convertYTFormatToMS } = require('./utils');
+const { formatDuration, getQueueText, convertYTFormatToMS, logError } = require('./utils');
 const { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } = require('./lib/constants');
 const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
 
@@ -159,28 +159,44 @@ async function updateActiveEmbed(server) {
 }
 
 /**
- * Sends a session ended embed.
+ * Provided a queue item. Sends a session ended embed.
  * @param server {LocalServer} The server metadata.
- * @param item The QueueItem to display.
+ * @param queueItem The QueueItem to display.
  * @returns {Promise<void>}
  */
-async function sessionEndEmbed(server, item) {
+async function sessionEndEmbed(server, queueItem) {
   try {
-    if (!server.currentEmbed || !item) return;
-    let embed = await createEmbed(item.url, item.infos);
-    embed = embed.embed;
-    server.currentEmbedChannelId = '0';
-    server.numSinceLastEmbed = 0;
-    embed.addFields({
-      inline: true,
-      name: '-',
-      value: 'Session ended',
-    });
-    embed.edit(server.currentEmbed).then();
+    if (!server.currentEmbed || !queueItem) return;
+    const embed = (await createEmbed(queueItem.url, queueItem.infos)).embed;
+    sessionEndEmbedWEmbed(server, embed);
   }
   catch (e) {
-    console.log(e);
+    logError(e);
   }
+}
+
+/**
+ * Provided an embed. Attaches the 'session ended' tag and sends the final session ended embed.
+ * @param server {LocalServer} The server metadata.
+ * @param embed {EmbedBuilderLocal} The embed to send.
+ * @returns {void}
+ */
+function sessionEndEmbedWEmbed(server, embed) {
+  server.currentEmbedChannelId = '0';
+  server.numSinceLastEmbed = 0;
+  embed.addFields({
+    inline: true,
+    name: '-',
+    value: 'Session ended',
+  });
+  embed.edit(server.currentEmbed).then();
+  if (server.currentEmbed.reactions) {
+    if (server.collector) {
+      server.collector.stop();
+      server.collector = null;
+    }
+  }
+  server.currentEmbed = null;
 }
 
 module.exports = { updateActiveEmbed, createEmbed, sessionEndEmbed };

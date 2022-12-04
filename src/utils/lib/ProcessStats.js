@@ -79,11 +79,9 @@ class ProcessStats {
    * This method SHOULD be used instead of connection.disconnect. It will properly clean up the dispatcher and
    * the player.
    * @param server {LocalServer} The server metadata.
-   * @param connection The voice connection.
    */
-  disconnectConnection(server, connection) {
+  disconnectConnection(server) {
     server.audio.reset();
-    connection?.disconnect();
     this.removeActiveStream(server.guildId);
   }
 

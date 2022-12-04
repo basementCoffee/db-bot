@@ -1545,10 +1545,10 @@ bot.on('messageCreate', (message) => {
 bot.on('voiceStateUpdate', (oldState, newState) => {
   const server = processStats.getServer(oldState.guild.id.toString());
   if (processStats.isInactive) {
-    try {
+    if (server.collector) {
       server.collector.stop();
+      server.collector = null;
     }
-    catch (e) {}
     return;
   }
   updateVoiceState(oldState, newState, server).then();
@@ -1565,7 +1565,10 @@ async function updateVoiceState(oldState, newState, server) {
   // if the bot is leaving
   if (oldState.member.id === botID) {
     // if the bot joined then ignore
-    if (newState.channel?.members.get(botID)) return;
+    if (newState.channel?.members.get(botID)) {
+      server.audio.voiceChannelId = newState.channelId;
+      return;
+    }
     // clear timers first
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
@@ -1573,8 +1576,7 @@ async function updateVoiceState(oldState, newState, server) {
     }
     clearDJTimer(server);
     // disconnect and delete the voice adapter
-    const voiceConnection = getVoiceConnection(newState.guild.id);
-    if (voiceConnection) processStats.disconnectConnection(server, voiceConnection);
+    processStats.disconnectConnection(server);
     bot.voice.adapters.get(oldState.guild.id)?.destroy();
     processStats.removeActiveStream(oldState.guild.id);
     await sessionEndEmbed(server, server.queue[0] || server.queueHistory.slice(-1)[0]);
@@ -1590,13 +1592,6 @@ async function updateVoiceState(oldState, newState, server) {
     server.autoplay = false;
     server.userKeys.clear();
     server.queueHistory.length = 0;
-    if (server.currentEmbed?.reactions) {
-      try {
-        server.collector?.stop();
-      }
-      catch (e) {}
-    }
-    server.currentEmbed = null;
     if (server.followUpMessage) {
       server.followUpMessage.delete();
       server.followUpMessage = undefined;
@@ -1618,8 +1613,7 @@ async function updateVoiceState(oldState, newState, server) {
       server.leaveVCTimeout = setTimeout(() => {
         server.leaveVCTimeout = null;
         if (oldState.channel.members.filter((x) => !x.user.bot).size < 1) {
-          const voiceConnection = getVoiceConnection(newState.guild.id);
-          if (voiceConnection) processStats.disconnectConnection(server, voiceConnection);
+          processStats.disconnectConnection(server);
         }
       }, leaveVCInt);
     }

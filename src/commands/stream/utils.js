@@ -1,7 +1,6 @@
 const { botID } = require('../../utils/lib/constants');
 const { pauseComputation, playComputation, botInVC } = require('../../utils/utils');
 const { createEmbed, updateActiveEmbed } = require('../../utils/embed');
-const { getVoiceConnection } = require('@discordjs/voice');
 const processStats = require('../../utils/lib/ProcessStats');
 
 /**
@@ -148,7 +147,7 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   const lastPlayed = server.queue[0] || server.queueHistory.slice(-1)[0];
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
-      processStats.disconnectConnection(server, getVoiceConnection(mgid));
+      processStats.disconnectConnection(server);
     }, 600);
   }
   else {
@@ -175,10 +174,10 @@ function endAudioDuringSession(server) {
   updateActiveEmbed(server);
   // active stream should be removed within pauseComputation
   pauseComputation(server);
-  try {
-    server.collector?.stop();
+  if (server.collector) {
+    server.collector.stop();
+    server.collector = null;
   }
-  catch (e) {}
 }
 
 module.exports = {
