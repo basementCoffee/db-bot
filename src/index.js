@@ -2,6 +2,7 @@
 'use strict';
 require('dotenv').config();
 const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
+const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
 const { exec } = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
@@ -1006,7 +1007,7 @@ async function runCommandCases(message) {
     new EmbedBuilderLocal()
       .setTitle('db vibe - statistics')
       .setDescription(`version: ${version} (${buildNo.getBuildNo()})` +
-          `\nprocess: ${process.pid.toString()}` +
+          `\nprocess: ${process.pid.toString()} [${hardwareTag}]` +
           `\nservers: ${bot.guilds.cache.size}` +
           `\nuptime: ${formatDuration(bot.uptime)}` +
           `\nactive time: ${getTimeActive()}` +
@@ -1318,7 +1319,7 @@ async function devProcessCommands(message) {
       // the process message: [sidelined / active] [process number] [version number]
       const procMsg = () => {
         return (processStats.isInactive ? 'sidelined: ' : (processStats.devMode ? 'active: ' : '**active: **')) +
-            process.pid + ' (' + version + ')' + dm;
+            process.pid + ` *[${hardwareTag}]* (${version})` + dm;
       };
       message.channel.send(procMsg()).then((sentMsg) => {
         if (processStats.devMode) {
