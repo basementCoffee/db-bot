@@ -11,8 +11,8 @@ const processStats = require('./utils/lib/ProcessStats');
 const { gsrun, deleteRows } = require('./database/api/api');
 const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
-  formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive,
-  removeFormattingLink, getSheetName, createVisualEmbed, getTitle,
+  formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive, getSheetName,
+  createVisualEmbed, getTitle,
 } = require('./utils/utils');
 const { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } = require('./commands/dj');
 const {
@@ -28,7 +28,7 @@ const { shutdown } = require('./process/shutdown');
 const { playRecommendation, sendRecommendationWrapper } = require('./commands/stream/recommendations');
 const { checkToSeeActive } = require('./process/checkToSeeActive');
 const { runQueueCommand, createVisualText } = require('./commands/generateQueue');
-const { sendListSize, getServerPrefix, getSettings, setSettings, getXdb2 } = require('./database/retrieval');
+const { sendListSize, getServerPrefix, getXdb2 } = require('./database/retrieval');
 const { isAdmin, hasDJPermissions } = require('./utils/permissions');
 const { dmHandler, sendMessageToUser } = require('./utils/dms');
 const { runDeleteKeyCommand_P } = require('./database/delete');
@@ -430,18 +430,10 @@ async function runCommandCases(message) {
     commandHandlerCommon.keys(message, server, 'entries', null, args[1]).then();
     break;
   case 'splash':
-    if (!args[1] || !args[1].includes('.')) {
-      message.channel.send(`*provide an icon URL to set a splash screen for your playlists \`${args[0]} [url]\`*`);
-      return;
-    }
-    args[1] = removeFormattingLink(args[1].trim());
-    if (args[1].substring(args[1].length - 5) === '.gifv') {
-      args[1] = args[1].substring(0, args[1].length - 1);
-    }
-    const userSettings = await getSettings(server, getSheetName(message.member.id));
-    userSettings.splash = args[1];
-    await setSettings(server, getSheetName(message.member.id), userSettings);
-    message.channel.send('*splashscreen set*');
+    commandHandlerCommon.setSplashscreen(server, message.channel, getSheetName(message.member.id), args[1]).then();
+    break;
+  case 'gsplash':
+    commandHandlerCommon.setSplashscreen(server, message.channel, 'entries', args[1]).then();
     break;
     // .search is the search
   case 'find':
@@ -527,8 +519,6 @@ async function runCommandCases(message) {
     break;
   case 'rec':
   case 'recc':
-  case 'reccomend':
-  case 'reccommend':
   case 'recommend':
     args[0] = '';
     sendRecommendationWrapper(message, args, bot.users, server).then();
