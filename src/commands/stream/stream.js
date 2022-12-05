@@ -223,7 +223,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     }
     server.streamData.stream = stream;
     if (!server.audio.player) {
-      console.log('creating audio player...');
       server.audio.player = createAudioPlayer();
     }
     else {
