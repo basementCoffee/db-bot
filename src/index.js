@@ -28,7 +28,7 @@ const { shutdown } = require('./process/shutdown');
 const { playRecommendation, sendRecommendationWrapper } = require('./commands/stream/recommendations');
 const { checkToSeeActive } = require('./process/checkToSeeActive');
 const { runQueueCommand, createVisualText } = require('./commands/generateQueue');
-const { sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2 } = require('./database/retrieval');
+const { sendListSize, getServerPrefix, getSettings, setSettings, getXdb2 } = require('./database/retrieval');
 const { isAdmin, hasDJPermissions } = require('./utils/permissions');
 const { dmHandler, sendMessageToUser } = require('./utils/dms');
 const { runDeleteKeyCommand_P } = require('./database/delete');
@@ -456,13 +456,10 @@ async function runCommandCases(message) {
     commandHandlerCommon.searchForKeyUniversal(message, server, 'entries', (args[1] ? args[1] : server.queue[0]?.url)).then();
     break;
   case 'size':
-    if (!args[1]) sendListSize(message, server, mgid).then();
-    break;
-  case 'msize':
-    if (!args[1]) sendListSize(message, server, getSheetName(message.member.id)).then();
+    if (args[1]) sendListSize(message, server, getSheetName(message.member.id), args[1]).then();
     break;
   case 'gsize':
-    if (!args[1]) sendListSize(message, server, 'entries').then();
+    if (args[1]) sendListSize(message, server, 'entries', args[1]).then();
     break;
   case 'ticket':
     if (args[1]) {
@@ -672,26 +669,6 @@ async function runCommandCases(message) {
   case 'resume':
     if (isShortCommand(message, statement)) return;
     commandHandlerCommon.resumeStream(message, message.member, server);
-    break;
-  case 'gzconvert':
-  case 'gz-convert':
-    // convert old data format into new data format
-    if (!args[1]) return;
-    const oldDB = await getXdb(server, args[1]);
-    const keysObj = {
-      pn: 'general',
-      ks: [],
-    };
-    let valStr = '';
-    oldDB.congratsDatabase.forEach((val, key) => {
-      keysObj.ks.push({ kn: key });
-      valStr += val + ', ';
-    });
-    if (valStr.length > 1) {
-      valStr = valStr.substring(0, valStr.length - 2);
-    }
-    console.log('K: ', JSON.stringify(keysObj));
-    console.log('V: ', valStr);
     break;
   case 'ts':
   case 'time':
