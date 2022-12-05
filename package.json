@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "8.2.13",
+  "version": "8.2.14",
   "description": "A discord playback bot with a UI.",
   "main": "src/index.js",
   "scripts": {
@@ -26,8 +26,7 @@
     "cheerio": "^1.0.0-rc.12",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
-    "ffmpeg": "^0.0.4",
-    "ffmpeg-static": "^4.4.1",
+    "ffmpeg-static": "~5.0.1",
     "fluent-ffmpeg": "^2.1.2",
     "genius-lyrics": "^4.4.0",
     "googleapis": "^109.0.1",
