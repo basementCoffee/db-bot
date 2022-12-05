@@ -1136,13 +1136,6 @@ bot.on('guildCreate', (guild) => {
 bot.once('ready', () => {
   parentThread('STARTUP', {}, []);
   // bot starts up as inactive, if no response from the channel then activates itself
-  if (process.pid === 4) {
-    if (processStats.devMode) {
-      logError('`NOTICE: production process started up in devMode` (switching off devMode..)');
-      processStats.devMode = false;
-    }
-    buildNo.decrementBuildNo();
-  }
   // noinspection JSUnresolvedFunction
   processStats.getServer(CH['check-in-guild']);
   if (processStats.devMode) {
@@ -1399,7 +1392,7 @@ async function devProcessCommands(message) {
           }
           else if (reaction.emoji.name === reactions.O_DIAMOND) {
             if (processStats.devMode) {
-              processStats.devMode = false;
+              processStats.setDevMode(false);
               setProcessInactiveAndMonitor();
             }
             if (sentMsg.deletable) updateMessage();
@@ -1443,13 +1436,13 @@ async function devProcessCommands(message) {
           ' (' + 'dev mode: ' + processStats.devMode + ')');
     }
     if (processStats.devMode && zargs[1] === process.pid.toString()) {
-      processStats.devMode = false;
+      processStats.setDevMode(false);
       setProcessInactiveAndMonitor();
       processStats.servers.delete(message.guild.id);
       return message.channel.send(`*devmode is off ${process.pid}*`);
     }
     else if (zargs[1] === process.pid.toString()) {
-      processStats.devMode = true;
+      processStats.setDevMode(true);
       processStats.servers.delete(message.guild.id);
       if (processStats.checkActiveInterval) {
         clearInterval(processStats.checkActiveInterval);

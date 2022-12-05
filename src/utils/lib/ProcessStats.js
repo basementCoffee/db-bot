@@ -12,9 +12,9 @@ class ProcessStats {
   // map of active streams [guildId , Date.now()]
   activeStreamsMap = new Map();
   // if in developer mode
-  devMode = startupDevMode;
+  devMode;
   // if the process is sidelined
-  isInactive = !startupDevMode;
+  isInactive;
   // A message for users on first VC join
   startUpMessage = '';
   // list of server playback metadata
@@ -23,7 +23,19 @@ class ProcessStats {
   checkActiveInterval;
   // is null | XDB of the server prefixes. (see database/api for XDB reference)
   serverPrefixes;
+  // a logging function for debugging
+  debugFunc;
 
+  constructor() {
+    if (startupDevMode) {
+      this.setDevMode(true);
+      this.isInactive = false;
+    }
+    else {
+      this.setDevMode(false);
+      this.isInactive = true;
+    }
+  }
 
   // adds an active stream
   addActiveStream(gid) {
@@ -73,6 +85,31 @@ class ProcessStats {
       this.activeMS += Date.now() - this.dateActive;
       this.dateActive = null;
     }
+  }
+
+  /**
+   * Sets the status of devMode.
+   * @param status {boolean} Whether to set devMode on or off.
+   */
+  setDevMode(status) {
+    this.devMode = status;
+    if (status) {
+      this.debugFunc = (...args) => {
+        console.log(...args);
+      };
+    }
+    else {
+      this.debugFunc = () => {};
+    }
+    console.log(`-devMode ${status ? 'on' : 'off'}-`);
+  }
+
+  /**
+   * Used for logging during debugging. Should only log when in devMode (not in production).
+   * @param args {...any} Arguments to log.
+   */
+  debug(...args) {
+    this.debugFunc(...args);
   }
 
   /**

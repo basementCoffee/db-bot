@@ -32,7 +32,7 @@ async function responseHandler() {
       processStats.getServer(gid).prefix = pfx;
     }
     processStats.setProcessActive();
-    processStats.devMode = false;
+    processStats.setDevMode(false);
     // noinspection JSUnresolvedFunction
     bot.channels.fetch(CH.process)
       .then((channel) => channel.send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString()));
