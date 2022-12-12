@@ -2,7 +2,7 @@
 const { Worker } = require('worker_threads');
 const processStats = require('../utils/lib/ProcessStats');
 const { logError } = require('../utils/utils');
-const worker = new Worker(__dirname + '/worker.js');
+const worker = new Worker(__dirname + '/worker.js', { argv: process.argv.slice(2) });
 
 /**
  * Send computationally heavy commands to a worker process.
