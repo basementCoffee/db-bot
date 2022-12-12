@@ -1106,7 +1106,6 @@ bot.once('ready', () => {
   // noinspection JSUnresolvedFunction
   processStats.getServer(CH['check-in-guild']);
   if (processStats.devMode) {
-    console.log('-devmode enabled-');
     processStats.setProcessActive();
     if (startupTest) {
       const index = process.argv.indexOf('--test');
@@ -1612,7 +1611,6 @@ process
  */
 function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
-  console.log('error message: ', e.message);
   if (e.message === 'Unknown Message') return;
   logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 }
