@@ -26,6 +26,7 @@ class ProcessStats {
   // a logging function for debugging
   debugFunc;
 
+  // may run multiple times, once per thread
   constructor() {
     if (startupDevMode) {
       this.setDevMode(true);
