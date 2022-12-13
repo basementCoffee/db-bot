@@ -41,7 +41,12 @@ class EmbedBuilderLocal {
   }
 
   setFooter(value) {
-    this._embed.setFooter(value);
+    if (typeof value === 'string') {
+      this._embed.setFooter({ text: value });
+    }
+    else {
+      this._embed.setFooter(value);
+    }
     return this;
   }
 
