@@ -6,6 +6,7 @@ const { formatDuration, getQueueText, convertYTFormatToMS, logError } = require(
 const { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } = require('./lib/constants');
 const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
 const { isNumber } = require('node-os-utils/util');
+const DB_SPOTIFY_EMBED_ICON = 'https://github.com/Reply2Zain/db-bot/blob/master/assets/dbBotspotifyIcon.jpg?raw=true';
 
 function getSpotifyIcon(infos) {
   let icon;
@@ -17,7 +18,7 @@ function getSpotifyIcon(infos) {
       icon = infos.album.images[infos.album.images.length - 1]?.url;
     }
   }
-  return icon || 'https://www.teahub.io/photos/full/111-1110552_spotify-hd.png';
+  return icon || DB_SPOTIFY_EMBED_ICON;
 }
 
 /**
