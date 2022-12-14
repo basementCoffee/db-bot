@@ -51,11 +51,12 @@ const StreamType = {
   YOUTUBE: 'yt',
   TWITCH: 'tw',
 };
-
-const INVITE_MSG = 'Here\'s the invite link!\n<https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot>';
+const INVITE_LINK = 'https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot';
+const INVITE_MSG = `Here's the invite link!\n<${INVITE_LINK}>`;
+const DB_BOT_ICON_MED = 'https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg';
 
 module.exports = {
   MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK,
   TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM, MAX_KEY_LENGTH, INVITE_MSG, PREFIX_SN,
-  startupTest, ZWSP,
+  startupTest, ZWSP, DB_BOT_ICON_MED,
 };

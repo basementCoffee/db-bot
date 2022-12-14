@@ -1,4 +1,4 @@
-const { botID } = require('../utils/lib/constants');
+const { botID, DB_BOT_ICON_MED } = require('../utils/lib/constants');
 const { botInVC, getTitle, createQueueItem, getSheetName } = require('../utils/utils');
 const { reactions } = require('../utils/lib/reactions');
 const { updateActiveEmbed } = require('../utils/embed');
@@ -46,7 +46,7 @@ function runQueueCommand(server, message, mgid, noErrorMsg) {
     }
     queueMsgEmbed.setTitle('Up Next')
       .setAuthor({ name: `playing:  ${authorName}` })
-      .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg');
+      .setThumbnail(DB_BOT_ICON_MED);
     let sizeConstraint = 0;
     const qIterations = Math.min(serverQueue.length, startingIndex + 11);
     for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length && sizeConstraint < 10); qi++) {
