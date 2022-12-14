@@ -40,7 +40,7 @@
     "opusscript": "^0.0.8",
     "scdl-core": "^1.1.0",
     "soundcloud-downloader": "^1.0.0",
-    "spotify-url-info": "^3.1.9",
+    "spotify-url-info": "^3.1.10",
     "twitch-m3u8": "^1.1.5",
     "unpipe": "^1.0.0",
     "xml2js": "^0.4.23",
