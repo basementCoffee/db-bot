@@ -7,6 +7,7 @@ const {
 const fetch = require('isomorphic-unfetch');
 const { getData, getTracks } = require('spotify-url-info')(fetch);
 const ytpl = require('ytpl');
+const processStats = require('../utils/lib/ProcessStats');
 
 /**
  * Gets the url of the item from the infos.
@@ -25,7 +26,7 @@ function getUrl(item, type) {
     return item.permalink_url;
   default:
     const errString = `Error: Incorrect type provided, provided ${type}`;
-    console.log(errString);
+    processStats.debug(errString);
     throw errString;
   }
 }
@@ -40,9 +41,14 @@ async function getTracksWrapper(playlistUrl, retries = 0) {
   try {
     return await getTracks(playlistUrl);
   }
-  catch {
-    if (retries < 2) return getTracksWrapper(playlistUrl, ++retries);
-    else return [];
+  catch (e) {
+    if (retries < 2) {
+      return getTracksWrapper(playlistUrl, ++retries);
+    }
+    else {
+      processStats.debug(e);
+      return [];
+    }
   }
 }
 
