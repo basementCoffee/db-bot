@@ -3,60 +3,11 @@ const { bot } = require('../src/utils/lib/constants');
 const { runMoveItemCommand } = require('../src/commands/move');
 const utils = require('../src/utils/utils');
 const { revokeClient } = require('../src/database/api/api');
+const { MockVoice, MockChannel, MockMessage, MockGuild } = require('./MockTestClasses');
 
 let arr;
 const destroyBot = () => bot.destroy();
 
-class MockVoice {
-  channel;
-
-  constructor(channel) {
-    this.channel = channel;
-  }
-}
-
-class MockGuild {
-  voice;
-
-  constructor(voice) {
-    this.voice = voice;
-  }
-}
-
-class MockChannel {
-  sentMsg;
-
-
-  send(msg) {
-    this.sentMsg = msg;
-  }
-
-  getContent() {
-    return this.sentMsg;
-  }
-
-  clearSent() {
-    this.sentMsg = undefined;
-  }
-}
-
-class MockMessage {
-  channel;
-  guild;
-
-  constructor(channel, guild) {
-    this.channel = channel;
-    this.guild = guild;
-  }
-
-  getContent() {
-    return this.channel.getContent();
-  }
-
-  clearSent() {
-    return this.channel.clearSent();
-  }
-}
 
 let message;
 let messageNoVoice;
@@ -89,7 +40,9 @@ describe('test formatDuration', () => {
 });
 describe('test runMoveItemCommand', () => {
   const botInVCSpy = jest.spyOn(utils, 'botInVC');
+  const botInVCGuildSpy = jest.spyOn(utils, 'botInVC_Guild');
   botInVCSpy.mockReturnValue(true);
+  botInVCGuildSpy.mockReturnValue(true);
 
   // substring of what is sent on successful move
   const MOVED_SUBSTR = 'moved item to position';
@@ -97,14 +50,14 @@ describe('test runMoveItemCommand', () => {
 
   it('valid A < B', () => {
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(message, arr, 1, 2);
+    runMoveItemCommand(message.channel, arr, 1, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(true);
     expect(arr).toEqual(['A', 'C', 'B', 'D']);
   });
 
   it('valid A > B', () => {
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(message, arr, 2, 1);
+    runMoveItemCommand(message.channel, arr, 2, 1);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(true);
     expect(arr).toEqual(['A', 'C', 'B', 'D']);
     arr = ['A', 'B', 'C', 'D'];
@@ -112,22 +65,22 @@ describe('test runMoveItemCommand', () => {
 
   it('invalid - array is too small', () => {
     arr = ['A', 'B'];
-    runMoveItemCommand(message, arr, 1, 2);
+    runMoveItemCommand(message.channel, arr, 1, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual(['A', 'B']);
   });
 
   it('invalid - positions', () => {
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(message, arr, 0, 2);
+    runMoveItemCommand(message.channel, arr, 0, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
 
     message.clearSent();
-    runMoveItemCommand(message, arr, 2, 0);
+    runMoveItemCommand(message.channel, arr, 2, 0);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
 
     message.clearSent();
-    runMoveItemCommand(message, arr, -1, -1);
+    runMoveItemCommand(message.channel, arr, -1, -1);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
     // expect the arr to be the same
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
@@ -135,18 +88,18 @@ describe('test runMoveItemCommand', () => {
 
   it('invalid - empty array', () => {
     arr = [];
-    runMoveItemCommand(message, arr, 2, 3);
+    runMoveItemCommand(message.channel, arr, 2, 3);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual([]);
   });
 
   it('undefined - positions', () => {
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(message, arr, undefined, 2);
+    runMoveItemCommand(message.channel, arr, undefined, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
 
     message.clearSent();
-    runMoveItemCommand(message, arr, 2, undefined);
+    runMoveItemCommand(message.channel, arr, 2, undefined);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
 
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
@@ -155,6 +108,7 @@ describe('test runMoveItemCommand', () => {
   // bot is not in a voice channel
   it('no voice channel', () => {
     botInVCSpy.mockRestore();
+    botInVCGuildSpy.mockRestore();
     arr = ['A', 'B', 'C', 'D'];
     runMoveItemCommand(messageNoVoice, arr, 2, 3);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
@@ -164,7 +118,10 @@ describe('test runMoveItemCommand', () => {
 
 afterAll(async () => {
   destroyBot();
-  await revokeClient();
-  await new Promise((res) => setTimeout(res, 2000));
+  try {
+    await revokeClient();
+  }
+  catch (e) {}
+  await new Promise((res) => setTimeout(res, 1000));
 });
 

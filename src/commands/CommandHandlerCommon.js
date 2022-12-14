@@ -19,6 +19,8 @@ const { runPlayLinkCommand, playLinkNow } = require('./playLink');
 const { ZWSP } = require('../utils/lib/constants');
 const { runSeekCommand } = require('./seek');
 const { runRandomToQueue, shuffleQueue } = require('./playRandomKeys');
+const { removeFormattingLink } = require('../utils/utils');
+const { getSettings, setSettings } = require('../database/retrieval');
 
 
 // A common handler for user commands.
@@ -353,6 +355,29 @@ class CommandHandlerCommon {
    */
   async searchForKeyUniversal(message, server, sheetName, providedString) {
     return runUniversalSearchCommand(message, server, sheetName, providedString);
+  }
+
+  /**
+   * Sets a splash-screen for a specific keys homepage.
+   * @param server {LocalServer} The LocalServer object.
+   * @param channel The text-channel to send updates to.
+   * @param sheetName {string} The sheetName to reference.
+   * @param url {string} The image to set as a splash-screen.
+   * @returns {Promise<void>}
+   */
+  async setSplashscreen(server, channel, sheetName, url) {
+    if (!url || !url.includes('.')) {
+      channel.send(`*provide an icon URL to set a splash screen for your playlists \`${server.prefix} [url]\`*`);
+      return;
+    }
+    url = removeFormattingLink(url.trim());
+    if (url.substring(url.length - 5) === '.gifv') {
+      url = url.substring(0, url.length - 1);
+    }
+    const userSettings = await getSettings(server, sheetName);
+    userSettings.splash = url;
+    await setSettings(server, sheetName, userSettings);
+    channel.send('*splashscreen set*');
   }
 
   /**

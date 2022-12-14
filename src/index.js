@@ -2,6 +2,7 @@
 'use strict';
 require('dotenv').config();
 const token = process.env.V13_DISCORD_TOKEN.replace(/\\n/gm, '\n');
+const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
 const { exec } = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
@@ -10,8 +11,8 @@ const processStats = require('./utils/lib/ProcessStats');
 const { gsrun, deleteRows } = require('./database/api/api');
 const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
-  formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive,
-  removeFormattingLink, getSheetName, createVisualEmbed, getTitle,
+  formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive, getSheetName,
+  createVisualEmbed, getTitle,
 } = require('./utils/utils');
 const { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } = require('./commands/dj');
 const {
@@ -27,7 +28,7 @@ const { shutdown } = require('./process/shutdown');
 const { playRecommendation, sendRecommendationWrapper } = require('./commands/stream/recommendations');
 const { checkToSeeActive } = require('./process/checkToSeeActive');
 const { runQueueCommand, createVisualText } = require('./commands/generateQueue');
-const { sendListSize, getServerPrefix, getSettings, getXdb, setSettings, getXdb2 } = require('./database/retrieval');
+const { sendListSize, getServerPrefix, getXdb2 } = require('./database/retrieval');
 const { isAdmin, hasDJPermissions } = require('./utils/permissions');
 const { dmHandler, sendMessageToUser } = require('./utils/dms');
 const { runDeleteKeyCommand_P } = require('./database/delete');
@@ -429,18 +430,10 @@ async function runCommandCases(message) {
     commandHandlerCommon.keys(message, server, 'entries', null, args[1]).then();
     break;
   case 'splash':
-    if (!args[1] || !args[1].includes('.')) {
-      message.channel.send(`*provide an icon URL to set a splash screen for your playlists \`${args[0]} [url]\`*`);
-      return;
-    }
-    args[1] = removeFormattingLink(args[1].trim());
-    if (args[1].substring(args[1].length - 5) === '.gifv') {
-      args[1] = args[1].substring(0, args[1].length - 1);
-    }
-    const userSettings = await getSettings(server, getSheetName(message.member.id));
-    userSettings.splash = args[1];
-    await setSettings(server, getSheetName(message.member.id), userSettings);
-    message.channel.send('*splashscreen set*');
+    commandHandlerCommon.setSplashscreen(server, message.channel, getSheetName(message.member.id), args[1]).then();
+    break;
+  case 'gsplash':
+    commandHandlerCommon.setSplashscreen(server, message.channel, 'entries', args[1]).then();
     break;
     // .search is the search
   case 'find':
@@ -455,13 +448,10 @@ async function runCommandCases(message) {
     commandHandlerCommon.searchForKeyUniversal(message, server, 'entries', (args[1] ? args[1] : server.queue[0]?.url)).then();
     break;
   case 'size':
-    if (!args[1]) sendListSize(message, server, mgid).then();
-    break;
-  case 'msize':
-    if (!args[1]) sendListSize(message, server, getSheetName(message.member.id)).then();
+    if (args[1]) sendListSize(message, server, getSheetName(message.member.id), args[1]).then();
     break;
   case 'gsize':
-    if (!args[1]) sendListSize(message, server, 'entries').then();
+    if (args[1]) sendListSize(message, server, 'entries', args[1]).then();
     break;
   case 'ticket':
     if (args[1]) {
@@ -529,8 +519,6 @@ async function runCommandCases(message) {
     break;
   case 'rec':
   case 'recc':
-  case 'reccomend':
-  case 'reccommend':
   case 'recommend':
     args[0] = '';
     sendRecommendationWrapper(message, args, bot.users, server).then();
@@ -671,26 +659,6 @@ async function runCommandCases(message) {
   case 'resume':
     if (isShortCommand(message, statement)) return;
     commandHandlerCommon.resumeStream(message, message.member, server);
-    break;
-  case 'gzconvert':
-  case 'gz-convert':
-    // convert old data format into new data format
-    if (!args[1]) return;
-    const oldDB = await getXdb(server, args[1]);
-    const keysObj = {
-      pn: 'general',
-      ks: [],
-    };
-    let valStr = '';
-    oldDB.congratsDatabase.forEach((val, key) => {
-      keysObj.ks.push({ kn: key });
-      valStr += val + ', ';
-    });
-    if (valStr.length > 1) {
-      valStr = valStr.substring(0, valStr.length - 2);
-    }
-    console.log('K: ', JSON.stringify(keysObj));
-    console.log('V: ', valStr);
     break;
   case 'ts':
   case 'time':
@@ -1006,7 +974,7 @@ async function runCommandCases(message) {
     new EmbedBuilderLocal()
       .setTitle('db vibe - statistics')
       .setDescription(`version: ${version} (${buildNo.getBuildNo()})` +
-          `\nprocess: ${process.pid.toString()}` +
+          `\nprocess: ${process.pid.toString()} [${hardwareTag}]` +
           `\nservers: ${bot.guilds.cache.size}` +
           `\nuptime: ${formatDuration(bot.uptime)}` +
           `\nactive time: ${getTimeActive()}` +
@@ -1135,17 +1103,9 @@ bot.on('guildCreate', (guild) => {
 bot.once('ready', () => {
   parentThread('STARTUP', {}, []);
   // bot starts up as inactive, if no response from the channel then activates itself
-  if (process.pid === 4) {
-    if (processStats.devMode) {
-      logError('`NOTICE: production process started up in devMode` (switching off devMode..)');
-      processStats.devMode = false;
-    }
-    buildNo.decrementBuildNo();
-  }
   // noinspection JSUnresolvedFunction
   processStats.getServer(CH['check-in-guild']);
   if (processStats.devMode) {
-    console.log('-devmode enabled-');
     processStats.setProcessActive();
     if (startupTest) {
       const index = process.argv.indexOf('--test');
@@ -1318,7 +1278,7 @@ async function devProcessCommands(message) {
       // the process message: [sidelined / active] [process number] [version number]
       const procMsg = () => {
         return (processStats.isInactive ? 'sidelined: ' : (processStats.devMode ? 'active: ' : '**active: **')) +
-            process.pid + ' (' + version + ')' + dm;
+            process.pid + ` *[${hardwareTag}]* (${version})` + dm;
       };
       message.channel.send(procMsg()).then((sentMsg) => {
         if (processStats.devMode) {
@@ -1398,7 +1358,7 @@ async function devProcessCommands(message) {
           }
           else if (reaction.emoji.name === reactions.O_DIAMOND) {
             if (processStats.devMode) {
-              processStats.devMode = false;
+              processStats.setDevMode(false);
               setProcessInactiveAndMonitor();
             }
             if (sentMsg.deletable) updateMessage();
@@ -1442,13 +1402,13 @@ async function devProcessCommands(message) {
           ' (' + 'dev mode: ' + processStats.devMode + ')');
     }
     if (processStats.devMode && zargs[1] === process.pid.toString()) {
-      processStats.devMode = false;
+      processStats.setDevMode(false);
       setProcessInactiveAndMonitor();
       processStats.servers.delete(message.guild.id);
       return message.channel.send(`*devmode is off ${process.pid}*`);
     }
     else if (zargs[1] === process.pid.toString()) {
-      processStats.devMode = true;
+      processStats.setDevMode(true);
       processStats.servers.delete(message.guild.id);
       if (processStats.checkActiveInterval) {
         clearInterval(processStats.checkActiveInterval);
@@ -1545,10 +1505,10 @@ bot.on('messageCreate', (message) => {
 bot.on('voiceStateUpdate', (oldState, newState) => {
   const server = processStats.getServer(oldState.guild.id.toString());
   if (processStats.isInactive) {
-    try {
+    if (server.collector) {
       server.collector.stop();
+      server.collector = null;
     }
-    catch (e) {}
     return;
   }
   updateVoiceState(oldState, newState, server).then();
@@ -1565,7 +1525,10 @@ async function updateVoiceState(oldState, newState, server) {
   // if the bot is leaving
   if (oldState.member.id === botID) {
     // if the bot joined then ignore
-    if (newState.channel?.members.get(botID)) return;
+    if (newState.channel?.members.get(botID)) {
+      server.audio.voiceChannelId = newState.channelId;
+      return;
+    }
     // clear timers first
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
@@ -1573,8 +1536,7 @@ async function updateVoiceState(oldState, newState, server) {
     }
     clearDJTimer(server);
     // disconnect and delete the voice adapter
-    const voiceConnection = getVoiceConnection(newState.guild.id);
-    if (voiceConnection) processStats.disconnectConnection(server, voiceConnection);
+    processStats.disconnectConnection(server);
     bot.voice.adapters.get(oldState.guild.id)?.destroy();
     processStats.removeActiveStream(oldState.guild.id);
     await sessionEndEmbed(server, server.queue[0] || server.queueHistory.slice(-1)[0]);
@@ -1590,20 +1552,12 @@ async function updateVoiceState(oldState, newState, server) {
     server.autoplay = false;
     server.userKeys.clear();
     server.queueHistory.length = 0;
-    if (server.currentEmbed?.reactions) {
-      try {
-        server.collector?.stop();
-      }
-      catch (e) {}
-    }
-    server.currentEmbed = null;
     if (server.followUpMessage) {
       server.followUpMessage.delete();
       server.followUpMessage = undefined;
     }
     if (bot.voice.adapters.size < 1) {
       whatspMap.clear();
-      server.audio.reset();
     }
   }
   else if (botInVC(newState)) {
@@ -1618,8 +1572,7 @@ async function updateVoiceState(oldState, newState, server) {
       server.leaveVCTimeout = setTimeout(() => {
         server.leaveVCTimeout = null;
         if (oldState.channel.members.filter((x) => !x.user.bot).size < 1) {
-          const voiceConnection = getVoiceConnection(newState.guild.id);
-          if (voiceConnection) processStats.disconnectConnection(server, voiceConnection);
+          processStats.disconnectConnection(server);
         }
       }, leaveVCInt);
     }
@@ -1658,7 +1611,6 @@ process
  */
 function uncaughtExceptionAction(e) {
   console.log('uncaughtException: ', e);
-  console.log('error message: ', e.message);
   if (e.message === 'Unknown Message') return;
   logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 }

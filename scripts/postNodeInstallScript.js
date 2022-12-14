@@ -10,12 +10,19 @@ function replaceContents(file, replacement, cb) {
   });
 }
 
-// replace contents of file 'b' with contents of 'a'
-// print 'done' when done
+
 replaceContents('./node_modules/ytdl-core/lib/sig.js', './scripts/ytdlCoreSig.txt', err => {
   if (err) {
     // handle errors here
     throw err;
   }
-  console.log('done');
+  console.log('[loaded updated ytdl-core scripts]');
+});
+
+replaceContents('./node_modules/spotify-url-info/src/index.js', './scripts/spotify-url-info-index.txt', err => {
+  if (err) {
+    // handle errors here
+    throw err;
+  }
+  console.log('[loaded updated spotify-url-info scripts]');
 });

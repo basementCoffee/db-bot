@@ -1,28 +1,8 @@
 /* eslint-disable camelcase */
-const { botInVC, isPersonalSheet } = require('../utils/utils');
+const { botInVC } = require('../utils/utils');
 const { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } = require('./api/api');
-const processStats = require('../process/checkToSeeActive');
+const processStats = require('../utils/lib/ProcessStats');
 const { PREFIX_SN } = require('../utils/lib/constants');
-
-// eslint-disable-next-line valid-jsdoc
-/**
- * [DEPRECATED] Get the keys and links from the database. Uses local storage if available.
- * If there is no current embed then also resorts to an API fetch.
- * @param server {LocalServer} The server object.
- * @param sheetName {string} The name of the sheet to get info from.
- * @param save {Boolean=} Whether to save the fetch within the server.
- * @returns {Promise<{congratsDatabase: Map<>, referenceDatabase: Map<>, line: Array<>, dsInt: int} | undefined>}
- */
-async function getXdb(server, sheetName, save) {
-  console.log('CALLED DEPRECIATED XDB FUNC');
-  if (!save) return gsrun('A', 'B', sheetName);
-  let xdb = server.userKeys.get(`${sheetName}`);
-  if (!xdb) {
-    xdb = await gsrun('A', 'B', sheetName);
-    server.userKeys.set(`${sheetName}`, xdb);
-  }
-  return xdb;
-}
 
 /**
  * Gets the user keys from the database.
@@ -67,16 +47,20 @@ async function setSettings(server, sheetName, settingsObj) {
 }
 
 /**
- * Sends the list size of the sheet provided.
+ * Sends the list size of the provided playlist.
  * @param message The message that triggered the bot.
  * @param server {LocalServer} The server object.
  * @param sheetName {string} The sheet to reference.
+ * @param playlistName {string} The name of the playlist to get the size of.
  * @returns {Promise<void>}
  */
-async function sendListSize(message, server, sheetName) {
-  const xdb = await getXdb(server, sheetName, botInVC(message));
-  const str = `${(isPersonalSheet(sheetName) ? 'Personal' : 'Server')} list size: ${(xdb?.congratsDatabase.size)}`;
-  message.channel.send(str);
+async function sendListSize(message, server, sheetName, playlistName) {
+  const xdb = await getXdb2(server, sheetName, botInVC(message));
+  const playlist = xdb.playlists.get(playlistName.toUpperCase());
+  if (playlist) {
+    const str = `**${playlistName}** playlist size: ${(playlist.size)}`;
+    message.channel.send(str);
+  }
 }
 
 /**
@@ -109,4 +93,4 @@ async function getServerPrefix(server, mgid) {
   }
 }
 
-module.exports = { getXdb, sendListSize, getServerPrefix, getXdb2, getSettings, setSettings };
+module.exports = { sendListSize, getServerPrefix, getXdb2, getSettings, setSettings };

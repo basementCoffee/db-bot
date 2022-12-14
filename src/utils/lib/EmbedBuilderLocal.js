@@ -26,7 +26,6 @@ class EmbedBuilderLocal {
   }
 
   setSplash(value) {
-    this.splash = value;
     this._embed.setSplash(value);
     return this;
   }
@@ -42,7 +41,12 @@ class EmbedBuilderLocal {
   }
 
   setFooter(value) {
-    this._embed.setFooter(value);
+    if (typeof value === 'string') {
+      this._embed.setFooter({ text: value });
+    }
+    else {
+      this._embed.setFooter(value);
+    }
     return this;
   }
 
@@ -74,23 +78,31 @@ class EmbedBuilderLocal {
     return this._embed.data;
   }
 
+  // eslint-disable-next-line valid-jsdoc
   /**
    * Returns an EmbedBuilder.
-   * @return {*}
+   * @return {import('discord.js').EmbedBuilder} The EmbedBuilder.
    */
   build() {
     return this._embed;
   }
 
+  // eslint-disable-next-line valid-jsdoc
   /**
    * Sends the embed to the channel.
-   * @param channel The text channel to send the embed to.
-   * @return {Promise<*>}
+   * @param channel {import('discord.js').TextChannel} The text channel to send the embed to.
+   * @return {import('discord.js').Message} The new message.
    */
   async send(channel) {
     return channel.send({ embeds: [this.build()] });
   }
 
+  // eslint-disable-next-line valid-jsdoc
+  /**
+   * Sends the embed in place of an existing message.
+   * @param message {import('discord.js').Message} The message to edit.
+   * @return {import('discord.js').Message} The edited message.
+   */
   async edit(message) {
     return message.edit({ embeds: [this.build()] });
   }

@@ -13,28 +13,33 @@ async function joinVoiceChannelSafe(message, server) {
   const connection = server.audio.connection;
   const vc = message.member?.voice?.channel;
   if (vc && (!botInVC(message) || !connection || (server.audio.voiceChannelId !== vc.id))) {
+    if (server.currentEmbed) {
+      if (server.currentEmbed.channel.id !== message.channel.id) {
+        await server.currentEmbed.channel.send('\`session ended: requested in another channel\`');
+      }
+      await sessionEndEmbed(server, server.queue[0] || server.queueHistory[server.queueHistory.length - 1]);
+    }
     if (connection) {
       pauseComputation(server, connection.channel);
       server.audio.reset();
+      await new Promise((res) => setTimeout(res, 500));
     }
     if (server.leaveVCTimeout) {
       clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = null;
     }
-    if (server.currentEmbed) {
-      await sessionEndEmbed(server, server.queue[0] || server.queueHistory[server.queueHistory.length - 1]);
-      await server.collector?.stop();
-    }
     resetSession(server);
     try {
       server.audio.joinVoiceChannel(message.guild, vc.id);
-      server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server, server.connection),
-        LEAVE_VC_TIMEOUT);
+      server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server), LEAVE_VC_TIMEOUT);
       return true;
     }
     catch (e) {
       catchVCJoinError(e, message.channel);
     }
+  }
+  else {
+    message.channel.send('*in voice channel*');
   }
   return false;
 }

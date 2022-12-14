@@ -10,7 +10,6 @@ function serializeData(keysMap, playlistName) {
   if (!keysMap) keysMap = new Map();
   if (!playlistName) throw new Error('expected playlist name');
   let valuesString = '';
-
   const tempObj = {
     pn: playlistName,
     ks: [],
@@ -42,7 +41,6 @@ module.exports = {
    * @returns {Promise<void>}
    */
   serializeAndUpdate: async (server, sheetName, playlistName, xdb, removePlaylist, newPlaylist) => {
-    let serializedData;
     // get the row number of the item to add/remove
     const playlistArrayUpper = xdb.playlistArray.map((item) => item.toUpperCase());
     let row = playlistArrayUpper.indexOf(playlistName.toUpperCase());
@@ -52,7 +50,7 @@ module.exports = {
       await deleteRows(sheetName, row + 2);
     }
     else {
-      serializedData = serializeData(xdb.playlists.get(playlistName.toUpperCase()), newPlaylist || playlistName);
+      const serializedData = serializeData(xdb.playlists.get(playlistName.toUpperCase()), newPlaylist || playlistName);
       await gsUpdateOverwrite([serializedData.keysString, serializedData.valuesString],
         sheetName, 'E', row + 2, 'F', row + 2);
     }
