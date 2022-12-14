@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 const { botInVC } = require('../utils/utils');
 const { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } = require('./api/api');
-const processStats = require('../process/checkToSeeActive');
+const processStats = require('../utils/lib/ProcessStats');
 const { PREFIX_SN } = require('../utils/lib/constants');
 
 /**
