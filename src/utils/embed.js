@@ -5,6 +5,20 @@ const ytdl = require('ytdl-core-discord');
 const { formatDuration, getQueueText, convertYTFormatToMS, logError } = require('./utils');
 const { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } = require('./lib/constants');
 const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
+const { isNumber } = require('node-os-utils/util');
+
+function getSpotifyIcon(infos) {
+  let icon;
+  if (infos.coverArt?.sources) {
+    icon = infos.coverArt.sources[infos.coverArt.sources.length - 1]?.url;
+  }
+  if (!icon) {
+    if (infos.album?.images) {
+      icon = infos.album.images[infos.album.images.length - 1]?.url;
+    }
+  }
+  return icon || 'https://www.teahub.io/photos/full/111-1110552_spotify-hd.png';
+}
 
 /**
  * Return an object containing the embed and time based on the data provided.
@@ -34,10 +48,7 @@ async function createEmbed(url, infos) {
         value: formatDuration(infos.duration || infos.duration_ms),
       },
       )
-      .setThumbnail(
-        infos.coverArt?.sources[infos.coverArt.sources.length - 1]?.url ||
-        infos.album?.images[infos.album.images.length - 1]?.url,
-      );
+      .setThumbnail(getSpotifyIcon(infos));
     timeMS = parseInt(infos.duration || infos.duration_ms);
   }
   else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
@@ -98,7 +109,9 @@ async function createEmbed(url, infos) {
         duration = formatDuration(timeMS || 0);
       }
       else {
-        timeMS = videoDetails.durationSec * 1000 || convertYTFormatToMS(videoDetails.duration.split(':'));
+        timeMS = videoDetails.durationSec * 1000 || (() =>
+          isNumber(videoDetails.duration) ? videoDetails.duration : false
+        )() || convertYTFormatToMS(videoDetails.duration.split(':'));
         duration = formatDuration(timeMS);
       }
       if (duration === 'NaNm NaNs') {
