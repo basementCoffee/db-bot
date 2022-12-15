@@ -20,6 +20,11 @@ spotifyApi.clientCredentialsGrant().then((data) => {
   spotifyApi.setAccessToken(data.body.access_token);
 });
 
+/**
+ * Gets the cover art of a spotify track url.
+ * @param url {string} The url of the track.
+ * @returns {Promise<string|null>} The raw coverArt link or null.
+ */
 async function getCoverArt(url) {
   // Extract the Spotify track or album ID from the URL
   const id = url.split('/').pop();
@@ -28,32 +33,39 @@ async function getCoverArt(url) {
     // Use the Spotify Web API to get information about the track or album
     data = await spotifyApi.getTrack(id);
     // Return the cover art image URL from the track data
-    if (data) return data.body.album.images[0].url;
+    if (data) {
+      return data.body.album.images.length ? data.body.album.images[data.body.album.images.length - 1].url : null;
+    }
   }
   catch (e) {
-    processStats.debug(e);
+    processStats.debug(`${getCoverArt.name} error1: `, e);
     try {
       // If the track was not found, try getting the cover art for an album
       data = await spotifyApi.getAlbum(id);
-      if (data) return data.body.images[0].url;
+      if (data) {
+        return data.body.images.length ? data.body.images[data.body.images.length - 1].url : null;
+      }
     }
     catch (e2) {
-      processStats.debug(e2);
-      return null;
+      processStats.debug(`${getCoverArt.name} error2: `, e2);
     }
   }
+  return null;
 }
 
-
+/**
+ * Gets a thumbnail to display for the spotify embed player.
+ * @param infos The track metadata.
+ * @param url The url of the track to get the coverArt for.
+ * @returns {Promise<string>} Either the track's coverArt or a default thumbnail icon.
+ */
 async function getSpotifyIcon(infos, url) {
   let icon;
-  if (infos.coverArt?.sources) {
+  if (infos.coverArt?.sources && infos.coverArt.sources.length) {
     icon = infos.coverArt.sources[infos.coverArt.sources.length - 1]?.url;
   }
-  if (!icon) {
-    if (infos.album?.images) {
-      icon = infos.album.images[infos.album.images.length - 1]?.url;
-    }
+  if (!icon && infos.album?.images && infos.album.images.length) {
+    icon = infos.album.images[infos.album.images.length - 1]?.url;
   }
   return icon || (await getCoverArt(url)) || DB_SPOTIFY_EMBED_ICON;
 }
