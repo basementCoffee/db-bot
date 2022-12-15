@@ -7,8 +7,45 @@ const { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } = require('.
 const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
 const { isNumber } = require('node-os-utils/util');
 const DB_SPOTIFY_EMBED_ICON = 'https://github.com/Reply2Zain/db-bot/blob/master/assets/dbBotspotifyIcon.jpg?raw=true';
+const SpotifyWebApi = require('spotify-web-api-node');
+const processStats = require('./lib/ProcessStats');
 
-function getSpotifyIcon(infos) {
+// Set up the Spotify Web API client with your client ID and secret
+const spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_SECRET_CLIENT_ID,
+});
+
+spotifyApi.clientCredentialsGrant().then((data) => {
+  spotifyApi.setAccessToken(data.body.access_token);
+});
+
+async function getCoverArt(url) {
+  // Extract the Spotify track or album ID from the URL
+  const id = url.split('/').pop();
+  let data;
+  try {
+    // Use the Spotify Web API to get information about the track or album
+    data = await spotifyApi.getTrack(id);
+    // Return the cover art image URL from the track data
+    if (data) return data.body.album.images[0].url;
+  }
+  catch (e) {
+    processStats.debug(e);
+    try {
+      // If the track was not found, try getting the cover art for an album
+      data = await spotifyApi.getAlbum(id);
+      if (data) return data.body.images[0].url;
+    }
+    catch (e2) {
+      processStats.debug(e2);
+      return null;
+    }
+  }
+}
+
+
+async function getSpotifyIcon(infos, url) {
   let icon;
   if (infos.coverArt?.sources) {
     icon = infos.coverArt.sources[infos.coverArt.sources.length - 1]?.url;
@@ -18,7 +55,7 @@ function getSpotifyIcon(infos) {
       icon = infos.album.images[infos.album.images.length - 1]?.url;
     }
   }
-  return icon || DB_SPOTIFY_EMBED_ICON;
+  return icon || (await getCoverArt(url)) || DB_SPOTIFY_EMBED_ICON;
 }
 
 /**
@@ -49,7 +86,7 @@ async function createEmbed(url, infos) {
         value: formatDuration(infos.duration || infos.duration_ms),
       },
       )
-      .setThumbnail(getSpotifyIcon(infos));
+      .setThumbnail(await getSpotifyIcon(infos, url));
     timeMS = parseInt(infos.duration || infos.duration_ms);
   }
   else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
