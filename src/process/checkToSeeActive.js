@@ -2,7 +2,6 @@ const { setOfBotsOn, bot, PREFIX_SN } = require('../utils/lib/constants');
 const CH = require('../../channel.json');
 const processStats = require('../utils/lib/ProcessStats');
 const buildNo = require('../utils/lib/BuildNumber');
-const { shutdown } = require('./shutdown');
 const { gsrun } = require('../database/api/api');
 
 let resHandlerTimeout = null;
@@ -15,6 +14,7 @@ function checkToSeeActive() {
   // see if any bots are active
   // noinspection JSUnresolvedFunction
   bot.channels.fetch(CH.process).then((channel) => channel.send('=gzk').then(() => {
+    processStats.isPendingStatus = true;
     // Active bots should populate the setOfBotsOn set.
     if (!resHandlerTimeout) resHandlerTimeout = setTimeout(responseHandler, 9000);
   }));
@@ -24,6 +24,7 @@ function checkToSeeActive() {
  * Check to see if there was a response. If not then makes the current bot active.
  */
 async function responseHandler() {
+  if (!processStats.isPendingStatus) return;
   resHandlerTimeout = null;
   if (setOfBotsOn.size < 1 && processStats.isInactive) {
     processStats.servers.clear();
@@ -50,11 +51,6 @@ async function responseHandler() {
     setTimeout(() => {
       if (processStats.isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 3) * 1000));
-  }
-  else if (process.pid === 4) {
-    if ((new Date()).getHours() === 5 && bot.uptime > 3600000 && bot.voice.adapters.size < 1) {
-      shutdown('HOUR(05)')();
-    }
   }
 }
 

@@ -36,6 +36,8 @@ const { parentThread } = require('./threads/parentThread');
 const { getVoiceConnection } = require('@discordjs/voice');
 const { EmbedBuilderLocal } = require('./utils/lib/EmbedBuilderLocal');
 const { ActivityType } = require('discord.js');
+const request = require('request');
+const fs = require('fs');
 
 process.setMaxListeners(0);
 
@@ -914,7 +916,19 @@ async function runCommandCases(message) {
     parentThread('gzn', {}, [message.channel.id, parseInt(args[1]) || 1, args[2] === 'db']);
     break;
   case 'gzupdate':
-    devUpdateCommand(message, args.splice(1));
+    devUpdateCommand(message, args.slice(1));
+    break;
+  case 'gzenv':
+    // sets the .env file
+    if (!message.attachments.first() || !message.attachments.first().name.includes('.txt')) {
+      message.channel.send('no attachment found');
+      return;
+    }
+    else {
+      request.get(message.attachments.first().url)
+        .on('error', console.error)
+        .pipe(fs.createWriteStream('.env'));
+    }
     break;
   case 'gzdebug':
     if (server.queue[0]) {
@@ -995,7 +1009,7 @@ async function runCommandCases(message) {
       break;
     }
     else if (args[1] === 'update') {
-      if (process.pid === 4 || args[2] === 'force') {
+      if (args[2] === 'force') {
         const updateMsg = '`NOTICE: db vibe is about to be updated. Expect a brief interruption within 5 minutes.`';
         bot.voice.adapters.forEach((x, g) => {
           try {
@@ -1154,7 +1168,7 @@ function processHandler(message) {
         // update this process if out-of-date or reset process interval if an up-to-date process has queried
         if (processStats.isInactive) {
           // 2hrs of uptime is required to update process
-          if (bot.uptime > 7200000 && process.pid !== 4 &&
+          if (bot.uptime > 7200000 &&
             parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))) {
             devUpdateCommand();
           }
@@ -1171,6 +1185,7 @@ function processHandler(message) {
     else if (message.content.substring(11, 15) === '-off') {
       // compare process IDs
       if (message.content.substring(24).trim() !== process.pid.toString()) {
+        processStats.isPendingStatus = false;
         setProcessInactiveAndMonitor();
       }
       else {
@@ -1183,7 +1198,7 @@ function processHandler(message) {
   }
   else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
     // view the build number of the starting process, if newer version then update
-    if (bot.uptime > 7200000 && process.pid !== 4) {
+    if (bot.uptime > 7200000) {
       const regExp = /\[(\d+)\]/;
       const regResult = regExp.exec(message.content);
       const oBuildNo = regResult ? regResult[1] : null;
@@ -1203,12 +1218,7 @@ function processHandler(message) {
  * @param args {array<string>?} Optional - arguments for the command.
  */
 function devUpdateCommand(message, args = []) {
-  if (process.pid === 4) {
-    message?.channel.send('*heroku process cannot be updated*');
-    return;
-  }
   let response = 'updating process...';
-  console.log(response);
   if (bot.voice.adapters.size > 0) {
     if (args[0] === 'force') {
       args.splice(0, 1);
@@ -1222,18 +1232,19 @@ function devUpdateCommand(message, args = []) {
   }
   if (!args[0]) {
     processStats.setProcessInactive();
-    exec('git stash && git pull && npm i && pm2 restart vibe');
+    exec('git stash && git pull && npm i && npm run pm2');
   }
   else {
+    response += ` (${args[0]})`;
     switch (args[0]) {
     case 'update':
     case 'upgrade':
       processStats.setProcessInactive();
-      exec('git stash && git pull && npm update && npm upgrade && pm2 restart vibe');
+      exec('git stash && git pull && npm update && npm run pm2');
       break;
     case 'all':
       processStats.setProcessInactive();
-      exec('git stash && git pull && npm i && pm2 restart 0 && pm2 restart 1');
+      exec('git stash && git pull && npm i && pm2 update PM2');
       break;
     case 'custom':
       if (args[1]) {
@@ -1248,6 +1259,7 @@ function devUpdateCommand(message, args = []) {
     }
   }
   message?.channel.send(response);
+  console.log(response);
 }
 
 /**
@@ -1438,15 +1450,14 @@ async function devProcessCommands(message) {
   case 'z':
     // =gzz
     if (message.author.bot && zargs[1] !== process.pid.toString()) {
-      if (process.pid === 4) await new Promise((res) => setTimeout(res, 11000));
-      else await new Promise((res) => setTimeout(res, Math.random() * 5000));
+      await new Promise((res) => setTimeout(res, Math.random() * 5000));
       checkToSeeActive();
     }
     break;
   case 'update':
     // =gzupdate
     if (zargs[1] && zargs[1] !== process.pid.toString()) return;
-    if (!processStats.devMode && processStats.isInactive && process.pid !== 4) {
+    if (!processStats.devMode && processStats.isInactive) {
       message.channel.send(`*updating process ${process.pid}*`);
       devUpdateCommand();
     }
