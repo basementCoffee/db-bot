@@ -8,7 +8,7 @@ const WAIT_TIME = 12000;
 // the maximum number of PM2 restarts allowed
 const MAX_RESTARTS = 5;
 // The last supported version that this project can be safely rolled back to
-const MIN_SUPPORTED_VERSION = '8.4.0';
+const MIN_SUPPORTED_VERSION = '8.4.2';
 
 pm2.connect(async function(err) {
   if (err) {
