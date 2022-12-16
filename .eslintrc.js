@@ -59,7 +59,7 @@ module.exports = {
         ignoreReadBeforeAssign: true,
       },
     ],
-    'quotes': ['error', 'single'],
+    'quotes': ['warn', 'single'],
     'semi': ['error', 'always'],
     'space-before-blocks': 'error',
     'space-before-function-paren': ['error', {
