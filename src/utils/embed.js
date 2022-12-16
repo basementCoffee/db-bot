@@ -18,6 +18,10 @@ const spotifyApi = new SpotifyWebApi({
 
 spotifyApi.clientCredentialsGrant().then((data) => {
   spotifyApi.setAccessToken(data.body.access_token);
+}).catch((e) => {
+  const errMsg = `[ERROR][id: ${process.pid.toString()}] Missing spotify token credentials.\n${e.stack}`;
+  console.log(errMsg);
+  if (!processStats.devMode) logError(errMsg);
 });
 
 /**
@@ -83,6 +87,7 @@ async function createEmbed(url, infos) {
     if (!infos) infos = await getData(url);
     let artists = '';
     infos.artists.forEach((x) => artists ? artists += ', ' + x.name : artists += x.name);
+    infos.thumbnailUrl = infos.thumbnailUrl ?? await getSpotifyIcon(infos, url);
     embed = new EmbedBuilderLocal()
       .setTitle(`${infos.name}`)
       .setURL(infos.external_urls.spotify)
@@ -98,7 +103,7 @@ async function createEmbed(url, infos) {
         value: formatDuration(infos.duration || infos.duration_ms),
       },
       )
-      .setThumbnail(await getSpotifyIcon(infos, url));
+      .setThumbnail(infos.thumbnailUrl);
     timeMS = parseInt(infos.duration || infos.duration_ms);
   }
   else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
