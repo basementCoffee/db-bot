@@ -1219,7 +1219,7 @@ function processHandler(message) {
  */
 function devUpdateCommand(message, args = []) {
   let response = 'updating process...';
-  if (args[0].toLowerCase() === 'force') {
+  if (args[0]?.toLowerCase() === 'force') {
     if (bot.voice.adapters.size > 0) {
       message?.channel.send(
         '***people are using the bot:*** *to force an update type \`force\` immediately after the command*',
