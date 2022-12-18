@@ -31,7 +31,7 @@ get_commit_ids() {
 }
 
 # Example usage:
-substring=$1 || release
+substring=${1:-release}
 commit_ids=$(get_commit_ids "$substring")
 #echo "Commit IDs that contain \"$substring\" in the commit message:"
 echo "$commit_ids"
