@@ -1512,7 +1512,7 @@ async function devProcessCommands(message) {
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
-  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id) || message.author.id === botID) {
+  if ((message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id)) || message.author.id === botID) {
     void devProcessCommands(message);
     if (message.channel.id === CH.process) {
       if (!processStats.devMode) {

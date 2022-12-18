@@ -16,7 +16,7 @@ function checkToSeeActive() {
   bot.channels.fetch(CH.process).then((channel) => channel.send('=gzk').then(() => {
     processStats.isPendingStatus = true;
     // Active bots should populate the setOfBotsOn set.
-    if (!resHandlerTimeout) resHandlerTimeout = setTimeout(responseHandler, 9000);
+    if (!resHandlerTimeout) resHandlerTimeout = setTimeout(responseHandler, 11000);
   }));
 }
 
