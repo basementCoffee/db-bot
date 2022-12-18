@@ -387,7 +387,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     const nextQueueItem = server.queue[1];
     // the next link to play, formatted
     const whatToPlay2Formatted = linkFormatter(nextQueueItem.url, SPOTIFY_BASE_LINK);
-    await getYTUrlFromSpotifyUrl(nextQueueItem, whatToPlay2Formatted);
+    getYTUrlFromSpotifyUrl(nextQueueItem, whatToPlay2Formatted).catch((er) => processStats.debug(er));
   }
 }
 
