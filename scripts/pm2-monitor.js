@@ -14,14 +14,15 @@ let minSupportedVersion = '8.4.3';
 const FILE_PATH_MIN_VERSION = './.min_version_vibe.txt';
 
 fs.readFile(FILE_PATH_MIN_VERSION, (err, contents) => {
-  console.log(contents.toString());
-  const minVersionInFile = contents.toString();
-  if (minVersionInFile && minVersionInFile.includes('.')) {
-    const diff = compareTwoVersions(minSupportedVersion, minVersionInFile);
-    if (diff <= 0) {
-      // if the local variable has a smaller/same version
-      minSupportedVersion = minVersionInFile;
-      return;
+  if (contents) {
+    const minVersionInFile = contents.toString();
+    if (minVersionInFile && minVersionInFile.includes('.')) {
+      const diff = compareTwoVersions(minSupportedVersion, minVersionInFile);
+      if (diff <= 0) {
+        // if the local variable has a smaller/same version
+        minSupportedVersion = minVersionInFile;
+        return;
+      }
     }
   }
   // if the local variable has a larger version
