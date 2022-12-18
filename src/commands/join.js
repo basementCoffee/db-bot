@@ -1,7 +1,8 @@
 const { LEAVE_VC_TIMEOUT } = require('../utils/lib/constants');
 const { sessionEndEmbed } = require('../utils/embed');
-const { resetSession, pauseComputation, botInVC, catchVCJoinError } = require('../utils/utils');
+const { resetSession, botInVC, catchVCJoinError } = require('../utils/utils');
 const processStats = require('../utils/lib/ProcessStats');
+const { pauseComputation } = require('./stream/utils');
 /**
  * Joins the voice channel of the message member (if applicable).
  * If there is an error upon join attempt then it caught and forwarded to the user.

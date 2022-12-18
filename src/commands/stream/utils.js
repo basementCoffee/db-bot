@@ -1,5 +1,5 @@
 const { botID } = require('../../utils/lib/constants');
-const { pauseComputation, playComputation, botInVC } = require('../../utils/utils');
+const { botInVC } = require('../../utils/utils');
 const { createEmbed, updateActiveEmbed } = require('../../utils/embed');
 const processStats = require('../../utils/lib/ProcessStats');
 
@@ -165,6 +165,35 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   }
 }
 
+/**
+ * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
+ * @param server {LocalServer} The server metadata.
+ * @param force {boolean=} Ignores the status of the dispatcher.
+ */
+function pauseComputation(server, force = false) {
+  // placed 'removeActiveStream' before checks for resiliency
+  processStats.removeActiveStream(server.guildId);
+  if (!server.audio.player) return;
+  if (server.audio.status || force) {
+    server.audio.player.pause();
+    server.audio.status = false;
+  }
+}
+
+/**
+ * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
+ * @param server {LocalServer} The server metadata.
+ * @param force {boolean=} Ignores the status of the dispatcher.
+ */
+function playComputation(server, force) {
+  if (!server.audio.player) return;
+  if (!server.audio.status || force) {
+    server.audio.player.unpause();
+    server.audio.status = true;
+    processStats.addActiveStream(server.guildId);
+  }
+}
+
 
 /**
  * Performs changes when there is (or should be) no now-playing during an active session.
@@ -181,5 +210,6 @@ function endAudioDuringSession(server) {
 }
 
 module.exports = {
-  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, endAudioDuringSession,
+  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, endAudioDuringSession, pauseComputation,
+  playComputation,
 };

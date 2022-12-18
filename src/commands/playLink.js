@@ -1,7 +1,7 @@
 const {
-  botInVC, setSeamless, removeFormattingLink, verifyPlaylist, verifyUrl, pushQueue,
-  adjustQueueForPlayNow, unshiftQueue,
+  botInVC, setSeamless, verifyPlaylist, verifyUrl, pushQueue, adjustQueueForPlayNow, unshiftQueue,
 } = require('../utils/utils');
+const { removeFormattingLink } = require('../utils/formatUtils');
 const { addLinkToQueue } = require('../utils/playlist');
 const { playLinkToVC } = require('./stream/stream');
 const { updateActiveEmbed } = require('../utils/embed');

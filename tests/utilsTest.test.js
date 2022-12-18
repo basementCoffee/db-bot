@@ -1,4 +1,4 @@
-const { formatDuration } = require('../src/utils/utils');
+const { formatDuration } = require('../src/utils/formatUtils');
 const { bot } = require('../src/utils/lib/constants');
 const { runMoveItemCommand } = require('../src/commands/move');
 const utils = require('../src/utils/utils');

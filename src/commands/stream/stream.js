@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 const {
-  botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
-  playComputation, logError, formatDuration, createQueueItem, getQueueText, getSheetName, resetSession,
+  botInVC, catchVCJoinError, getLinkType, verifyUrl, endStream, logError, createQueueItem, getQueueText, getSheetName,
+  resetSession,
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
@@ -21,7 +21,10 @@ const processStats = require('../../utils/lib/ProcessStats');
 const { shutdown } = require('../../process/shutdown');
 const { reactions } = require('../../utils/lib/reactions');
 const { getXdb2 } = require('../../database/retrieval');
-const { stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil } = require('./utils');
+const { stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil, pauseComputation,
+  playComputation,
+} = require('./utils');
+const { linkFormatter, convertYTFormatToMS, formatDuration } = require('../../utils/formatUtils');
 const { runKeysCommand } = require('../keys');
 const {
   createAudioResource,
@@ -127,7 +130,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
       message.channel.send(urlRes.errorMsg);
       whatspMap[vc.id] = '';
-      skipLink(message, vc, false, server, true);
+      skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
       return;
     }
   }
@@ -169,7 +172,9 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     else if (queueItem.type === StreamType.TWITCH) {
       let twitchEncoded;
       try {
-        twitchEncoded = (await twitch.getStream(whatToPlay.substr(whatToPlay.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, '')));
+        twitchEncoded = (await twitch.getStream(
+          whatToPlay.substring(whatToPlay.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1)
+            .replace(/\//g, '')));
         if (twitchEncoded.length > 0) {
           twitchEncoded = twitchEncoded[twitchEncoded.length - 1];
         }
@@ -255,14 +260,16 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       queueItem = await sendLinkAsEmbed(message, queueItem, vc, server, false) || queueItem;
     }
     server.skipTimes = 0;
-    server.audio.player.on('error', async (e) => {
+    server.audio.player.on('error', async (error) => {
       if (resource.playbackDuration < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise((res) => setTimeout(res, 500));
-        if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
+        if (botInVC(message)) {
+          playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
+        }
         return;
       }
-      skipLink(message, vc, false, server, false);
+      skipLink(message, vc, false, server, false).catch((er) => processStats.debug(er));
       // noinspection JSUnresolvedFunction
       logError(
         {
@@ -270,7 +277,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)],
         },
       );
-      console.log('dispatcher error: ', e);
+      console.log('dispatcher error: ', error);
     });
     // similar to on 'finish'
     server.audio.player.once('idle', () => {
@@ -306,16 +313,20 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   catch (e) {
     const errorMsg = e.toString().substring(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!retries) {playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);}
+      if (!retries) {
+        playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
+      }
       else {
         server.skipTimes++;
         if (server.skipTimes < 4) {
-          if (server.skipTimes === 2) checkStatusOfYtdl(server, message);
+          if (server.skipTimes === 2) {
+            checkStatusOfYtdl(server, message).catch((er) => processStats.debug(er));
+          }
           message.channel.send(
             '***error code 404:*** *this video may contain a restriction preventing it from being played.*' +
             (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
           server.numSinceLastEmbed++;
-          skipLink(message, vc, true, server, true);
+          skipLink(message, vc, true, server, true).catch((er) => processStats.debug(er));
         }
         else {
           console.log('status code 404 error');
@@ -335,13 +346,15 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         message.channel.send('*this video contains a restriction preventing it from being played*');
         server.numSinceLastEmbed++;
         server.skipTimes++;
-        skipLink(message, vc, true, server, true);
+        skipLink(message, vc, true, server, true).catch((er) => processStats.debug(er));
       }
-      else {skipLink(message, vc, false, server, true);}
+      else {
+        skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
+      }
       return;
     }
     if (retries < 2) {
-      playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
+      playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
       return;
     }
     console.log('error in playLinkToVC: ', whatToPlay);
@@ -361,7 +374,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     // search the db to find possible broken keys
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, server, whatToPlay);
     whatspMap[vc.id] = '';
-    skipLink(message, vc, false, server, true);
+    skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
     if (processStats.devMode) return;
     // noinspection JSUnresolvedFunction
     logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
@@ -374,7 +387,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     const nextQueueItem = server.queue[1];
     // the next link to play, formatted
     const whatToPlay2Formatted = linkFormatter(nextQueueItem.url, SPOTIFY_BASE_LINK);
-    getYTUrlFromSpotifyUrl(nextQueueItem, whatToPlay2Formatted);
+    await getYTUrlFromSpotifyUrl(nextQueueItem, whatToPlay2Formatted);
   }
 }
 
@@ -617,10 +630,10 @@ function runRewindCommand(message, mgid, voiceChannel, numberOfTimes, ignoreSing
     if (!ignoreSingleRewind) {
       message.channel.send('*rewound' + (rewindTimes === 1 ? '*' : ` ${rwIncrementor} times*`));
     }
-    playLinkToVC(message, isQueueItem, voiceChannel, server);
+    playLinkToVC(message, isQueueItem, voiceChannel, server).catch((er) => processStats.debug(er));
   }
   else if (server.queue[0]) {
-    playLinkToVC(message, server.queue[0], voiceChannel, server);
+    playLinkToVC(message, server.queue[0], voiceChannel, server).catch((er) => processStats.debug(er));
     message.channel.send('*replaying first link*');
   }
   else {

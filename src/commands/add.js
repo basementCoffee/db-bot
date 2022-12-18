@@ -2,8 +2,9 @@
 const { botID, MAX_KEY_LENGTH } = require('../utils/lib/constants');
 const { reactions } = require('../utils/lib/reactions');
 const { addToDatabase_P } = require('../database/add');
-const { universalLinkFormatter, linkValidator } = require('../utils/utils');
+const { linkValidator } = require('../utils/utils');
 const { getXdb2 } = require('../database/retrieval');
+const { universalLinkFormatter } = require('../utils/formatUtils');
 
 
 /**

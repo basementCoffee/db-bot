@@ -19,8 +19,8 @@ const { runPlayLinkCommand, playLinkNow } = require('./playLink');
 const { ZWSP } = require('../utils/lib/constants');
 const { runSeekCommand } = require('./seek');
 const { runRandomToQueue, shuffleQueue } = require('./playRandomKeys');
-const { removeFormattingLink } = require('../utils/utils');
 const { getSettings, setSettings } = require('../database/retrieval');
+const { removeFormattingLink } = require('../utils/formatUtils');
 
 
 // A common handler for user commands.

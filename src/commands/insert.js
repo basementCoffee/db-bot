@@ -1,4 +1,4 @@
-const { verifyUrl, verifyPlaylist, linkFormatter, createQueueItem } = require('../utils/utils');
+const { verifyUrl, verifyPlaylist, createQueueItem } = require('../utils/utils');
 const { getXdb2 } = require('../database/retrieval');
 const {
   SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
@@ -7,6 +7,7 @@ const { addPlaylistToQueue } = require('../utils/playlist');
 const ytpl = require('ytpl');
 const { updateActiveEmbed } = require('../utils/embed');
 const { isValidRequestWPlay } = require('../utils/validation');
+const { linkFormatter } = require('../utils/formatUtils');
 
 /**
  * Inserts a term into position into the queue. Accepts a valid link or key.

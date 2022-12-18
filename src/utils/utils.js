@@ -11,81 +11,10 @@ const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
-const processStats = require('./lib/ProcessStats');
 const { getVoiceConnection } = require('@discordjs/voice');
 const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
+const { linkFormatter } = require('./formatUtils');
 
-/**
- * Given a positive duration in ms, returns a formatted string separating
- * the time in days, hours, minutes, and seconds. Otherwise, returns 0m 0s.
- * Will always return two time identifiers (ex: 2d 5h, 3h 12m, 1m 2s, 0m, 30s)
- * @param duration a duration in milliseconds
- * @returns {string} a formatted string duration
- */
-function formatDuration(duration) {
-  const seconds = duration / 1000;
-  const min = (seconds / 60);
-  const hours = Math.floor(min / 60);
-  const days = Math.floor(hours / 24);
-  if (days > 0) {
-    return `${days}d ${Math.floor(hours % 24)}h`;
-  }
-  if (hours > 0) {
-    return `${hours}h ${Math.floor(min % 60)}m`;
-  }
-  if (seconds >= 0) {
-    return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
-  }
-  return '0m 0s';
-}
-
-/**
- * Given an array of durations with hours, minutes, seconds, return the duration.
- * @param durationArray An array of durations.
- * @returns {number} The duration in MS or 0 if there was an error.
- */
-function convertYTFormatToMS(durationArray) {
-  try {
-    if (durationArray) {
-      let duration = 0;
-      durationArray.reverse();
-      if (durationArray[1]) duration += durationArray[1] * 60000;
-      if (durationArray[2]) duration += durationArray[2] * 3600000;
-      duration += durationArray[0] * 1000;
-      return duration;
-    }
-  }
-  catch (e) {}
-  return 0;
-}
-
-/**
- * Converts a provided seek format (ex: 1s 10m2s 1h31s) to seconds. If a number without an appending letter
- * is provided, then assumes it is already provided in seconds.
- * @param seekString The string to parse.
- * @returns {number} The seek time in seconds.
- */
-function convertSeekFormatToSec(seekString) {
-  let numSeconds;
-  if (Number(seekString)) {
-    numSeconds = seekString;
-  }
-  else {
-    const array = [];
-    const testVals = ['h', 'm', 's'];
-    const convertToArray = (formattedNum) => {
-      for (const val of testVals) {
-        const search = new RegExp(`(\\d*)${val}`);
-        const res = search.exec(formattedNum);
-        if (res) array.push(Number(res[1]) || 0);
-        else array.push(0);
-      }
-    };
-    convertToArray(seekString);
-    numSeconds = convertYTFormatToMS(array) / 1000;
-  }
-  return numSeconds;
-}
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
@@ -135,16 +64,6 @@ function verifyUrl(url) {
       (ytdl.validateURL(url) || url.includes(TWITCH_BASE_LINK))) && !verifyPlaylist(url));
 }
 
-/**
- * Given a link, formats the link with https://[index of base -> end].
- * Ex: url = m.youtube.com/test & suffix = youtube.com --> https://youtube.com/test
- * @param url {string} The link to format.
- * @param baseLink {string}  The starting of the remainder of the link to always add after the prefix.
- * @returns {string} The formatted URL.
- */
-function linkFormatter(url, baseLink) {
-  return `https://${url.substr(url.indexOf(baseLink))}`;
-}
 
 /**
  * Returns true if the given url is a valid playlist link.
@@ -233,7 +152,7 @@ async function getTitle(queueItem, cutoff) {
 
 /**
  * Formats B to MB.
- * @param data The bytes to format to MB.
+ * @param data {number} The bytes to format to MB.
  * @returns {string} A string that has the number of MB.
  */
 const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100}`;
@@ -420,64 +339,6 @@ function getBotDisplayName(guild) {
   return guild.members.me.nickname || guild.members.me.user.username;
 }
 
-/**
- * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param server {LocalServer} The server metadata.
- * @param force {boolean=} Ignores the status of the dispatcher.
- */
-function pauseComputation(server, force = false) {
-  // placed 'removeActiveStream' before checks for resiliency
-  processStats.removeActiveStream(server.guildId);
-  if (!server.audio.player) return;
-  if (server.audio.status || force) {
-    server.audio.player.pause();
-    server.audio.status = false;
-  }
-}
-
-/**
- * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
- * @param server {LocalServer} The server metadata.
- * @param force {boolean=} Ignores the status of the dispatcher.
- */
-function playComputation(server, force) {
-  if (!server.audio.player) return;
-  if (!server.audio.status || force) {
-    server.audio.player.unpause();
-    server.audio.status = true;
-    processStats.addActiveStream(server.guildId);
-  }
-}
-
-/**
- * Get the amount of time that this process has been active as a formatted string.
- * @returns {string}
- */
-function getTimeActive() {
-  if (processStats.dateActive) {
-    return formatDuration(processStats.activeMS + Date.now() - processStats.dateActive);
-  }
-  else {
-    return formatDuration(processStats.activeMS);
-  }
-}
-
-/**
- * Removes <> and [] from links. If provided a spotify or soundcloud link then properly formats those as well.
- * @param link {string} The link to format.
- * @returns {string} The formatted link.
- */
-function universalLinkFormatter(link) {
-  if (link[0] === '[' && link[link.length - 1] === ']') {
-    link = link.substring(1, link.length - 1);
-  }
-  else if (link[0] === '<' && link[link.length - 1] === '>') {
-    link = link.substring(1, link.length - 1);
-  }
-  if (link.includes(SPOTIFY_BASE_LINK)) link = linkFormatter(link, SPOTIFY_BASE_LINK);
-  else if (link.includes(SOUNDCLOUD_BASE_LINK)) link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
-  return link;
-}
 
 /**
  * Returns true if the link is a valid playable link (includes playlists).
@@ -486,18 +347,6 @@ function universalLinkFormatter(link) {
  */
 function linkValidator(link) {
   return verifyUrl(link) || verifyPlaylist(link);
-}
-
-/**
- * Removes extra formatting from a link (< and >).
- * @param link {string} The link to format.
- * @returns {string} The formatted link.
- */
-function removeFormattingLink(link) {
-  if (link[0] === '<' && link[link.length - 1] === '>') {
-    link = link.substring(1, link.length - 1);
-  }
-  return link;
 }
 
 /**
@@ -551,10 +400,8 @@ function createVisualEmbed(title, text, color) {
 }
 
 module.exports = {
-  formatDuration, botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, convertYTFormatToMS,
-  setSeamless, getQueueText, getTitle, linkFormatter, endStream, unshiftQueue, pushQueue, createQueueItem,
-  getLinkType, createMemoryEmbed, convertSeekFormatToSec, removeDBMessage, catchVCJoinError,
-  logError, pauseComputation, playComputation, getTimeActive, linkValidator, universalLinkFormatter,
-  removeFormattingLink, getSheetName, isPersonalSheet, getBotDisplayName, notInVoiceChannelErrorMsg, getVCMembers,
-  createVisualEmbed, botInVC_Guild,
+  botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, getQueueText, getTitle,
+  endStream, unshiftQueue, pushQueue, createQueueItem, getLinkType, createMemoryEmbed, removeDBMessage,
+  catchVCJoinError, logError, linkValidator, getSheetName, isPersonalSheet, getBotDisplayName, createVisualEmbed,
+  notInVoiceChannelErrorMsg, getVCMembers, botInVC_Guild,
 };

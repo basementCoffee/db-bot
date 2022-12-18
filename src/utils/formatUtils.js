@@ -1,4 +1,4 @@
-const {SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK} = require('./lib/constants');
+const { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK } = require('./lib/constants');
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -93,5 +93,28 @@ function removeFormattingLink(link) {
   return link;
 }
 
+/**
+ * Given an array of durations with hours, minutes, seconds, return the duration.
+ * @param durationArray An array of durations.
+ * @returns {number} The duration in MS or 0 if there was an error.
+ */
+function convertYTFormatToMS(durationArray) {
+  try {
+    if (durationArray) {
+      let duration = 0;
+      durationArray.reverse();
+      if (durationArray[1]) duration += durationArray[1] * 60000;
+      if (durationArray[2]) duration += durationArray[2] * 3600000;
+      duration += durationArray[0] * 1000;
+      return duration;
+    }
+  }
+  catch (e) {}
+  return 0;
+}
 
-module.exports = {formatDuration, linkFormatter, convertSeekFormatToSec}
+
+module.exports = {
+  formatDuration, linkFormatter, convertSeekFormatToSec, removeFormattingLink, universalLinkFormatter,
+  convertYTFormatToMS,
+};

@@ -11,9 +11,9 @@ const processStats = require('./utils/lib/ProcessStats');
 const { gsrun, deleteRows } = require('./database/api/api');
 const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
-  formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive, getSheetName,
-  createVisualEmbed, getTitle,
+  botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getSheetName, createVisualEmbed, getTitle,
 } = require('./utils/utils');
+const { formatDuration } = require('./utils/formatUtils');
 const { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } = require('./commands/dj');
 const {
   bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG, PREFIX_SN,
@@ -991,7 +991,7 @@ async function runCommandCases(message) {
           `\nprocess: ${process.pid.toString()} [${hardwareTag}]` +
           `\nservers: ${bot.guilds.cache.size}` +
           `\nuptime: ${formatDuration(bot.uptime)}` +
-          `\nactive time: ${getTimeActive()}` +
+          `\nactive time: ${processStats.getTimeActive()}` +
           `\nstream time: ${formatDuration(processStats.getTotalStreamTime())}` +
           `\nup since: ${bot.readyAt.toString().substring(0, 21)}` +
           `\nnumber of streams: ${processStats.getActiveStreamSize()}` +

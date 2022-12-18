@@ -1,5 +1,6 @@
 const { startupDevMode } = require('./constants');
 const LocalServer = require('./LocalServer');
+const { formatDuration } = require('../formatUtils');
 
 // process related statistics
 class ProcessStats {
@@ -145,6 +146,19 @@ class ProcessStats {
       this.servers.set(guildId, localServer);
     }
     return localServer;
+  }
+
+  /**
+   * Get the amount of time that this process has been active as a formatted string.
+   * @returns {string}
+   */
+  getTimeActive() {
+    if (this.dateActive) {
+      return formatDuration(this.activeMS + Date.now() - this.dateActive);
+    }
+    else {
+      return formatDuration(this.activeMS);
+    }
   }
 }
 

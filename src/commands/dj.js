@@ -1,5 +1,6 @@
-const { formatDuration, botInVC, notInVoiceChannelErrorMsg, getVCMembers } = require('../utils/utils');
+const { botInVC, notInVoiceChannelErrorMsg, getVCMembers } = require('../utils/utils');
 const { EmbedBuilderLocal } = require('../utils/lib/EmbedBuilderLocal');
+const { formatDuration } = require('../utils/formatUtils');
 
 /**
  * Run the command to enable a music mode allowing only one user to control music commands in a server.
