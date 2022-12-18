@@ -1463,10 +1463,20 @@ async function devProcessCommands(message) {
     break;
   case 'update':
     // =gzupdate
-    if (zargs[1] && zargs[1] !== process.pid.toString()) return;
-    if (!processStats.devMode && processStats.isInactive) {
+    if (zargs[1]) {
+      // maintain if-statement structure because of else condition
+      if (zargs[1] !== process.pid.toString()) return;
+    }
+    else if (processStats.devMode) {
+      return;
+    }
+
+    if (processStats.isInactive || processStats.devMode) {
       message.channel.send(`*updating process ${process.pid}*`);
       devUpdateCommand();
+    }
+    else {
+      message.channel.send('*cannot update unless sidelined*');
     }
     break;
   case 'b':
