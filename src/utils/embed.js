@@ -7,32 +7,19 @@ const { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } = require('.
 const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
 const { isNumber } = require('node-os-utils/util');
 const DB_SPOTIFY_EMBED_ICON = 'https://github.com/Reply2Zain/db-bot/blob/master/assets/dbBotspotifyIcon.jpg?raw=true';
-const SpotifyWebApi = require('spotify-web-api-node');
 const processStats = require('./lib/ProcessStats');
-
-// Set up the Spotify Web API client with your client ID and secret
-const spotifyApi = new SpotifyWebApi({
-  clientId: process.env.SPOTIFY_CLIENT_ID,
-  clientSecret: process.env.SPOTIFY_SECRET_CLIENT_ID,
-});
-
-spotifyApi.clientCredentialsGrant().then((data) => {
-  spotifyApi.setAccessToken(data.body.access_token);
-}).catch((e) => {
-  const errMsg = `[ERROR][id: ${process.pid.toString()}] Missing spotify token credentials.\n${e.stack}`;
-  console.log(errMsg);
-  if (!processStats.devMode) logError(errMsg);
-});
+const spotifyAuth = require('./lib/SpotifyAuthenticator');
 
 /**
  * Gets the cover art of a spotify track url.
  * @param url {string} The url of the track.
  * @returns {Promise<string|null>} The raw coverArt link or null.
  */
-async function getCoverArt(url) {
+async function getSpotifyCoverArt(url) {
   // Extract the Spotify track or album ID from the URL
   const id = url.split('/').pop();
   let data;
+  const spotifyApi = await spotifyAuth.getSpotifyApiNode();
   try {
     // Use the Spotify Web API to get information about the track or album
     data = await spotifyApi.getTrack(id);
@@ -42,7 +29,7 @@ async function getCoverArt(url) {
     }
   }
   catch (e) {
-    processStats.debug(`${getCoverArt.name} error1: `, e);
+    processStats.debug(`${getSpotifyCoverArt.name} error1: `, e);
     try {
       // If the track was not found, try getting the cover art for an album
       data = await spotifyApi.getAlbum(id);
@@ -51,7 +38,7 @@ async function getCoverArt(url) {
       }
     }
     catch (e2) {
-      processStats.debug(`${getCoverArt.name} error2: `, e2);
+      processStats.debug(`${getSpotifyCoverArt.name} error2: `, e2);
     }
   }
   return null;
@@ -59,8 +46,8 @@ async function getCoverArt(url) {
 
 /**
  * Gets a thumbnail to display for the spotify embed player.
- * @param infos The track metadata.
- * @param url The url of the track to get the coverArt for.
+ * @param infos {*} The track metadata.
+ * @param url {string} The url of the track to get the coverArt for.
  * @returns {Promise<string>} Either the track's coverArt or a default thumbnail icon.
  */
 async function getSpotifyIcon(infos, url) {
@@ -71,7 +58,7 @@ async function getSpotifyIcon(infos, url) {
   if (!icon && infos.album?.images && infos.album.images.length) {
     icon = infos.album.images[infos.album.images.length - 1]?.url;
   }
-  return icon || (await getCoverArt(url)) || DB_SPOTIFY_EMBED_ICON;
+  return icon || (await getSpotifyCoverArt(url)) || DB_SPOTIFY_EMBED_ICON;
 }
 
 /**
