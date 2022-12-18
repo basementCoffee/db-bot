@@ -7,7 +7,7 @@
     "start": "node ./src/index.js",
     "dev": "node --trace-warnings ./src/index.js --dev",
     "dev-test": "node --trace-warnings ./src/index.js --dev --test 987120641549430824",
-    "pm2": "NAME=vibe; pm2 delete $NAME && echo running pm2 script...\npm2 start src/index.js --name $NAME && node ./scripts/pm2-monitor.js $NAME",
+    "pm2": "NAME=vibe; pm2 delete $NAME\necho running pm2 script...\npm2 start src/index.js --name $NAME && node ./scripts/pm2-monitor.js $NAME",
     "pm2-dev": "pm2 delete vibeDEV && echo running pm2 script...\npm2 start src/index.js --name vibeDEV -- --dev && pm2 monit",
     "test": "jest --detectOpenHandles --setupFiles dotenv/config --forceExit",
     "lint": "npx eslint src/",
