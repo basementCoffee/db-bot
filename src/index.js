@@ -584,6 +584,16 @@ async function runCommandCases(message) {
     // ------ START TEST -------
     // ------ END TEST -------
     break;
+  case 'gztemp':
+    exec('vcgencmd measure_temp', (error, stdout, stderr) => {
+      if (stdout) {
+        message.channel.send(stdout);
+      }
+      else if (stderr) {
+        message.channel.send(`returned error: \`${stderr}\``);
+      }
+    });
+    break;
     // !skip
   case 'next':
   case 'sk':
@@ -1468,15 +1478,13 @@ async function devProcessCommands(message) {
       if (zargs[1] !== process.pid.toString()) return;
     }
     else if (processStats.devMode) {
+      // when no pid is provided & is devMode
       return;
     }
 
     if (processStats.isInactive || processStats.devMode) {
       message.channel.send(`*updating process ${process.pid}*`);
       devUpdateCommand();
-    }
-    else {
-      message.channel.send('*cannot update unless sidelined*');
     }
     break;
   case 'b':
