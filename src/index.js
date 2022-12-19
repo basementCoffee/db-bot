@@ -585,13 +585,9 @@ async function runCommandCases(message) {
     // ------ END TEST -------
     break;
   case 'gztemp':
-    exec('vcgencmd measure_temp', (error, stdout, stderr) => {
-      if (stdout) {
-        message.channel.send(stdout);
-      }
-      else if (stderr) {
-        message.channel.send(`returned error: \`${stderr}\``);
-      }
+    getTemperature().then((response) => {
+      if (response.isError) message.channel.send(`returned error: \`${response.value}\``);
+      else message.channel.send(response.value || '*error: no response value provided*');
     });
     break;
     // !skip
@@ -1488,6 +1484,7 @@ async function devProcessCommands(message) {
     }
     break;
   case 'b':
+    // =gzb
     if (zargs[1]) {
       if (zargs[1] !== process.pid.toString()) return;
       if (zargs[2]) {
@@ -1511,6 +1508,14 @@ async function devProcessCommands(message) {
     else {
       message.channel.send(`*process ${process.pid} (${buildNo.getBuildNo()})*`);
     }
+    break;
+  case 'temp':
+    // =gztemp
+    getTemperature().then((response) => {
+      if (!response.isError && response.value) {
+        message.channel.send(`${hardwareTag || process.pid.toString()}: ${response.value}`);
+      }
+    });
     break;
   default:
     if (processStats.devMode && !processStats.isInactive && message.guild) return runCommandCases(message);
@@ -1626,6 +1631,26 @@ async function updateVoiceState(oldState, newState, server) {
     server.seamless.message.delete();
     server.seamless.message = null;
   }
+}
+
+/**
+ * Runs a cmd for pi systems that returns the temperature.
+ * @returns {Promise<{value: string, isError: boolean}>} An object containing the response or error message.
+ */
+function getTemperature() {
+  return new Promise((resolve) => {
+    exec('vcgencmd measure_temp', (error, stdout, stderr) => {
+      if (stdout) {
+        resolve({ value: stdout, isError: false });
+      }
+      else if (stderr) {
+        resolve({ value: stderr, isError: true });
+      }
+      else {
+        resolve({ value: 'no response', isError: true });
+      }
+    });
+  });
 }
 
 bot.on('error', (e) => {
