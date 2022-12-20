@@ -12,7 +12,7 @@
     "test": "jest --detectOpenHandles --setupFiles dotenv/config --forceExit",
     "lint": "npx eslint src/",
     "format": "npx eslint src/ --fix && npx eslint tests/ --fix",
-    "release": "npx eslint src/ --fix\nnpm i --package-lock-only\ngit add package*\ngit status",
+    "release": "bash ./scripts/release.bash",
     "postinstall": "node scripts/postNodeInstallScript.js"
   },
   "engines": {
