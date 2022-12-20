@@ -578,11 +578,9 @@ async function runCommandCases(message) {
     commandHandlerCommon.help(message, server, version);
     break;
   case 'test':
-    // this method is for testing purposes only (npm run dev-test)
+    // this method is for testing purposes only. (cmd: npm run dev-test)
     if (!(isAdmin(message.member.id) && processStats.devMode)) return;
-    message.channel.send('*test received*');
-    // ------ START TEST -------
-    // ------ END TEST -------
+    runDevTest(message.channel).catch((err) => processStats.debug(err));
     break;
   case 'gztemp':
     getTemperature().then((response) => {
@@ -1556,6 +1554,26 @@ bot.on('messageCreate', (message) => {
     return runCommandCases(message);
   }
 });
+
+/**
+ * Runs a test.
+ * @param channel {import('discord.js').TextChannel} The text channel to run the test in.
+ */
+async function runDevTest(channel) {
+  await channel.send('*test received*');
+  // fetch should be the message to test/mimic
+  const messagesToRun = [''];
+  for (const msgId of messagesToRun) {
+    const msg = await channel.messages.fetch(msgId);
+    await new Promise((res) => setTimeout(res, 2000));
+    if (msg) {
+      await runCommandCases(msg);
+    }
+    else {
+      console.log(`devTest: could not find message with the id ${msgId}`);
+    }
+  }
+}
 
 bot.on('voiceStateUpdate', (oldState, newState) => {
   const server = processStats.getServer(oldState.guild.id.toString());
