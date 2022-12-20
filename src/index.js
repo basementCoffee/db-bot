@@ -280,7 +280,7 @@ async function runCommandCases(message) {
     break;
   case 'ps':
   case 'pshuffle':
-    if (isShortCommand(message, statement)) return;
+    if (isShortCommandNoArgs(args, message, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id), false,
       true, server, true).then();
     break;
@@ -1084,9 +1084,23 @@ async function runCommandCases(message) {
 // end switch
 }
 
+/**
+ * Returns false if the command is short (less than 3 characters) and there is no active session.
+ * @param message {import('discord.js').Message} The message.
+ * @param statement {string} The command to check.
+ * @returns {boolean} False if the cmd is short with no active session.
+ */
 function isShortCommand(message, statement) {
   return !botInVC(message) && statement.length < 3;
 }
+
+/**
+ * Returns false if the command is short (less than 3 characters), there is no active session, and no cmd arguments.
+ * @param args {Array<string>} The arguments.
+ * @param message {import('discord.js').Message} The message.
+ * @param statement {string} The command to check.
+ * @returns {boolean} False if the cmd is short with no active session and cmd args.
+ */
 function isShortCommandNoArgs(args, message, statement) {
   return (!args[1] && isShortCommand(message, statement));
 }
