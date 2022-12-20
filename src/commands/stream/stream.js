@@ -455,7 +455,10 @@ async function getYTUrlFromSpotifyUrl(queueItem, whatToPlay) {
       search = await ytsr(`${queueItem.infos.name} lyrics`, { pages: 1 });
     }
     else {
-      search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0]} lyrics`, { pages: 1 });
+      search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0] || ''} lyrics`, { pages: 1 });
+      if (!search.items[itemIndex]) {
+        search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0] || ''}`, { pages: 1 });
+      }
     }
     if (search.items[itemIndex]) {
       queueItem.urlAlt = search.items[itemIndex].url;
