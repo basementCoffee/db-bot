@@ -915,13 +915,6 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
   const collector = sentMsg.createReactionCollector({ filter, time: timeMS, dispose: true });
   server.collector?.stop();
   server.collector = collector;
-  for (const singleReaction of playbackReactions) {
-    await sentMsg.react(singleReaction);
-    if (collector.ended) {
-      audioCollectorEndAction(server, sentMsg);
-      return;
-    }
-  }
   // true if the bot is processing a reaction
   let processingReaction = false;
   collector.on('collect', async (reaction, reactionCollector) => {
@@ -1003,6 +996,13 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
   collector.on('end', () => {
     audioCollectorEndAction(server, sentMsg);
   });
+  for (const singleReaction of playbackReactions) {
+    await sentMsg.react(singleReaction);
+    if (collector.ended) {
+      audioCollectorEndAction(server, sentMsg);
+      return;
+    }
+  }
 }
 
 /**
