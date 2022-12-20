@@ -148,6 +148,7 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
       processStats.disconnectConnection(server);
+      processStats.debug(`[DISCONN] ${stopPlayingUtil.name}`);
     }, 600);
   }
   else {

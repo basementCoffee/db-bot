@@ -1,6 +1,6 @@
 const { SoundCloud: scdl } = require('scdl-core');
 scdl.connect();
-const { createQueueItem, getLinkType, verifyPlaylist } = require('./utils');
+const { createQueueItem, getLinkType, verifyPlaylist, logError } = require('./utils');
 const {
   StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK,
 } = require('./lib/constants');
@@ -74,7 +74,7 @@ async function getPlaylistItems(url, tempArray) {
     }
   }
   catch (e) {
-    console.log(`Error in getPlaylistItems: ${url}\n`, e);
+    processStats.debug(`Error in getPlaylistItems: ${url}\n`, e);
   }
   return itemCounter;
 }
@@ -103,7 +103,8 @@ async function getPlaylistArray(playlistUrl, type) {
   case StreamType.SOUNDCLOUD:
     return (await scdl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
   default:
-    console.log('Error: invalid linkType argument within addPlaylistToQueue');
+    const providedType = typeof type === 'string' ? type : 'non-string';
+    logError(`Error: invalid linkType argument within addPlaylistToQueue (provided '${providedType}'`);
     throw new Error(`Incorrect type provided, provided ${type}`);
   }
 }
@@ -171,7 +172,7 @@ async function addPlaylistToQueue(message, qArray, numItems, playlistUrl, linkTy
     }
   }
   catch (e) {
-    console.log(e);
+    processStats.debug(e);
     message.channel.send('there was an error');
   }
   return numItems;

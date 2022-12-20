@@ -63,6 +63,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   }
   // the queue item's formal url (can be of any type)
   let whatToPlay = queueItem?.url;
+  processStats.debug(`[PLAYING] ${whatToPlay}`);
   if (!whatToPlay) {
     queueItem = server.queue[0];
     if (!queueItem || !queueItem.url) {
@@ -180,7 +181,9 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         }
         else {twitchEncoded = undefined;}
       }
-      catch (e) {}
+      catch (e) {
+        processStats.debug(e);
+      }
       if (!twitchEncoded) {
         message.channel.send('*could not find live twitch stream*');
         return skipLink(message, vc, false, server, true);
@@ -258,6 +261,9 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     }
     else if (!(retries && whatToPlay === server.queue[0]?.url)) {
       queueItem = await sendLinkAsEmbed(message, queueItem, vc, server, false) || queueItem;
+      if (!server.currentEmbed?.deletable) {
+        sendLinkAsEmbed(message, queueItem, vc, server, false).catch((er) => processStats.debug(er));
+      }
     }
     server.skipTimes = 0;
     server.audio.player.on('error', async (error) => {
@@ -281,8 +287,11 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     });
     // similar to on 'finish'
     server.audio.player.once('idle', () => {
-      // if there is a mismatch then don't change anything
-      if (whatToPlay !== whatspMap[vc.id]) return;
+      if (whatToPlay !== whatspMap[vc.id]) {
+        // if there is a mismatch then don't change anything
+        processStats.debug(`[WARN] playback mismatch:\nA:${whatToPlay}\nB:${whatspMap[vc.id]}`);
+        return;
+      }
       server.mapFinishedLinks.set(whatToPlay,
         {
           queueItem,
@@ -290,6 +299,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         });
       if (vc.members.size < 2) {
         processStats.disconnectConnection(server);
+        processStats.debug('[DISCONN] reason: vc members size < 2');
       }
       else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
@@ -520,6 +530,7 @@ async function checkStatusOfYtdl(server, message) {
   }
   setTimeout(() => {
     processStats.disconnectConnection(server);
+    processStats.debug('[DISCONN] reason: post-diagnosis event');
     if (message) message.channel.send('*self-diagnosis complete: db vibe does not appear to have any issues*');
   }, 6000);
 }
@@ -832,6 +843,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
         return queueItem;
       }
       catch (e) {
+        processStats.debug(e);
       }
     }
     await sendEmbedUpdate(message.channel, server, forceEmbed, embed).then((sentMsg) => {
