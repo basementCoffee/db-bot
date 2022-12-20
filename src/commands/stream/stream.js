@@ -140,7 +140,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   if (server.numSinceLastEmbed > 4 && server.currentEmbed &&
     (!server.loop || whatspMap[vc.id] !== whatToPlay)) {
     server.numSinceLastEmbed = 0;
-    server.currentEmbed.delete();
+    server.currentEmbed.delete().catch((er) => processStats.debug(er));
     server.currentEmbed = null;
   }
   if (server.streamData.type === StreamType.YOUTUBE) {
@@ -339,10 +339,9 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           skipLink(message, vc, true, server, true).catch((er) => processStats.debug(er));
         }
         else {
-          console.log('status code 404 error');
+          processStats.debug('status code 404 error', e);
           processStats.disconnectConnection(server);
           message.channel.send('*db vibe appears to be facing some issues: automated diagnosis is underway.*').then(() => {
-            console.log(e);
             // noinspection JSUnresolvedFunction
             logError('***status code 404 error***' +
               '\n*if this error persists, try to change the active process*');
@@ -367,8 +366,12 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
       return;
     }
-    console.log('error in playLinkToVC: ', whatToPlay);
-    console.log(e);
+    if (processStats.devMode) {
+      processStats.debug('playLinkToVC error: ', e);
+    }
+    else {
+      logError(`playLinkToVC error:\n${whatToPlay}\n${e.stack}`);
+    }
     if (server.skipTimes > 3) {
       processStats.disconnectConnection(server);
       message.channel.send('***db vibe is facing some issues, may restart***');
@@ -385,10 +388,13 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, server, whatToPlay);
     whatspMap[vc.id] = '';
     skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
-    if (processStats.devMode) return;
-    // noinspection JSUnresolvedFunction
-    logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
-    logError(e.toString().substring(0, 1910));
+    if (processStats.devMode) {
+      processStats.debug('there was a playback error within playLinkToVC:', e);
+    }
+    else {
+      logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
+      logError(e.toString().substring(0, 1910));
+    }
     // end of try catch
   }
   // load the next link if conditions are met

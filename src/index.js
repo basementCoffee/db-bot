@@ -1685,7 +1685,7 @@ process
  * @param e {Error} The Error Object.
  */
 function uncaughtExceptionAction(e) {
-  console.log('uncaughtException: ', e);
+  processStats.debug('uncaughtException: ', e);
   if (e.message === 'Unknown Message') return;
   logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 }
