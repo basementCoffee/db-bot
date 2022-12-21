@@ -939,6 +939,10 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
       }
       break;
     case reactions.PPAUSE:
+      if (!server.queue[0]) {
+        reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
+        return sentMsg.channel.send('*nothing is playing right now*');
+      }
       let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id.toString());
       if (!server.audio.status) {
         playCommandUtil(sentMsg, tempUser, server, true, false, true);
@@ -972,7 +976,7 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
           }
         }
       }
-      reaction.users.remove(reactionCollector.id).then();
+      reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
       break;
     case reactions.REWIND:
       reaction.users.remove(reactionCollector.id).then();

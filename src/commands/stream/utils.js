@@ -204,10 +204,6 @@ function endAudioDuringSession(server) {
   updateActiveEmbed(server);
   // active stream should be removed within pauseComputation
   pauseComputation(server);
-  if (server.collector) {
-    server.collector.stop();
-    server.collector = null;
-  }
 }
 
 module.exports = {
