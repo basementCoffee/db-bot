@@ -20,12 +20,10 @@ const parseItem = (item, resp) => {
       return parseMix(item[type]);
     case 'gridMovieRenderer':
       return parseGridMovie(item[type]);
-      return item[type];
     case 'gridVideoRenderer':
       return parseVideo(item[type]);
     case 'movieRenderer':
       return parseMovie(item[type]);
-    // case 'reelPlayerHeaderRenderer':
     case 'reelItemRenderer':
       return parseShort(item[type]);
     case 'shelfRenderer':
