@@ -585,7 +585,7 @@ async function runCommandCases(message) {
   case 'gztemp':
     getTemperature().then((response) => {
       if (response.isError) message.channel.send(`returned error: \`${response.value}\``);
-      else message.channel.send(response.value || '*error: no response value provided*');
+      else message.channel.send(`\`${response.value || 'error: no response value provided'}\``);
     });
     break;
     // !skip
@@ -1525,7 +1525,7 @@ async function devProcessCommands(message) {
     // =gztemp
     getTemperature().then((response) => {
       if (!response.isError && response.value) {
-        message.channel.send(`${hardwareTag || process.pid.toString()}: ${response.value}`);
+        message.channel.send(`${hardwareTag || process.pid.toString()}: \`${response.value}\``);
       }
     });
     break;
