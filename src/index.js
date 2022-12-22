@@ -12,6 +12,7 @@ const { gsrun, deleteRows } = require('./database/api/api');
 const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
   botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getSheetName, createVisualEmbed, getTitle,
+  botInVcGuild,
 } = require('./utils/utils');
 const { formatDuration } = require('./utils/formatUtils');
 const { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } = require('./commands/dj');
@@ -269,25 +270,25 @@ async function runCommandCases(message) {
   case 'kn':
   case 'dnow':
   case 'dn':
-    if (isShortCommandNoArgs(args, message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'pd':
   case 'dd':
-    if (isShortCommandNoArgs(args, message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id),
       false, true, server).then();
     break;
   case 'ps':
   case 'pshuffle':
-    if (isShortCommandNoArgs(args, message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id), false,
       true, server, true).then();
     break;
     // .md is retrieves and plays from the keys list
   case 'md':
   case 'd':
-    if (isShortCommandNoArgs(args, message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.playDBKeys(args, message, getSheetName(message.member.id), false,
       true, server).then();
     break;
@@ -374,7 +375,7 @@ async function runCommandCases(message) {
   case 'rand':
   case 'r':
   case 'mr':
-    if (isShortCommandNoArgs(args, message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
       server, false).then();
     break;
@@ -575,6 +576,7 @@ async function runCommandCases(message) {
     // list commands for public commands
   case 'h':
   case 'help':
+    if (isShortCommand(message.guild, statement)) return;
     commandHandlerCommon.help(message, server, version);
     break;
   case 'test':
@@ -594,7 +596,6 @@ async function runCommandCases(message) {
   case 'skip':
     runSkipCommand(message, message.member.voice?.channel, server, args[1], true, false, message.member);
     break;
-  case 'dic':
   case 'dict':
   case 'dictator':
     runDictatorCommand(message, mgid, prefixString, server);
@@ -656,14 +657,14 @@ async function runCommandCases(message) {
   case 'stop':
   case 'pause':
   case 'pa':
-    if (isShortCommand(message, statement)) return;
+    if (isShortCommand(message.guild, statement)) return;
     commandHandlerCommon.pauseStream(message, message.member, server, false, false, false);
     break;
     // !pl
   case 'pl':
   case 'res':
   case 'resume':
-    if (isShortCommand(message, statement)) return;
+    if (isShortCommand(message.guild, statement)) return;
     commandHandlerCommon.resumeStream(message, message.member, server);
     break;
   case 'ts':
@@ -1072,23 +1073,23 @@ async function runCommandCases(message) {
 
 /**
  * Returns false if the command is short (less than 3 characters) and there is no active session.
- * @param message {import('discord.js').Message} The message.
+ * @param guild {import('discord.js').Guild} The message.
  * @param statement {string} The command to check.
  * @returns {boolean} False if the cmd is short with no active session.
  */
-function isShortCommand(message, statement) {
-  return !botInVC(message) && statement.length < 3;
+function isShortCommand(guild, statement) {
+  return !botInVcGuild(guild) && statement.length < 3;
 }
 
 /**
  * Returns false if the command is short (less than 3 characters), there is no active session, and no cmd arguments.
  * @param args {Array<string>} The arguments.
- * @param message {import('discord.js').Message} The message.
+ * @param guild {import('discord.js').Guild} The message.
  * @param statement {string} The command to check.
  * @returns {boolean} False if the cmd is short with no active session and cmd args.
  */
-function isShortCommandNoArgs(args, message, statement) {
-  return (!args[1] && isShortCommand(message, statement));
+function isShortCommandNoArgs(args, guild, statement) {
+  return (!args[1] && isShortCommand(guild, statement));
 }
 
 /**

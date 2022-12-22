@@ -40,7 +40,7 @@ describe('test formatDuration', () => {
 });
 describe('test runMoveItemCommand', () => {
   const botInVCSpy = jest.spyOn(utils, 'botInVC');
-  const botInVCGuildSpy = jest.spyOn(utils, 'botInVC_Guild');
+  const botInVCGuildSpy = jest.spyOn(utils, 'botInVcGuild');
   botInVCSpy.mockReturnValue(true);
   botInVCGuildSpy.mockReturnValue(true);
 

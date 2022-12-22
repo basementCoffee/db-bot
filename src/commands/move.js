@@ -1,5 +1,5 @@
 // eslint-disable-next-line camelcase
-const { botInVC_Guild } = require('../utils/utils');
+const { botInVcGuild } = require('../utils/utils');
 const { serializeAndUpdate } = require('../database/utils');
 
 /**
@@ -11,7 +11,7 @@ const { serializeAndUpdate } = require('../database/utils');
  * @returns {void}
  */
 function runMoveItemCommand(channel, arr, posA, posB) {
-  if (!botInVC_Guild(channel.guild)) return;
+  if (!botInVcGuild(channel.guild)) return;
   posA = Math.floor(posA);
   posB = Math.floor(posB);
   const MIN_POS = 1;

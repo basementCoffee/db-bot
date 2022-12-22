@@ -18,19 +18,19 @@ const { linkFormatter } = require('./formatUtils');
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
- * @param message The message that triggered the bot.
+ * @param message {import('discord.js').Message} The message that triggered the bot.
  * @returns {Object} The voice channel if the bot is in a voice channel.
  */
 function botInVC(message) {
-  return botInVC_Guild(message.guild);
+  return botInVcGuild(message.guild);
 }
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
- * @param guild The guild.
+ * @param guild {import('discord.js').Guild} The guild.
  * @returns {Object} The voice channel if the bot is in a voice channel.
  */
-function botInVC_Guild(guild) {
+function botInVcGuild(guild) {
   try {
     const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId)?.members;
     return bot.voice.adapters.get(guild.id) && members && members.has(bot.user.id);
@@ -403,5 +403,5 @@ module.exports = {
   botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, getQueueText, getTitle,
   endStream, unshiftQueue, pushQueue, createQueueItem, getLinkType, createMemoryEmbed, removeDBMessage,
   catchVCJoinError, logError, linkValidator, getSheetName, isPersonalSheet, getBotDisplayName, createVisualEmbed,
-  notInVoiceChannelErrorMsg, getVCMembers, botInVC_Guild,
+  notInVoiceChannelErrorMsg, getVCMembers, botInVcGuild,
 };
