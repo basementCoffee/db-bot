@@ -922,18 +922,6 @@ async function runCommandCases(message) {
   case 'gzupdate':
     devUpdateCommand(message, args.slice(1));
     break;
-  case 'gzenv':
-    // sets the .env file
-    if (!message.attachments.first() || !message.attachments.first().name.includes('.txt')) {
-      message.channel.send('no attachment found');
-      return;
-    }
-    else {
-      request.get(message.attachments.first().url)
-        .on('error', console.error)
-        .pipe(fs.createWriteStream('.env'));
-    }
-    break;
   case 'gzdebug':
     if (server.queue[0]) {
       message.channel.send(`url: ${server.queue[0].url}\nurlAlt: ${server.queue[0].urlAlt}`);
@@ -1529,6 +1517,11 @@ async function devProcessCommands(message) {
       }
     });
     break;
+  case 'env':
+    // =gzenv
+    if (zargs[1] !== process.pid.toString()) return;
+    processEnvFile(message);
+    break;
   default:
     if (processStats.devMode && !processStats.isInactive && message.guild) return runCommandCases(message);
     break;
@@ -1567,10 +1560,17 @@ async function runDevTest(channel) {
     const msg = await channel.messages.fetch(msgId);
     await new Promise((res) => setTimeout(res, 2000));
     if (msg) {
-      await runCommandCases(msg);
+      if (msg.content.substring(1, 3) === 'gz') {
+        processStats.debug(`[INFO] ${runDevTest.name}: running ${devProcessCommands.name}`);
+        await devProcessCommands(msg);
+      }
+      else {
+        processStats.debug(`[INFO] ${runDevTest.name}: running ${runCommandCases.name}`);
+        await runCommandCases(msg);
+      }
     }
     else {
-      console.log(`devTest: could not find message with the id ${msgId}`);
+      console.log(`${runDevTest.name}: could not find message with the id ${msgId}`);
     }
   }
 }
@@ -1683,6 +1683,23 @@ function getTemperature() {
       }
     });
   });
+}
+
+/**
+ * Processes an updated env file to the local directory.
+ * @param message {import('discord.js').Message} The message containing the file.
+ */
+function processEnvFile(message) {
+  // sets the .env file
+  if (!message.attachments.first() || !message.attachments.first().name.includes('.txt')) {
+    message.channel.send('no attachment found');
+  }
+  else {
+    request.get(message.attachments.first().url)
+      .on('error', console.error)
+      .pipe(fs.createWriteStream('.env'));
+    message.channel.send('*contents changed. changes will take effect after a restart*');
+  }
 }
 
 bot.on('error', (e) => {
