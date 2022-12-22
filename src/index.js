@@ -94,7 +94,6 @@ async function runCommandCases(message) {
     break;
   case 'omedetou':
   case 'congratulations':
-  case 'congratz':
   case 'congrats':
     if (!botInVC(message)) {
       server.queue.length = 0;
@@ -354,11 +353,6 @@ async function runCommandCases(message) {
       else {message.channel.send('no active link is playing');}
     }
     break;
-  case 'shufflen':
-  case 'shufflenow':
-    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id), server,
-      true).then();
-    break;
     // test purposes - random command
   case 'grand':
   case 'gr':
@@ -366,40 +360,30 @@ async function runCommandCases(message) {
       false).then();
     break;
   case 'gshuffle':
-    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, 'entries', server,
-      false).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, 'entries', server, false).then();
     break;
-    // .mr is the personal random that works with the normal queue
-    // .r is a random that works with the normal queue
+  case 'mshuffle':
   case 'random':
   case 'rand':
   case 'r':
   case 'mr':
     if (isShortCommandNoArgs(args, message.guild, statement)) return;
-    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, false).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id), server,
+      false).then();
     break;
-  case 'mshuffle':
-    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, false).then();
-    break;
+  case 'shufflenow':
+  case 'shufflen':
   case 'mrn':
-  case 'mrandnow':
-    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, true).then();
-    break;
-  case 'mshufflen':
-  case 'mshufflenow':
-    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id), server,
+      true).then();
     break;
   case 'rename':
     if (botInVC(message)) message.channel.send('try `rename-key` or `rename-playlist` with the old name followed by the new name');
     break;
   case 'rename-key':
   case 'rename-keys':
-  case 'r-key':
-  case 'r-keys':
+  case 'renamekey':
+  case 'renamekeys':
     if (!args[1] || !args[2]) {
       message.channel.send(`*expected a key-name and new key-name (i.e. ${args[0]} [A] [B])*`);
       return;
@@ -409,8 +393,7 @@ async function runCommandCases(message) {
     break;
   case 'rename-playlist':
   case 'rename-playlists':
-  case 'r-playlist':
-  case 'r-playlists':
+  case 'renameplaylist':
     if (!args[1] || !args[2]) {
       message.channel.send(`*expected a playlist-name and new playlist-name (i.e. ${args[0]} [A] [B])*`);
       return;
@@ -478,7 +461,6 @@ async function runCommandCases(message) {
     break;
   case 'm?':
   case 'mnow':
-  case 'mwhat':
     await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1],
       getSheetName(message.member.id), 'm');
     break;
@@ -713,7 +695,6 @@ async function runCommandCases(message) {
       getSheetName(message.member.id), true, server, message.member);
     break;
   case 'playlist-add':
-  case 'p-add':
   case 'add-playlist':
     if (!args[1]) {
       message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
@@ -730,16 +711,12 @@ async function runCommandCases(message) {
     commandHandlerCommon.addCustomPlaylist(server, message.channel, 'entries', args[1]);
     break;
   case 'delete-playlist':
-  case 'del-playlist':
-  case 'playlist-del':
-  case 'p-del':
+  case 'playlist-delete':
     commandHandlerCommon.removeDBPlaylist(server, getSheetName(message.member.id), args[1],
       (await getXdb2(server, getSheetName(message.member.id))), message.channel).then();
     break;
   case 'gdelete-playlist':
-  case 'gdel-playlist':
-  case 'gplaylist-del':
-  case 'gp-del':
+  case 'gplaylist-delete':
     commandHandlerCommon.removeDBPlaylist(server, 'entries', args[1],
       (await getXdb2(server, 'entries')), message.channel).then();
     break;
@@ -752,26 +729,19 @@ async function runCommandCases(message) {
     runDeleteKeyCommand_P(message, args[1], getSheetName(message.member.id), server);
     break;
     // test remove database entries
-  case 'grm':
   case 'gdel':
   case 'gdelete':
-  case 'gremove':
     runDeleteKeyCommand_P(message, args[1], 'entries', server);
     break;
-    // allow ma in voice channel to accept two arguments
-    // (if 1 is provided then it is put in playlist general ->
-    // if 2 is provided then it looks for a playlist name in the mix)
-  case 'mk':
   case 'move-key':
   case 'move-keys':
-    if (!args[1] && statement === 'mk') return;
+    if (!args[1]) return message.channel.send(`*no args provided (i.e. ${statement} [key] [playlist])*`);
     commandHandlerCommon.moveKeysBetweenPlaylists(server, message.channel, getSheetName(message.member.id),
       (await getXdb2(server, getSheetName(message.member.id))), args.splice(1));
     break;
-  case 'gmk':
   case 'gmove-key':
   case 'gmove-keys':
-    if (!args[1] && statement === 'mk') return;
+    if (!args[1]) return message.channel.send(`*no args provided (i.e. ${statement} [key] [playlist])*`);
     commandHandlerCommon.moveKeysBetweenPlaylists(server, message.channel, 'entries', (await getXdb2(server, 'entries')), args.splice(1));
     break;
   case 'soundcloud':
@@ -791,7 +761,6 @@ async function runCommandCases(message) {
   case 'prev':
   case 'previous':
   case 'rw':
-  case 'rew':
   case 'rewind':
     runRewindCommand(message, mgid, message.member.voice?.channel, args[1], false, false, message.member, server);
     break;
