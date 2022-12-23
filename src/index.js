@@ -1190,12 +1190,9 @@ function processHandler(message) {
     }
     else if (message.content.substring(11, 15) === '-off') {
       // compare process IDs
-      if (message.content.substring(24).trim() !== process.pid.toString()) {
+      if (message.content.substring(24) !== process.pid.toString()) {
         processStats.isPendingStatus = false;
         setProcessInactiveAndMonitor();
-      }
-      else {
-        processStats.setProcessActive();
       }
     }
     else {
@@ -1530,7 +1527,7 @@ async function devProcessCommands(message) {
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
-  if (message.content.substring(0, 3) === '=gz' && (isAdmin(message.author.id) || message.author.id === botID)) {
+  if ((message.content.substring(0, 3) === '=gz' || message.channel.id === CH.process) && isAdmin(message.author.id)) {
     void devProcessCommands(message);
     if (message.channel.id === CH.process) {
       if (!processStats.devMode) {
