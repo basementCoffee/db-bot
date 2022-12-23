@@ -82,7 +82,6 @@ async function runCommandCases(message) {
     runDevCommands(message, statement, server, args, prefixString).catch((err) => logError(err));
   }
   else {
-    commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
     runUserCommands(message, statement, server, args, prefixString).catch((err) => logError(err));
   }
 }
@@ -97,6 +96,7 @@ async function runCommandCases(message) {
  * @returns {Promise<undefined>}
  */
 async function runUserCommands(message, statement, server, args, prefixString) {
+  commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
   const mgid = message.guild.id;
   switch (statement) {
   case 'db-bot':
