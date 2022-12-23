@@ -1550,7 +1550,7 @@ bot.on('messageCreate', (message) => {
  * @param channel {import('discord.js').TextChannel} The text channel to run the test in.
  */
 async function runDevTest(channel) {
-  await channel.send('*test received*');
+  channel.send('*test received*').catch((er) => processStats.debug(er));
   // fetch should be the message to test/mimic
   const messagesToRun = [''];
   for (const msgId of messagesToRun) {
@@ -1561,12 +1561,13 @@ async function runDevTest(channel) {
     const msg = await channel.messages.fetch(msgId);
     await new Promise((res) => setTimeout(res, 2000));
     if (msg) {
+      const baseCmdInfo = `[INFO] ${runDevTest.name}: processing "${msg.content}"`;
       if (msg.content.substring(1, 3) === 'gz') {
-        processStats.debug(`[INFO] ${runDevTest.name}: running ${devProcessCommands.name}`);
+        processStats.debug(`${baseCmdInfo} (to ${devProcessCommands.name})`);
         await devProcessCommands(msg);
       }
       else {
-        processStats.debug(`[INFO] ${runDevTest.name}: running ${runCommandCases.name}`);
+        processStats.debug(`${baseCmdInfo} (to ${runCommandCases.name})`);
         await runCommandCases(msg);
       }
     }
