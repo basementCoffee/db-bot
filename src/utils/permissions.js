@@ -6,9 +6,9 @@ const { CORE_ADM } = require('./lib/constants');
  * @returns {boolean} True if provided Admin rights.
  */
 function isAdmin(id) {
-  // kzbuu
-  return ['268554823283113985', '443150640823271436', '987108278486065283', '799524729173442620',
-    '434532121244073984'].includes(id);
+  // kzb
+  // add a space to ensure exact match
+  return ['268554823283113985 ', '443150640823271436 ', '987108278486065283 '].includes(`${id} `);
 }
 
 /**
