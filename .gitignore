@@ -1,5 +1,5 @@
 'node_modules'
-'npm-debug.log' 
+'npm-debug.log'
 node_modules
 _MacOS.npm-start.command
 .idea
@@ -9,3 +9,4 @@ _MacOS.npm-start.command
 .eslintrc.json
 test
 .DS_Store
+.min_version_vibe.txt

@@ -1,4 +1,4 @@
-const { botInVC, isPersonalSheet, universalLinkFormatter, linkValidator } = require('../utils/utils');
+const { botInVC, isPersonalSheet, linkValidator } = require('../utils/utils');
 const { getXdb2, getSettings } = require('../database/retrieval');
 const { getAssumptionMultipleMethods } = require('./search');
 const { reactions } = require('../utils/lib/reactions');
@@ -8,6 +8,7 @@ const { renameKey, renamePlaylist } = require('./rename');
 const { serializeAndUpdate } = require('../database/utils');
 const { removePlaylist } = require('./remove');
 const { EmbedBuilderLocal } = require('../utils/lib/EmbedBuilderLocal');
+const { universalLinkFormatter } = require('../utils/formatUtils');
 
 // returns an array of tips
 const getTips = (prefixS) => ['click on the arrow keys!', 'the gear icon is page-specific',

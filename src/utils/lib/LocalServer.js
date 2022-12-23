@@ -93,7 +93,8 @@ class LocalServer {
     // if a reaction permissions error occurred
     permissionReaction: undefined,
   };
-
+  // whether to display the embed
+  silence;
   /**
    * Constructor for LocalServer.
    * @param guildId {string} The id of the server.
@@ -148,6 +149,7 @@ class LocalServer {
     this.errors = {
       permissionReaction: false,
     };
+    this.silence = false;
   }
 }
 

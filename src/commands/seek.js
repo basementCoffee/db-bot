@@ -1,5 +1,6 @@
-const { linkValidator, convertSeekFormatToSec, getSheetName } = require('../utils/utils');
+const { linkValidator, getSheetName } = require('../utils/utils');
 const { playLinkNow } = require('./playLink');
+const { convertSeekFormatToSec } = require('../utils/formatUtils');
 
 /**
  * Plays the link at a specific timestamp.

@@ -1,5 +1,5 @@
 const { botID } = require('../../utils/lib/constants');
-const { pauseComputation, playComputation, botInVC } = require('../../utils/utils');
+const { botInVC } = require('../../utils/utils');
 const { createEmbed, updateActiveEmbed } = require('../../utils/embed');
 const processStats = require('../../utils/lib/ProcessStats');
 
@@ -148,6 +148,7 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   if (voiceChannel && !stayInVC) {
     setTimeout(() => {
       processStats.disconnectConnection(server);
+      processStats.debug(`[DISCONN] ${stopPlayingUtil.name}`);
     }, 600);
   }
   else {
@@ -165,6 +166,35 @@ function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUs
   }
 }
 
+/**
+ * Pause a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
+ * @param server {LocalServer} The server metadata.
+ * @param force {boolean=} Ignores the status of the dispatcher.
+ */
+function pauseComputation(server, force = false) {
+  // placed 'removeActiveStream' before checks for resiliency
+  processStats.removeActiveStream(server.guildId);
+  if (!server.audio.player) return;
+  if (server.audio.status || force) {
+    server.audio.player.pause();
+    server.audio.status = false;
+  }
+}
+
+/**
+ * Plays a dispatcher. Force may have unexpected behaviour with the stream if used excessively.
+ * @param server {LocalServer} The server metadata.
+ * @param force {boolean=} Ignores the status of the dispatcher.
+ */
+function playComputation(server, force) {
+  if (!server.audio.player) return;
+  if (!server.audio.status || force) {
+    server.audio.player.unpause();
+    server.audio.status = true;
+    processStats.addActiveStream(server.guildId);
+  }
+}
+
 
 /**
  * Performs changes when there is (or should be) no now-playing during an active session.
@@ -174,12 +204,9 @@ function endAudioDuringSession(server) {
   updateActiveEmbed(server);
   // active stream should be removed within pauseComputation
   pauseComputation(server);
-  if (server.collector) {
-    server.collector.stop();
-    server.collector = null;
-  }
 }
 
 module.exports = {
-  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, endAudioDuringSession,
+  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, endAudioDuringSession, pauseComputation,
+  playComputation,
 };

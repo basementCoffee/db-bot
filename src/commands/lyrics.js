@@ -99,9 +99,16 @@ function runLyricsCommand(channel, reactionCallback, args, queueItem, messageMem
           searchTerm = title.substring(0, songNameSubIndex);
         }
         else {
+          // todo: extract this functionality into an external function & use with "(" and ")"
           songNameSubIndex = title.search('[\[]');
-          if (songNameSubIndex !== -1) searchTerm = title.substring(0, songNameSubIndex);
-          else searchTerm = title;
+          const songNameSubIndex2 = title.search('[\\]]');
+          if (songNameSubIndex !== -1 && songNameSubIndex2 !== -1 && songNameSubIndex < songNameSubIndex2) {
+            searchTerm = `${title.substring(0, songNameSubIndex)}${title.substring(songNameSubIndex2 + 1)}`;
+            if (!searchTerm.trim().length) searchTerm = title;
+          }
+          else {
+            searchTerm = title;
+          }
         }
       }
       if (title.toLowerCase().includes('remix')) {
@@ -127,7 +134,19 @@ function runLyricsCommand(channel, reactionCallback, args, queueItem, messageMem
         !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) :
       !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
-        getYoutubeSubtitles(sentMsg, lUrl, infos, reactionCallback);
+        if (!(await getYoutubeSubtitles(sentMsg, lUrl, infos, reactionCallback))) {
+          if (searchTerm.toLowerCase().includes('lyrics')) {
+            const newSearchArr = searchTerm.toLowerCase().split(' ');
+            const newSearchIndex = newSearchArr.findIndex((value) => value.includes('lyrics'));
+            const newSearchTerm = searchTerm.split(' ').splice(newSearchIndex, 1);
+            if (newSearchIndex !== -1) {
+              if (await sendSongLyrics(sentMsg, newSearchTerm, messageMemberId, reactionCallback)) {
+                return;
+              }
+            }
+          }
+          sentMsg.edit('no results found');
+        }
       }
       else {
         sentMsg.edit('no results found');
@@ -142,7 +161,7 @@ function runLyricsCommand(channel, reactionCallback, args, queueItem, messageMem
  * @param searchTerm The search term to look for.
  * @param messageMemberId {string} The id of the member that send the command.
  * @param reactionCallback Callback for when the full text is sent.
- * @returns {Promise<Boolean>} The status of if the song lyrics were found and sent.
+ * @returns {Promise<Boolean>} The status of if the song lyrics were found and sent. True if successful.
  */
 async function sendSongLyrics(message, searchTerm, messageMemberId, reactionCallback) {
   try {
@@ -191,73 +210,78 @@ async function sendSongLyrics(message, searchTerm, messageMemberId, reactionCall
 }
 
 /**
- * Gets the captions/subtitles from youtube using ytdl-core and then sends the captions to the
+ * Gets the captions/subtitles from YouTube using ytdl-core and then sends the captions to the
  * respective text channel.
  * @param message The message that triggered the bot.
  * @param url The video url to get the subtitles.
  * @param infos The ytdl infos.
  * @param reactionCallback Callback for when the full text is sent.
+ * @returns {Promise<boolean>} Whether the call was successful.
  */
 function getYoutubeSubtitles(message, url, infos, reactionCallback) {
-  try {
-    const playerResp = infos.player_response;
-    const tracks = playerResp.captions.playerCaptionsTracklistRenderer.captionTracks;
-    let data = '';
-    https.get(tracks[0].baseUrl.toString(), function(res) {
-      if (res.statusCode >= 200 && res.statusCode < 400) {
-        res.on('data', function(data_) {
-          data += data_.toString();
-        });
-        res.on('end', function() {
-          parser.parseString(data, function(err, result) {
-            if (err) {
-              console.log('ERROR in getYouTubeSubtitles');
-              return console.log(err);
-            }
-            else {
-              let finalString = '';
-              let prevDuration = 0;
-              let newDuration;
-              for (const i of result.transcript.text) {
-                if (!i._) continue;
-                if (i._.trim().substring(0, 1) === '[') {
-                  finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
-                    i._;
-                  prevDuration -= 5;
-                }
-                else {
-                  newDuration = parseInt(i.$.start);
-                  finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ') +
-                    i._;
-                  prevDuration = newDuration;
-                }
-              }
-              finalString = finalString.replace(/&#39;/g, '\'').trim();
-              finalString = finalString.length > 1910 ? finalString.substring(0, 1910) + '...' : finalString;
-              message.edit('Could not find lyrics. Video captions are available.').then((sentMsg) => {
-                const mb = '📄';
-                sentMsg.react(mb).then();
-
-                const filter = (reaction, user) => {
-                  return user.id !== botID && [mb].includes(reaction.emoji.name);
-                };
-
-                const collector = sentMsg.createReactionCollector({ filter, time: 600000 });
-
-                collector.once('collect', () => {
-                  message.edit(`***Captions from YouTube***\n${finalString}`);
-                  if (reactionCallback) reactionCallback();
-                });
-              });
-            }
+  return new Promise((resolve) => {
+    try {
+      const playerResp = infos.player_response;
+      const tracks = playerResp.captions.playerCaptionsTracklistRenderer.captionTracks;
+      let data = '';
+      https.get(tracks[0].baseUrl.toString(), function(res) {
+        if (res.statusCode >= 200 && res.statusCode < 400) {
+          res.on('data', function(data_) {
+            data += data_.toString();
           });
-        });
-      }
-    });
-  }
-  catch (e) {
-    message.edit('no results found');
-  }
+          res.on('end', function() {
+            parser.parseString(data, function(err, result) {
+              if (err) {
+                console.log('ERROR in getYouTubeSubtitles', err);
+                resolve(false);
+              }
+              else {
+                let finalString = '';
+                let prevDuration = 0;
+                let newDuration;
+                for (const i of result.transcript.text) {
+                  if (!i._) continue;
+                  if (i._.trim().substring(0, 1) === '[') {
+                    finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
+                      i._;
+                    prevDuration -= 5;
+                  }
+                  else {
+                    newDuration = parseInt(i.$.start);
+                    finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ') +
+                      i._;
+                    prevDuration = newDuration;
+                  }
+                }
+                finalString = finalString.replace(/&#39;/g, '\'').trim();
+                finalString = finalString.length > 1910 ? finalString.substring(0, 1910) + '...' : finalString;
+                message.edit('Could not find lyrics. Video captions are available.').then((sentMsg) => {
+                  const mb = '📄';
+                  sentMsg.react(mb).then();
+
+                  const filter = (reaction, user) => {
+                    return user.id !== botID && [mb].includes(reaction.emoji.name);
+                  };
+
+                  const collector = sentMsg.createReactionCollector({ filter, time: 600000 });
+
+                  collector.once('collect', () => {
+                    message.edit(`***Captions from YouTube***\n${finalString}`);
+                    if (reactionCallback) reactionCallback();
+                  });
+                });
+              }
+            });
+          });
+        }
+      });
+      resolve(true);
+    }
+    catch (e) {
+      message.edit('no results found');
+      resolve(false);
+    }
+  });
 }
 
 module.exports = { runLyricsCommand };

@@ -11,9 +11,10 @@ const processStats = require('./utils/lib/ProcessStats');
 const { gsrun, deleteRows } = require('./database/api/api');
 const commandHandlerCommon = require('./commands/CommandHandlerCommon');
 const {
-  formatDuration, botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getTimeActive, getSheetName,
-  createVisualEmbed, getTitle,
+  botInVC, endStream, createQueueItem, createMemoryEmbed, logError, getSheetName, createVisualEmbed, getTitle,
+  botInVcGuild,
 } = require('./utils/utils');
+const { formatDuration } = require('./utils/formatUtils');
 const { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } = require('./commands/dj');
 const {
   bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, TWITCH_BASE_LINK, StreamType, INVITE_MSG, PREFIX_SN,
@@ -36,6 +37,8 @@ const { parentThread } = require('./threads/parentThread');
 const { getVoiceConnection } = require('@discordjs/voice');
 const { EmbedBuilderLocal } = require('./utils/lib/EmbedBuilderLocal');
 const { ActivityType } = require('discord.js');
+const request = require('request');
+const fs = require('fs');
 
 process.setMaxListeners(0);
 
@@ -91,7 +94,6 @@ async function runCommandCases(message) {
     break;
   case 'omedetou':
   case 'congratulations':
-  case 'congratz':
   case 'congrats':
     if (!botInVC(message)) {
       server.queue.length = 0;
@@ -267,25 +269,25 @@ async function runCommandCases(message) {
   case 'kn':
   case 'dnow':
   case 'dn':
-    if (isShortCommandNoArgs(args, message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'pd':
   case 'dd':
-    if (isShortCommandNoArgs(args, message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id),
       false, true, server).then();
     break;
   case 'ps':
   case 'pshuffle':
-    if (isShortCommand(message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.playDBPlaylist(args.splice(1), message, getSheetName(message.member.id), false,
       true, server, true).then();
     break;
     // .md is retrieves and plays from the keys list
   case 'md':
   case 'd':
-    if (isShortCommandNoArgs(args, message, statement)) return;
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
     commandHandlerCommon.playDBKeys(args, message, getSheetName(message.member.id), false,
       true, server).then();
     break;
@@ -351,11 +353,6 @@ async function runCommandCases(message) {
       else {message.channel.send('no active link is playing');}
     }
     break;
-  case 'shufflen':
-  case 'shufflenow':
-    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, getSheetName(message.member.id), server,
-      true).then();
-    break;
     // test purposes - random command
   case 'grand':
   case 'gr':
@@ -363,40 +360,30 @@ async function runCommandCases(message) {
       false).then();
     break;
   case 'gshuffle':
-    commandHandlerCommon.addRandomKeysToQueue([args[1]], message, 'entries', server,
-      false).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, 'entries', server, false).then();
     break;
-    // .mr is the personal random that works with the normal queue
-    // .r is a random that works with the normal queue
+  case 'mshuffle':
   case 'random':
   case 'rand':
   case 'r':
   case 'mr':
-    if (isShortCommandNoArgs(args, message, statement)) return;
-    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, false).then();
+    if (isShortCommandNoArgs(args, message.guild, statement)) return;
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id), server,
+      false).then();
     break;
-  case 'mshuffle':
-    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, false).then();
-    break;
+  case 'shufflenow':
+  case 'shufflen':
   case 'mrn':
-  case 'mrandnow':
-    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, true).then();
-    break;
-  case 'mshufflen':
-  case 'mshufflenow':
-    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id),
-      server, true).then();
+    commandHandlerCommon.addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member.id), server,
+      true).then();
     break;
   case 'rename':
     if (botInVC(message)) message.channel.send('try `rename-key` or `rename-playlist` with the old name followed by the new name');
     break;
   case 'rename-key':
   case 'rename-keys':
-  case 'r-key':
-  case 'r-keys':
+  case 'renamekey':
+  case 'renamekeys':
     if (!args[1] || !args[2]) {
       message.channel.send(`*expected a key-name and new key-name (i.e. ${args[0]} [A] [B])*`);
       return;
@@ -406,8 +393,7 @@ async function runCommandCases(message) {
     break;
   case 'rename-playlist':
   case 'rename-playlists':
-  case 'r-playlist':
-  case 'r-playlists':
+  case 'renameplaylist':
     if (!args[1] || !args[2]) {
       message.channel.send(`*expected a playlist-name and new playlist-name (i.e. ${args[0]} [A] [B])*`);
       return;
@@ -475,7 +461,6 @@ async function runCommandCases(message) {
     break;
   case 'm?':
   case 'mnow':
-  case 'mwhat':
     await commandHandlerCommon.nowPlaying(server, message, message.member.voice?.channel, args[1],
       getSheetName(message.member.id), 'm');
     break;
@@ -573,14 +558,19 @@ async function runCommandCases(message) {
     // list commands for public commands
   case 'h':
   case 'help':
+    if (isShortCommand(message.guild, statement)) return;
     commandHandlerCommon.help(message, server, version);
     break;
   case 'test':
-    // this method is for testing purposes only (npm run dev-test)
+    // this method is for testing purposes only. (cmd: npm run dev-test)
     if (!(isAdmin(message.member.id) && processStats.devMode)) return;
-    message.channel.send('*test received*');
-    // ------ START TEST -------
-    // ------ END TEST -------
+    runDevTest(message.channel).catch((err) => processStats.debug(err));
+    break;
+  case 'gztemp':
+    getTemperature().then((response) => {
+      if (response.isError) message.channel.send(`returned error: \`${response.value}\``);
+      else message.channel.send(`\`${response.value || 'error: no response value provided'}\``);
+    });
     break;
     // !skip
   case 'next':
@@ -588,7 +578,6 @@ async function runCommandCases(message) {
   case 'skip':
     runSkipCommand(message, message.member.voice?.channel, server, args[1], true, false, message.member);
     break;
-  case 'dic':
   case 'dict':
   case 'dictator':
     runDictatorCommand(message, mgid, prefixString, server);
@@ -650,14 +639,14 @@ async function runCommandCases(message) {
   case 'stop':
   case 'pause':
   case 'pa':
-    if (isShortCommand(message, statement)) return;
+    if (isShortCommand(message.guild, statement)) return;
     commandHandlerCommon.pauseStream(message, message.member, server, false, false, false);
     break;
     // !pl
   case 'pl':
   case 'res':
   case 'resume':
-    if (isShortCommand(message, statement)) return;
+    if (isShortCommand(message.guild, statement)) return;
     commandHandlerCommon.resumeStream(message, message.member, server);
     break;
   case 'ts':
@@ -706,7 +695,6 @@ async function runCommandCases(message) {
       getSheetName(message.member.id), true, server, message.member);
     break;
   case 'playlist-add':
-  case 'p-add':
   case 'add-playlist':
     if (!args[1]) {
       message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
@@ -723,16 +711,12 @@ async function runCommandCases(message) {
     commandHandlerCommon.addCustomPlaylist(server, message.channel, 'entries', args[1]);
     break;
   case 'delete-playlist':
-  case 'del-playlist':
-  case 'playlist-del':
-  case 'p-del':
+  case 'playlist-delete':
     commandHandlerCommon.removeDBPlaylist(server, getSheetName(message.member.id), args[1],
       (await getXdb2(server, getSheetName(message.member.id))), message.channel).then();
     break;
   case 'gdelete-playlist':
-  case 'gdel-playlist':
-  case 'gplaylist-del':
-  case 'gp-del':
+  case 'gplaylist-delete':
     commandHandlerCommon.removeDBPlaylist(server, 'entries', args[1],
       (await getXdb2(server, 'entries')), message.channel).then();
     break;
@@ -745,26 +729,19 @@ async function runCommandCases(message) {
     runDeleteKeyCommand_P(message, args[1], getSheetName(message.member.id), server);
     break;
     // test remove database entries
-  case 'grm':
   case 'gdel':
   case 'gdelete':
-  case 'gremove':
     runDeleteKeyCommand_P(message, args[1], 'entries', server);
     break;
-    // allow ma in voice channel to accept two arguments
-    // (if 1 is provided then it is put in playlist general ->
-    // if 2 is provided then it looks for a playlist name in the mix)
-  case 'mk':
   case 'move-key':
   case 'move-keys':
-    if (!args[1] && statement === 'mk') return;
+    if (!args[1]) return message.channel.send(`*no args provided (i.e. ${statement} [key] [playlist])*`);
     commandHandlerCommon.moveKeysBetweenPlaylists(server, message.channel, getSheetName(message.member.id),
       (await getXdb2(server, getSheetName(message.member.id))), args.splice(1));
     break;
-  case 'gmk':
   case 'gmove-key':
   case 'gmove-keys':
-    if (!args[1] && statement === 'mk') return;
+    if (!args[1]) return message.channel.send(`*no args provided (i.e. ${statement} [key] [playlist])*`);
     commandHandlerCommon.moveKeysBetweenPlaylists(server, message.channel, 'entries', (await getXdb2(server, 'entries')), args.splice(1));
     break;
   case 'soundcloud':
@@ -784,7 +761,6 @@ async function runCommandCases(message) {
   case 'prev':
   case 'previous':
   case 'rw':
-  case 'rew':
   case 'rewind':
     runRewindCommand(message, mgid, message.member.voice?.channel, args[1], false, false, message.member, server);
     break;
@@ -914,7 +890,7 @@ async function runCommandCases(message) {
     parentThread('gzn', {}, [message.channel.id, parseInt(args[1]) || 1, args[2] === 'db']);
     break;
   case 'gzupdate':
-    devUpdateCommand(message, args.splice(1));
+    devUpdateCommand(message, args.slice(1));
     break;
   case 'gzdebug':
     if (server.queue[0]) {
@@ -977,7 +953,7 @@ async function runCommandCases(message) {
           `\nprocess: ${process.pid.toString()} [${hardwareTag}]` +
           `\nservers: ${bot.guilds.cache.size}` +
           `\nuptime: ${formatDuration(bot.uptime)}` +
-          `\nactive time: ${getTimeActive()}` +
+          `\nactive time: ${processStats.getTimeActive()}` +
           `\nstream time: ${formatDuration(processStats.getTotalStreamTime())}` +
           `\nup since: ${bot.readyAt.toString().substring(0, 21)}` +
           `\nnumber of streams: ${processStats.getActiveStreamSize()}` +
@@ -995,7 +971,7 @@ async function runCommandCases(message) {
       break;
     }
     else if (args[1] === 'update') {
-      if (process.pid === 4 || args[2] === 'force') {
+      if (args[2] === 'force') {
         const updateMsg = '`NOTICE: db vibe is about to be updated. Expect a brief interruption within 5 minutes.`';
         bot.voice.adapters.forEach((x, g) => {
           try {
@@ -1064,11 +1040,25 @@ async function runCommandCases(message) {
 // end switch
 }
 
-function isShortCommand(message, statement) {
-  return !botInVC(message) && statement.length < 3;
+/**
+ * Returns false if the command is short (less than 3 characters) and there is no active session.
+ * @param guild {import('discord.js').Guild} The message.
+ * @param statement {string} The command to check.
+ * @returns {boolean} False if the cmd is short with no active session.
+ */
+function isShortCommand(guild, statement) {
+  return !botInVcGuild(guild) && statement.length < 3;
 }
-function isShortCommandNoArgs(args, message, statement) {
-  return (!args[1] && isShortCommand(message, statement));
+
+/**
+ * Returns false if the command is short (less than 3 characters), there is no active session, and no cmd arguments.
+ * @param args {Array<string>} The arguments.
+ * @param guild {import('discord.js').Guild} The message.
+ * @param statement {string} The command to check.
+ * @returns {boolean} False if the cmd is short with no active session and cmd args.
+ */
+function isShortCommandNoArgs(args, guild, statement) {
+  return (!args[1] && isShortCommand(guild, statement));
 }
 
 /**
@@ -1154,7 +1144,7 @@ function processHandler(message) {
         // update this process if out-of-date or reset process interval if an up-to-date process has queried
         if (processStats.isInactive) {
           // 2hrs of uptime is required to update process
-          if (bot.uptime > 7200000 && process.pid !== 4 &&
+          if (bot.uptime > 7200000 &&
             parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))) {
             devUpdateCommand();
           }
@@ -1171,6 +1161,7 @@ function processHandler(message) {
     else if (message.content.substring(11, 15) === '-off') {
       // compare process IDs
       if (message.content.substring(24).trim() !== process.pid.toString()) {
+        processStats.isPendingStatus = false;
         setProcessInactiveAndMonitor();
       }
       else {
@@ -1183,7 +1174,7 @@ function processHandler(message) {
   }
   else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
     // view the build number of the starting process, if newer version then update
-    if (bot.uptime > 7200000 && process.pid !== 4) {
+    if (bot.uptime > 7200000) {
       const regExp = /\[(\d+)\]/;
       const regResult = regExp.exec(message.content);
       const oBuildNo = regResult ? regResult[1] : null;
@@ -1203,51 +1194,55 @@ function processHandler(message) {
  * @param args {array<string>?} Optional - arguments for the command.
  */
 function devUpdateCommand(message, args = []) {
-  if (process.pid === 4) {
-    message?.channel.send('*heroku process cannot be updated*');
-    return;
-  }
   let response = 'updating process...';
-  console.log(response);
-  if (bot.voice.adapters.size > 0) {
-    if (args[0] === 'force') {
-      args.splice(0, 1);
-    }
-    else {
+  if (args[0]?.toLowerCase() === 'force') {
+    if (bot.voice.adapters.size > 0) {
       message?.channel.send(
         '***people are using the bot:*** *to force an update type \`force\` immediately after the command*',
       );
       return;
     }
+    args.splice(0, 1);
   }
   if (!args[0]) {
-    processStats.setProcessInactive();
-    exec('git stash && git pull && npm i && pm2 restart vibe');
+    args[0] = 'default';
   }
   else {
-    switch (args[0]) {
-    case 'update':
-    case 'upgrade':
-      processStats.setProcessInactive();
-      exec('git stash && git pull && npm update && npm upgrade && pm2 restart vibe');
-      break;
-    case 'all':
-      processStats.setProcessInactive();
-      exec('git stash && git pull && npm i && pm2 restart 0 && pm2 restart 1');
-      break;
-    case 'custom':
-      if (args[1]) {
-        exec(args.slice(1).join(' '));
-      }
-      else {
-        response = '*must provide script after \'custom\'*';
-      }
-      break;
-    default:
-      response = '*incorrect argument provided*';
+    response += ` (${args[0]})`;
+  }
+  switch (args[0]) {
+  case 'default':
+    processStats.setProcessInactive();
+    exec('git stash && git pull && npm i');
+    setTimeout(() => {
+      exec('npm run pm2');
+    }, 5000);
+    break;
+  case 'update':
+  case 'upgrade':
+    processStats.setProcessInactive();
+    exec(`git stash && git pull && npm ${args[0]}`);
+    setTimeout(() => {
+      exec('npm run pm2');
+    }, 5000);
+    break;
+  case 'all':
+    processStats.setProcessInactive();
+    exec('pm2 update PM2');
+    break;
+  case 'custom':
+    if (args[1]) {
+      exec(args.slice(1).join(' '));
     }
+    else {
+      response = '*must provide script after \'custom\'*';
+    }
+    break;
+  default:
+    response = '*incorrect argument provided*';
   }
   message?.channel.send(response);
+  console.log(response);
 }
 
 /**
@@ -1438,20 +1433,28 @@ async function devProcessCommands(message) {
   case 'z':
     // =gzz
     if (message.author.bot && zargs[1] !== process.pid.toString()) {
-      if (process.pid === 4) await new Promise((res) => setTimeout(res, 11000));
-      else await new Promise((res) => setTimeout(res, Math.random() * 5000));
+      await new Promise((res) => setTimeout(res, Math.random() * 5000));
       checkToSeeActive();
     }
     break;
   case 'update':
     // =gzupdate
-    if (zargs[1] && zargs[1] !== process.pid.toString()) return;
-    if (!processStats.devMode && processStats.isInactive && process.pid !== 4) {
+    if (zargs[1]) {
+      // maintain if-statement structure because of else condition
+      if (zargs[1] !== process.pid.toString()) return;
+    }
+    else if (processStats.devMode) {
+      // when no pid is provided & is devMode
+      return;
+    }
+
+    if (processStats.isInactive || processStats.devMode) {
       message.channel.send(`*updating process ${process.pid}*`);
       devUpdateCommand();
     }
     break;
   case 'b':
+    // =gzb
     if (zargs[1]) {
       if (zargs[1] !== process.pid.toString()) return;
       if (zargs[2]) {
@@ -1476,6 +1479,19 @@ async function devProcessCommands(message) {
       message.channel.send(`*process ${process.pid} (${buildNo.getBuildNo()})*`);
     }
     break;
+  case 'temp':
+    // =gztemp
+    getTemperature().then((response) => {
+      if (!response.isError && response.value) {
+        message.channel.send(`${hardwareTag || process.pid.toString()}: \`${response.value}\``);
+      }
+    });
+    break;
+  case 'env':
+    // =gzenv
+    if (zargs[1] !== process.pid.toString()) return;
+    processEnvFile(message);
+    break;
   default:
     if (processStats.devMode && !processStats.isInactive && message.guild) return runCommandCases(message);
     break;
@@ -1484,7 +1500,7 @@ async function devProcessCommands(message) {
 
 // parses message, provides a response
 bot.on('messageCreate', (message) => {
-  if (message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id) || message.author.id === botID) {
+  if ((message.content.substring(0, 3) === '=gz' && isAdmin(message.author.id)) || message.author.id === botID) {
     void devProcessCommands(message);
     if (message.channel.id === CH.process) {
       if (!processStats.devMode) {
@@ -1501,6 +1517,33 @@ bot.on('messageCreate', (message) => {
     return runCommandCases(message);
   }
 });
+
+/**
+ * Runs a test.
+ * @param channel {import('discord.js').TextChannel} The text channel to run the test in.
+ */
+async function runDevTest(channel) {
+  await channel.send('*test received*');
+  // fetch should be the message to test/mimic
+  const messagesToRun = [''];
+  for (const msgId of messagesToRun) {
+    const msg = await channel.messages.fetch(msgId);
+    await new Promise((res) => setTimeout(res, 2000));
+    if (msg) {
+      if (msg.content.substring(1, 3) === 'gz') {
+        processStats.debug(`[INFO] ${runDevTest.name}: running ${devProcessCommands.name}`);
+        await devProcessCommands(msg);
+      }
+      else {
+        processStats.debug(`[INFO] ${runDevTest.name}: running ${runCommandCases.name}`);
+        await runCommandCases(msg);
+      }
+    }
+    else {
+      console.log(`${runDevTest.name}: could not find message with the id ${msgId}`);
+    }
+  }
+}
 
 bot.on('voiceStateUpdate', (oldState, newState) => {
   const server = processStats.getServer(oldState.guild.id.toString());
@@ -1592,6 +1635,43 @@ async function updateVoiceState(oldState, newState, server) {
   }
 }
 
+/**
+ * Runs a cmd for pi systems that returns the temperature.
+ * @returns {Promise<{value: string, isError: boolean}>} An object containing the response or error message.
+ */
+function getTemperature() {
+  return new Promise((resolve) => {
+    exec('vcgencmd measure_temp', (error, stdout, stderr) => {
+      if (stdout) {
+        resolve({ value: stdout, isError: false });
+      }
+      else if (stderr) {
+        resolve({ value: stderr, isError: true });
+      }
+      else {
+        resolve({ value: 'no response', isError: true });
+      }
+    });
+  });
+}
+
+/**
+ * Processes an updated env file to the local directory.
+ * @param message {import('discord.js').Message} The message containing the file.
+ */
+function processEnvFile(message) {
+  // sets the .env file
+  if (!message.attachments.first() || !message.attachments.first().name.includes('.txt')) {
+    message.channel.send('no attachment found');
+  }
+  else {
+    request.get(message.attachments.first().url)
+      .on('error', console.error)
+      .pipe(fs.createWriteStream('.env'));
+    message.channel.send('*contents changed. changes will take effect after a restart*');
+  }
+}
+
 bot.on('error', (e) => {
   console.log('BOT ERROR:\n', e);
   logError(`BOT ERROR: ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
@@ -1610,7 +1690,7 @@ process
  * @param e {Error} The Error Object.
  */
 function uncaughtExceptionAction(e) {
-  console.log('uncaughtException: ', e);
+  processStats.debug('uncaughtException: ', e);
   if (e.message === 'Unknown Message') return;
   logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 }

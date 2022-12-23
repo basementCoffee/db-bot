@@ -1,7 +1,7 @@
 const {
-  botInVC, setSeamless, removeFormattingLink, verifyPlaylist, verifyUrl, pushQueue,
-  adjustQueueForPlayNow, unshiftQueue,
+  botInVC, setSeamless, verifyPlaylist, verifyUrl, pushQueue, adjustQueueForPlayNow, unshiftQueue,
 } = require('../utils/utils');
+const { removeFormattingLink } = require('../utils/formatUtils');
 const { addLinkToQueue } = require('../utils/playlist');
 const { playLinkToVC } = require('./stream/stream');
 const { updateActiveEmbed } = require('../utils/embed');
@@ -111,7 +111,7 @@ async function playLinkNow(message, args, mgid, server, sheetName, seekSec, adju
  * Determines what to play from a word, dependent on sheetName. The word is provided from args[1].
  * Uses the database if a sheetName is provided, else uses YouTube.
  * @param message The message metadata.
- * @param args The args pertaining the content.
+ * @param args The args pertaining the content. The first argument is ignored.
  * @param sheetName Optional - The sheet to reference.
  * @param server {LocalServer} The server data.
  * @param mgid The guild id.
@@ -122,7 +122,7 @@ function playFromWord(message, args, sheetName, server, mgid, playNow) {
     runDatabasePlayCommand(args, message, sheetName, playNow, false, server).then();
   }
   else {
-    runYoutubeSearch(message, playNow, server, args.map((x) => x).splice(1).join('')).then();
+    runYoutubeSearch(message, playNow, server, args.map((x) => x).splice(1).join(' ')).then();
   }
 }
 

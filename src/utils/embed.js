@@ -2,22 +2,64 @@ const fetch = require('isomorphic-unfetch');
 const { getData } = require('spotify-url-info')(fetch);
 const scdl = require('soundcloud-downloader').default;
 const ytdl = require('ytdl-core-discord');
-const { formatDuration, getQueueText, convertYTFormatToMS, logError } = require('./utils');
+const { getQueueText, logError } = require('./utils');
+const { formatDuration, convertYTFormatToMS } = require('./formatUtils');
 const { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } = require('./lib/constants');
 const { EmbedBuilderLocal } = require('./lib/EmbedBuilderLocal');
 const { isNumber } = require('node-os-utils/util');
+const DB_SPOTIFY_EMBED_ICON = 'https://github.com/Reply2Zain/db-bot/blob/master/assets/dbBotspotifyIcon.jpg?raw=true';
+const processStats = require('./lib/ProcessStats');
+const spotifyAuth = require('./lib/SpotifyAuthenticator');
 
-function getSpotifyIcon(infos) {
-  let icon;
-  if (infos.coverArt?.sources) {
-    icon = infos.coverArt.sources[infos.coverArt.sources.length - 1]?.url;
-  }
-  if (!icon) {
-    if (infos.album?.images) {
-      icon = infos.album.images[infos.album.images.length - 1]?.url;
+/**
+ * Gets the cover art of a spotify track url.
+ * @param url {string} The url of the track.
+ * @returns {Promise<string|null>} The raw coverArt link or null.
+ */
+async function getSpotifyCoverArt(url) {
+  // Extract the Spotify track or album ID from the URL
+  const id = url.split('/').pop();
+  let data;
+  const spotifyApi = await spotifyAuth.getSpotifyApiNode();
+  try {
+    // Use the Spotify Web API to get information about the track or album
+    data = await spotifyApi.getTrack(id);
+    // Return the cover art image URL from the track data
+    if (data) {
+      return data.body.album.images.length ? data.body.album.images[data.body.album.images.length - 1].url : null;
     }
   }
-  return icon || 'https://www.teahub.io/photos/full/111-1110552_spotify-hd.png';
+  catch (e) {
+    processStats.debug(`${getSpotifyCoverArt.name} error1: `, e);
+    try {
+      // If the track was not found, try getting the cover art for an album
+      data = await spotifyApi.getAlbum(id);
+      if (data) {
+        return data.body.images.length ? data.body.images[data.body.images.length - 1].url : null;
+      }
+    }
+    catch (e2) {
+      processStats.debug(`${getSpotifyCoverArt.name} error2: `, e2);
+    }
+  }
+  return null;
+}
+
+/**
+ * Gets a thumbnail to display for the spotify embed player.
+ * @param infos {*} The track metadata.
+ * @param url {string} The url of the track to get the coverArt for.
+ * @returns {Promise<string>} Either the track's coverArt or a default thumbnail icon.
+ */
+async function getSpotifyIcon(infos, url) {
+  let icon;
+  if (infos.coverArt?.sources && infos.coverArt.sources.length) {
+    icon = infos.coverArt.sources[infos.coverArt.sources.length - 1]?.url;
+  }
+  if (!icon && infos.album?.images && infos.album.images.length) {
+    icon = infos.album.images[infos.album.images.length - 1]?.url;
+  }
+  return icon || (await getSpotifyCoverArt(url)) || DB_SPOTIFY_EMBED_ICON;
 }
 
 /**
@@ -33,6 +75,7 @@ async function createEmbed(url, infos) {
     if (!infos) infos = await getData(url);
     let artists = '';
     infos.artists.forEach((x) => artists ? artists += ', ' + x.name : artists += x.name);
+    infos.thumbnailUrl = infos.thumbnailUrl ?? await getSpotifyIcon(infos, url);
     embed = new EmbedBuilderLocal()
       .setTitle(`${infos.name}`)
       .setURL(infos.external_urls.spotify)
@@ -48,7 +91,7 @@ async function createEmbed(url, infos) {
         value: formatDuration(infos.duration || infos.duration_ms),
       },
       )
-      .setThumbnail(getSpotifyIcon(infos));
+      .setThumbnail(infos.thumbnailUrl);
     timeMS = parseInt(infos.duration || infos.duration_ms);
   }
   else if (url.includes(SOUNDCLOUD_BASE_LINK)) {

@@ -1,4 +1,4 @@
-const { formatDuration } = require('../src/utils/utils');
+const { formatDuration } = require('../src/utils/formatUtils');
 const { bot } = require('../src/utils/lib/constants');
 const { runMoveItemCommand } = require('../src/commands/move');
 const utils = require('../src/utils/utils');
@@ -40,7 +40,7 @@ describe('test formatDuration', () => {
 });
 describe('test runMoveItemCommand', () => {
   const botInVCSpy = jest.spyOn(utils, 'botInVC');
-  const botInVCGuildSpy = jest.spyOn(utils, 'botInVC_Guild');
+  const botInVCGuildSpy = jest.spyOn(utils, 'botInVcGuild');
   botInVCSpy.mockReturnValue(true);
   botInVCGuildSpy.mockReturnValue(true);
 

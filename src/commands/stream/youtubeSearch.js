@@ -12,7 +12,7 @@ const { EmbedBuilderLocal } = require('../../utils/lib/EmbedBuilderLocal');
  * @param message The discord message
  * @param playNow Bool, whether to override the queue
  * @param server {LocalServer} The server playback metadata
- * @param searchTerm The specific phrase to search for, required if not provided a search result
+ * @param searchTerm {string} The specific phrase to search for, required if not provided a search result
  * @param indexToLookup {string | number?} The search index, requires searchResult to be valid
  * @param searchResult {Object?} The search results, used for recursive call with memoization
  * @param playlistMsg {Object?} A message to be used for other YouTube search results
@@ -23,12 +23,12 @@ async function runYoutubeSearch(message, playNow, server, searchTerm, indexToLoo
   const NUM_SEARCH_RES = 5;
   if (!searchResult) {
     indexToLookup = 0;
-    searchResult = (await ytsr(searchTerm, { pages: 1 })).items.filter((x) => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);
+    // removing all spaces tends to yield better results
+    const joinedSearchTerm = searchTerm.split(' ').join('');
+    searchResult = (await ytsr(joinedSearchTerm, { pages: 1 })).items.filter((x) => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);
     if (!searchResult[0]) {
-      if (!searchTerm.includes('video')) {
-        return runYoutubeSearch(message, playNow, server, `${searchTerm} video`, indexToLookup, null, playlistMsg);
-      }
-      return message.channel.send('could not find video');
+      searchResult = (await ytsr(searchTerm.trim(), { pages: 1 })).items.filter((x) => x.type === 'video').slice(0, NUM_SEARCH_RES + 1);
+      if (!searchResult[0]) return message.channel.send('could not find video');
     }
   }
   else {

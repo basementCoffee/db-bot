@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 const {
-  botInVC, catchVCJoinError, getLinkType, linkFormatter, convertYTFormatToMS, verifyUrl, endStream, pauseComputation,
-  playComputation, logError, formatDuration, createQueueItem, getQueueText, getSheetName, resetSession,
+  botInVC, catchVCJoinError, getLinkType, verifyUrl, endStream, logError, createQueueItem, getQueueText, getSheetName,
+  resetSession,
 } = require('../../utils/utils');
 const {
   StreamType, SPOTIFY_BASE_LINK, whatspMap, commandsMap, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
@@ -21,7 +21,10 @@ const processStats = require('../../utils/lib/ProcessStats');
 const { shutdown } = require('../../process/shutdown');
 const { reactions } = require('../../utils/lib/reactions');
 const { getXdb2 } = require('../../database/retrieval');
-const { stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil } = require('./utils');
+const { stopPlayingUtil, voteSystem, pauseCommandUtil, endAudioDuringSession, playCommandUtil, pauseComputation,
+  playComputation,
+} = require('./utils');
+const { linkFormatter, convertYTFormatToMS, formatDuration } = require('../../utils/formatUtils');
 const { runKeysCommand } = require('../keys');
 const {
   createAudioResource,
@@ -60,6 +63,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   }
   // the queue item's formal url (can be of any type)
   let whatToPlay = queueItem?.url;
+  processStats.debug(`[PLAYING] ${whatToPlay}`);
   if (!whatToPlay) {
     queueItem = server.queue[0];
     if (!queueItem || !queueItem.url) {
@@ -127,7 +131,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       if (!retries) return playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
       message.channel.send(urlRes.errorMsg);
       whatspMap[vc.id] = '';
-      skipLink(message, vc, false, server, true);
+      skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
       return;
     }
   }
@@ -136,7 +140,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   if (server.numSinceLastEmbed > 4 && server.currentEmbed &&
     (!server.loop || whatspMap[vc.id] !== whatToPlay)) {
     server.numSinceLastEmbed = 0;
-    server.currentEmbed.delete();
+    server.currentEmbed.delete().catch((er) => processStats.debug(er));
     server.currentEmbed = null;
   }
   if (server.streamData.type === StreamType.YOUTUBE) {
@@ -169,13 +173,17 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     else if (queueItem.type === StreamType.TWITCH) {
       let twitchEncoded;
       try {
-        twitchEncoded = (await twitch.getStream(whatToPlay.substr(whatToPlay.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, '')));
+        twitchEncoded = (await twitch.getStream(
+          whatToPlay.substring(whatToPlay.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1)
+            .replace(/\//g, '')));
         if (twitchEncoded.length > 0) {
           twitchEncoded = twitchEncoded[twitchEncoded.length - 1];
         }
         else {twitchEncoded = undefined;}
       }
-      catch (e) {}
+      catch (e) {
+        processStats.debug(e);
+      }
       if (!twitchEncoded) {
         message.channel.send('*could not find live twitch stream*');
         return skipLink(message, vc, false, server, true);
@@ -253,16 +261,21 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     }
     else if (!(retries && whatToPlay === server.queue[0]?.url)) {
       queueItem = await sendLinkAsEmbed(message, queueItem, vc, server, false) || queueItem;
+      if (!server.currentEmbed?.deletable) {
+        sendLinkAsEmbed(message, queueItem, vc, server, false).catch((er) => processStats.debug(er));
+      }
     }
     server.skipTimes = 0;
-    server.audio.player.on('error', async (e) => {
+    server.audio.player.on('error', async (error) => {
       if (resource.playbackDuration < 1000 && retries < 4) {
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise((res) => setTimeout(res, 500));
-        if (botInVC(message)) playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
+        if (botInVC(message)) {
+          playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
+        }
         return;
       }
-      skipLink(message, vc, false, server, false);
+      skipLink(message, vc, false, server, false).catch((er) => processStats.debug(er));
       // noinspection JSUnresolvedFunction
       logError(
         {
@@ -270,12 +283,15 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)],
         },
       );
-      console.log('dispatcher error: ', e);
+      console.log('dispatcher error: ', error);
     });
     // similar to on 'finish'
     server.audio.player.once('idle', () => {
-      // if there is a mismatch then don't change anything
-      if (whatToPlay !== whatspMap[vc.id]) return;
+      if (whatToPlay !== whatspMap[vc.id]) {
+        // if there is a mismatch then don't change anything
+        processStats.debug(`[WARN] playback mismatch:\nA:${whatToPlay}\nB:${whatspMap[vc.id]}`);
+        return;
+      }
       server.mapFinishedLinks.set(whatToPlay,
         {
           queueItem,
@@ -283,6 +299,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         });
       if (vc.members.size < 2) {
         processStats.disconnectConnection(server);
+        processStats.debug('[DISCONN] reason: vc members size < 2');
       }
       else if (server.loop) {
         playLinkToVC(message, queueItem, vc, server, undefined, undefined);
@@ -306,22 +323,25 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   catch (e) {
     const errorMsg = e.toString().substring(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
-      if (!retries) {playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);}
+      if (!retries) {
+        playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
+      }
       else {
         server.skipTimes++;
         if (server.skipTimes < 4) {
-          if (server.skipTimes === 2) checkStatusOfYtdl(server, message);
+          if (server.skipTimes === 2) {
+            checkStatusOfYtdl(server, message).catch((er) => processStats.debug(er));
+          }
           message.channel.send(
             '***error code 404:*** *this video may contain a restriction preventing it from being played.*' +
             (server.skipTimes < 2 ? '\n*If so, it may be resolved sometime in the future.*' : ''));
           server.numSinceLastEmbed++;
-          skipLink(message, vc, true, server, true);
+          skipLink(message, vc, true, server, true).catch((er) => processStats.debug(er));
         }
         else {
-          console.log('status code 404 error');
+          processStats.debug('status code 404 error', e);
           processStats.disconnectConnection(server);
           message.channel.send('*db vibe appears to be facing some issues: automated diagnosis is underway.*').then(() => {
-            console.log(e);
             // noinspection JSUnresolvedFunction
             logError('***status code 404 error***' +
               '\n*if this error persists, try to change the active process*');
@@ -335,17 +355,23 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         message.channel.send('*this video contains a restriction preventing it from being played*');
         server.numSinceLastEmbed++;
         server.skipTimes++;
-        skipLink(message, vc, true, server, true);
+        skipLink(message, vc, true, server, true).catch((er) => processStats.debug(er));
       }
-      else {skipLink(message, vc, false, server, true);}
+      else {
+        skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
+      }
       return;
     }
     if (retries < 2) {
-      playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
+      playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
       return;
     }
-    console.log('error in playLinkToVC: ', whatToPlay);
-    console.log(e);
+    if (processStats.devMode) {
+      processStats.debug('playLinkToVC error: ', e);
+    }
+    else {
+      logError(`playLinkToVC error:\n${whatToPlay}\n${e.stack}`);
+    }
     if (server.skipTimes > 3) {
       processStats.disconnectConnection(server);
       message.channel.send('***db vibe is facing some issues, may restart***');
@@ -361,11 +387,14 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     // search the db to find possible broken keys
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, server, whatToPlay);
     whatspMap[vc.id] = '';
-    skipLink(message, vc, false, server, true);
-    if (processStats.devMode) return;
-    // noinspection JSUnresolvedFunction
-    logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
-    logError(e.toString().substring(0, 1910));
+    skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
+    if (processStats.devMode) {
+      processStats.debug('there was a playback error within playLinkToVC:', e);
+    }
+    else {
+      logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
+      logError(e.toString().substring(0, 1910));
+    }
     // end of try catch
   }
   // load the next link if conditions are met
@@ -374,7 +403,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     const nextQueueItem = server.queue[1];
     // the next link to play, formatted
     const whatToPlay2Formatted = linkFormatter(nextQueueItem.url, SPOTIFY_BASE_LINK);
-    getYTUrlFromSpotifyUrl(nextQueueItem, whatToPlay2Formatted);
+    getYTUrlFromSpotifyUrl(nextQueueItem, whatToPlay2Formatted).catch((er) => processStats.debug(er));
   }
 }
 
@@ -432,7 +461,10 @@ async function getYTUrlFromSpotifyUrl(queueItem, whatToPlay) {
       search = await ytsr(`${queueItem.infos.name} lyrics`, { pages: 1 });
     }
     else {
-      search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0]} lyrics`, { pages: 1 });
+      search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0] || ''} lyrics`, { pages: 1 });
+      if (!search.items[itemIndex]) {
+        search = await ytsr(`${queueItem.infos.name} ${artists.split(' ')[0] || ''}`, { pages: 1 });
+      }
     }
     if (search.items[itemIndex]) {
       queueItem.urlAlt = search.items[itemIndex].url;
@@ -507,6 +539,7 @@ async function checkStatusOfYtdl(server, message) {
   }
   setTimeout(() => {
     processStats.disconnectConnection(server);
+    processStats.debug('[DISCONN] reason: post-diagnosis event');
     if (message) message.channel.send('*self-diagnosis complete: db vibe does not appear to have any issues*');
   }, 6000);
 }
@@ -617,10 +650,10 @@ function runRewindCommand(message, mgid, voiceChannel, numberOfTimes, ignoreSing
     if (!ignoreSingleRewind) {
       message.channel.send('*rewound' + (rewindTimes === 1 ? '*' : ` ${rwIncrementor} times*`));
     }
-    playLinkToVC(message, isQueueItem, voiceChannel, server);
+    playLinkToVC(message, isQueueItem, voiceChannel, server).catch((er) => processStats.debug(er));
   }
   else if (server.queue[0]) {
-    playLinkToVC(message, server.queue[0], voiceChannel, server);
+    playLinkToVC(message, server.queue[0], voiceChannel, server).catch((er) => processStats.debug(er));
     message.channel.send('*replaying first link*');
   }
   else {
@@ -819,6 +852,7 @@ async function sendLinkAsEmbed(message, queueItem, voiceChannel, server, forceEm
         return queueItem;
       }
       catch (e) {
+        processStats.debug(e);
       }
     }
     await sendEmbedUpdate(message.channel, server, forceEmbed, embed).then((sentMsg) => {
@@ -887,13 +921,6 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
   const collector = sentMsg.createReactionCollector({ filter, time: timeMS, dispose: true });
   server.collector?.stop();
   server.collector = collector;
-  for (const singleReaction of playbackReactions) {
-    await sentMsg.react(singleReaction);
-    if (collector.ended) {
-      audioCollectorEndAction(server, sentMsg);
-      return;
-    }
-  }
   // true if the bot is processing a reaction
   let processingReaction = false;
   collector.on('collect', async (reaction, reactionCollector) => {
@@ -912,6 +939,10 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
       }
       break;
     case reactions.PPAUSE:
+      if (!server.queue[0]) {
+        reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
+        return sentMsg.channel.send('*nothing is playing right now*');
+      }
       let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id.toString());
       if (!server.audio.status) {
         playCommandUtil(sentMsg, tempUser, server, true, false, true);
@@ -945,7 +976,7 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
           }
         }
       }
-      reaction.users.remove(reactionCollector.id).then();
+      reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
       break;
     case reactions.REWIND:
       reaction.users.remove(reactionCollector.id).then();
@@ -975,6 +1006,13 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
   collector.on('end', () => {
     audioCollectorEndAction(server, sentMsg);
   });
+  for (const singleReaction of playbackReactions) {
+    await sentMsg.react(singleReaction);
+    if (collector.ended) {
+      audioCollectorEndAction(server, sentMsg);
+      return;
+    }
+  }
 }
 
 /**
