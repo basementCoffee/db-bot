@@ -297,11 +297,14 @@ function removeDBMessage(channelID, deleteNum = 1, onlyDB) {
 
 /**
  * Logs an error to a channel.
- * @param msgTxt {string || Object} The message to send.
+ * @param errText {string || import('discord.js').MessagePayload || Error} The error object or message to send.
  */
-function logError(msgTxt) {
+function logError(errText) {
+  if (errText instanceof Error) {
+    errText = `${errText.stack}`;
+  }
   bot.channels.fetch(CH.err)
-    .then((channel) => channel?.send(msgTxt))
+    .then((channel) => channel?.send(errText))
     .catch((e) => console.log('Failed sending error message: ', e));
 }
 
