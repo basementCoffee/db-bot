@@ -60,14 +60,11 @@ async function runCommandCases(message) {
     server.numSinceLastEmbed += 2;
   }
   // the server prefix
-  let prefixString = server.prefix;
-  if (!prefixString) {
-    await getServerPrefix(server, mgid);
-    prefixString = server.prefix;
-  }
+  const prefixString = server.prefix || await getServerPrefix(server, mgid);
   const fwPrefix = message.content[0];
   // for all non-commands
   if (fwPrefix !== prefixString) {
+    if (fwPrefix !== '.') return;
     if (processStats.devMode) return;
     const firstWordBegin = message.content.substring(0, 10).trim() + ' ';
     if (firstWordBegin === '.db-vibe ') {

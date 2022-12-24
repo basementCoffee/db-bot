@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-const { botInVC } = require('../utils/utils');
+const { botInVC, logError } = require('../utils/utils');
 const { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } = require('./api/api');
 const processStats = require('../utils/lib/ProcessStats');
 const { PREFIX_SN } = require('../utils/lib/constants');
@@ -68,7 +68,7 @@ async function sendListSize(message, server, sheetName, playlistName) {
  * If there is no prefix then the default is added to the database.
  * @param server {LocalServer} The server.
  * @param mgid The guild id, used to get the prefix.
- * @returns {Promise<void>}
+ * @returns {Promise<string>} The server prefix.
  */
 async function getServerPrefix(server, mgid) {
   try {
@@ -87,10 +87,11 @@ async function getServerPrefix(server, mgid) {
     }
   }
   catch (e) {
-    console.log(e);
+    logError(e);
     server.prefix = '.';
     gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);
   }
+  return server.prefix;
 }
 
 module.exports = { sendListSize, getServerPrefix, getXdb2, getSettings, setSettings };
