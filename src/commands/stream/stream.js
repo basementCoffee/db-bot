@@ -684,7 +684,11 @@ async function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkip
     voiceChannel = mem.voice.channel;
     if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
   }
-  if (server.queue.length < 1) return message.channel.send('*nothing is playing right now*');
+  if (server.queue.length < 1) {
+    message.channel.send('*nothing is playing right now*');
+    server.numSinceLastEmbed++;
+    return;
+  }
   if (server.dictator && mem.id !== server.dictator.id) {
     return message.channel.send('only the dictator can perform this action');
   }
@@ -941,40 +945,18 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
     case reactions.PPAUSE:
       if (!server.queue[0]) {
         reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
-        return sentMsg.channel.send('*nothing is playing right now*');
+        sentMsg.channel.send('*nothing is playing right now*');
+        server.numSinceLastEmbed++;
+        return;
       }
-      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id.toString());
+      const tempUser = sentMsg.guild.members.cache.get(reactionCollector.id.toString());
       if (!server.audio.status) {
         playCommandUtil(sentMsg, tempUser, server, true, false, true);
-        if (server.voteAdmin.length < 1 && !server.dictator) {
-          tempUser = tempUser.nickname;
-          if (server.followUpMessage) {
-            server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*');
-          }
-          else {
-            sentMsg.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*').then((msg) => {
-              server.followUpMessage = msg;
-            });
-          }
-        }
+        sendStatus(server, tempUser, sentMsg, reactionCollector, 'played');
       }
       else {
         pauseCommandUtil(sentMsg, tempUser, server, true, false, true);
-        tempUser = tempUser.nickname;
-        if (server.voteAdmin.length < 1 && !server.dictator) {
-          if (server.followUpMessage) {
-            server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*');
-          }
-          else {
-            sentMsg.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*').then((msg) => {
-              server.followUpMessage = msg;
-            });
-          }
-        }
+        sendStatus(server, tempUser, sentMsg, reactionCollector, 'paused');
       }
       reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
       break;
@@ -1011,6 +993,29 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
     if (collector.ended) {
       audioCollectorEndAction(server, sentMsg);
       return;
+    }
+  }
+}
+
+/**
+ * Sends the updated play/pause status (with the username of user who initiated the action) to a text channel.
+ * @param server The server object.
+ * @param tempUser The user initiating the action.
+ * @param sentMsg The message to edit.
+ * @param reactionCollector The reactionCollector.
+ * @param actionName The name of the action (i.e. played/paused).
+ */
+function sendStatus(server, tempUser, sentMsg, reactionCollector, actionName) {
+  if (server.voteAdmin.length < 1 && !server.dictator) {
+    tempUser = tempUser.nickname;
+    const followUpString = `*${actionName} by \`${(tempUser ? tempUser : reactionCollector.username)}\`*`;
+    if (server.followUpMessage) {
+      server.followUpMessage.edit(followUpString);
+    }
+    else {
+      sentMsg.channel.send(followUpString).then((msg) => {
+        server.followUpMessage = msg;
+      });
     }
   }
 }

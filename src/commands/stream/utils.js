@@ -56,14 +56,19 @@ function voteSystem(message, mgid, commandName, voter, votes, server) {
 function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg) {
   if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
     if (server.dictator && actionUser.id !== server.dictator.id) {
-      return message.channel.send('only the dictator can pause');
+      message.channel.send('only the dictator can pause');
+      return false;
     }
     if (server.voteAdmin.length > 0) {
-      if (force) {server.votePlayPauseMembersId = [];}
+      if (force) {
+        server.votePlayPauseMembersId = [];
+      }
       else if (voteSystem(message, message.guild.id, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
         noPrintMsg = true;
       }
-      else {return false;}
+      else {
+        return false;
+      }
     }
     pauseComputation(server);
     if (!noPrintMsg) {
@@ -78,6 +83,7 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
   }
   else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
+    server.numSinceLastEmbed++;
     return false;
   }
 }
@@ -95,14 +101,19 @@ function pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrin
 function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg) {
   if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
     if (server.dictator && actionUser.id !== server.dictator.id) {
-      return message.channel.send('only the dictator can play');
+      message.channel.send('only the dictator can play');
+      return false;
     }
     if (server.voteAdmin.length > 0) {
-      if (force) {server.votePlayPauseMembersId = [];}
+      if (force) {
+        server.votePlayPauseMembersId = [];
+      }
       else if (voteSystem(message, message.guild.id, 'play', actionUser, server.votePlayPauseMembersId, server)) {
         noPrintMsg = true;
       }
-      else {return false;}
+      else {
+        return false;
+      }
     }
     playComputation(server);
     if (!noPrintMsg) {
@@ -117,6 +128,7 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
   }
   else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
+    server.numSinceLastEmbed++;
     return false;
   }
 }
@@ -129,7 +141,7 @@ function playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrint
  * @param server {LocalServer} The server playback metadata
  * @param message {any?} The message metadata, used in the case of verifying a dj or dictator
  * @param actionUser {any?} The member requesting to stop playing, used in the case of verifying a dj or dictator
- * @returns {void}
+ * @returns {undefined}
  */
 function stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUser) {
   if (!voiceChannel) return;
