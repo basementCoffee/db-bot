@@ -1505,6 +1505,7 @@ async function devProcessCommands(message) {
     break;
   case 'temp':
     // =gztemp
+    if (zargs[1] && zargs[1] !== process.pid.toString() && zargs[1].toLowerCase() !== hardwareTag.toLowerCase()) return;
     getTemperature().then((response) => {
       if (!response.isError && response.value) {
         message.channel.send(`${hardwareTag || process.pid.toString()}: \`${response.value}\``);
