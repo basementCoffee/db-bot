@@ -15,7 +15,7 @@ class SpotifyApi {
       clientSecret: process.env.SPOTIFY_SECRET_CLIENT_ID,
     });
     this.expiryDateMS = 0;
-    this.authenticate().catch((e) => {
+    this.#authenticate().catch((e) => {
       const errMsg = `[ERROR][id: ${process.pid.toString()}] Missing spotify token credentials.\n${e.stack}`;
       logError(errMsg);
     });
@@ -23,18 +23,19 @@ class SpotifyApi {
 
   /**
    * Authenticates spotify-web-api-node.
-   * @returns {Promise<*|null>}
+   * @returns {Promise<boolean>} Whether the request was successful.
    */
-  async authenticate() {
+  async #authenticate() {
     try {
       const data = await this._spotifyApiNode.clientCredentialsGrant();
       this._spotifyApiNode.setAccessToken(data.body.access_token);
-      // 3600 is the usual expiry time
-      this.expiryDateMS = (Date.now() + (data.body.expiry_date || 3600)) - 5000;
-      return data.body;
+      // 3600ms is the usual expiry time
+      this.expiryDateMS = (Date.now() + (data.body.expires_in || 3600)) - 5000;
+      return true;
     }
-    catch (e) {}
-    return null;
+    catch (e) {
+      return false;
+    }
   }
 
   /**
@@ -43,7 +44,7 @@ class SpotifyApi {
    */
   async getSpotifyApiNode() {
     if (Date.now() > this.expiryDateMS) {
-      await this.authenticate();
+      await this.#authenticate();
     }
     return this._spotifyApiNode;
   }
