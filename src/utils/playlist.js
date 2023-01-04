@@ -9,6 +9,7 @@ const fetch = require('isomorphic-unfetch');
 const { getData, getTracks } = require('spotify-url-info')(fetch);
 const ytpl = require('ytpl');
 const processStats = require('../utils/lib/ProcessStats');
+const spotifyAuth = require('./lib/SpotifyAuthenticator');
 
 /**
  * Gets the url of the item from the infos.
@@ -88,13 +89,34 @@ async function getPlaylistItems(url, tempArray) {
 async function getPlaylistArray(playlistUrl, type) {
   switch (type) {
   case StreamType.SPOTIFY:
-    // filter ensures that each element exists
-    const tracks = (await getTracksWrapper(playlistUrl)).filter((track) => track);
-    if (tracks[0] && !tracks[0].album) {
-      const firstTrack = await getData(playlistUrl);
-      tracks.map((item) => item.album = { images: firstTrack.images });
+    try {
+      const spotifyWebApi = await spotifyAuth.getSpotifyApiNode();
+      let additonalRequests;
+      let tracks = [];
+      let i = 0;
+      do {
+        const requestBody = (await spotifyWebApi.getPlaylistTracks(playlistUrl.split('/').pop(), { offset: i * 100 })).body;
+        const request = requestBody.tracks?.items || requestBody.tracks || requestBody.items;
+        if (additonalRequests) {
+          additonalRequests--;
+        }
+        else {
+          additonalRequests = Math.min(5, (Math.ceil(requestBody.total / (requestBody.limit || 100))));
+        }
+        tracks = tracks.concat(request.map((x) => x.track).filter((x) => x));
+        i++;
+      } while (additonalRequests > 0);
+      if (tracks[0] && !tracks[0].album) {
+        const firstTrack = await getData(playlistUrl);
+        tracks.map((item) => item.album = { images: firstTrack.images });
+      }
+      return tracks;
     }
-    return tracks;
+    catch (e) {
+      processStats.debug(`[ERROR] in ${getPlaylistArray.name} `, e);
+      // filter ensures that each element exists
+      return (await getTracksWrapper(playlistUrl)).filter((track) => track);
+    }
   case StreamType.YOUTUBE:
     const items = (await ytpl(playlistUrl, { pages: 5 })).items;
     // index of -1 means that items will repeat
