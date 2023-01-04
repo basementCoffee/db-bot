@@ -365,6 +365,11 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       }
       return;
     }
+    if (!botInVC(message)) {
+      processStats.debug('[ERROR] playLinkToVC: bot not detected in voice channel. Exiting...');
+      server.audio.reset();
+      return;
+    }
     if (retries < 2) {
       processStats.debug('[ERROR] playLinkToVC: unknown error. Trying again...');
       playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
