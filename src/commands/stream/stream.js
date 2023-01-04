@@ -268,6 +268,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     server.skipTimes = 0;
     server.audio.player.on('error', async (error) => {
       if (resource.playbackDuration < 1000 && retries < 4) {
+        processStats.debug('[ERROR] audio player error');
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise((res) => setTimeout(res, 500));
         if (botInVC(message)) {
@@ -283,7 +284,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)],
         },
       );
-      console.log('dispatcher error: ', error);
+      processStats.debug('[ERROR] dispatcher error: ', error);
     });
     // similar to on 'finish'
     server.audio.player.once('idle', () => {
@@ -315,6 +316,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     if (!retries) {
       playbackTimeout = setTimeout(() => {
         if (server.queue[0]?.url === whatToPlay && botInVC(message) && resource.playbackDuration < 1) {
+          processStats.debug('[ERROR] playLinkToVC: playback not detected. Attempting to play again...');
           playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
         }
       }, 2000);
@@ -323,6 +325,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   catch (e) {
     const errorMsg = e.toString().substring(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
+      processStats.debug('[ERROR] playLinkToVC: status code 404,410 error');
       if (!retries) {
         playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
       }
@@ -339,7 +342,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           skipLink(message, vc, true, server, true).catch((er) => processStats.debug(er));
         }
         else {
-          processStats.debug('status code 404 error', e);
           processStats.disconnectConnection(server);
           message.channel.send('*db vibe appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             // noinspection JSUnresolvedFunction
@@ -351,6 +353,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       return;
     }
     if (errorMsg.includes('No suitable format found')) {
+      processStats.debug('[ERROR] playLinkToVC: no suitable format found');
       if (server.skipTimes === 0) {
         message.channel.send('*this video contains a restriction preventing it from being played*');
         server.numSinceLastEmbed++;
@@ -362,12 +365,18 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       }
       return;
     }
+    if (!botInVC(message)) {
+      processStats.debug('[ERROR] playLinkToVC: bot not detected in voice channel. Exiting...');
+      server.audio.reset();
+      return;
+    }
     if (retries < 2) {
+      processStats.debug('[ERROR] playLinkToVC: unknown error. Trying again...');
       playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
       return;
     }
     if (processStats.devMode) {
-      processStats.debug('playLinkToVC error: ', e);
+      processStats.debug('[ERROR] playLinkToVC error: ', e);
     }
     else {
       logError(`playLinkToVC error:\n${whatToPlay}\n${e.stack}`);
@@ -393,7 +402,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     }
     else {
       logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
-      logError(e.toString().substring(0, 1910));
+      logError(e);
     }
     // end of try catch
   }
@@ -684,7 +693,11 @@ async function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkip
     voiceChannel = mem.voice.channel;
     if (!voiceChannel) return message.channel.send('*must be in a voice channel to use this command*');
   }
-  if (server.queue.length < 1) return message.channel.send('*nothing is playing right now*');
+  if (server.queue.length < 1) {
+    message.channel.send('*nothing is playing right now*');
+    server.numSinceLastEmbed++;
+    return;
+  }
   if (server.dictator && mem.id !== server.dictator.id) {
     return message.channel.send('only the dictator can perform this action');
   }
@@ -941,40 +954,18 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
     case reactions.PPAUSE:
       if (!server.queue[0]) {
         reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
-        return sentMsg.channel.send('*nothing is playing right now*');
+        sentMsg.channel.send('*nothing is playing right now*');
+        server.numSinceLastEmbed++;
+        return;
       }
-      let tempUser = sentMsg.guild.members.cache.get(reactionCollector.id.toString());
+      const tempUser = sentMsg.guild.members.cache.get(reactionCollector.id.toString());
       if (!server.audio.status) {
         playCommandUtil(sentMsg, tempUser, server, true, false, true);
-        if (server.voteAdmin.length < 1 && !server.dictator) {
-          tempUser = tempUser.nickname;
-          if (server.followUpMessage) {
-            server.followUpMessage.edit('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*');
-          }
-          else {
-            sentMsg.channel.send('*played by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*').then((msg) => {
-              server.followUpMessage = msg;
-            });
-          }
-        }
+        sendStatus(server, tempUser, sentMsg, reactionCollector, 'played');
       }
       else {
         pauseCommandUtil(sentMsg, tempUser, server, true, false, true);
-        tempUser = tempUser.nickname;
-        if (server.voteAdmin.length < 1 && !server.dictator) {
-          if (server.followUpMessage) {
-            server.followUpMessage.edit('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*');
-          }
-          else {
-            sentMsg.channel.send('*paused by \`' + (tempUser ? tempUser : reactionCollector.username) +
-                '\`*').then((msg) => {
-              server.followUpMessage = msg;
-            });
-          }
-        }
+        sendStatus(server, tempUser, sentMsg, reactionCollector, 'paused');
       }
       reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
       break;
@@ -1011,6 +1002,29 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
     if (collector.ended) {
       audioCollectorEndAction(server, sentMsg);
       return;
+    }
+  }
+}
+
+/**
+ * Sends the updated play/pause status (with the username of user who initiated the action) to a text channel.
+ * @param server The server object.
+ * @param tempUser The user initiating the action.
+ * @param sentMsg The message to edit.
+ * @param reactionCollector The reactionCollector.
+ * @param actionName The name of the action (i.e. played/paused).
+ */
+function sendStatus(server, tempUser, sentMsg, reactionCollector, actionName) {
+  if (server.voteAdmin.length < 1 && !server.dictator) {
+    tempUser = tempUser.nickname;
+    const followUpString = `*${actionName} by \`${(tempUser ? tempUser : reactionCollector.username)}\`*`;
+    if (server.followUpMessage) {
+      server.followUpMessage.edit(followUpString);
+    }
+    else {
+      sentMsg.channel.send(followUpString).then((msg) => {
+        server.followUpMessage = msg;
+      });
     }
   }
 }

@@ -157,20 +157,24 @@ async function runKeysCommand(message, server, sheetName, user, specificPage, ov
       keysButtonCollector.on('collect', async (reaction, reactionCollector) => {
         if (reaction.emoji.name === reactions.QUESTION) {
           new EmbedBuilderLocal()
-            .setTitle('How to add/delete')
+            .setTitle('Commands')
             .setDescription(
-              '*Keys allow you to save a link as a playable word* \n' +
-              `Create a key -> \` ${prefixString}add [playlist] [key] [link]\`\n` +
-              `Delete a key (from any playlist) -> \` ${prefixString}del [key]\`\n` +
-              `Move a key -> \` ${prefixString}move [keys] [playlists]\`\n` +
-              `Rename a key -> \` ${prefixString}rename-key [old-name] [new]\`\n\n` +
+              '**Edit Keys:** *allows you to save a link as a playable word*\n' +
+              `Create a key -> \` ${prefixString}add [key] [link]\`\n` +
+              `Create a key (in playlist) -> \` ${prefixString}add [playlist] [key] [link]\`\n` +
+              `Delete a key -> \` ${prefixString}delete [key]\`\n` +
+              `Move a key -> \` ${prefixString}move [keys] [new-playlist]\`\n` +
+              `Rename a key -> \` ${prefixString}rename-key [old-name] [new-name]\`\n` +
+              '\n**Edit Playlists:** *organize your keys*\n' +
               `Create a playlist -> \` ${prefixString}add-playlist [playlist]\`\n` +
-              `Delete a playlist -> \` ${prefixString}del-playlist [playlist]\`\n` +
-              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n`,
-            )
-            .setFooter(
-              `play a key ->  ${prefixString}d [key]\n` +
-              `play a playlist -> ${prefixString}pd [playlist]`,
+              `Delete a playlist -> \` ${prefixString}delete-playlist [playlist]\`\n` +
+              `Rename a playlist -> \` ${prefixString}rename-playlist [old-name][new]\`\n` +
+              '\n**Play:** *a key or playlist*\n' +
+              `Play a key -> \` ${prefixString}d [key]\`\n` +
+              `Play a key (front of queue) -> \` ${prefixString}dnow [key]\`\n` +
+              `Play random keys -> \` ${prefixString}shuffle [number]\`\n` +
+              `Play a playlist -> \` ${prefixString}pd [playlist]\`\n`,
+              `Shuffle a playlist -> \` ${prefixString}pshuffle [playlist]\``,
             )
             .send(message.channel).then();
         }

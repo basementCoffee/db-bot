@@ -107,7 +107,7 @@ class ProcessStats {
   }
 
   /**
-   * Used for logging during debugging. Should only log when in devMode (not in production).
+   * A controlled console.log that is used for debugging. Only logs when in devMode (not in production).
    * @param args {...any} Arguments to log.
    */
   debug(...args) {

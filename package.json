@@ -1,6 +1,6 @@
 {
   "name": "discordbotz",
-  "version": "8.5.1",
+  "version": "8.5.9",
   "description": "A discord playback bot with a UI.",
   "main": "src/index.js",
   "scripts": {
@@ -29,7 +29,7 @@
     "ffmpeg-static": "^5.1.0",
     "fluent-ffmpeg": "^2.1.2",
     "genius-lyrics": "^4.4.0",
-    "googleapis": "^109.0.1",
+    "googleapis": "^110.0.0",
     "isomorphic-unfetch": "^3.1.0",
     "leven": "~3.1.0",
     "libsodium": "^0.7.10",
@@ -42,7 +42,7 @@
     "request": "^2.88.2",
     "scdl-core": "^1.1.0",
     "soundcloud-downloader": "^1.0.0",
-    "spotify-url-info": "^3.1.10",
+    "spotify-url-info": "^3.2.3",
     "spotify-web-api-node": "^5.0.2",
     "twitch-m3u8": "^1.1.5",
     "unpipe": "^1.0.0",

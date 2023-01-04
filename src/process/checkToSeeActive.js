@@ -27,30 +27,34 @@ async function responseHandler() {
   if (!processStats.isPendingStatus) return;
   resHandlerTimeout = null;
   if (setOfBotsOn.size < 1 && processStats.isInactive) {
-    processStats.servers.clear();
-    const xdb = await gsrun('A', 'B', PREFIX_SN);
-    for (const [gid, pfx] of xdb.congratsDatabase) {
-      processStats.getServer(gid).prefix = pfx;
-    }
-    processStats.setProcessActive();
-    processStats.setDevMode(false);
-    // noinspection JSUnresolvedFunction
-    bot.channels.fetch(CH.process)
-      .then((channel) => channel.send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString()));
+    await becomeActiveProcess();
     // waits 9 - 27 seconds
     setTimeout(() => {
       if (processStats.isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 18) + 9) * 1000));
   }
   else if (setOfBotsOn.size > 1) {
-    setOfBotsOn.clear();
-    // noinspection JSUnresolvedFunction
-    bot.channels.fetch(CH.process)
-      .then((channel) => channel.send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString()));
+    await becomeActiveProcess();
     // waits 3 - 7 seconds
     setTimeout(() => {
       if (processStats.isInactive) checkToSeeActive();
     }, ((Math.floor(Math.random() * 5) + 3) * 1000));
+  }
+}
+
+/**
+ * Computation to become the main active process.
+ * @returns {Promise<void>}
+ */
+async function becomeActiveProcess() {
+  processStats.setProcessActive();
+  processStats.setDevMode(false);
+  // noinspection JSUnresolvedFunction
+  bot.channels.fetch(CH.process)
+    .then((channel) => channel.send('~db-process-off' + buildNo.getBuildNo() + '-' + process.pid.toString()));
+  const xdb = await gsrun('A', 'B', PREFIX_SN);
+  for (const [gid, pfx] of xdb.congratsDatabase) {
+    processStats.getServer(gid).prefix = pfx;
   }
 }
 
