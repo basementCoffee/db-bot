@@ -282,7 +282,8 @@ async function runUserCommands(message, statement, server, args, prefixString) {
     commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member.id)).then();
     break;
   case 'shuffle':
-    commandHandlerCommon.shuffleQueueOrPlayRandom([args[1]], message, getSheetName(message.member.id), server);
+    commandHandlerCommon.shuffleQueueOrPlayRandom([args[1]], message, getSheetName(message.member.id), server,
+      false, true);
     break;
   case 'rn':
   case 'randnow':

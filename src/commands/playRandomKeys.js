@@ -6,6 +6,7 @@ const { updateActiveEmbed } = require('../utils/embed');
 const { playLinkToVC } = require('./stream/stream');
 const { getXdb2 } = require('../database/retrieval');
 const { isValidRequestWPlay } = require('../utils/validation');
+const { universalLinkFormatter } = require('../utils/formatUtils');
 
 /**
  * Runs the checks to add random songs to the queue
@@ -13,10 +14,10 @@ const { isValidRequestWPlay } = require('../utils/validation');
  * @param message The message that triggered the bot
  * @param sheetName The name of the sheet to reference
  * @param server {LocalServer} The local server object
- * @param addToFront Optional - true if to add to the front
- * @param isShuffle {boolean} Whether it is a shuffle command (will shuffle the queue if no args are provided)
+ * @param addToFront {boolean?} True if to add to the front
+ * @param isShuffle {boolean?} Whether it is a shuffle command (will shuffle the queue if no args are provided)
  */
-async function runRandomToQueue(wArray, message, sheetName, server, addToFront = false, isShuffle) {
+async function runRandomToQueue(wArray, message, sheetName, server, addToFront = false, isShuffle = false) {
   wArray = wArray.filter((x) => x);
   if (!message.member.voice?.channel) {
     const sentMsg = await message.channel.send(`must be in a voice channel to ${isShuffle ? 'shuffle' : 'play random'}`);
@@ -37,6 +38,12 @@ async function runRandomToQueue(wArray, message, sheetName, server, addToFront =
     }
     return;
   }
+  if (firstWord.includes('.')) {
+    const link = universalLinkFormatter(firstWord);
+    if (verifyPlaylist(link)) {
+      return playRandomKeys(message, link, undefined, server, true, addToFront);
+    }
+  }
   // get the xdb playlist name if applicable
   let xdbPlaylist;
   let tempIndex = 0;
@@ -53,8 +60,6 @@ async function runRandomToQueue(wArray, message, sheetName, server, addToFront =
   // convert addToFront into a number for playRandomKeys
   const numToPlay = Math.floor(Number(firstWord));
   server.numSinceLastEmbed++;
-  // addToFront parameter must be a number for playRandomKeys
-  if (addToFront) addToFront = 1;
   if (!numToPlay) {
     if (firstWord) {
       playRandomKeys(message, firstWord, xdb.globalKeys, server, true, addToFront).then();
@@ -246,14 +251,14 @@ async function getRandomKeys(input, cdb, serverQueue, prefix, isPlaylist) {
 
 /**
  * Adds a number of items from the database to the queue randomly.
- * @param message The message that triggered the bot
+ * @param message {import('discord.js').Message} The message that triggered the bot
  * @param numOfTimes The number of items to add to the queue, or a playlist url if isPlaylist
  * @param cdb {Map}  The database to reference, should be mapped to keyObjects (see getXdb2)
  * @param server {LocalServer} The local server object
  * @param isPlaylist Optional - True if to randomize just a playlist
- * @param addToFront {number} Optional - Should be 1 if to add items to the front of the queue
+ * @param addToFront {boolean?} True if to add items to the front of the queue
  */
-async function playRandomKeys(message, numOfTimes, cdb, server, isPlaylist, addToFront = 0) {
+async function playRandomKeys(message, numOfTimes, cdb, server, isPlaylist, addToFront = false) {
   let sentMsg = message.channel.send('generating random from your keys...');
   const data = await getRandomKeys(numOfTimes, cdb, server.queue, server.prefix, isPlaylist);
   sentMsg = await sentMsg;

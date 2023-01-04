@@ -59,9 +59,10 @@ class CommandHandlerCommon {
    * @param sheetName The name of the sheet to reference
    * @param server {LocalServer} The server playback metadata
    * @param addToFront Optional - true if to add to the front
+   * @param isShuffle Whether it is a shuffle cmd.
    */
-  async addRandomKeysToQueue(num, message, sheetName, server, addToFront = false) {
-    return runRandomToQueue(num, message, sheetName, server, addToFront);
+  async addRandomKeysToQueue(num, message, sheetName, server, addToFront = false, isShuffle) {
+    return runRandomToQueue(num, message, sheetName, server, addToFront, isShuffle);
   }
 
   /**
@@ -395,14 +396,16 @@ class CommandHandlerCommon {
    * @param message The message metadata.
    * @param sheetName The sheet name to use for db retrieval
    * @param server {LocalServer} The server playback metadata
+   * @param addToFront {boolean} Whether to add to the front of the queue.
+   * @param isShuffle {boolean} Whether to shuffle the new keys before adding them to the queue.
    */
-  shuffleQueueOrPlayRandom(wildcardRandomArr = [], message, sheetName, server) {
+  shuffleQueueOrPlayRandom(wildcardRandomArr = [], message, sheetName, server, addToFront, isShuffle) {
     wildcardRandomArr = wildcardRandomArr.filter((x) => x);
     if (wildcardRandomArr.length < 1) {
       this.shuffleQueue(server, message);
     }
     else {
-      this.addRandomKeysToQueue(wildcardRandomArr, message, sheetName, server, false).then();
+      this.addRandomKeysToQueue(wildcardRandomArr, message, sheetName, server, addToFront, isShuffle).then();
     }
   }
 
