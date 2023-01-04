@@ -268,6 +268,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     server.skipTimes = 0;
     server.audio.player.on('error', async (error) => {
       if (resource.playbackDuration < 1000 && retries < 4) {
+        processStats.debug('[ERROR] audio player error');
         if (playbackTimeout) clearTimeout(playbackTimeout);
         if (retries === 3) await new Promise((res) => setTimeout(res, 500));
         if (botInVC(message)) {
@@ -283,7 +284,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
         timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${server.queueHistory[server.queueHistory.length - 1]?.url}`)],
         },
       );
-      console.log('dispatcher error: ', error);
+      processStats.debug('[ERROR] dispatcher error: ', error);
     });
     // similar to on 'finish'
     server.audio.player.once('idle', () => {
@@ -315,6 +316,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     if (!retries) {
       playbackTimeout = setTimeout(() => {
         if (server.queue[0]?.url === whatToPlay && botInVC(message) && resource.playbackDuration < 1) {
+          processStats.debug('[ERROR] playLinkToVC: playback not detected. Attempting to play again...');
           playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
         }
       }, 2000);
@@ -323,6 +325,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
   catch (e) {
     const errorMsg = e.toString().substring(0, 100);
     if (errorMsg.includes('ode: 404') || errorMsg.includes('ode: 410')) {
+      processStats.debug('[ERROR] playLinkToVC: status code 404,410 error');
       if (!retries) {
         playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
       }
@@ -339,7 +342,6 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
           skipLink(message, vc, true, server, true).catch((er) => processStats.debug(er));
         }
         else {
-          processStats.debug('status code 404 error', e);
           processStats.disconnectConnection(server);
           message.channel.send('*db vibe appears to be facing some issues: automated diagnosis is underway.*').then(() => {
             // noinspection JSUnresolvedFunction
@@ -351,6 +353,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       return;
     }
     if (errorMsg.includes('No suitable format found')) {
+      processStats.debug('[ERROR] playLinkToVC: no suitable format found');
       if (server.skipTimes === 0) {
         message.channel.send('*this video contains a restriction preventing it from being played*');
         server.numSinceLastEmbed++;
@@ -363,11 +366,12 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
       return;
     }
     if (retries < 2) {
+      processStats.debug('[ERROR] playLinkToVC: unknown error. Trying again...');
       playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
       return;
     }
     if (processStats.devMode) {
-      processStats.debug('playLinkToVC error: ', e);
+      processStats.debug('[ERROR] playLinkToVC error: ', e);
     }
     else {
       logError(`playLinkToVC error:\n${whatToPlay}\n${e.stack}`);
@@ -393,7 +397,7 @@ async function playLinkToVC(message, queueItem, vc, server, retries = 0, seekSec
     }
     else {
       logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
-      logError(e.toString().substring(0, 1910));
+      logError(e);
     }
     // end of try catch
   }
