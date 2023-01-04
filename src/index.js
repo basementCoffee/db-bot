@@ -780,9 +780,10 @@ async function runDevCommands(message, statement, server, args, prefixString) {
   const mgid = message.guild.id;
   switch (statement) {
   case 'gztest':
+    // =gztest
     // this method is for testing purposes only. (cmd: npm run dev-test)
     if (!processStats.devMode) return;
-    runDevTest(message.channel).catch((err) => processStats.debug(err));
+    runDevTest(message.channel, ['']).catch((err) => processStats.debug(err));
     break;
   case 'devadd':
     message.channel.send(
@@ -1546,11 +1547,11 @@ bot.on('messageCreate', (message) => {
 /**
  * Runs a test.
  * @param channel {import('discord.js').TextChannel} The text channel to run the test in.
+ * @param messagesToRun {Array<string>} Array of message IDs to test.
  */
-async function runDevTest(channel) {
+async function runDevTest(channel, messagesToRun) {
   channel.send('*test received*').catch((er) => processStats.debug(er));
   // fetch should be the message to test/mimic
-  const messagesToRun = [''];
   for (const msgId of messagesToRun) {
     if (!msgId) {
       channel.send('warning: empty test cases, exiting...');
@@ -1559,7 +1560,7 @@ async function runDevTest(channel) {
     const msg = await channel.messages.fetch(msgId);
     await new Promise((res) => setTimeout(res, 2000));
     if (msg) {
-      const baseCmdInfo = `[INFO] ${runDevTest.name}: processing "${msg.content}"`;
+      const baseCmdInfo = `[INFO] ${runDevTest.name}: testing "${msg.content}"`;
       if (msg.content.substring(1, 3) === 'gz') {
         processStats.debug(`${baseCmdInfo} (to ${devProcessCommands.name})`);
         await devProcessCommands(msg);
