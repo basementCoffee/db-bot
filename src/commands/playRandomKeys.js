@@ -288,6 +288,14 @@ async function playRandomKeys(message, numOfTimes, cdb, server, isPlaylist, addT
   playRandomKeysToVC(message, server, addToFront, data.keys);
 }
 
+/**
+ * Given keys, adds the keys to the queue and, if applicable, plays them to a voice channel.
+ * @param message {import('discord.js').Message} The message that triggered the bot
+ * @param server {LocalServer} The server object.
+ * @param addToFront {boolean} True if to add items to the front of the queue
+ * @param keys {Array<*>} The keys to add to the queue and play.
+ * @returns {Promise<void>}
+ */
 async function playRandomKeysToVC(message, server, addToFront, keys) {
   const queueIsEmpty = server.queue.length < 1;
   const availableSpace = MAX_QUEUE_S - server.queue.length;
