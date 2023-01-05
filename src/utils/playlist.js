@@ -1,6 +1,6 @@
 const { SoundCloud: scdl } = require('scdl-core');
 scdl.connect();
-const { createQueueItem, getLinkType, verifyPlaylist, logError } = require('./utils');
+const { createQueueItem, getLinkType, verifyPlaylist, logError, verifySpotifyPlaylist } = require('./utils');
 const {
   StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK,
 } = require('./lib/constants');
@@ -91,34 +91,40 @@ async function getPlaylistArray(playlistUrl, type) {
   case StreamType.SPOTIFY:
     try {
       const spotifyWebApi = await spotifyAuth.getSpotifyApiNode();
-      let additionalRequests;
       let tracks = [];
-      let i = 0;
-      do {
-        const requestBody = (await spotifyWebApi.getPlaylistTracks(playlistUrl.split('/').pop(), { offset: i * 100 })).body;
-        const requestData = requestBody.tracks ?? requestBody;
-        const requestItems = requestData.items;
-        if (additionalRequests) {
-          additionalRequests--;
+      if (verifySpotifyPlaylist(playlistUrl)) {
+        let additionalRequests;
+        let i = 0;
+        do {
+          const requestBody = (await spotifyWebApi.getPlaylistTracks(playlistUrl.split('/').pop(), { offset: i * 100 })).body;
+          const requestData = requestBody.tracks ?? requestBody;
+          const requestItems = requestData.items;
+          if (additionalRequests) {
+            additionalRequests--;
+          }
+          else {
+            // floor would not work instead of ceil for cases where total == limit
+            additionalRequests = Math.min(5, (Math.ceil(requestData.total / (requestData.limit || 100)))) - 1;
+          }
+          tracks = tracks.concat(requestItems.map((x) => x.track).filter((x) => x));
+          i++;
+        } while (additionalRequests > 0);
+        if (tracks[0] && !tracks[0].album) {
+          const firstTrack = await getData(playlistUrl);
+          tracks.map((item) => item.album = { images: firstTrack.images });
         }
-        else {
-          // floor would not work instead of ceil for cases where total == limit
-          additionalRequests = Math.min(5, (Math.ceil(requestData.total / (requestData.limit || 100)))) - 1;
-        }
-        tracks = tracks.concat(requestItems.map((x) => x.track).filter((x) => x));
-        i++;
-      } while (additionalRequests > 0);
-      if (tracks[0] && !tracks[0].album) {
-        const firstTrack = await getData(playlistUrl);
-        tracks.map((item) => item.album = { images: firstTrack.images });
+      }
+      else {
+        const trackItem = (await spotifyWebApi.getTracks([playlistUrl.split('/').pop()])).body.tracks[0];
+        tracks.push(trackItem);
       }
       return tracks;
     }
     catch (e) {
       processStats.debug(`[ERROR] in ${getPlaylistArray.name} `, e);
-      // filter ensures that each element exists
-      return (await getTracksWrapper(playlistUrl)).filter((track) => track);
     }
+    // filter ensures that each element exists
+    return (await getTracksWrapper(playlistUrl)).filter((track) => track);
   case StreamType.YOUTUBE:
     const items = (await ytpl(playlistUrl, { pages: 5 })).items;
     // index of -1 means that items will repeat
