@@ -695,7 +695,7 @@ async function runSkipCommand(message, voiceChannel, server, skipTimes, sendSkip
   }
   if (server.queue.length < 1) {
     message.channel.send('*nothing is playing right now*');
-    server.numSinceLastEmbed++;
+    server.numSinceLastEmbed += 2;
     return;
   }
   if (server.dictator && mem.id !== server.dictator.id) {
@@ -955,7 +955,7 @@ async function generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, 
       if (!server.queue[0]) {
         reaction.users.remove(reactionCollector.id).catch((err) => processStats.debug(err));
         sentMsg.channel.send('*nothing is playing right now*');
-        server.numSinceLastEmbed++;
+        server.numSinceLastEmbed += 2;
         return;
       }
       const tempUser = sentMsg.guild.members.cache.get(reactionCollector.id.toString());
