@@ -74,7 +74,7 @@ function verifyPlaylist(url) {
   try {
     url = url.toLowerCase();
     if (url.includes(SPOTIFY_BASE_LINK)) {
-      if (url.includes('/playlist') || url.includes('/album')) {
+      if (verifySpotifyPlaylist(url)) {
         return StreamType.SPOTIFY;
       }
     }
@@ -87,6 +87,15 @@ function verifyPlaylist(url) {
   }
   catch (e) {}
   return false;
+}
+
+/**
+ * Returns true if the given url is a valid Spotify playlist link.
+ * @param url {string} The url to verify.
+ * @returns {boolean} Whether it is a Spotify playlist.
+ */
+function verifySpotifyPlaylist(url) {
+  return url.includes('/playlist') || url.includes('/album');
 }
 
 /**
@@ -406,5 +415,5 @@ module.exports = {
   botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, getQueueText, getTitle,
   endStream, unshiftQueue, pushQueue, createQueueItem, getLinkType, createMemoryEmbed, removeDBMessage,
   catchVCJoinError, logError, linkValidator, getSheetName, isPersonalSheet, getBotDisplayName, createVisualEmbed,
-  notInVoiceChannelErrorMsg, getVCMembers, botInVcGuild,
+  notInVoiceChannelErrorMsg, getVCMembers, botInVcGuild, verifySpotifyPlaylist,
 };
