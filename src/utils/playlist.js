@@ -91,21 +91,23 @@ async function getPlaylistArray(playlistUrl, type) {
   case StreamType.SPOTIFY:
     try {
       const spotifyWebApi = await spotifyAuth.getSpotifyApiNode();
-      let additonalRequests;
+      let additionalRequests;
       let tracks = [];
       let i = 0;
       do {
         const requestBody = (await spotifyWebApi.getPlaylistTracks(playlistUrl.split('/').pop(), { offset: i * 100 })).body;
-        const request = requestBody.tracks?.items || requestBody.tracks || requestBody.items;
-        if (additonalRequests) {
-          additonalRequests--;
+        const requestData = requestBody.tracks ?? requestBody;
+        const requestItems = requestData.items;
+        if (additionalRequests) {
+          additionalRequests--;
         }
         else {
-          additonalRequests = Math.min(5, (Math.ceil(requestBody.total / (requestBody.limit || 100))));
+          // floor would not work instead of ceil for cases where total == limit
+          additionalRequests = Math.min(5, (Math.ceil(requestData.total / (requestData.limit || 100)))) - 1;
         }
-        tracks = tracks.concat(request.map((x) => x.track).filter((x) => x));
+        tracks = tracks.concat(requestItems.map((x) => x.track).filter((x) => x));
         i++;
-      } while (additonalRequests > 0);
+      } while (additionalRequests > 0);
       if (tracks[0] && !tracks[0].album) {
         const firstTrack = await getData(playlistUrl);
         tracks.map((item) => item.album = { images: firstTrack.images });
