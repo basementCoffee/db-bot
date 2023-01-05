@@ -9,7 +9,7 @@ const WAIT_TIME = 12000;
 // the maximum number of PM2 restarts allowed
 const MAX_RESTARTS = 5;
 // The last supported version that this project can be safely rolled back to
-let minSupportedVersion = '8.5.7';
+let minSupportedVersion = '8.6.1';
 // path of where the minSupportedVersion is stored (to be stored outside the git project)
 const FILE_PATH_MIN_VERSION = './.min_version_vibe.txt';
 
