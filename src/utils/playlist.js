@@ -1,6 +1,6 @@
 const { SoundCloud: scdl } = require('scdl-core');
 scdl.connect();
-const { createQueueItem, getLinkType, verifyPlaylist, logError, verifySpotifyPlaylist } = require('./utils');
+const { createQueueItem, getLinkType, verifyPlaylist, logError, isPlaylistSpotifyLink } = require('./utils');
 const {
   StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK,
 } = require('./lib/constants');
@@ -92,7 +92,7 @@ async function getPlaylistArray(playlistUrl, type) {
     try {
       const spotifyWebApi = await spotifyAuth.getSpotifyApiNode();
       let tracks = [];
-      if (verifySpotifyPlaylist(playlistUrl)) {
+      if (isPlaylistSpotifyLink(playlistUrl)) {
         let additionalRequests;
         let i = 0;
         do {
