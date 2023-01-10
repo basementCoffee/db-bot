@@ -485,6 +485,7 @@ async function runUserCommands(message, statement, server, args, prefixString) {
   case 'audit':
   case 'freq':
   case 'frequency':
+    if (!botInVC(message)) return;
     const tempAuditArray = [];
     for (const [key, value] of server.mapFinishedLinks) {
       tempAuditArray.push({ url: key, title: (await getTitle(value.queueItem)), index: value.numOfPlays });
