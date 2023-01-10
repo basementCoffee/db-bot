@@ -462,7 +462,6 @@ async function runUserCommands(message, statement, server, args, prefixString) {
     commandHandlerCommon.insert(message, mgid, args.slice(1), server, getSheetName(message.member.id)).then();
     break;
   case 'q':
-  case 'que':
     runQueueCommand(server, message, mgid, true);
     break;
   case 'list':
@@ -470,8 +469,20 @@ async function runUserCommands(message, statement, server, args, prefixString) {
   case 'queue':
     runQueueCommand(server, message, mgid, false);
     break;
+  case 'queuesearch':
+  case 'searchqueue':
+  case 'queuefind':
+    if (!args[1]) {
+      message.channel.send('error: expected a term to search for within the queue');
+      return;
+    }
+    if (!botInVC(message)) {
+      message.channel.send('error: must be in a voice channel with db vibe');
+      return;
+    }
+    commandHandlerCommon.queueFind(message, server, args.slice(1).join(' ')).catch((er) => processStats.debug(er));
+    break;
   case 'audit':
-  case 'plays':
   case 'freq':
   case 'frequency':
     const tempAuditArray = [];

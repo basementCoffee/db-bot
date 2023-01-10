@@ -21,6 +21,7 @@ const { runSeekCommand } = require('./seek');
 const { runRandomToQueue, shuffleQueue } = require('./playRandomKeys');
 const { getSettings, setSettings } = require('../database/retrieval');
 const { removeFormattingLink } = require('../utils/formatUtils');
+const { queueFind } = require('./queueFind');
 
 
 // A common handler for user commands.
@@ -345,6 +346,17 @@ class CommandHandlerCommon {
 
   async playWithSeek(message, server, args, mgid) {
     return runSeekCommand(message, server, args, mgid);
+  }
+
+  /**
+   * Find a title within the queue.
+   * @param message The message object.
+   * @param server {LocalServer} The server object.
+   * @param term {string} The term to purge.
+   * @return {Promise<void>}
+   */
+  async queueFind(message, server, term) {
+    return queueFind(message, server, term);
   }
 
   /**
