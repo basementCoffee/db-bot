@@ -101,10 +101,11 @@ class EmbedBuilderLocal {
   /**
    * Sends the embed in place of an existing message.
    * @param message {import('discord.js').Message} The message to edit.
+   * @param content {string?} The content to send with the message.
    * @return {import('discord.js').Message} The edited message.
    */
-  async edit(message) {
-    return message.edit({ embeds: [this.build()] });
+  async edit(message, content = '') {
+    return message.edit({ embeds: [this.build()], content });
   }
 }
 
