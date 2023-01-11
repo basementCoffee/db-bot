@@ -1549,7 +1549,7 @@ bot.on('messageCreate', (message) => {
     return;
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
-  if (message.channel.type === 'DM') {
+  if (message.guildId === null) {
     dmHandler(message, message.content);
   }
   else {
