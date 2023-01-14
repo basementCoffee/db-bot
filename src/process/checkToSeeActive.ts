@@ -2,9 +2,8 @@ import { TextBasedChannel } from 'discord.js';
 import { setOfBotsOn, bot, PREFIX_SN } from '../utils/lib/constants';
 import processStats from '../utils/lib/ProcessStats';
 import buildNumber from '../utils/lib/BuildNumber';
-
+import { gsrun } from '../database/api/api';
 const CH = require('../../channel.json');
-const { gsrun } = require('../database/api/api');
 
 let resHandlerTimeout: any = undefined;
 

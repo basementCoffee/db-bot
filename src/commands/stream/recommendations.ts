@@ -81,7 +81,7 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
   const channel = await user.createDM();
   let num = parseInt(args[1]);
   // hot-swap function on whether a link is relevant/applicable
-  let isRelevant = (m: Message) => {
+  let isRelevant: (x: Message) => boolean = () => {
     return false;
   };
   if (num < 1) {
@@ -89,7 +89,7 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
     return;
   }
   if (num) {
-    isRelevant = (m: Message) => num > 0;
+    isRelevant = () => num > 0;
   } else {
     num = 0;
     // if the message was created in the last 48 hours
@@ -123,7 +123,7 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
    */
   const isInQueue = (queue: any[], link: string) => queue.some((val) => val.url === link);
   for (const [, m] of messages) {
-    if (m.author.id !== bot.user.id) continue;
+    if (m.author.id !== bot.user!.id) continue;
     const regex = /<(((?!discord).)*)>/g;
     const res = regex.exec(m.content);
     let url = getUrl(res, m);

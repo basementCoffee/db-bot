@@ -1,17 +1,15 @@
 /* eslint-disable camelcase */
 import {
+  Channel,
   Collection,
   ColorResolvable,
   Guild,
   GuildMember,
   Message,
-  MessagePayload,
   MessagePayloadOption,
   TextBasedChannel
 } from 'discord.js';
-
 import fetch from 'isomorphic-unfetch';
-const { getData } = require('spotify-url-info')(fetch);
 import ytdl from 'ytdl-core-discord';
 import ytpl from 'ytpl';
 import LocalServer from './lib/LocalServer';
@@ -20,6 +18,7 @@ import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
 import { linkFormatter } from './formatUtils';
 import { botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot } from './lib/constants';
 import { QueueItem } from './lib/types';
+const { getData } = require('spotify-url-info')(fetch);
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
@@ -42,8 +41,9 @@ function botInVC(message: Message) {
  */
 function botInVcGuild(guild: Guild): boolean {
   try {
-    const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId)?.members;
-    return bot.voice.adapters.get(guild.id) && members && members.has(bot.user.id);
+    // @ts-ignore
+    const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId!)?.members;
+    return bot.voice.adapters.get(guild.id) && members && members.has(bot.user!.id);
   } catch (e) {
     return false;
   }
@@ -287,10 +287,11 @@ function setSeamless(server: LocalServer, fName: any, args: Array<any>, message:
 function removeDBMessage(channelID: string, deleteNum = 1, onlyDB: boolean) {
   let firstRun = true;
   try {
+    // the number of messages to fetch
     const NUM_TO_FETCH = 30;
-    bot.channels.fetch(channelID).then((channel: TextBasedChannel) =>
+    bot.channels.fetch(channelID).then((channel: Channel | null) =>
       // @ts-ignore
-      channel.messages.fetch(30).then(async (msgs: any) => {
+      channel.messages.fetch(NUM_TO_FETCH).then(async (msgs: any) => {
         for (const [, item] of msgs) {
           if (item.deletable) {
             if (firstRun) {
@@ -315,7 +316,7 @@ function removeDBMessage(channelID: string, deleteNum = 1, onlyDB: boolean) {
 function logError(errText: string | MessagePayloadOption | Error) {
   bot.channels
     .fetch(CH.err)
-    .then((channel: TextBasedChannel) => {
+    .then((channel: Channel | null) => {
       if (errText instanceof Error) {
         errText = `${errText.stack}`;
       }
@@ -397,7 +398,8 @@ function getVCMembers(guildId: string): Array<any> {
   const voiceConnection = getVoiceConnection(guildId);
   if (voiceConnection) {
     const collectionOfMembers: Collection<string, GuildMember> = bot.channels.cache.get(
-      voiceConnection.joinConfig.channelId
+      voiceConnection.joinConfig.channelId!
+      // @ts-ignore
     )?.members;
     if (collectionOfMembers) {
       const gmArray = Array.from(collectionOfMembers);

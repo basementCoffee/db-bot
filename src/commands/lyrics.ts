@@ -1,17 +1,16 @@
 import reactions from '../utils/lib/reactions';
 import { Message, MessageReaction, TextChannel, User } from 'discord.js';
-
-const ytdl = require('ytdl-core-discord');
+import { botID, StreamType } from '../utils/lib/constants';
+import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
+import ytdl from 'ytdl-core-discord';
 const fetch = require('isomorphic-unfetch');
 const { getData } = require('spotify-url-info')(fetch);
-import { botID, StreamType } from '../utils/lib/constants';
 // imports for YouTube captions
 const https = require('https');
 const xml2js = require('xml2js');
 const parser = new xml2js.Parser();
 // Genius imports
 const Genius = require('genius-lyrics');
-import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
 const GeniusClient = new Genius.Client();
 
 /**

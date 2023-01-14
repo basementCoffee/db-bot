@@ -1,6 +1,5 @@
 import LocalServer from '../utils/lib/LocalServer';
 import { GuildMember, Message, TextChannel } from 'discord.js';
-
 import { updateActiveEmbed } from '../utils/embed';
 import { serializeAndUpdate } from '../database/utils';
 

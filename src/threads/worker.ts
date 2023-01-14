@@ -1,10 +1,9 @@
 import { bot, botID } from '../utils/lib/constants';
 import { removeDBMessage, logError } from '../utils/utils';
 import { TextChannel } from 'discord.js';
-
+import { runLyricsCommand } from '../commands/lyrics';
+import { parentPort } from 'worker_threads';
 const token = process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n');
-const { runLyricsCommand } = require('../commands/lyrics');
-const { parentPort } = require('worker_threads');
 
 let loggedIn = false;
 
@@ -12,7 +11,7 @@ if (!token) {
   throw new Error('missing params within .env');
 }
 
-parentPort.on('message', async (m: any) => {
+parentPort!.on('message', async (m: any) => {
   try {
     switch (m.content.commandName) {
       case 'lyrics':
@@ -20,7 +19,7 @@ parentPort.on('message', async (m: any) => {
         bot.channels.fetch(m.content.cReqs.channelId).then((channel: TextChannel) => {
           if (channel) {
             const reactionsCallback = () => {
-              parentPort.postMessage({
+              parentPort!.postMessage({
                 content: {
                   commandName: m.content.commandName,
                   guildId: channel.guild.id,
@@ -28,6 +27,7 @@ parentPort.on('message', async (m: any) => {
                 }
               });
             };
+            // @ts-ignore
             runLyricsCommand(channel, reactionsCallback, ...m.content.commandArgs);
           }
         });

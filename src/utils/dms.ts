@@ -2,6 +2,7 @@ import { ClientUser, Message, MessageReaction, User } from 'discord.js';
 import { bot, botID, INVITE_MSG } from './lib/constants';
 import { getHelpList } from './help';
 import reactions from './lib/reactions';
+import { logError } from './utils';
 const { version } = require('../../package.json');
 const CH = require('../../channel.json');
 
@@ -11,7 +12,7 @@ const CH = require('../../channel.json');
  * @param messageContent The content of the message.
  * @returns {*}
  */
-function dmHandler(message: Message, messageContent: string) {
+async function dmHandler(message: Message, messageContent: string) {
   // the message content - formatted in lower case
   const mc = messageContent.toLowerCase().trim() + ' ';
   if (mc.length < 9) {
@@ -22,37 +23,39 @@ function dmHandler(message: Message, messageContent: string) {
     }
   }
   const mb = reactions.OUTBOX;
-  // noinspection JSUnresolvedFunction
-  bot.channels.cache
-    .get(CH.dm)
-    .send(
-      '------------------------------------------\n' +
-        '**From: ' +
-        message.author.username +
-        '** (' +
-        message.author.id +
-        ')\n' +
-        messageContent +
-        '\n------------------------------------------'
-    )
-    .then((msg: Message) => {
-      msg.react(mb).then();
-      const filter = (reaction: MessageReaction, user: User) => {
-        return user.id !== botID;
-      };
+  const messagePayload =
+    '------------------------------------------\n' +
+    '**From: ' +
+    message.author.username +
+    '** (' +
+    message.author.id +
+    ')\n' +
+    messageContent +
+    '\n------------------------------------------';
+  const channel = await bot.channels.fetch(CH.dm);
+  if (!channel) {
+    logError(`error: could not find DM channel\nmessage-payload:\n${messagePayload}`);
+    return;
+  }
+  // @ts-ignore
+  channel.send(messagePayload).then((msg: Message) => {
+    msg.react(mb).then();
+    const filter = (reaction: MessageReaction, user: User) => {
+      return user.id !== botID;
+    };
 
-      const collector = msg.createReactionCollector({ filter, time: 86400000 });
+    const collector = msg.createReactionCollector({ filter, time: 86400000 });
 
-      collector.on('collect', (reaction: MessageReaction, user: ClientUser) => {
-        if (reaction.emoji.name === mb) {
-          sendMessageToUser(msg, message.author.id.toString(), user.id);
-          reaction.users.remove(user).then();
-        }
-      });
-      collector.once('end', () => {
-        msg.reactions.cache.get(mb)?.remove().then();
-      });
+    collector.on('collect', (reaction: MessageReaction, user: ClientUser) => {
+      if (reaction.emoji.name === mb) {
+        sendMessageToUser(msg, message.author.id.toString(), user.id);
+        reaction.users.remove(user).then();
+      }
     });
+    collector.once('end', () => {
+      msg.reactions.cache.get(mb)?.remove().then();
+    });
+  });
 }
 
 /**
@@ -63,6 +66,10 @@ function dmHandler(message: Message, messageContent: string) {
  */
 function sendMessageToUser(message: Message, userID: string, reactionUserID: string | undefined) {
   const user = bot.users.cache.get(userID);
+  if (!user) {
+    message.channel.send('error: could not find user');
+    return;
+  }
   message.channel
     .send('What would you like me to send to ' + user.username + "? [type 'q' to not send anything]")
     .then((msg) => {

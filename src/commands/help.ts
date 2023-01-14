@@ -1,6 +1,5 @@
 import { Message, MessageReaction, User } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
-
 import { botID } from '../utils/lib/constants';
 import { getHelpList } from '../utils/help';
 import reactions from '../utils/lib/reactions';

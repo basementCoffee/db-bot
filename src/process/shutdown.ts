@@ -3,7 +3,6 @@ import processStats from '../utils/lib/ProcessStats';
 import { Guild, TextBasedChannel } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { parentThread } from '../threads/parentThread';
-
 const CH = require('../../channel.json');
 
 /**

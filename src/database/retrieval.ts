@@ -4,8 +4,7 @@ import { Message } from 'discord.js';
 import processStats from '../utils/lib/ProcessStats';
 import { PREFIX_SN } from '../utils/lib/constants';
 import { botInVC, logError } from '../utils/utils';
-
-const { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } = require('./api/api');
+import { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } from './api/api';
 
 /**
  * Gets the user keys from the database.

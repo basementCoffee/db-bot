@@ -1,5 +1,6 @@
 // the max size of the queue
-const { Client, GatewayIntentBits, Partials } = require('discord.js');
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
+
 // the db bot instance
 const bot = new Client({
   intents: [

@@ -1,27 +1,21 @@
 /* eslint-disable camelcase */
 'use strict';
+require('dotenv').config();
 import {
   ActivityType,
+  Channel,
   Guild,
   GuildMember,
   GuildTextBasedChannel,
   If,
   Message,
+  MessageReaction,
   Snowflake,
   TextBasedChannel,
   TextChannel,
+  User,
   VoiceState
 } from 'discord.js';
-require('dotenv').config();
-const token =
-  process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n') ||
-  (() => {
-    throw new Error('missing params within .env file');
-  })();
-const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
-const { exec } = require('child_process');
-const version = require('../package.json').version;
-const CH = require('../channel.json');
 import buildNo from './utils/lib/BuildNumber';
 import { gsrun, deleteRows } from './database/api/api';
 import {
@@ -36,8 +30,8 @@ import {
   botInVcGuild
 } from './utils/utils';
 import { formatDuration } from './utils/formatUtils';
-const { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } = require('./commands/dj');
-const {
+import { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } from './commands/dj';
+import {
   bot,
   checkActiveMS,
   setOfBotsOn,
@@ -49,7 +43,7 @@ const {
   INVITE_MSG,
   PREFIX_SN,
   startupTest
-} = require('./utils/lib/constants');
+} from './utils/lib/constants';
 import reactions from './utils/lib/reactions';
 import { updateActiveEmbed, sessionEndEmbed } from './utils/embed';
 import {
@@ -75,6 +69,15 @@ import fs from 'fs';
 import LocalServer from './utils/lib/LocalServer';
 import processStats from './utils/lib/ProcessStats';
 import commandHandlerCommon from './commands/CommandHandlerCommon';
+const token =
+  process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n') ||
+  (() => {
+    throw new Error('missing params within .env file');
+  })();
+const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
+const { exec } = require('child_process');
+const version = require('../package.json').version;
+const CH = require('../channel.json');
 const request = require('request');
 
 process.setMaxListeners(0);
@@ -183,7 +186,7 @@ async function runUserCommands(
       if (message.member!.voice?.channel) {
         const vc = message.member!.voice.channel;
         setTimeout(() => {
-          if (whatspMap[vc.id] === congratsLink) {
+          if (whatspMap.get(vc.id) === congratsLink) {
             skipLink(message, vc, false, server, true);
           }
           const item = server.queueHistory.findIndex((val) => val.url === congratsLink);
@@ -874,7 +877,8 @@ async function runUserCommands(
         message.channel.send(`*guessing from 1-${numToCheck}... chosen: **${randomInt2}***`);
       } else if (message.member?.voice?.channel) {
         try {
-          let gmArray = Array.from(bot.channels.cache.get(message.member!.voice.channel.id.toString()).members);
+          // @ts-ignore
+          let gmArray = Array.from(bot.channels.cache.get(message.member!.voice.channel.id.toString())!.members);
           gmArray = gmArray.map((item: any) => item[1].nickname || item[1].user.username);
           if (gmArray.length < 1) {
             return message.channel.send('Need at least 1 person in a voice channel.');
@@ -1090,7 +1094,7 @@ async function runDevCommands(
       }
       break;
     case 'gzid':
-      message.channel.send(`g: ${message.guild!.id}, b: ${bot.user.id}, m: ${message.member!.id}`);
+      message.channel.send(`g: ${message.guild!.id}, b: ${bot.user!.id}, m: ${message.member!.id}`);
       break;
     case 'gzsms':
       if (args[1]) {
@@ -1117,10 +1121,10 @@ async function runDevCommands(
           `version: ${version} (${buildNo.getBuildNo()})` +
             `\nprocess: ${process.pid.toString()} [${hardwareTag}]` +
             `\nservers: ${bot.guilds.cache.size}` +
-            `\nuptime: ${formatDuration(bot.uptime)}` +
+            `\nuptime: ${formatDuration(bot.uptime!)}` +
             `\nactive time: ${processStats.getTimeActive()}` +
             `\nstream time: ${formatDuration(processStats.getTotalStreamTime())}` +
-            `\nup since: ${bot.readyAt.toString().substring(0, 21)}` +
+            `\nup since: ${bot.readyAt!.toString().substring(0, 21)}` +
             `\nnumber of streams: ${processStats.getActiveStreamSize()}` +
             `\nactive voice channels: ${bot.voice.adapters.size}`
         )
@@ -1148,17 +1152,20 @@ async function runDevCommands(
           const updateMsg = '`NOTICE: db vibe is about to be updated. Expect a brief interruption within 5 minutes.`';
           bot.voice.adapters.forEach((x: any, gId: string) => {
             try {
-              const guildToUpdate = bot.channels.cache.get(getVoiceConnection(gId)?.joinConfig.channelId)?.guild;
+              // @ts-ignore
+              const guildToUpdate = bot.channels.cache.get(getVoiceConnection(gId)?.joinConfig.channelId!)?.guild;
               const currentEmbedChannelId = guildToUpdate
                 ? processStats.getServer(guildToUpdate.id).currentEmbedChannelId
                 : null;
               const currentTextChannel = currentEmbedChannelId ? bot.channels.cache.get(currentEmbedChannelId) : null;
               if (currentTextChannel) {
-                bot.channels.cache.get(currentEmbedChannelId)?.send(updateMsg);
+                // @ts-ignore
+                bot.channels.cache.get(currentEmbedChannelId!)?.send(updateMsg);
               } else {
                 bot.channels.cache
-                  .get(getVoiceConnection(gId)?.joinConfig.channelId)
-                  .guild.systemChannel.send(updateMsg);
+                  .get(getVoiceConnection(gId)?.joinConfig.channelId!)
+                  // @ts-ignore
+                  ?.guild.systemChannel.send(updateMsg);
               }
             } catch (e) {}
           });
@@ -1175,7 +1182,8 @@ async function runDevCommands(
           try {
             // guild member array
             const gmArray: Array<[Snowflake, GuildMember]> = Array.from(
-              bot.channels.cache.get(getVoiceConnection(g)!.joinConfig.channelId).members
+              // @ts-ignore
+              bot.channels.cache.get(getVoiceConnection(g)!.joinConfig.channelId!)!.members
             );
             gx += `${gmArray[0][1].guild.name}: *`;
             gmArray.map((item) => item[1].user.username).forEach((y) => (gx += `${y}, `));
@@ -1281,8 +1289,9 @@ bot.once('ready', () => {
       if (index === process.argv.length - 1) {
         console.log('could not run test, please provide channel id');
       } else {
-        bot.channels.fetch(process.argv[index + 1]).then((channel: TextBasedChannel) => {
-          if (channel && channel.lastMessageId) {
+        bot.channels.fetch(process.argv[index + 1]).then((channel: Channel | null) => {
+          if (channel && channel['lastMessageId' as keyof Channel]) {
+            // @ts-ignore
             channel.send('=gztest').then();
           } else {
             console.log('not a text channel');
@@ -1293,12 +1302,13 @@ bot.once('ready', () => {
   } else {
     checkStatusOfYtdl(processStats.getServer(CH['check-in-guild'])).then();
     setProcessInactiveAndMonitor();
-    bot.user.setActivity('beats | .db-vibe', { type: ActivityType.Playing });
+    bot.user!.setActivity('beats | .db-vibe', { type: ActivityType.Playing });
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
     (async () =>
-      (await bot.channels.fetch(CH.process)).send(`starting: ${process.pid} [${buildNo.getBuildNo()}]`).then(() => {
+      // @ts-ignore
+      (await bot.channels.fetch(CH.process))!.send(`starting: ${process.pid} [${buildNo.getBuildNo()}]`).then(() => {
         checkToSeeActive();
       }))();
   }
@@ -1320,7 +1330,7 @@ function processHandler(message: Message) {
         if (processStats.isInactive) {
           // 2hrs of uptime is required to update process
           if (
-            bot.uptime > 7200000 &&
+            bot.uptime! > 7200000 &&
             parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))
           ) {
             devUpdateCommand();
@@ -1344,7 +1354,7 @@ function processHandler(message: Message) {
     }
   } else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
     // view the build number of the starting process, if newer version then update
-    if (bot.uptime > 7200000) {
+    if (bot.uptime! > 7200000) {
       const regExp = /\[(\d+)/;
       const regResult = regExp.exec(message.content);
       const oBuildNo = regResult ? regResult[1] : null;
@@ -1455,11 +1465,11 @@ async function devProcessCommands(message: Message) {
             sentMsg.react(reactions.GEAR);
           }
 
-          const filter = (reaction: { emoji: { name: any } }, user: { id: string }) => {
+          const filter = (reaction: MessageReaction, user: User) => {
             return (
               user.id !== botID &&
               user.id === message.member!.id &&
-              [reactions.GEAR, reactions.O_DIAMOND].includes(reaction.emoji.name)
+              [reactions.GEAR, reactions.O_DIAMOND].includes(reaction.emoji.name!)
             );
           };
           // updates the existing gzk message
@@ -1692,7 +1702,7 @@ bot.on('messageCreate', (message: Message) => {
   }
   if (message.author.bot || processStats.isInactive || (processStats.devMode && !isAdmin(message.author.id))) return;
   if (message.guildId === null) {
-    dmHandler(message, message.content);
+    dmHandler(message, message.content).catch((err) => processStats.debug(err));
   } else {
     void runCommandCases(message);
   }
@@ -1875,5 +1885,5 @@ function uncaughtExceptionAction(e: Error) {
 (async () => {
   // login to discord
   await bot.login(token);
-  if (bot.user.id !== botID) throw new Error('Invalid botID');
+  if (bot.user!.id !== botID) throw new Error('Invalid botID');
 })();

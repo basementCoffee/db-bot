@@ -1,6 +1,5 @@
 import { Message } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
-
 import { getXdb2 } from '../database/retrieval';
 import { getAssumptionMultipleMethods } from './search';
 import { playLinkToVC } from './stream/stream';

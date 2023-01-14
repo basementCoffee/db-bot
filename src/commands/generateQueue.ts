@@ -1,7 +1,5 @@
 import LocalServer from '../utils/lib/LocalServer';
 import { Message, MessageReaction, User } from 'discord.js';
-import { indexing_v3 } from 'googleapis';
-
 const { botID, DB_BOT_ICON_MED } = require('../utils/lib/constants');
 const { botInVC, getTitle, createQueueItem, getSheetName } = require('../utils/utils');
 const { reactions } = require('../utils/lib/reactions');

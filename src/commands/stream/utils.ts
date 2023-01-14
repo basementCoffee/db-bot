@@ -169,7 +169,7 @@ function playCommandUtil(
  * @param stayInVC Whether to stay in the voice channel
  * @param server {LocalServer} The server playback metadata
  * @param message {any} The message metadata, used in the case of verifying a dj or dictator
- * @param actionUser {any?} The member requesting to stop playing, used in the case of verifying a dj or dictator
+ * @param actionUserId The member requesting to stop playing, used in the case of verifying a dj or dictator
  * @returns {undefined}
  */
 function stopPlayingUtil(
