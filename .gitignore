@@ -10,3 +10,4 @@ _MacOS.npm-start.command
 test
 .DS_Store
 .min_version_vibe.txt
+dist
