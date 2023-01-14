@@ -1222,7 +1222,7 @@ function processHandler(message: Message) {
   else if (processStats.isInactive && message.content.substring(0, 9) === 'starting:') {
     // view the build number of the starting process, if newer version then update
     if (bot.uptime > 7200000) {
-      const regExp = /\[(\d+)\]/;
+      const regExp = /\[(\d+)/;
       const regResult = regExp.exec(message.content);
       const oBuildNo = regResult ? regResult[1] : null;
       if (oBuildNo && parseInt(oBuildNo.substring(0, 6)) > parseInt(buildNo.getBuildNo().substring(0, 6))) {
