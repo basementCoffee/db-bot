@@ -1,5 +1,5 @@
-import {CORE_ADM} from "./lib/constants";
-import {TextBasedChannel} from "discord.js";
+import { CORE_ADM } from './lib/constants';
+import { TextBasedChannel } from 'discord.js';
 
 /**
  * Returns whether a given ID has Admin rights.
@@ -29,14 +29,18 @@ function isCoreAdmin(id: string): boolean {
  * @param voteAdminList The list of admins for the DJ.
  * @returns {boolean} Returns true if the member has DJ permissions.
  */
-function hasDJPermissions(channel: TextBasedChannel, memberID: string, printErrMsg: boolean, voteAdminList: Array<any>) {
+function hasDJPermissions(
+  channel: TextBasedChannel,
+  memberID: string,
+  printErrMsg: boolean,
+  voteAdminList: Array<any>
+) {
   if (voteAdminList.length < 1 || voteAdminList.filter((x) => x.id === memberID).length > 0) {
     return true;
-  }
-  else if (printErrMsg) {
+  } else if (printErrMsg) {
     channel.send('*you do not have the necessary permissions to perform this action*');
   }
   return false;
 }
 
-export { isAdmin, isCoreAdmin, hasDJPermissions};
+export { isAdmin, isCoreAdmin, hasDJPermissions };

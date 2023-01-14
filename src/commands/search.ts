@@ -1,6 +1,6 @@
-import {getXdb2} from "../database/retrieval";
-import {Message} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { getXdb2 } from '../database/retrieval';
+import { Message } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 import { verifyUrl, verifyPlaylist, botInVC } from '../utils/utils';
 const leven = require('leven');
 
@@ -28,7 +28,7 @@ function runSearchCommand(keyName: string, keyArray: any[]) {
     // the search string
     ss: ss,
     // the number of searches found
-    ssi: ssi,
+    ssi: ssi
   };
 }
 
@@ -44,7 +44,7 @@ function getAssumption(word: string, namesArray: string[]): string | undefined {
   let ss = sObj.ss;
   if (ss) {
     ss = ss.split(',')[0];
-    if (word.length > 1 && (ss.length - word.length) < Math.floor((ss.length / 2) + 2)) {
+    if (word.length > 1 && ss.length - word.length < Math.floor(ss.length / 2 + 2)) {
       return ss;
     }
   }
@@ -68,8 +68,7 @@ function getAssumptionUsingLeven(keyName: string, keyArray: string[], levenThrea
       lowestValue = currentValue;
       closestMatches.length = 0;
       closestMatches.push(key);
-    }
-    else if (currentValue === lowestValue) {
+    } else if (currentValue === lowestValue) {
       closestMatches.push(key);
     }
   }
@@ -83,7 +82,11 @@ function getAssumptionUsingLeven(keyName: string, keyArray: string[], levenThrea
  * @param levenThreashold "The maximum threshold to include.
  * @returns {String | undefined} The single closest match or null if no closest match could be found.
  */
-function getAssumptionMultipleMethods(word: string, wordsArray: string[], levenThreashold?: number): string | undefined {
+function getAssumptionMultipleMethods(
+  word: string,
+  wordsArray: string[],
+  levenThreashold?: number
+): string | undefined {
   let assumption;
   assumption = getAssumption(word, wordsArray);
   if (!assumption) {
@@ -104,28 +107,37 @@ function getAssumptionMultipleMethods(word: string, wordsArray: string[], levenT
  * @param server {LocalServer} The local server object.
  * @returns {Promise<{valueObj: {ss: string, ssi: number}, link: string, message: string}|{message: string}>}
  */
-async function searchForSingleKey(message: Message, sheetName: string, providedString: string, server: LocalServer): Promise<{valueObj: {ss: string, ssi: number}, link: string, message: string} | {message: string, link: undefined, valueObj: undefined}> {
+async function searchForSingleKey(
+  message: Message,
+  sheetName: string,
+  providedString: string,
+  server: LocalServer
+): Promise<
+  | { valueObj: { ss: string; ssi: number }; link: string; message: string }
+  | { message: string; link: undefined; valueObj: undefined }
+> {
   const xdb = await getXdb2(server, sheetName, true);
-  const so = runSearchCommand(providedString, Array.from(xdb.globalKeys.values()).map((item: any) => item.name));
+  const so = runSearchCommand(
+    providedString,
+    Array.from(xdb.globalKeys.values()).map((item: any) => item.name)
+  );
   if (so.ssi) {
     let link;
     if (so.ssi === 1) link = xdb.globalKeys.get(so.ss.toUpperCase())?.link;
     return {
       valueObj: so,
       link,
-      message: `keys found: ${so.ss} ${(link ? `\n${link}` : '')}`,
+      message: `keys found: ${so.ss} ${link ? `\n${link}` : ''}`
     };
-  }
-  else if (providedString.length < 2) {
+  } else if (providedString.length < 2) {
     return {
       message: 'Did not find any keys that start with the given letter.',
       link: undefined,
       valueObj: undefined
     };
-  }
-  else {
+  } else {
     return {
-      message: 'Did not find any keys that contain \'' + providedString + '\'',
+      message: "Did not find any keys that contain '" + providedString + "'",
       link: undefined,
       valueObj: undefined
     };
@@ -160,15 +172,19 @@ async function runLookupLink(message: Message, sheetName: string, link: string, 
  * @param sheetName The guild id.
  * @param providedString The string to search for. Can contain multiple comma delineated strings.
  */
-async function runUniversalSearchCommand(message: Message, server: LocalServer, sheetName: string, providedString: string) {
+async function runUniversalSearchCommand(
+  message: Message,
+  server: LocalServer,
+  sheetName: string,
+  providedString: string
+) {
   if (!providedString) return message.channel.send('must provide a link or word');
   const words = providedString.trim().split(/, | |,/);
   // returns true if the item provided was a link, handles the request
   if (await runLookupLink(message, sheetName, words[0], server)) return;
   if (words.length === 1) {
     message.channel.send((await searchForSingleKey(message, sheetName, words[0], server)).message);
-  }
-  else {
+  } else {
     const BASE_KEYS_STRING = '**_Keys found_**\n';
     let finalString = BASE_KEYS_STRING;
     let obj;
@@ -177,7 +193,8 @@ async function runUniversalSearchCommand(message: Message, server: LocalServer, 
       if (obj.link) finalString += `${obj.valueObj.ss}:\n${obj.link}\n`;
     }
     if (finalString === BASE_KEYS_STRING) {
-      finalString = 'did not find any exact key matches, try a single search word (instead of multiple) for a more refined search within the keys lists';
+      finalString =
+        'did not find any exact key matches, try a single search word (instead of multiple) for a more refined search within the keys lists';
     }
     message.channel.send(finalString);
   }

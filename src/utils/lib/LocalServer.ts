@@ -1,16 +1,15 @@
 import AudioImpl from './AudioImpl';
-import {GuildMember, Message} from "discord.js";
-
+import { GuildMember, Message } from 'discord.js';
 
 type StreamData = {
   // the StreamType enum
-  type: string | undefined,
+  type: string | undefined;
   // the readable stream
-  stream: any
+  stream: any;
   // urlAlt is added if it's a YT stream
-  urlAlt: string | undefined,
-  isFluent: any
-}
+  urlAlt: string | undefined;
+  isFluent: any;
+};
 
 class LocalServer {
   guildId: string;
@@ -68,17 +67,17 @@ class LocalServer {
   // if a twitch notification was sent
   twitchNotif = {
     isSent: false,
-    isTimer: false,
+    isTimer: false
   };
   // hold a ready-to-go function in case of vc join
   seamless: {
-    function: (...[])=> any,
-    args: (Array<Object> | undefined),
-    message: (Message | undefined),
-    timeout: any
+    function: (...[]) => any;
+    args: Array<Object> | undefined;
+    message: Message | undefined;
+    timeout: any;
   } = {
     // the name of the type of function
-    function: ()=>{},
+    function: () => {},
     // args for the function
     args: undefined,
     // optional message to delete
@@ -95,16 +94,16 @@ class LocalServer {
   searchReactionTimeout: any;
   // the timer for the active DJ
   djTimer: {
-    timer: any,
-    startTime: any,
-    duration: number,
+    timer: any;
+    startTime: any;
+    duration: number;
   };
   // the last time a DJ tip was sent to a group
   djMessageDate;
   // error manager - keep track of errors
   errors: {
     // if a reaction permissions error occurred
-    permissionReaction: boolean,
+    permissionReaction: boolean;
   };
   // whether to display the embed
   silence;
@@ -145,10 +144,10 @@ class LocalServer {
     };
     this.twitchNotif = {
       isSent: false,
-      isTimer: false,
+      isTimer: false
     };
     this.seamless = {
-      function: ()=> {},
+      function: () => {},
       args: undefined,
       message: undefined,
       timeout: undefined
@@ -159,11 +158,11 @@ class LocalServer {
     this.djTimer = {
       timer: undefined,
       startTime: undefined,
-      duration: 1800000,
+      duration: 1800000
     };
     this.djMessageDate = false;
     this.errors = {
-      permissionReaction: false,
+      permissionReaction: false
     };
     this.silence = false;
   }

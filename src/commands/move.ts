@@ -1,8 +1,8 @@
 // eslint-disable-next-line camelcase
 import { botInVcGuild } from '../utils/utils';
 import { serializeAndUpdate } from '../database/utils';
-import LocalServer from "../utils/lib/LocalServer";
-import {TextChannel} from "discord.js";
+import LocalServer from '../utils/lib/LocalServer';
+import { TextChannel } from 'discord.js';
 
 /**
  * Mutates the provided array by moving an element at posA to posB.
@@ -19,13 +19,12 @@ function runMoveItemCommand(channel: TextChannel, arr: any[], posA: number | str
   const MIN_POS = 1;
   const MIN_ARR_SIZE = 3;
   if (!(posA && posB)) {
-    channel.send('*two numbers expected: the position of the item to move and it\'s new position*\n`ex: move 1 5`');
-  }
-  else if (arr.length < MIN_ARR_SIZE) {channel.send('*not enough items in the queue*');}
-  else if (posA < MIN_POS || posB < MIN_POS) {
+    channel.send("*two numbers expected: the position of the item to move and it's new position*\n`ex: move 1 5`");
+  } else if (arr.length < MIN_ARR_SIZE) {
+    channel.send('*not enough items in the queue*');
+  } else if (posA < MIN_POS || posB < MIN_POS) {
     channel.send(`positions must be greater than ${MIN_POS - 1}`);
-  }
-  else {
+  } else {
     if (posA > arr.length - 1) posA = arr.length - 1;
     if (posB > arr.length - 1) posB = arr.length - 1;
     const item = arr.splice(posA, 1)[0];
@@ -45,7 +44,10 @@ function runMoveItemCommand(channel: TextChannel, arr: any[], posA: number | str
 function moveKeysWrapper(server: LocalServer, channel: TextChannel, sheetName: string, xdb: any, args: string[]) {
   let playlist;
   let playlistName;
-  args = args.join(' ').split(/,|, | /).filter((i) => i);
+  args = args
+    .join(' ')
+    .split(/,|, | /)
+    .filter((i) => i);
   for (let i = args.length - 1; i > -1; i--) {
     playlist = xdb.playlists.get(args[i].toUpperCase());
     if (playlist) {
@@ -70,7 +72,14 @@ function moveKeysWrapper(server: LocalServer, channel: TextChannel, sheetName: s
  * @param listOfKeys {Array<string>}
  * @param playlistNameTo {string}
  */
-async function moveKeysCommand(server: LocalServer, channel: TextChannel, sheetName: string, xdb: any, listOfKeys: Array<string>, playlistNameTo: string) {
+async function moveKeysCommand(
+  server: LocalServer,
+  channel: TextChannel,
+  sheetName: string,
+  xdb: any,
+  listOfKeys: Array<string>,
+  playlistNameTo: string
+) {
   const insertPlaylist = xdb.playlists.get(playlistNameTo.toUpperCase());
   if (!insertPlaylist) {
     channel.send(`*could not find playlist ${playlistNameTo}*`);
@@ -102,8 +111,7 @@ async function moveKeysCommand(server: LocalServer, channel: TextChannel, sheetN
         fromPlaylist.delete(keyName.toUpperCase());
         removedPlaylistsSet.add(fromPlaylistName);
       }
-    }
-    else {
+    } else {
       errorKeys.push(keyName);
     }
   }
@@ -122,7 +130,7 @@ async function moveKeysCommand(server: LocalServer, channel: TextChannel, sheetN
   for (const updatedPlaylist of removedPlaylistsSet) {
     await serializeAndUpdate(server, sheetName, updatedPlaylist, xdb);
   }
-  if ((errorKeys.length + unknownKeys.length) < listOfKeys.length) {
+  if (errorKeys.length + unknownKeys.length < listOfKeys.length) {
     channel.send(`*moved keys to **${playlistNameTo}***`);
   }
 }

@@ -1,7 +1,7 @@
-import {Message} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
-import {linkValidator, getSheetName} from "../utils/utils";
-import {convertSeekFormatToSec} from "../utils/formatUtils";
+import { Message } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
+import { linkValidator, getSheetName } from '../utils/utils';
+import { convertSeekFormatToSec } from '../utils/formatUtils';
 import { playLinkNow } from './playLink';
 
 /**
@@ -26,8 +26,7 @@ async function runSeekCommand(message: Message, server: LocalServer, args: Array
         if (numSeconds > 1200) message.channel.send('*seeking...*');
         return;
       }
-    }
-    else {
+    } else {
       // provided one argument
       if (!server.queue[0]) {
         return message.channel.send(`*provide a seek link and timestamp (ex: ${args[0]} [link] 5m32s)*`);

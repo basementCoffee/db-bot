@@ -1,9 +1,9 @@
 /* eslint-disable camelcase */
-import LocalServer from "../utils/lib/LocalServer";
-import {Message} from "discord.js";
-import processStats from "../utils/lib/ProcessStats";
-import {PREFIX_SN} from "../utils/lib/constants";
-import {botInVC, logError} from "../utils/utils";
+import LocalServer from '../utils/lib/LocalServer';
+import { Message } from 'discord.js';
+import processStats from '../utils/lib/ProcessStats';
+import { PREFIX_SN } from '../utils/lib/constants';
+import { botInVC, logError } from '../utils/utils';
 
 const { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } = require('./api/api');
 
@@ -14,8 +14,12 @@ const { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } = require('./a
  * @param save {boolean} Whether to save the function to the server
  * @returns {Promise<{playlistArray: [], playlists: Map<unknown, unknown>, globalKeys: any}>}
  */
-async function getXdb2(server: LocalServer, sheetName: string, save: boolean): Promise<{ playlistArray: []; playlists: Map<string, Map<string, any>>; globalKeys: any; }> {
-  if (!save) return (server.userKeys.get(sheetName) || (await gsrun_P('E', 'F', sheetName)));
+async function getXdb2(
+  server: LocalServer,
+  sheetName: string,
+  save: boolean
+): Promise<{ playlistArray: []; playlists: Map<string, Map<string, any>>; globalKeys: any }> {
+  if (!save) return server.userKeys.get(sheetName) || (await gsrun_P('E', 'F', sheetName));
   let xdb = server.userKeys.get(sheetName);
   if (!xdb) {
     xdb = await gsrun_P('E', 'F', sheetName);
@@ -33,7 +37,7 @@ async function getXdb2(server: LocalServer, sheetName: string, save: boolean): P
 async function getSettings(server: LocalServer, sheetName: string) {
   let xdb = server.userSettings.get(sheetName);
   if (!xdb) {
-    xdb = await getJSON('H1', sheetName) || {};
+    xdb = (await getJSON('H1', sheetName)) || {};
     server.userSettings.set(sheetName, xdb);
   }
   return xdb;
@@ -61,7 +65,7 @@ async function sendListSize(message: Message, server: LocalServer, sheetName: st
   const xdb = await getXdb2(server, sheetName, botInVC(message));
   const playlist: any = xdb.playlists.get(playlistName.toUpperCase());
   if (playlist) {
-    const str = `**${playlistName}** playlist size: ${(playlist.size)}`;
+    const str = `**${playlistName}** playlist size: ${playlist.size}`;
     message.channel.send(str);
   }
 }
@@ -83,13 +87,11 @@ async function getServerPrefix(server: LocalServer, mgid: string) {
       server.prefix = '.';
       try {
         gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);
-      }
-      catch (e) {
+      } catch (e) {
         console.log(e);
       }
     }
-  }
-  catch (e: any) {
+  } catch (e: any) {
     logError(e);
     server.prefix = '.';
     gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);

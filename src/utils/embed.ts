@@ -1,5 +1,5 @@
-import LocalServer from "./lib/LocalServer";
-import EmbedBuilderLocal from "./lib/EmbedBuilderLocal";
+import LocalServer from './lib/LocalServer';
+import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
 
 import ytdl from 'ytdl-core-discord';
 import { getQueueText, logError } from './utils';
@@ -29,8 +29,7 @@ async function getSpotifyCoverArt(url: string): Promise<string | undefined> {
     if (data) {
       return data.body.album.images.length ? data.body.album.images[data.body.album.images.length - 1].url : null;
     }
-  }
-  catch (e) {
+  } catch (e) {
     processStats.debug(`${getSpotifyCoverArt.name} error1: `, e);
     try {
       // If the track was not found, try getting the cover art for an album
@@ -38,8 +37,7 @@ async function getSpotifyCoverArt(url: string): Promise<string | undefined> {
       if (data) {
         return data.body.images.length ? data.body.images[data.body.images.length - 1].url : null;
       }
-    }
-    catch (e2) {
+    } catch (e2) {
       processStats.debug(`${getSpotifyCoverArt.name} error2: `, e2);
     }
   }
@@ -69,75 +67,79 @@ async function getSpotifyIcon(infos: any, url: string) {
  * @param infos {Object?} Optional - the info metadata to use.
  * @returns {Promise<{embed: EmbedBuilderLocal, infos: any, timeMS: number}>}
  */
-async function createEmbed(url: string, infos: any): Promise<{embed: EmbedBuilderLocal, infos: any, timeMS: number}> {
+async function createEmbed(url: string, infos: any): Promise<{ embed: EmbedBuilderLocal; infos: any; timeMS: number }> {
   let timeMS;
   let embed;
   if (url.includes(SPOTIFY_BASE_LINK)) {
     if (!infos) infos = await getData(url);
     let artists = '';
-    infos.artists.forEach((x: any) => artists ? artists += ', ' + x.name : artists += x.name);
-    infos.thumbnailUrl = infos.thumbnailUrl ?? await getSpotifyIcon(infos, url);
+    infos.artists.forEach((x: any) => (artists ? (artists += ', ' + x.name) : (artists += x.name)));
+    infos.thumbnailUrl = infos.thumbnailUrl ?? (await getSpotifyIcon(infos, url));
     embed = new EmbedBuilderLocal()
       .setTitle(`${infos.name}`)
       .setURL(infos.external_urls.spotify)
       .setColor('#1DB954')
-      .addFields({
-        inline: true,
-        name: `Artist${infos.artists.length > 1 ? 's' : ''}`,
-        value: artists,
-      },
-      {
-        inline: true,
-        name: 'Duration',
-        value: formatDuration(infos.duration || infos.duration_ms),
-      },
+      .addFields(
+        {
+          inline: true,
+          name: `Artist${infos.artists.length > 1 ? 's' : ''}`,
+          value: artists
+        },
+        {
+          inline: true,
+          name: 'Duration',
+          value: formatDuration(infos.duration || infos.duration_ms)
+        }
       )
       .setThumbnail(infos.thumbnailUrl);
     timeMS = parseInt(infos.duration || infos.duration_ms);
-  }
-  else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
+  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (!infos) infos = await scdl.getInfo(url);
     const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
-    const title = (infos.publisher_metadata ? (infos.publisher_metadata.release_title ||
-       infos.publisher_metadata.album_title) : '') || (infos.title.replace(/"/g, '') || 'SoundCloud');
+    const title =
+      (infos.publisher_metadata
+        ? infos.publisher_metadata.release_title || infos.publisher_metadata.album_title
+        : '') ||
+      infos.title.replace(/"/g, '') ||
+      'SoundCloud';
     embed = new EmbedBuilderLocal()
       .setTitle(title)
       .setURL(url)
       .setColor('#ee4900')
-      .addFields({
-        inline: true,
-        name: 'Artist',
-        value: artist,
-      },
-      {
-        inline: true,
-        name: 'Duration',
-        value: formatDuration(infos.duration || 0),
-      },
+      .addFields(
+        {
+          inline: true,
+          name: 'Artist',
+          value: artist
+        },
+        {
+          inline: true,
+          name: 'Duration',
+          value: formatDuration(infos.duration || 0)
+        }
       )
       .setThumbnail(infos.artwork_url || infos.user?.avatar_url || null);
     timeMS = infos.duration || infos.full_duration || 'N/A';
-  }
-  else if (url.includes(TWITCH_BASE_LINK)) {
+  } else if (url.includes(TWITCH_BASE_LINK)) {
     const artist = url.substr(url.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, '');
     embed = new EmbedBuilderLocal()
       .setTitle(`${artist}'s stream`)
       .setURL(url)
       .setColor('#8a2aef')
-      .addFields({
-        inline: true,
-        name: 'Channel',
-        value: artist,
-      },
-      {
-        inline: true,
-        name: 'Duration',
-        value: 'live',
-      },
+      .addFields(
+        {
+          inline: true,
+          name: 'Channel',
+          value: artist
+        },
+        {
+          inline: true,
+          name: 'Duration',
+          value: 'live'
+        }
       )
       .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg');
-  }
-  else {
+  } else {
     if (!infos) infos = await ytdl.getBasicInfo(url);
     let duration;
     let videoDetails = infos.videoDetails;
@@ -146,16 +148,15 @@ async function createEmbed(url: string, infos: any): Promise<{embed: EmbedBuilde
       duration = 'live';
       // set to 1hr
       timeMS = 3600000;
-    }
-    else {
+    } else {
       if (infos.formats && infos.formats[0]) {
         timeMS = parseInt(infos.formats[0].approxDurationMs || videoDetails.lengthSeconds * 1000);
         duration = formatDuration(timeMS || 0);
-      }
-      else {
-        timeMS = videoDetails.durationSec * 1000 || (() =>
-          isNumber(videoDetails.duration) ? videoDetails.duration : false
-        )() || convertYTFormatToMS(videoDetails.duration.split(':'));
+      } else {
+        timeMS =
+          videoDetails.durationSec * 1000 ||
+          (() => (isNumber(videoDetails.duration) ? videoDetails.duration : false))() ||
+          convertYTFormatToMS(videoDetails.duration.split(':'));
         duration = formatDuration(timeMS);
       }
       if (duration === 'NaNm NaNs') {
@@ -171,21 +172,22 @@ async function createEmbed(url: string, infos: any): Promise<{embed: EmbedBuilde
         {
           inline: true,
           name: 'Channel',
-          value: `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]` +
-            `(${videoDetails.author.url || videoDetails.author.channel_url})`,
+          value:
+            `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]` +
+            `(${videoDetails.author.url || videoDetails.author.channel_url})`
         },
         {
           inline: true,
           name: 'Duration',
-          value: duration || videoDetails.duration,
-        },
+          value: duration || videoDetails.duration
+        }
       )
       .setThumbnail(videoDetails.thumbnails[0].url);
   }
   return {
     embed,
     timeMS,
-    infos,
+    infos
   };
 }
 
@@ -205,12 +207,11 @@ async function updateActiveEmbed(server: LocalServer) {
     embed.addFields({
       inline: true,
       name: 'Queue',
-      value: getQueueText(server),
+      value: getQueueText(server)
     });
     // server.currentEmbed.edit({embeds: [embed]});
     embed.edit(server.currentEmbed).then();
-  }
-  catch (e) {
+  } catch (e) {
     console.log(e);
   }
 }
@@ -226,8 +227,7 @@ async function sessionEndEmbed(server: LocalServer, queueItem: any) {
     if (!server.currentEmbed || !queueItem) return;
     const embed = (await createEmbed(queueItem.url, queueItem.infos)).embed;
     sessionEndEmbedWEmbed(server, embed);
-  }
-  catch (e: any) {
+  } catch (e: any) {
     logError(e);
   }
 }
@@ -251,7 +251,7 @@ function sessionEndEmbedWEmbed(server: LocalServer, embed: EmbedBuilderLocal) {
   embed.addFields({
     inline: true,
     name: '-',
-    value: 'Session ended',
+    value: 'Session ended'
   });
   embed.edit(server.currentEmbed);
   setTimeout(() => {

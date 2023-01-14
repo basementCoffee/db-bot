@@ -1,5 +1,5 @@
-import {Message} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { Message } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 
 import { playLinkToVC } from './stream/stream';
 
@@ -21,12 +21,10 @@ async function runRestartCommand(message: Message, mgid: string, keyword: string
   }
   if (server.queue[0]) {
     await playLinkToVC(message, server.queue[0], message.member!.voice?.channel, server);
-  }
-  else if (server.queueHistory.length > 0) {
+  } else if (server.queueHistory.length > 0) {
     server.queue.unshift(server.queueHistory.pop());
     await playLinkToVC(message, server.queue[0], message.member!.voice?.channel, server);
-  }
-  else {
+  } else {
     message.channel.send('there is nothing to ' + keyword);
   }
 }

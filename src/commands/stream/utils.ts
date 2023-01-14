@@ -1,6 +1,6 @@
-import LocalServer from "../../utils/lib/LocalServer";
-import EmbedBuilderLocal from "../../utils/lib/EmbedBuilderLocal";
-import {GuildMember, Message, VoiceBasedChannel} from "discord.js";
+import LocalServer from '../../utils/lib/LocalServer';
+import EmbedBuilderLocal from '../../utils/lib/EmbedBuilderLocal';
+import { GuildMember, Message, VoiceBasedChannel } from 'discord.js';
 
 import { botID } from '../../utils/lib/constants';
 import { botInVC } from '../../utils/utils';
@@ -25,17 +25,34 @@ function voteSystem(message: Message, mgid: string, commandName: string, voter: 
       const votesNeeded = Math.floor((vcMemMembersId.length - 1) / 2) + 1;
       let votesNow = votes.length;
       if (votes.includes(voter.id)) {
-        message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) +
-          ', you already voted to ' + commandName + ' this track* (**votes needed: ' +
-          (votesNeeded - votesNow) + '**)');
+        message.channel.send(
+          '*' +
+            (voter.nickname ? voter.nickname : voter.user.username) +
+            ', you already voted to ' +
+            commandName +
+            ' this track* (**votes needed: ' +
+            (votesNeeded - votesNow) +
+            '**)'
+        );
         return false;
       }
       votes.push(voter.id);
       votesNow++;
-      message.channel.send('*' + (voter.nickname ? voter.nickname : voter.user.username) + ' voted to ' +
-        commandName + ' (' + votesNow + '/' + votesNeeded + ')*').then((sentMsg) => setTimeout(() => sentMsg.delete(), 15000));
+      message.channel
+        .send(
+          '*' +
+            (voter.nickname ? voter.nickname : voter.user.username) +
+            ' voted to ' +
+            commandName +
+            ' (' +
+            votesNow +
+            '/' +
+            votesNeeded +
+            ')*'
+        )
+        .then((sentMsg) => setTimeout(() => sentMsg.delete(), 15000));
       if (votesNow >= votesNeeded) {
-        message.channel.send(`***${commandName.toUpperCase()}*** *- with ${votesNow} vote${(votesNow > 1) ? 's' : ''}*`);
+        message.channel.send(`***${commandName.toUpperCase()}*** *- with ${votesNow} vote${votesNow > 1 ? 's' : ''}*`);
         for (let x = 0; x < votesNow; x++) {
           votes.pop();
         }
@@ -57,7 +74,14 @@ function voteSystem(message: Message, mgid: string, commandName: string, voter: 
  * @param noPrintMsg Optional - Whether to NOT print a message to the channel [DJ mode will set this to true]
  * @returns {boolean} if successful
  */
-function pauseCommandUtil(message: Message, actionUser: GuildMember, server: LocalServer, noErrorMsg = false, force = false, noPrintMsg = false) {
+function pauseCommandUtil(
+  message: Message,
+  actionUser: GuildMember,
+  server: LocalServer,
+  noErrorMsg = false,
+  force = false,
+  noPrintMsg = false
+) {
   if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
     if (server.dictator && actionUser.id !== server.dictator.id) {
       message.channel.send('only the dictator can pause');
@@ -66,11 +90,9 @@ function pauseCommandUtil(message: Message, actionUser: GuildMember, server: Loc
     if (server.voteAdmin.length > 0) {
       if (force) {
         server.votePlayPauseMembersId = [];
-      }
-      else if (voteSystem(message, message.guild!.id, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
+      } else if (voteSystem(message, message.guild!.id, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
         noPrintMsg = true;
-      }
-      else {
+      } else {
         return false;
       }
     }
@@ -84,8 +106,7 @@ function pauseCommandUtil(message: Message, actionUser: GuildMember, server: Loc
       message.channel.send('*paused*');
     }
     return true;
-  }
-  else if (!noErrorMsg) {
+  } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     server.numSinceLastEmbed++;
     return false;
@@ -102,7 +123,14 @@ function pauseCommandUtil(message: Message, actionUser: GuildMember, server: Loc
  * @param noPrintMsg {*?} Optional - Whether to NOT print a message to the channel [DJ mode will set this to true]
  * @returns {boolean} if the request was successful
  */
-function playCommandUtil(message: Message, actionUser: GuildMember, server: LocalServer, noErrorMsg = false, force = false, noPrintMsg = false) {
+function playCommandUtil(
+  message: Message,
+  actionUser: GuildMember,
+  server: LocalServer,
+  noErrorMsg = false,
+  force = false,
+  noPrintMsg = false
+) {
   if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
     if (server.dictator && actionUser.id !== server.dictator.id) {
       message.channel.send('only the dictator can play');
@@ -111,11 +139,9 @@ function playCommandUtil(message: Message, actionUser: GuildMember, server: Loca
     if (server.voteAdmin.length > 0) {
       if (force) {
         server.votePlayPauseMembersId = [];
-      }
-      else if (voteSystem(message, message.guild!.id, 'play', actionUser, server.votePlayPauseMembersId, server)) {
+      } else if (voteSystem(message, message.guild!.id, 'play', actionUser, server.votePlayPauseMembersId, server)) {
         noPrintMsg = true;
-      }
-      else {
+      } else {
         return false;
       }
     }
@@ -129,8 +155,7 @@ function playCommandUtil(message: Message, actionUser: GuildMember, server: Loca
       message.channel.send('*playing*');
     }
     return true;
-  }
-  else if (!noErrorMsg) {
+  } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     server.numSinceLastEmbed++;
     return false;
@@ -147,13 +172,24 @@ function playCommandUtil(message: Message, actionUser: GuildMember, server: Loca
  * @param actionUser {any?} The member requesting to stop playing, used in the case of verifying a dj or dictator
  * @returns {undefined}
  */
-function stopPlayingUtil(mgid: string, voiceChannel: VoiceBasedChannel | null | undefined, stayInVC: boolean, server: LocalServer, message?: Message, actionUserId?: string) {
+function stopPlayingUtil(
+  mgid: string,
+  voiceChannel: VoiceBasedChannel | null | undefined,
+  stayInVC: boolean,
+  server: LocalServer,
+  message?: Message,
+  actionUserId?: string
+) {
   if (!voiceChannel) return;
   if (server.dictator && actionUserId && actionUserId !== server.dictator.id) {
     return message?.channel.send('only the dictator can perform this action');
   }
-  if (server.voteAdmin.length > 0 && actionUserId &&
-    !server.voteAdmin.map((x: any) => x.id).includes(actionUserId) && server.queue.length > 0) {
+  if (
+    server.voteAdmin.length > 0 &&
+    actionUserId &&
+    !server.voteAdmin.map((x: any) => x.id).includes(actionUserId) &&
+    server.queue.length > 0
+  ) {
     return message?.channel.send('*only the DJ can end the session*');
   }
   if (server.followUpMessage) {
@@ -166,17 +202,18 @@ function stopPlayingUtil(mgid: string, voiceChannel: VoiceBasedChannel | null | 
       processStats.disconnectConnection(server);
       processStats.debug(`[DISCONN] ${stopPlayingUtil.name}`);
     }, 600);
-  }
-  else {
+  } else {
     if (server.currentEmbed) {
-      createEmbed(lastPlayed.url, lastPlayed.infos).then((e: {embed: EmbedBuilderLocal, infos: any, timeMS: number}) => {
-        e.embed.addFields({
-          inline: true,
-          name: 'Queue',
-          value: 'empty',
-        });
-        e.embed.edit(server.currentEmbed!).then();
-      });
+      createEmbed(lastPlayed.url, lastPlayed.infos).then(
+        (e: { embed: EmbedBuilderLocal; infos: any; timeMS: number }) => {
+          e.embed.addFields({
+            inline: true,
+            name: 'Queue',
+            value: 'empty'
+          });
+          e.embed.edit(server.currentEmbed!).then();
+        }
+      );
     }
     endAudioDuringSession(server);
   }
@@ -211,7 +248,6 @@ function playComputation(server: LocalServer, force = false) {
   }
 }
 
-
 /**
  * Performs changes when there is (or should be) no now-playing during an active session.
  * @param server {LocalServer} The server object.
@@ -223,6 +259,11 @@ function endAudioDuringSession(server: LocalServer) {
 }
 
 export {
-  voteSystem, pauseCommandUtil, playCommandUtil, stopPlayingUtil, endAudioDuringSession, pauseComputation,
-  playComputation,
+  voteSystem,
+  pauseCommandUtil,
+  playCommandUtil,
+  stopPlayingUtil,
+  endAudioDuringSession,
+  pauseComputation,
+  playComputation
 };

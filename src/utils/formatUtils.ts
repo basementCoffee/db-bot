@@ -1,4 +1,4 @@
-import {SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK} from "./lib/constants";
+import { SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK } from './lib/constants';
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -9,7 +9,7 @@ import {SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK} from "./lib/constants";
  */
 function formatDuration(duration: number): string {
   const seconds = duration / 1000;
-  const min = (seconds / 60);
+  const min = seconds / 60;
   const hours = Math.floor(min / 60);
   const days = Math.floor(hours / 24);
   if (days > 0) {
@@ -34,8 +34,7 @@ function convertSeekFormatToSec(seekString: string): number {
   let numSeconds;
   if (Number.isFinite(Number(seekString))) {
     numSeconds = Number(seekString);
-  }
-  else {
+  } else {
     const array: any = [];
     const testVals = ['h', 'm', 's'];
     const convertToArray = (formattedNum: string) => {
@@ -63,7 +62,6 @@ function linkFormatter(url: string, baseLink: string): string {
   return `https://${url.substr(url.indexOf(baseLink))}`;
 }
 
-
 /**
  * Removes <> and [] from links. If provided a spotify or soundcloud link then properly formats those as well.
  * @param link The link to format.
@@ -72,8 +70,7 @@ function linkFormatter(url: string, baseLink: string): string {
 function universalLinkFormatter(link: string): string {
   if (link[0] === '[' && link[link.length - 1] === ']') {
     link = link.substring(1, link.length - 1);
-  }
-  else if (link[0] === '<' && link[link.length - 1] === '>') {
+  } else if (link[0] === '<' && link[link.length - 1] === '>') {
     link = link.substring(1, link.length - 1);
   }
   if (link.includes(SPOTIFY_BASE_LINK)) link = linkFormatter(link, SPOTIFY_BASE_LINK);
@@ -108,13 +105,15 @@ function convertYTFormatToMS(durationArray: Array<any>): number {
       duration += durationArray[0] * 1000;
       return duration;
     }
-  }
-  catch (e) {}
+  } catch (e) {}
   return 0;
 }
 
-
 export {
-  formatDuration, linkFormatter, convertSeekFormatToSec, removeFormattingLink, universalLinkFormatter,
-  convertYTFormatToMS,
+  formatDuration,
+  linkFormatter,
+  convertSeekFormatToSec,
+  removeFormattingLink,
+  universalLinkFormatter,
+  convertYTFormatToMS
 };

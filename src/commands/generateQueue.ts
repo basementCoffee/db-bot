@@ -1,6 +1,6 @@
-import LocalServer from "../utils/lib/LocalServer";
-import {Message, MessageReaction, User} from "discord.js";
-import {indexing_v3} from "googleapis";
+import LocalServer from '../utils/lib/LocalServer';
+import { Message, MessageReaction, User } from 'discord.js';
+import { indexing_v3 } from 'googleapis';
 
 const { botID, DB_BOT_ICON_MED } = require('../utils/lib/constants');
 const { botInVC, getTitle, createQueueItem, getSheetName } = require('../utils/utils');
@@ -18,7 +18,12 @@ const { isValidRequestWPlay } = require('../utils/validation');
  * @param noErrorMsg {Boolean} True if to not send error msg (if not in a voice channel)
  * @returns {Promise<void>|*}
  */
-function runQueueCommand(server: LocalServer, message: Message, mgid: string, noErrorMsg: boolean): Promise<void> | any {
+function runQueueCommand(
+  server: LocalServer,
+  message: Message,
+  mgid: string,
+  noErrorMsg: boolean
+): Promise<void> | any {
   if (server.queue.length < 1 || !botInVC(message) || !server.audio.isVoiceChannelMember(message.member!)) {
     if (noErrorMsg) return;
     return message.channel.send('There is no active queue right now');
@@ -34,7 +39,12 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
    * @param sentMsg {Message} The message to edit.
    * @param sentMsgArray {Message[]} The message array to edit.
    */
-  async function generateQueue(startingIndex: number, notFirstRun: boolean, sentMsg: Message | undefined, sentMsgArray: Message[]) {
+  async function generateQueue(
+    startingIndex: number,
+    notFirstRun: boolean,
+    sentMsg: Message | undefined,
+    sentMsgArray: Message[]
+  ) {
     let queueSB = '';
     const queueMsgEmbed = new EmbedBuilderLocal();
     if (!authorName) {
@@ -44,17 +54,18 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
     // generating queue message
     let tempMsg;
     if (!sentMsg) {
-      const msgTxt = (notFirstRun ? 'generating ' +
-      (n < 11 ? 'remaining ' + n : 'next 10') : 'generating queue') + '...';
+      const msgTxt =
+        (notFirstRun ? 'generating ' + (n < 11 ? 'remaining ' + n : 'next 10') : 'generating queue') + '...';
       tempMsg = await message.channel.send(msgTxt);
     }
-    queueMsgEmbed.setTitle('Up Next')
+    queueMsgEmbed
+      .setTitle('Up Next')
       .setAuthor({ name: `playing:  ${authorName}` })
       .setThumbnail(DB_BOT_ICON_MED);
     let sizeConstraint = 0;
     const qIterations = Math.min(serverQueue.length, startingIndex + 11);
-    for (let qi = startingIndex + 1; (qi < qIterations && qi < serverQueue.length && sizeConstraint < 10); qi++) {
-      const title = (await getTitle(serverQueue[qi]));
+    for (let qi = startingIndex + 1; qi < qIterations && qi < serverQueue.length && sizeConstraint < 10; qi++) {
+      const title = await getTitle(serverQueue[qi]);
       const url = serverQueue[qi].url;
       queueSB += qi + '. ' + `[${title}](${url})\n`;
       sizeConstraint++;
@@ -64,13 +75,12 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
     }
     queueMsgEmbed.setDescription(queueSB);
     if (serverQueue.length > 11) {
-      queueMsgEmbed.setFooter({ text: 'use \'insert\' & \'remove\' to edit the queue' });
+      queueMsgEmbed.setFooter({ text: "use 'insert' & 'remove' to edit the queue" });
     }
     if (tempMsg?.deletable) tempMsg.delete();
     if (sentMsg?.deletable) {
       await queueMsgEmbed.edit(sentMsg);
-    }
-    else {
+    } else {
       sentMsg = await queueMsgEmbed.send(message.channel);
       sentMsgArray.push(sentMsg!);
     }
@@ -88,8 +98,7 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
             }
           });
         });
-      }
-      else {
+      } else {
         sentMsg!.react(reactions.INBOX).then(() => {
           if (server.queue.length > 0) sentMsg!.react(reactions.OUTBOX);
         });
@@ -99,8 +108,10 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
       if (message.member!.voice?.channel) {
         for (const mem of message.member!.voice.channel.members) {
           if (user.id === mem[1].id) {
-            return user.id !== botID &&
-            [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX, reactions.ARROW_L].includes(reaction.emoji.name);
+            return (
+              user.id !== botID &&
+              [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX, reactions.ARROW_L].includes(reaction.emoji.name)
+            );
           }
         }
       }
@@ -119,8 +130,7 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
         if (startingIndex <= 0) {
           const lastDigit = Number(serverQueue.length.toString().slice(-1)[0]);
           newStartingIndex = serverQueue.length - (lastDigit > 1 ? lastDigit : 10);
-        }
-        else {
+        } else {
           newStartingIndex = Math.max(0, startingIndex - 10);
         }
         generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
@@ -134,23 +144,28 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
           newStartingIndex = 0;
         }
         generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
-      }
-      else if (reaction.emoji.name === reactions.INBOX) {
+      } else if (reaction.emoji.name === reactions.INBOX) {
         if (!isValidRequestWPlay(server, message, 'insert')) return;
         let link;
-        message.channel.send('What link would you like to insert [or type \'q\' to quit]').then((msg) => {
+        message.channel.send("What link would you like to insert [or type 'q' to quit]").then((msg) => {
           const insertFilter = (m: Message) => {
-            return (reactionCollector.id === m.author.id && m.author.id !== botID);
+            return reactionCollector.id === m.author.id && m.author.id !== botID;
           };
-          message.channel.awaitMessages({ filter: insertFilter, time: 60000, max: 1, errors: ['time'] })
+          message.channel
+            .awaitMessages({ filter: insertFilter, time: 60000, max: 1, errors: ['time'] })
             .then(async (messages) => {
               link = messages.first()!.content.split(' ')[0].trim();
               if (link.toLowerCase() === 'q') {
                 return;
               }
               if (link) {
-                const num = await runInsertCommand(message, message.guild!.id, [link],
-                  server, getSheetName(message.member!.id));
+                const num = await runInsertCommand(
+                  message,
+                  message.guild!.id,
+                  [link],
+                  server,
+                  getSheetName(message.member!.id)
+                );
                 if (num < 0) {
                   msg.delete();
                   return;
@@ -164,33 +179,36 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
                 collector.stop();
                 // update the local queue
                 serverQueue = server.queue.map((x) => x);
-                generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray).then();
-              }
-              else {
+                generateQueue(pageNum === 0 ? 0 : pageNum * 10, false, sentMsg, sentMsgArray).then();
+              } else {
                 message.channel.send('*cancelled*');
                 msg.delete();
               }
-            }).catch(() => {
+            })
+            .catch(() => {
               message.channel.send('*cancelled*');
               msg.delete();
             });
         });
-      }
-      else if (reaction.emoji.name === reactions.OUTBOX) {
+      } else if (reaction.emoji.name === reactions.OUTBOX) {
         if (server.dictator && reactionCollector.id !== server.dictator.id) {
           return message.channel.send('only the dictator can remove from the queue');
         }
-        if (server.voteAdmin.length > 0 && server.voteAdmin.filter((x: User) => x.id === reactionCollector.id).length === 0) {
+        if (
+          server.voteAdmin.length > 0 &&
+          server.voteAdmin.filter((x: User) => x.id === reactionCollector.id).length === 0
+        ) {
           return message.channel.send('only a dj can remove from the queue');
         }
         if (serverQueue.length < 2) return message.channel.send('*cannot remove from an empty queue*');
         // remove question
-        const rq = 'What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ') [or type \'q\']';
+        const rq = 'What in the queue would you like to remove? (1-' + (serverQueue.length - 1) + ") [or type 'q']";
         message.channel.send(rq).then((msg) => {
           const removeFilter = (m: Message) => {
-            return (reactionCollector.id === m.author.id && m.author.id !== botID);
+            return reactionCollector.id === m.author.id && m.author.id !== botID;
           };
-          message.channel.awaitMessages({ filter: removeFilter, time: 60000, max: 1, errors: ['time'] })
+          message.channel
+            .awaitMessages({ filter: removeFilter, time: 60000, max: 1, errors: ['time'] })
             .then(async (messages) => {
               let num: any = messages.first()!.content.trim();
               if (num.toLowerCase() === 'q') {
@@ -200,12 +218,16 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
               if (num) {
                 if (server.queue[num] !== serverQueue[num]) {
                   // out of date text
-                  const oodTxt = '**queue is out of date:** the positions may not align properly with the embed shown\n*please use the \'queue\' command again*';
+                  const oodTxt =
+                    "**queue is out of date:** the positions may not align properly with the embed shown\n*please use the 'queue' command again*";
                   return message.channel.send(oodTxt);
                 }
                 if (num >= server.queue.length) {
-                  return message.channel.send('*that position is out of bounds, **' +
-                  (server.queue.length - 1) + '** is the last item in the queue.*');
+                  return message.channel.send(
+                    '*that position is out of bounds, **' +
+                      (server.queue.length - 1) +
+                      '** is the last item in the queue.*'
+                  );
                 }
                 server.queue.splice(num, 1);
                 serverQueue.splice(num, 1);
@@ -216,10 +238,12 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
                 else pageNum = Math.floor((num - 1) / 10);
                 clearTimeout(arrowReactionTimeout);
                 collector.stop();
-                return generateQueue((pageNum === 0 ? 0 : (pageNum * 10)), false, sentMsg, sentMsgArray);
+                return generateQueue(pageNum === 0 ? 0 : pageNum * 10, false, sentMsg, sentMsgArray);
+              } else {
+                msg.delete();
               }
-              else {msg.delete();}
-            }).catch(() => {
+            })
+            .catch(() => {
               message.channel.send('*cancelled*');
               msg.delete();
             });
@@ -234,7 +258,11 @@ function runQueueCommand(server: LocalServer, message: Message, mgid: string, no
 // creates a queue-like display of links
 // arrayOfItems: Array<{url, title, index}>
 // stringCallback: (index, title, url) => string
-async function createVisualText(server: LocalServer, arrayOfItems: Array<any>, stringCallback: (index: number, title: string, url: string) => string) {
+async function createVisualText(
+  server: LocalServer,
+  arrayOfItems: Array<any>,
+  stringCallback: (index: number, title: string, url: string) => string
+) {
   let finalText = '';
   for (const item of arrayOfItems) {
     const title = item.title;

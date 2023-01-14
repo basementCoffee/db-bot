@@ -1,5 +1,5 @@
-import {TextChannel} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { TextChannel } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 import { getXdb2 } from '../database/retrieval';
 import { serializeAndUpdate } from '../database/utils';
 
@@ -12,7 +12,13 @@ import { serializeAndUpdate } from '../database/utils';
  * @param newName The new name of the playlist.
  * @returns {Promise<boolean>} True if successful
  */
-async function renamePlaylist(channel: TextChannel, server: LocalServer, sheetName: string, oldName: string, newName: string): Promise<boolean> {
+async function renamePlaylist(
+  channel: TextChannel,
+  server: LocalServer,
+  sheetName: string,
+  oldName: string,
+  newName: string
+): Promise<boolean> {
   const xdb = await getXdb2(server, sheetName, false);
   if (newName.length > 20) {
     await channel.send('*character count for playlist has been exceeded (max is 20)*');
@@ -37,7 +43,13 @@ async function renamePlaylist(channel: TextChannel, server: LocalServer, sheetNa
  * @param newName The new name of the key.
  * @returns {Promise<boolean>} True if successful
  */
-async function renameKey(channel: TextChannel, server: LocalServer, sheetName: string, oldName: string, newName: string): Promise<boolean> {
+async function renameKey(
+  channel: TextChannel,
+  server: LocalServer,
+  sheetName: string,
+  oldName: string,
+  newName: string
+): Promise<boolean> {
   const xdb = await getXdb2(server, sheetName, false);
   if (newName.length > 20) {
     await channel.send('*character count for key has been exceeded (max is 20)*');
@@ -69,8 +81,7 @@ async function renameKey(channel: TextChannel, server: LocalServer, sheetName: s
     if (key === oldNameUpper) {
       val.name = newName;
       replacementMap.set(newNameUpper, val);
-    }
-    else {
+    } else {
       replacementMap.set(key, val);
     }
   });

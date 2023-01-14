@@ -1,5 +1,5 @@
-import LocalServer from "../utils/lib/LocalServer";
-import {Message, VoiceBasedChannel} from "discord.js";
+import LocalServer from '../utils/lib/LocalServer';
+import { Message, VoiceBasedChannel } from 'discord.js';
 import { getXdb2 } from '../database/retrieval';
 import { runSearchCommand } from './search';
 import { sendLinkAsEmbed } from './stream/stream';
@@ -14,7 +14,14 @@ import { sendLinkAsEmbed } from './stream/stream';
  * @param sheetLetter Required if dbKey is given - a letter enum representing the type of sheet being referenced
  * (server or personal)
  */
-async function runWhatsPCommand(server: LocalServer, message: Message, voiceChannel: VoiceBasedChannel, keyName?: string, sheetName?: string, sheetLetter?: string) {
+async function runWhatsPCommand(
+  server: LocalServer,
+  message: Message,
+  voiceChannel: VoiceBasedChannel,
+  keyName?: string,
+  sheetName?: string,
+  sheetLetter?: string
+) {
   if (keyName && sheetName) {
     const xdb = await getXdb2(server, sheetName, !!voiceChannel);
     let link = xdb.globalKeys.get(keyName.toUpperCase()).link;
@@ -27,21 +34,17 @@ async function runWhatsPCommand(server: LocalServer, message: Message, voiceChan
     }
     if (link) {
       return message.channel.send(link);
-    }
-    else {
+    } else {
       // not found msg
-      const notFound = `Could not find '${keyName}' in ${(sheetLetter === 'm' ? 'your' : 'the server\'s')} keys list.`;
+      const notFound = `Could not find '${keyName}' in ${sheetLetter === 'm' ? 'your' : "the server's"} keys list.`;
       message.channel.send(notFound);
       return sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, true);
     }
-  }
-  else if (!voiceChannel) {
+  } else if (!voiceChannel) {
     return message.channel.send('must be in a voice channel');
-  }
-  else if (server.queue[0]) {
+  } else if (server.queue[0]) {
     return sendLinkAsEmbed(message, server.queue[0], voiceChannel, server, true);
-  }
-  else {
+  } else {
     return message.channel.send('nothing is playing right now');
   }
 }

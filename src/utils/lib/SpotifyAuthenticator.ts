@@ -1,6 +1,5 @@
-import {logError} from "../utils";
+import { logError } from '../utils';
 const SpotifyWebApi = require('spotify-web-api-node');
-
 
 class SpotifyApi {
   // Date.now of when the token will expire
@@ -12,7 +11,7 @@ class SpotifyApi {
     // Set up the Spotify Web API client with your client ID and secret
     this._spotifyApiNode = new SpotifyWebApi({
       clientId: process.env.SPOTIFY_CLIENT_ID,
-      clientSecret: process.env.SPOTIFY_SECRET_CLIENT_ID,
+      clientSecret: process.env.SPOTIFY_SECRET_CLIENT_ID
     });
     this.expiryDateMS = 0;
     this.#authenticate().catch((e) => {
@@ -30,10 +29,9 @@ class SpotifyApi {
       const data = await this._spotifyApiNode.clientCredentialsGrant();
       this._spotifyApiNode.setAccessToken(data.body.access_token);
       // 3600ms is the usual expiry time
-      this.expiryDateMS = (Date.now() + (data.body.expires_in || 3600)) - 5000;
+      this.expiryDateMS = Date.now() + (data.body.expires_in || 3600) - 5000;
       return true;
-    }
-    catch (e) {
+    } catch (e) {
       return false;
     }
   }
@@ -52,4 +50,3 @@ class SpotifyApi {
 
 const spotifyAuth = new SpotifyApi();
 export default spotifyAuth;
-

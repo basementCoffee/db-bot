@@ -1,7 +1,13 @@
-import LocalServer from "../utils/lib/LocalServer";
-import {Message} from "discord.js";
+import LocalServer from '../utils/lib/LocalServer';
+import { Message } from 'discord.js';
 import {
-  botInVC, setSeamless, verifyPlaylist, verifyUrl, pushQueue, adjustQueueForPlayNow, unshiftQueue,
+  botInVC,
+  setSeamless,
+  verifyPlaylist,
+  verifyUrl,
+  pushQueue,
+  adjustQueueForPlayNow,
+  unshiftQueue
 } from '../utils/utils';
 import { removeFormattingLink } from '../utils/formatUtils';
 import { addLinkToQueue } from '../utils/playlist';
@@ -20,7 +26,13 @@ import { isValidRequestWPlay } from '../utils/validation';
  * @param server {LocalServer} The local server object
  * @param sheetName The name of the sheet to reference
  */
-async function runPlayLinkCommand(message: Message, args: string[], mgid: string, server: LocalServer, sheetName: string) {
+async function runPlayLinkCommand(
+  message: Message,
+  args: string[],
+  mgid: string,
+  server: LocalServer,
+  sheetName: string
+) {
   if (!message.member!.voice?.channel) {
     const sentMsg = await message.channel.send('must be in a voice channel to play');
     if (!botInVC(message) && args[1]) {
@@ -34,8 +46,9 @@ async function runPlayLinkCommand(message: Message, args: string[], mgid: string
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
       return playFromWord(message, args, sheetName, server, mgid, false);
     }
+  } else {
+    return playFromWord(message, args, sheetName, server, mgid, false);
   }
-  else {return playFromWord(message, args, sheetName, server, mgid, false);}
   // valid link
   let queueWasEmpty = false;
   if (server.queue.length < 1) {
@@ -54,13 +67,11 @@ async function runPlayLinkCommand(message: Message, args: string[], mgid: string
   // if queue was empty then play
   if (queueWasEmpty) {
     playLinkToVC(message, server.queue[0], message.member!.voice?.channel, server, 0).then();
-  }
-  else {
-    message.channel.send('*added ' + (pNums < 2 ? '' : (pNums + ' ')) + 'to queue*');
+  } else {
+    message.channel.send('*added ' + (pNums < 2 ? '' : pNums + ' ') + 'to queue*');
     await updateActiveEmbed(server);
   }
 }
-
 
 /**
  * Runs the play now command.
@@ -72,7 +83,15 @@ async function runPlayLinkCommand(message: Message, args: string[], mgid: string
  * @param seekSec {number?} Optional - The amount of time to seek in seconds
  * @param adjustQueue {boolean?} Whether to adjust the queue (is true by default).
  */
-async function playLinkNow(message: Message, args: string[], mgid: string, server: LocalServer, sheetName = '', seekSec: number, adjustQueue = true) {
+async function playLinkNow(
+  message: Message,
+  args: string[],
+  mgid: string,
+  server: LocalServer,
+  sheetName = '',
+  seekSec: number,
+  adjustQueue = true
+) {
   const voiceChannel = message.member!.voice?.channel;
   if (!voiceChannel) {
     const sentMsg = await message.channel.send('must be in a voice channel to play');
@@ -92,8 +111,9 @@ async function playLinkNow(message: Message, args: string[], mgid: string, serve
     if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
       return playFromWord(message, args, sheetName, server, mgid, true);
     }
+  } else {
+    return playFromWord(message, args, sheetName, server, mgid, true);
   }
-  else {return playFromWord(message, args, sheetName, server, mgid, true);}
   // places the currently playing into the queue history if played long enough
   if (adjustQueue) adjustQueueForPlayNow(server.audio.resource!, server);
   // counter to iterate over all args - excluding args[0]
@@ -119,15 +139,28 @@ async function playLinkNow(message: Message, args: string[], mgid: string, serve
  * @param mgid The guild id.
  * @param playNow Whether to play now.
  */
-function playFromWord(message: Message, args: string[], sheetName: string, server: LocalServer, mgid: string, playNow: boolean) {
+function playFromWord(
+  message: Message,
+  args: string[],
+  sheetName: string,
+  server: LocalServer,
+  mgid: string,
+  playNow: boolean
+) {
   if (sheetName) {
     runDatabasePlayCommand(args, message, sheetName, playNow, false, server).then();
-  }
-  else {
-    runYoutubeSearch(message, playNow, server, args.map((x: string) => x).splice(1).join(' ')).then();
+  } else {
+    runYoutubeSearch(
+      message,
+      playNow,
+      server,
+      args
+        .map((x: string) => x)
+        .splice(1)
+        .join(' ')
+    ).then();
   }
 }
-
 
 /**
  * Determines whether to proceed with the play command, based on the request. Specific for playLink.
@@ -146,6 +179,5 @@ function isValidRequestPlayLink(server: LocalServer, message: Message, link: str
   }
   return true;
 }
-
 
 export { runPlayLinkCommand, playLinkNow };

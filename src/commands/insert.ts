@@ -1,11 +1,9 @@
-import {Message} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { Message } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 
 const { verifyUrl, verifyPlaylist, createQueueItem } = require('../utils/utils');
 const { getXdb2 } = require('../database/retrieval');
-const {
-  SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK,
-} = require('../utils/lib/constants');
+const { SPOTIFY_BASE_LINK, StreamType, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } = require('../utils/lib/constants');
 const { addPlaylistToQueue } = require('../utils/playlist');
 const ytpl = require('ytpl');
 const { updateActiveEmbed } = require('../utils/embed');
@@ -21,7 +19,13 @@ const { linkFormatter } = require('../utils/formatUtils');
  * @param sheetName {string} The sheet name to use.
  * @returns {Promise<number>} The position to insert or a negative if failed.
  */
-async function runInsertCommand(message: Message, mgid: string, args: string[], server: LocalServer, sheetName: string): Promise<number> {
+async function runInsertCommand(
+  message: Message,
+  mgid: string,
+  args: string[],
+  server: LocalServer,
+  sheetName: string
+): Promise<number> {
   if (!args) return -1;
   if (insertCommandVerification(message, server, args) !== 1) return -1;
   let num: any = args.filter((item) => !Number.isNaN(Number(item))).slice(-1)[0];
@@ -30,25 +34,23 @@ async function runInsertCommand(message: Message, mgid: string, args: string[], 
   if (num) {
     links = args.filter((item) => item !== num);
     num = parseInt(num);
-  }
-  else {
+  } else {
     links = args;
-    if (server.queue.length === 1) {num = 1;}
-    else {
+    if (server.queue.length === 1) {
+      num = 1;
+    } else {
       // insert question
-      const insertQ = 'What position would you like to insert? (1-' +
-       server.queue.length + ') [or type \'q\' to quit]';
+      const insertQ = 'What position would you like to insert? (1-' + server.queue.length + ") [or type 'q' to quit]";
       const sentMsg = await message.channel.send(insertQ);
       const filter = (m: Message) => {
-        return (message.author.id === m.author.id);
+        return message.author.id === m.author.id;
       };
       const messages = await sentMsg.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] });
       const msgResponse = messages.first()?.content.trim();
       if (!msgResponse || msgResponse.toLowerCase() === 'q') {
         message.channel.send('*cancelled*');
         return -1;
-      }
-      else {
+      } else {
         num = parseInt(msgResponse);
         if (!Number.isFinite(num)) {
           message.channel.send('*cancelled: expected a number*');
@@ -58,7 +60,7 @@ async function runInsertCommand(message: Message, mgid: string, args: string[], 
     }
   }
   if (num < 1) {
-    if (num === 0) message.channel.send('0 changes what\'s actively playing, use the \'playnow\' command instead.');
+    if (num === 0) message.channel.send("0 changes what's actively playing, use the 'playnow' command instead.");
     else message.channel.send('position must be a positive number');
     return -1;
   }
@@ -78,8 +80,9 @@ async function runInsertCommand(message: Message, mgid: string, args: string[], 
       if (!link) {
         notFoundString += `${tempLink}, `;
         links.splice(i, 1);
+      } else {
+        links[i] = link;
       }
-      else {links[i] = link;}
     }
   }
   if (notFoundString.length) {
@@ -97,28 +100,27 @@ async function runInsertCommand(message: Message, mgid: string, args: string[], 
       if (link.includes(SPOTIFY_BASE_LINK)) {
         link = linkFormatter(link, SPOTIFY_BASE_LINK);
         pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SPOTIFY, false, num);
-      }
-      else if (ytpl.validateID(link)) {
+      } else if (ytpl.validateID(link)) {
         pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.YOUTUBE, false, num);
-      }
-      else if (link.includes(SOUNDCLOUD_BASE_LINK)) {
+      } else if (link.includes(SOUNDCLOUD_BASE_LINK)) {
         link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
         pNums += await addPlaylistToQueue(message, server.queue, 0, link, StreamType.SOUNDCLOUD, false, num);
-      }
-      else {
-        server.queue.splice(num, 0,
-          createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined));
+      } else {
+        server.queue.splice(
+          num,
+          0,
+          createQueueItem(link, link.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, undefined)
+        );
         pNums++;
       }
-    }
-    catch (e) {
+    } catch (e) {
       failedLinks += `<${link}>, `;
     }
   }
   if (failedLinks.length) {
     message.channel.send(`there were issues adding the following: ${failedLinks.substring(0, failedLinks.length - 2)}`);
   }
-  await message.channel.send(`inserted ${(pNums > 1 ? (pNums + ' links') : 'link')} into position ${num}`);
+  await message.channel.send(`inserted ${pNums > 1 ? pNums + ' links' : 'link'} into position ${num}`);
   await updateActiveEmbed(server);
   return num;
 }
@@ -137,11 +139,11 @@ function insertCommandVerification(message: Message, server: LocalServer, args: 
   }
   if (!isValidRequestWPlay(server, message, 'insert')) return 0;
   if (server.queue.length < 1) {
-    message.channel.send('cannot insert when the queue is empty (use \'play\' instead)');
+    message.channel.send("cannot insert when the queue is empty (use 'play' instead)");
     return 0;
   }
   if (!args[1]) {
-    message.channel.send('put a link followed by a position in the queue \`(i.e. insert [link] [num])\`');
+    message.channel.send('put a link followed by a position in the queue `(i.e. insert [link] [num])`');
     return 0;
   }
   return 1;

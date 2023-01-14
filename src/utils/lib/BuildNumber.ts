@@ -10,7 +10,10 @@ class BuildNumber {
   buildNoStr;
 
   constructor() {
-    this.baseVersionStr = version.split('.').map((x: string) => (x.length < 2 ? `0${x}` : x)).join('');
+    this.baseVersionStr = version
+      .split('.')
+      .map((x: string) => (x.length < 2 ? `0${x}` : x))
+      .join('');
     this.extensionStr = '04';
     this.buildNoStr = `${this.baseVersionStr}${this.extensionStr}`;
   }
@@ -37,7 +40,7 @@ class BuildNumber {
    * @returns {boolean} If successful.
    */
   incrementBuildNo(): boolean {
-    return this.modifyBuildNo(99, ((digit: number) => ++digit));
+    return this.modifyBuildNo(99, (digit: number) => ++digit);
   }
 
   /**
@@ -45,7 +48,7 @@ class BuildNumber {
    * @returns {boolean} If successful.
    */
   decrementBuildNo(): boolean {
-    return this.modifyBuildNo(0, ((digit: number) => --digit));
+    return this.modifyBuildNo(0, (digit: number) => --digit);
   }
 
   /**
@@ -56,7 +59,7 @@ class BuildNumber {
    * @param action An action that modifies the build number.
    * @returns {boolean} True if successful.
    */
-  modifyBuildNo(invalidAmt: number, action: (num: number)=> number): boolean {
+  modifyBuildNo(invalidAmt: number, action: (num: number) => number): boolean {
     let extensionNum = parseInt(this.extensionStr);
     if (extensionNum === invalidAmt) return false;
     extensionNum = action(extensionNum);
@@ -65,7 +68,6 @@ class BuildNumber {
     return true;
   }
 }
-
 
 const buildNumber = new BuildNumber();
 export default buildNumber;

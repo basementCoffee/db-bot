@@ -1,10 +1,9 @@
 /* eslint-disable camelcase */
-import { gsrun, gsUpdateAdd, gsUpdateOverwrite } from "./api/api";
-import {getXdb2} from "./retrieval";
-import LocalServer from "../utils/lib/LocalServer";
-import {Message} from "discord.js";
-import {serializeAndUpdate} from "./utils";
-
+import { gsrun, gsUpdateAdd, gsUpdateOverwrite } from './api/api';
+import { getXdb2 } from './retrieval';
+import LocalServer from '../utils/lib/LocalServer';
+import { Message } from 'discord.js';
+import { serializeAndUpdate } from './utils';
 
 /**
  * The command to add a key, value pair to a given database.
@@ -14,7 +13,13 @@ import {serializeAndUpdate} from "./utils";
  * @param sheetName the name of the sheet to add to
  * @param printMsgToChannel whether to print response to channel
  */
-function addToDatabase(server: LocalServer, args: string[], message: Message, sheetName: string, printMsgToChannel: boolean) {
+function addToDatabase(
+  server: LocalServer,
+  args: string[],
+  message: Message,
+  sheetName: string,
+  printMsgToChannel: boolean
+) {
   let songsAddedInt = 0;
   let z = 1;
   // check duplicates, and initialize sheet for new servers
@@ -25,15 +30,14 @@ function addToDatabase(server: LocalServer, args: string[], message: Message, sh
         linkZ = linkZ.substring(0, linkZ.length - 1);
       }
       if (args[z].includes('.') || args[z].includes(',')) {
-        message.channel.send('did not add \'' + args[z] + '\', names cannot include \'.\' or \',\'');
+        message.channel.send("did not add '" + args[z] + "', names cannot include '.' or ','");
         songsAddedInt--;
-      }
-      else {
+      } else {
         let alreadyExists = false;
         if (printMsgToChannel) {
           for (const x of xdb.congratsDatabase.keys()) {
             if (x.toUpperCase() === args[z].toUpperCase()) {
-              message.channel.send('\'' + x + '\' is already in your list');
+              message.channel.send("'" + x + "' is already in your list");
               alreadyExists = true;
               songsAddedInt--;
               break;
@@ -59,16 +63,16 @@ function addToDatabase(server: LocalServer, args: string[], message: Message, sh
         let typeString;
         if (databaseType === 'm') {
           typeString = 'your personal';
-        }
-        else {
-          typeString = 'the server\'s';
+        } else {
+          typeString = "the server's";
         }
         message.channel.send(`*link added to ${typeString} keys list. (use \`${ps}d ${args[1]}\` to play)*`);
-      }
-      else if (songsAddedInt > 1) {
+      } else if (songsAddedInt > 1) {
         await new Promise((res) => setTimeout(res, 1000));
         gsUpdateOverwrite([xdb.dsInt + songsAddedInt], sheetName, undefined, xdb.dsInt);
-        message.channel.send('*' + songsAddedInt + ' songs added to the keys list. (see \'' + ps + databaseType + 'keys\')*');
+        message.channel.send(
+          '*' + songsAddedInt + " songs added to the keys list. (see '" + ps + databaseType + "keys')*"
+        );
       }
     }
   });
@@ -85,12 +89,21 @@ function addToDatabase(server: LocalServer, args: string[], message: Message, sh
  * @param xdb {any?} The XDB.
  * @returns {Promise<void>}
  */
-async function addToDatabase_P(server: LocalServer, keysList: Array<string>, channel: any, sheetName: string, printMsgToChannel: boolean, playlistName: string = 'general', xdb?: any): Promise<void> {
+async function addToDatabase_P(
+  server: LocalServer,
+  keysList: Array<string>,
+  channel: any,
+  sheetName: string,
+  printMsgToChannel: boolean,
+  playlistName: string = 'general',
+  xdb?: any
+): Promise<void> {
   let songsAddedInt = 0;
   let z = 0;
   // check duplicates, and initialize sheet for new servers
   if (!xdb) xdb = await getXdb2(server, sheetName, false);
-  const playlist = xdb.playlists.get(playlistName.toUpperCase()) ||
+  const playlist =
+    xdb.playlists.get(playlistName.toUpperCase()) ||
     (() => {
       const tempMap = new Map();
       xdb.playlists.set(playlistName.toUpperCase(), tempMap);
@@ -104,9 +117,8 @@ async function addToDatabase_P(server: LocalServer, keysList: Array<string>, cha
       linkZ = linkZ.substring(0, linkZ.length - 1);
     }
     if (keysList[z].includes('.') || keysList[z].includes(',')) {
-      channel.send('did not add \'' + keysList[z] + '\', names cannot include \'.\' or \',\'');
-    }
-    else {
+      channel.send("did not add '" + keysList[z] + "', names cannot include '.' or ','");
+    } else {
       let alreadyExists = false;
       const existingKeyObj = xdb.globalKeys.get(keysList[z].toUpperCase());
       const existingPlaylist = xdb.playlists.get(keysList[z].toUpperCase());
@@ -114,8 +126,7 @@ async function addToDatabase_P(server: LocalServer, keysList: Array<string>, cha
         channel.send(`*'${existingKeyObj.name}' is already saved as a key*`);
         alreadyExists = true;
         break;
-      }
-      else if (existingPlaylist) {
+      } else if (existingPlaylist) {
         channel.send(`*'${keysList[z]}' cannot be used because it is a playlist*`);
         alreadyExists = true;
         break;
@@ -124,7 +135,7 @@ async function addToDatabase_P(server: LocalServer, keysList: Array<string>, cha
         playlist.set(keysList[z].toUpperCase(), {
           name: keysList[z],
           link: keysList[z + 1],
-          timeStamp: '',
+          timeStamp: ''
         });
         songsAddedInt += 1;
       }
@@ -136,11 +147,10 @@ async function addToDatabase_P(server: LocalServer, keysList: Array<string>, cha
     const ps = server.prefix;
     if (songsAddedInt === 1) {
       channel.send(`*link added to your **${playlistName}** playlist. (use \`${ps}d ${keysList[0]}\` to play)*`);
-    }
-    else if (songsAddedInt > 1) {
+    } else if (songsAddedInt > 1) {
       await new Promise((res) => setTimeout(res, 1000));
       gsUpdateOverwrite(10, sheetName, xdb.dsInt);
-      channel.send('*' + songsAddedInt + ' songs added to the keys list. (see \'' + ps + 'keys\')*');
+      channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + "keys')*");
     }
   }
 }

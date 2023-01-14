@@ -8,26 +8,23 @@ import {
   MessagePayload,
   MessagePayloadOption,
   TextBasedChannel
-} from "discord.js";
+} from 'discord.js';
 
 import fetch from 'isomorphic-unfetch';
 const { getData } = require('spotify-url-info')(fetch);
 import ytdl from 'ytdl-core-discord';
 import ytpl from 'ytpl';
-import LocalServer from "./lib/LocalServer";
-import {AudioResource, getVoiceConnection} from "@discordjs/voice";
-import EmbedBuilderLocal from "./lib/EmbedBuilderLocal";
-import {linkFormatter} from "./formatUtils";
-import {
-  botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot,
-} from './lib/constants';
-import {QueueItem} from "./lib/types";
+import LocalServer from './lib/LocalServer';
+import { AudioResource, getVoiceConnection } from '@discordjs/voice';
+import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
+import { linkFormatter } from './formatUtils';
+import { botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot } from './lib/constants';
+import { QueueItem } from './lib/types';
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
 const CH = require('../../channel.json');
-
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
@@ -47,8 +44,7 @@ function botInVcGuild(guild: Guild): boolean {
   try {
     const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId)?.members;
     return bot.voice.adapters.get(guild.id) && members && members.has(bot.user.id);
-  }
-  catch (e) {
+  } catch (e) {
     return false;
   }
 }
@@ -61,7 +57,7 @@ function botInVcGuild(guild: Guild): boolean {
 function getQueueText(server: LocalServer) {
   let content;
   if (server.queue.length > 1) content = `1 / ${server.queue.length}`;
-  else if (server.queue.length > 0) content = (server.autoplay ? 'smartplay' : '1 / 1');
+  else if (server.queue.length > 0) content = server.autoplay ? 'smartplay' : '1 / 1';
   else content = 'empty';
   return content;
 }
@@ -72,11 +68,12 @@ function getQueueText(server: LocalServer) {
  * @returns {boolean} True if given a playable URL.
  */
 function verifyUrl(url: string) {
-  return (url.includes(SPOTIFY_BASE_LINK) ? url.includes('/track/') :
-    (url.includes(SOUNDCLOUD_BASE_LINK) ? scdl.isValidUrl(linkFormatter(url, SOUNDCLOUD_BASE_LINK)) :
-      (ytdl.validateURL(url) || url.includes(TWITCH_BASE_LINK))) && !verifyPlaylist(url));
+  return url.includes(SPOTIFY_BASE_LINK)
+    ? url.includes('/track/')
+    : (url.includes(SOUNDCLOUD_BASE_LINK)
+        ? scdl.isValidUrl(linkFormatter(url, SOUNDCLOUD_BASE_LINK))
+        : ytdl.validateURL(url) || url.includes(TWITCH_BASE_LINK)) && !verifyPlaylist(url);
 }
-
 
 /**
  * Returns true if the given url is a valid playlist link.
@@ -90,15 +87,12 @@ function verifyPlaylist(url: string): string | boolean {
       if (isPlaylistSpotifyLink(url)) {
         return StreamType.SPOTIFY;
       }
-    }
-    else if (url.includes(SOUNDCLOUD_BASE_LINK) && scdl.isPlaylistURL(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
+    } else if (url.includes(SOUNDCLOUD_BASE_LINK) && scdl.isPlaylistURL(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
       return StreamType.SOUNDCLOUD;
-    }
-    else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) {
+    } else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) {
       return StreamType.YOUTUBE;
     }
-  }
-  catch (e) {}
+  } catch (e) {}
   return false;
 }
 
@@ -129,7 +123,7 @@ function resetSession(server: LocalServer) {
  * @param server {LocalServer} The server to use.
  */
 function adjustQueueForPlayNow(dsp: AudioResource, server: LocalServer) {
-  if (server.queue[0] && dsp?.playbackDuration && (dsp.playbackDuration > 21000)) {
+  if (server.queue[0] && dsp?.playbackDuration && dsp.playbackDuration > 21000) {
     server.queueHistory.push(server.queue.shift());
   }
 }
@@ -147,22 +141,18 @@ async function getTitle(queueItem: any, cutoff?: number): Promise<string> {
     if (queueItem.type === StreamType.SPOTIFY) {
       if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await getData(queueItem.url));
       title = queueItem.infos.name;
-    }
-    else if (queueItem.type === StreamType.SOUNDCLOUD) {
+    } else if (queueItem.type === StreamType.SOUNDCLOUD) {
       if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await scdl.getInfo(queueItem.url));
       title = queueItem.infos.title;
-    }
-    else if (queueItem.type === StreamType.TWITCH) {
+    } else if (queueItem.type === StreamType.TWITCH) {
       title = 'twitch livestream';
-    }
-    else {
+    } else {
       if (isEmptyQueueItem) {
         queueItem.infos = Object.assign(queueItem.infos || {}, await ytdl.getBasicInfo(queueItem.url));
       }
       title = queueItem.infos.videoDetails?.title || queueItem.infos.title;
     }
-  }
-  catch (e) {
+  } catch (e) {
     console.log('broken_url', e);
     title = 'broken_url';
   }
@@ -177,7 +167,7 @@ async function getTitle(queueItem: any, cutoff?: number): Promise<string> {
  * @param data {number} The bytes to format to MB.
  * @returns {string} A string that has the number of MB.
  */
-const formatMemoryUsage = (data: number) => `${Math.round(data / 1024 / 1024 * 100) / 100}`;
+const formatMemoryUsage = (data: number) => `${Math.round((data / 1024 / 1024) * 100) / 100}`;
 
 /**
  * Creates an embed regarding memory usage.
@@ -188,10 +178,12 @@ async function createMemoryEmbed() {
   const cpuUsage = await cpu.usage();
   return new EmbedBuilderLocal()
     .setTitle('Memory Usage')
-    .setDescription(`rss -  ${formatMemoryUsage(memUsage.rss)} MB\nheap -  ` +
-      `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB ` +
-      `(${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)\ncpu: ${cpuUsage}%` +
-      `\nload-avg: ${Math.round(os.loadavg()[1] * 100) / 100}%`);
+    .setDescription(
+      `rss -  ${formatMemoryUsage(memUsage.rss)} MB\nheap -  ` +
+        `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB ` +
+        `(${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)\ncpu: ${cpuUsage}%` +
+        `\nload-avg: ${Math.round(os.loadavg()[1] * 100) / 100}%`
+    );
 }
 
 /**
@@ -212,13 +204,11 @@ function endStream(server: LocalServer) {
         server.streamData.stream.end();
         server.streamData.stream.destroy();
       }
-    }
-    else if (server.streamData.type === StreamType.TWITCH) {
+    } else if (server.streamData.type === StreamType.TWITCH) {
       server.streamData.stream.end();
       unpipe(server.streamData.stream);
     }
-  }
-  catch (e) {
+  } catch (e) {
     console.log('Error: attempt stream close - ', e);
   }
   server.streamData.stream = undefined;
@@ -246,7 +236,7 @@ function createQueueItem(url: string, type: StreamType, infos?: any): QueueItem 
   return {
     url: url,
     type: type,
-    infos: infos,
+    infos: infos
   };
 }
 
@@ -284,7 +274,7 @@ function setSeamless(server: LocalServer, fName: any, args: Array<any>, message:
   server.seamless.args = args;
   server.seamless.message = message;
   if (server.seamless.timeout) clearTimeout(server.seamless.timeout);
-  server.seamless.timeout = setTimeout(() => server.seamless.function = ()=>{}, 9000);
+  server.seamless.timeout = setTimeout(() => (server.seamless.function = () => {}), 9000);
 }
 
 /**
@@ -294,7 +284,7 @@ function setSeamless(server: LocalServer, fName: any, args: Array<any>, message:
  * @param deleteNum {number} The number of recent db vibe messages to remove.
  * @param onlyDB {boolean} True if to delete only db vibe messages.
  */
-function removeDBMessage(channelID: string, deleteNum = 1, onlyDB:boolean) {
+function removeDBMessage(channelID: string, deleteNum = 1, onlyDB: boolean) {
   let firstRun = true;
   try {
     const NUM_TO_FETCH = 30;
@@ -306,17 +296,16 @@ function removeDBMessage(channelID: string, deleteNum = 1, onlyDB:boolean) {
             if (firstRun) {
               firstRun = false;
               await item.delete();
-            }
-            else if (!onlyDB || item?.member?.id === botID) {
+            } else if (!onlyDB || item?.member?.id === botID) {
               await item.delete();
               deleteNum--;
             }
             if (!deleteNum) break;
           }
         }
-      }));
-  }
-  catch (e) {}
+      })
+    );
+  } catch (e) {}
 }
 
 /**
@@ -324,13 +313,14 @@ function removeDBMessage(channelID: string, deleteNum = 1, onlyDB:boolean) {
  * @param errText The error object or message to send.
  */
 function logError(errText: string | MessagePayloadOption | Error) {
-  bot.channels.fetch(CH.err)
+  bot.channels
+    .fetch(CH.err)
     .then((channel: TextBasedChannel) => {
       if (errText instanceof Error) {
         errText = `${errText.stack}`;
       }
       // @ts-ignore
-      channel?.send(errText)
+      channel?.send(errText);
     })
     .catch((e: Error) => console.log('Failed sending error message: ', e));
 }
@@ -342,9 +332,11 @@ function logError(errText: string | MessagePayloadOption | Error) {
  */
 function catchVCJoinError(error: Error, textChannel: TextBasedChannel) {
   const eMsg = error.toString();
-  if (eMsg.includes('it is full')) {textChannel.send('\`error: cannot join voice channel; it is full\`');}
-  else if (eMsg.includes('VOICE_JOIN_CHANNEL')) {textChannel.send('\`permissions error: cannot join voice channel\`');}
-  else {
+  if (eMsg.includes('it is full')) {
+    textChannel.send('`error: cannot join voice channel; it is full`');
+  } else if (eMsg.includes('VOICE_JOIN_CHANNEL')) {
+    textChannel.send('`permissions error: cannot join voice channel`');
+  } else {
     textChannel.send('error when joining your VC:\n`' + error.message + '`');
     logError(`voice channel join error:\n\`${error.message}\``);
   }
@@ -368,7 +360,6 @@ function notInVoiceChannelErrorMsg(guild: Guild): string {
 function getBotDisplayName(guild: Guild): string {
   return guild.members.me!.nickname || guild.members.me!.user.username;
 }
-
 
 /**
  * Returns true if the link is a valid playable link (includes playlists).
@@ -405,7 +396,9 @@ function isPersonalSheet(sheetName: string): boolean {
 function getVCMembers(guildId: string): Array<any> {
   const voiceConnection = getVoiceConnection(guildId);
   if (voiceConnection) {
-    const collectionOfMembers: Collection<string, GuildMember> = bot.channels.cache.get(voiceConnection.joinConfig.channelId)?.members;
+    const collectionOfMembers: Collection<string, GuildMember> = bot.channels.cache.get(
+      voiceConnection.joinConfig.channelId
+    )?.members;
     if (collectionOfMembers) {
       const gmArray = Array.from(collectionOfMembers);
       gmArray.map((item: any) => item[1].user.username);
@@ -430,8 +423,30 @@ function createVisualEmbed(title: string, text: string, color?: ColorResolvable)
 }
 
 export {
-  botInVC, adjustQueueForPlayNow, verifyUrl, verifyPlaylist, resetSession, setSeamless, getQueueText, getTitle,
-  endStream, unshiftQueue, pushQueue, createQueueItem, getLinkType, createMemoryEmbed, removeDBMessage,
-  catchVCJoinError, logError, linkValidator, getSheetName, isPersonalSheet, getBotDisplayName, createVisualEmbed,
-  notInVoiceChannelErrorMsg, getVCMembers, botInVcGuild, isPlaylistSpotifyLink,
+  botInVC,
+  adjustQueueForPlayNow,
+  verifyUrl,
+  verifyPlaylist,
+  resetSession,
+  setSeamless,
+  getQueueText,
+  getTitle,
+  endStream,
+  unshiftQueue,
+  pushQueue,
+  createQueueItem,
+  getLinkType,
+  createMemoryEmbed,
+  removeDBMessage,
+  catchVCJoinError,
+  logError,
+  linkValidator,
+  getSheetName,
+  isPersonalSheet,
+  getBotDisplayName,
+  createVisualEmbed,
+  notInVoiceChannelErrorMsg,
+  getVCMembers,
+  botInVcGuild,
+  isPlaylistSpotifyLink
 };

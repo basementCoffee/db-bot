@@ -1,6 +1,6 @@
-import LocalServer from "./LocalServer";
-import {startupDevMode} from "./constants";
-import {formatDuration} from "../formatUtils";
+import LocalServer from './LocalServer';
+import { startupDevMode } from './constants';
+import { formatDuration } from '../formatUtils';
 
 // process related statistics
 class ProcessStats {
@@ -33,8 +33,7 @@ class ProcessStats {
     if (startupDevMode) {
       this.setDevMode(true);
       this.isInactive = false;
-    }
-    else {
+    } else {
       this.setDevMode(false);
       this.isInactive = true;
     }
@@ -74,7 +73,7 @@ class ProcessStats {
     this.activeStreamsMap.forEach((val) => {
       activeTimes += Date.now() - val;
     });
-    return (this.totalStreamTime + activeTimes);
+    return this.totalStreamTime + activeTimes;
   }
 
   /**
@@ -95,14 +94,13 @@ class ProcessStats {
    * Sets the status of devMode.
    * @param status {boolean} Whether to set devMode on or off.
    */
-  setDevMode(status : boolean) {
+  setDevMode(status: boolean) {
     this.devMode = status;
     if (status) {
       this.debugFunc = (...args: any) => {
         console.log(...args);
       };
-    }
-    else {
+    } else {
       this.debugFunc = () => {};
     }
     console.log(`-devMode ${status ? 'on' : 'off'}-`);
@@ -157,8 +155,7 @@ class ProcessStats {
   getTimeActive(): string {
     if (this.dateActive) {
       return formatDuration(this.activeMS + Date.now() - this.dateActive);
-    }
-    else {
+    } else {
       return formatDuration(this.activeMS);
     }
   }

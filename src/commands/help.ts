@@ -1,9 +1,9 @@
-import {Message, MessageReaction, User} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { Message, MessageReaction, User } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 
-import { botID } from'../utils/lib/constants';
-import { getHelpList } from'../utils/help';
-import reactions from'../utils/lib/reactions';
+import { botID } from '../utils/lib/constants';
+import { getHelpList } from '../utils/help';
+import reactions from '../utils/lib/reactions';
 
 /**
  * Produces the help list and manages its reactions.
@@ -26,12 +26,12 @@ function runHelpCommand(message: Message, server: LocalServer, version: string) 
     collector.on('collect', (reaction: MessageReaction, user: User) => {
       if (user.bot) return;
       if (reaction.emoji.name === reactions.ARROW_R) {
-        helpPages[(++currentHelp % helpPages.length)].edit(sentMsg);
+        helpPages[++currentHelp % helpPages.length].edit(sentMsg);
       }
     });
     collector.on('remove', (reaction: MessageReaction) => {
       if (reaction.emoji.name === reactions.ARROW_R) {
-        helpPages[(++currentHelp % helpPages.length)].edit(sentMsg);
+        helpPages[++currentHelp % helpPages.length].edit(sentMsg);
       }
     });
     collector.on('end', () => {

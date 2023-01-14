@@ -1,6 +1,6 @@
-import {getTitle} from "../utils/utils";
-import {Message} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { getTitle } from '../utils/utils';
+import { Message } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 
 /**
  * Purges an item from the queue.
@@ -22,7 +22,7 @@ async function runPurgeCommand(message: Message, server: LocalServer, term: stri
  * @param array The array to purge.
  * @param arrayItemApplicator A function that determines if the term is within an array item.
  */
-async function purgeItem(array: any[], arrayItemApplicator: (item: any )=> Promise<boolean>) {
+async function purgeItem(array: any[], arrayItemApplicator: (item: any) => Promise<boolean>) {
   // counter for how many items were purged
   let counter = 0;
   for (let i = 1; i < array.length; i++) {
@@ -33,6 +33,5 @@ async function purgeItem(array: any[], arrayItemApplicator: (item: any )=> Promi
   }
   return counter;
 }
-
 
 export { runPurgeCommand };

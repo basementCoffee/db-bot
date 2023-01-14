@@ -37,5 +37,5 @@ export default {
   // orange diamond
   O_DIAMOND: '🔸',
   // orange book
-  BOOK_O: '📙',
+  BOOK_O: '📙'
 };

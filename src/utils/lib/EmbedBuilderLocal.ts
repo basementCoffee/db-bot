@@ -3,9 +3,11 @@ import {
   EmbedAuthorOptions,
   EmbedBuilder,
   EmbedField,
-  EmbedFooterOptions, Message,
-  RestOrArray, TextBasedChannel
-} from "discord.js";
+  EmbedFooterOptions,
+  Message,
+  RestOrArray,
+  TextBasedChannel
+} from 'discord.js';
 
 /**
  * Local wrapper for EmbedBuilder.
@@ -45,8 +47,7 @@ class EmbedBuilderLocal {
   setFooter(value: EmbedFooterOptions | string | null) {
     if (typeof value === 'string') {
       this._embed.setFooter({ text: value });
-    }
-    else {
+    } else {
       this._embed.setFooter(value);
     }
     return this;
@@ -106,6 +107,5 @@ class EmbedBuilderLocal {
     return message.edit({ embeds: [this.build()], content });
   }
 }
-
 
 export default EmbedBuilderLocal;

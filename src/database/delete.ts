@@ -1,11 +1,11 @@
 /* eslint-disable camelcase */
-import {Message} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { Message } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 import { gsrun, gsUpdateOverwrite, deleteRows } from './api/api';
 import { runSearchCommand } from '../commands/search';
 import { getXdb2 } from './retrieval';
 import { serializeAndUpdate } from './utils';
-import { isPersonalSheet } from'../utils/utils';
+import { isPersonalSheet } from '../utils/utils';
 
 /**
  * Deletes an item from the database.
@@ -26,28 +26,29 @@ async function runDeleteCommand(message: Message, keyName: string, sheetName: st
           await gsUpdateOverwrite(-1, '-1', sheetName, xdb.dsInt);
           await deleteRows(sheetName, i);
           if (sendMsgToChannel) {
-            message.channel.send('deleted \'' + itemToCheck + '\' from ' +
-              (isPersonalSheet(sheetName) ? 'your' : 'the server\'s') + ' keys');
+            message.channel.send(
+              "deleted '" + itemToCheck + "' from " + (isPersonalSheet(sheetName) ? 'your' : "the server's") + ' keys'
+            );
           }
         }
       }
       if (couldNotFindKey && sendMsgToChannel) {
         const foundStrings = runSearchCommand(keyName, xdb.congratsDatabase).ss;
         if (foundStrings && foundStrings.length > 0 && keyName.length > 1) {
-          message.channel.send('Could not find \'' + keyName + '\'\n*Did you mean: ' + foundStrings + '*');
-        }
-        else {
-          let dbType = 'the server\'s';
+          message.channel.send("Could not find '" + keyName + "'\n*Did you mean: " + foundStrings + '*');
+        } else {
+          let dbType = "the server's";
           if (message.content.substr(1, 1).toLowerCase() === 'm') {
             dbType = 'your';
           }
-          message.channel.send('*could not find \'' + keyName + '\' in ' + dbType + ' database*');
+          message.channel.send("*could not find '" + keyName + "' in " + dbType + ' database*');
         }
       }
     });
-  }
-  else if (sendMsgToChannel) {
-    message.channel.send('This command deletes keys from the keys-list. You need to specify the key to delete. (i.e. delete [link])');
+  } else if (sendMsgToChannel) {
+    message.channel.send(
+      'This command deletes keys from the keys-list. You need to specify the key to delete. (i.e. delete [link])'
+    );
   }
 }
 
@@ -61,8 +62,7 @@ async function runDeleteCommand(message: Message, keyName: string, sheetName: st
 async function runDeleteKeyCommand_P(message: any, keyName: any, sheetName: any, server: any) {
   if (await deleteKey(keyName, sheetName, server)) {
     message.channel.send(`*deleted ${keyName}*`);
-  }
-  else {
+  } else {
     message.channel.send(`*could not find **${keyName}** within the keys list*`);
   }
 }
@@ -86,4 +86,4 @@ async function deleteKey(keyName: string, sheetName: string, server: LocalServer
   return true;
 }
 
-export  { runDeleteCommand, runDeleteKeyCommand_P };
+export { runDeleteCommand, runDeleteKeyCommand_P };

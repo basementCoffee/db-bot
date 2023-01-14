@@ -1,9 +1,7 @@
-import {Message} from "discord.js";
+import { Message } from 'discord.js';
 import { createQueueItem, getLinkType, verifyPlaylist, logError, isPlaylistSpotifyLink } from './utils';
-import {
-  StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK,
-} from './lib/constants';
-import LocalServer from "./lib/LocalServer";
+import { StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
+import LocalServer from './lib/LocalServer';
 import { linkFormatter } from './formatUtils';
 import ytpl from 'ytpl';
 import processStats from '../utils/lib/ProcessStats';
@@ -21,17 +19,17 @@ const { getData, getTracks } = require('spotify-url-info')(fetch);
  */
 function getUrl(item: any, type: string): string {
   switch (type) {
-  case 'sp':
-    return item.external_urls.spotify;
-  case 'yt':
-    if (item.videoId) return `https://youtube.com/watch?v=${item.videoId}`;
-    return item.shortUrl || item.url;
-  case 'sc':
-    return item.permalink_url;
-  default:
-    const errString = `Error: Incorrect type provided, provided ${type}`;
-    processStats.debug(errString);
-    throw errString;
+    case 'sp':
+      return item.external_urls.spotify;
+    case 'yt':
+      if (item.videoId) return `https://youtube.com/watch?v=${item.videoId}`;
+      return item.shortUrl || item.url;
+    case 'sc':
+      return item.permalink_url;
+    default:
+      const errString = `Error: Incorrect type provided, provided ${type}`;
+      processStats.debug(errString);
+      throw errString;
   }
 }
 
@@ -44,12 +42,10 @@ function getUrl(item: any, type: string): string {
 async function getTracksWrapper(playlistUrl: string, retries = 0): Promise<any> {
   try {
     return await getTracks(playlistUrl);
-  }
-  catch (e) {
+  } catch (e) {
     if (retries < 2) {
       return getTracksWrapper(playlistUrl, ++retries);
-    }
-    else {
+    } else {
       processStats.debug(e);
       return [];
     }
@@ -75,8 +71,7 @@ async function getPlaylistItems(url: string, tempArray: any[]): Promise<number> 
         itemCounter++;
       }
     }
-  }
-  catch (e) {
+  } catch (e) {
     processStats.debug(`Error in getPlaylistItems: ${url}\n`, e);
   }
   return itemCounter;
@@ -90,53 +85,52 @@ async function getPlaylistItems(url: string, tempArray: any[]): Promise<number> 
  */
 async function getPlaylistArray(playlistUrl: string, type: string) {
   switch (type) {
-  case StreamType.SPOTIFY:
-    try {
-      const spotifyWebApi = await spotifyAuth.getSpotifyApiNode();
-      let tracks: any[] = [];
-      if (isPlaylistSpotifyLink(playlistUrl)) {
-        let additionalRequests;
-        let i = 0;
-        do {
-          const requestBody = (await spotifyWebApi.getPlaylistTracks(playlistUrl.split('/').pop(), { offset: i * 100 })).body;
-          const requestData = requestBody.tracks ?? requestBody;
-          const requestItems = requestData.items;
-          if (additionalRequests) {
-            additionalRequests--;
+    case StreamType.SPOTIFY:
+      try {
+        const spotifyWebApi = await spotifyAuth.getSpotifyApiNode();
+        let tracks: any[] = [];
+        if (isPlaylistSpotifyLink(playlistUrl)) {
+          let additionalRequests;
+          let i = 0;
+          do {
+            const requestBody = (
+              await spotifyWebApi.getPlaylistTracks(playlistUrl.split('/').pop(), { offset: i * 100 })
+            ).body;
+            const requestData = requestBody.tracks ?? requestBody;
+            const requestItems = requestData.items;
+            if (additionalRequests) {
+              additionalRequests--;
+            } else {
+              // floor would not work instead of ceil for cases where total == limit
+              additionalRequests = Math.min(5, Math.ceil(requestData.total / (requestData.limit || 100))) - 1;
+            }
+            tracks = tracks.concat(requestItems.map((x: any) => x.track).filter((x: any) => x));
+            i++;
+          } while (additionalRequests > 0);
+          if (tracks[0] && !tracks[0].album) {
+            const firstTrack = await getData(playlistUrl);
+            tracks.map((item) => (item.album = { images: firstTrack.images }));
           }
-          else {
-            // floor would not work instead of ceil for cases where total == limit
-            additionalRequests = Math.min(5, (Math.ceil(requestData.total / (requestData.limit || 100)))) - 1;
-          }
-          tracks = tracks.concat(requestItems.map((x: any) => x.track).filter((x: any) => x));
-          i++;
-        } while (additionalRequests > 0);
-        if (tracks[0] && !tracks[0].album) {
-          const firstTrack = await getData(playlistUrl);
-          tracks.map((item) => item.album = { images: firstTrack.images });
+        } else {
+          const trackItem = (await spotifyWebApi.getTracks([playlistUrl.split('/').pop()])).body.tracks[0];
+          tracks.push(trackItem);
         }
+        return tracks;
+      } catch (e) {
+        processStats.debug(`[ERROR] in ${getPlaylistArray.name} `, e);
       }
-      else {
-        const trackItem = (await spotifyWebApi.getTracks([playlistUrl.split('/').pop()])).body.tracks[0];
-        tracks.push(trackItem);
-      }
-      return tracks;
-    }
-    catch (e) {
-      processStats.debug(`[ERROR] in ${getPlaylistArray.name} `, e);
-    }
-    // filter ensures that each element exists
-    return (await getTracksWrapper(playlistUrl)).filter((track: any) => track);
-  case StreamType.YOUTUBE:
-    const items = (await ytpl(playlistUrl, { pages: 5 })).items;
-    // index of -1 means that items will repeat
-    if (items[0].index === -1) items.splice(100);
-    return items;
-  case StreamType.SOUNDCLOUD:
-    return (await scdl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
-  default:
-    logError(`Error: invalid linkType argument within addPlaylistToQueue (provided '${type}'`);
-    throw new Error(`Incorrect type provided, provided ${type}`);
+      // filter ensures that each element exists
+      return (await getTracksWrapper(playlistUrl)).filter((track: any) => track);
+    case StreamType.YOUTUBE:
+      const items = (await ytpl(playlistUrl, { pages: 5 })).items;
+      // index of -1 means that items will repeat
+      if (items[0].index === -1) items.splice(100);
+      return items;
+    case StreamType.SOUNDCLOUD:
+      return (await scdl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
+    default:
+      logError(`Error: invalid linkType argument within addPlaylistToQueue (provided '${type}'`);
+      throw new Error(`Incorrect type provided, provided ${type}`);
   }
 }
 
@@ -151,7 +145,15 @@ async function getPlaylistArray(playlistUrl: string, type: string) {
  * @param position {number=} Optional - the position of the queue to add the item to
  * @returns {Promise<Number>} The number of items added to the queue
  */
-async function addPlaylistToQueue(message: Message, qArray: any[], numItems: number, playlistUrl: string, linkType: StreamType, addToFront = false, position = 0) {
+async function addPlaylistToQueue(
+  message: Message,
+  qArray: any[],
+  numItems: number,
+  playlistUrl: string,
+  linkType: StreamType,
+  addToFront = false,
+  position = 0
+) {
   const playlist = (await getPlaylistArray(playlistUrl, linkType)) || [];
   if (playlist.length < 1) {
     message.channel.send('*could not get data from the link provided*');
@@ -173,14 +175,12 @@ async function addPlaylistToQueue(message: Message, qArray: any[], numItems: num
             numItems++;
             itemsLeft--;
           }
-        }
-        else {
+        } else {
           message.channel.send('*queue is full*');
           break;
         }
       }
-    }
-    else {
+    } else {
       let itemsLeft = MAX_QUEUE_S - qArray.length;
       for (const pItem of playlist) {
         url = getUrl(pItem, linkType);
@@ -189,20 +189,19 @@ async function addPlaylistToQueue(message: Message, qArray: any[], numItems: num
             if (position && !(position > qArray.length)) {
               qArray.splice(position, 0, createQueueItem(url, linkType, pItem));
               position++;
+            } else {
+              qArray.push(createQueueItem(url, linkType, pItem));
             }
-            else {qArray.push(createQueueItem(url, linkType, pItem));}
             numItems++;
             itemsLeft--;
           }
-        }
-        else {
+        } else {
           message.channel.send('*queue is full*');
           break;
         }
       }
     }
-  }
-  catch (e) {
+  } catch (e) {
     processStats.debug(e);
     message.channel.send('there was an error');
   }
@@ -220,25 +219,31 @@ async function addPlaylistToQueue(message: Message, qArray: any[], numItems: num
  * A function that adds a given link to the server queue. Used for YT only.
  * @returns {Promise<Number>} The number of items added.
  */
-async function addLinkToQueue(url: string, message: Message, server: LocalServer, mgid: string, addToFront = false, queueFunction: any) {
+async function addLinkToQueue(
+  url: string,
+  message: Message,
+  server: LocalServer,
+  mgid: string,
+  addToFront = false,
+  queueFunction: any
+) {
   if (url.includes(SPOTIFY_BASE_LINK)) {
     url = linkFormatter(url, SPOTIFY_BASE_LINK);
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SPOTIFY, addToFront);
-  }
-  else if (ytpl.validateID(url) || url.includes('music.youtube')) {
+  } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
     url = url.replace(/music.youtube/, 'youtube');
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.YOUTUBE, addToFront);
-  }
-  else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
+  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
       url = linkFormatter(url, SOUNDCLOUD_BASE_LINK);
       return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SOUNDCLOUD, addToFront);
     }
     queueFunction(server.queue, createQueueItem(url, StreamType.SOUNDCLOUD, null));
-  }
-  else {
-    queueFunction(server.queue,
-      createQueueItem(url, (url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE), null));
+  } else {
+    queueFunction(
+      server.queue,
+      createQueueItem(url, url.includes(TWITCH_BASE_LINK) ? StreamType.TWITCH : StreamType.YOUTUBE, null)
+    );
   }
   return 1;
 }

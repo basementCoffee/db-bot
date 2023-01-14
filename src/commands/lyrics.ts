@@ -1,5 +1,5 @@
-import reactions from "../utils/lib/reactions";
-import {Message, MessageReaction, TextChannel, User} from "discord.js";
+import reactions from '../utils/lib/reactions';
+import { Message, MessageReaction, TextChannel, User } from 'discord.js';
 
 const ytdl = require('ytdl-core-discord');
 const fetch = require('isomorphic-unfetch');
@@ -23,7 +23,13 @@ const GeniusClient = new Genius.Client();
  * @param messageMemberId The id of the member that sent the command.
  * @returns {*}
  */
-function runLyricsCommand(channel: TextChannel, reactionCallback: any, args: string[], queueItem: any, messageMemberId: string) {
+function runLyricsCommand(
+  channel: TextChannel,
+  reactionCallback: any,
+  args: string[],
+  queueItem: any,
+  messageMemberId: string
+) {
   if (!queueItem) {
     return channel.send('must be playing a song');
   }
@@ -37,16 +43,16 @@ function runLyricsCommand(channel: TextChannel, reactionCallback: any, args: str
     if (args[1]) {
       args[0] = '';
       searchTerm = args.join(' ').trim();
-    }
-    else if (queueItem.type === StreamType.SPOTIFY) {
-      infos = queueItem.infos || await getData(lUrl);
+    } else if (queueItem.type === StreamType.SPOTIFY) {
+      infos = queueItem.infos || (await getData(lUrl));
       songName = infos.name.toLowerCase();
       let songNameSubIndex = songName.search('[-]');
       if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
       songNameSubIndex = songName.search('[(]');
-      if (songNameSubIndex !== -1) {songName = songName.substring(0, songNameSubIndex);}
-      else {
-        songNameSubIndex = songName.search('[\[]');
+      if (songNameSubIndex !== -1) {
+        songName = songName.substring(0, songNameSubIndex);
+      } else {
+        songNameSubIndex = songName.search('[[]');
         if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
       }
       artistName = infos.artists[0].name;
@@ -65,50 +71,46 @@ function runLyricsCommand(channel: TextChannel, reactionCallback: any, args: str
         }
         if (wordIndex) {
           remixArgs2[wordIndex] = '';
-          searchTermRemix = remixArgs2.join(' ').trim() + ' ' +
-              remixArgs[wordIndex].replace('(', '').trim() +
-              ' remix';
+          searchTermRemix = remixArgs2.join(' ').trim() + ' ' + remixArgs[wordIndex].replace('(', '').trim() + ' remix';
         }
       }
-    }
-    else if (queueItem.type === StreamType.YOUTUBE) {
-      infos = queueItem.infos || await ytdl.getInfo(lUrl);
+    } else if (queueItem.type === StreamType.YOUTUBE) {
+      infos = queueItem.infos || (await ytdl.getInfo(lUrl));
       const title = infos.title || infos.videoDetails.title;
       if (infos.videoDetails?.media && title.includes(infos.videoDetails.media.song)) {
         // use video metadata
         searchTerm = songName = infos.videoDetails.media.song;
         let songNameSubIndex = songName.search('[(]');
-        if (songNameSubIndex !== -1) {songName = songName.substring(0, songNameSubIndex);}
-        else {
-          songNameSubIndex = songName.search('[\[]');
+        if (songNameSubIndex !== -1) {
+          songName = songName.substring(0, songNameSubIndex);
+        } else {
+          songNameSubIndex = songName.search('[[]');
           if (songNameSubIndex !== -1) songName = songName.substring(0, songNameSubIndex);
         }
         artistName = infos.videoDetails.media.artist;
         if (artistName) {
           let artistNameSubIndex = artistName.search('ft.');
-          if (artistNameSubIndex !== -1) {artistName = artistName.substring(0, artistNameSubIndex);}
-          else {
+          if (artistNameSubIndex !== -1) {
+            artistName = artistName.substring(0, artistNameSubIndex);
+          } else {
             artistNameSubIndex = artistName.search(' feat');
             if (artistNameSubIndex !== -1) artistName = artistName.substring(0, artistNameSubIndex);
           }
           searchTerm = songName + ' ' + artistName;
         }
-      }
-      else {
+      } else {
         // use title
         let songNameSubIndex = title.search('[(]');
         if (songNameSubIndex !== -1) {
           searchTerm = title.substring(0, songNameSubIndex);
-        }
-        else {
+        } else {
           // todo: extract this functionality into an external function & use with "(" and ")"
-          songNameSubIndex = title.search('[\[]');
+          songNameSubIndex = title.search('[[]');
           const songNameSubIndex2 = title.search('[\\]]');
           if (songNameSubIndex !== -1 && songNameSubIndex2 !== -1 && songNameSubIndex < songNameSubIndex2) {
             searchTerm = `${title.substring(0, songNameSubIndex)}${title.substring(songNameSubIndex2 + 1)}`;
             if (!searchTerm.trim().length) searchTerm = title;
-          }
-          else {
+          } else {
             searchTerm = title;
           }
         }
@@ -124,17 +126,19 @@ function runLyricsCommand(channel: TextChannel, reactionCallback: any, args: str
           wordIndex++;
         }
         if (wordIndex) {
-          searchTermRemix = (songName ? songName : searchTerm) + ' ' +
-              remixArgs[wordIndex].replace('(', '') +
-              ' remix';
+          searchTermRemix = (songName ? songName : searchTerm) + ' ' + remixArgs[wordIndex].replace('(', '') + ' remix';
         }
       }
+    } else {
+      return channel.send('*lyrics command not supported for this stream type*');
     }
-    else {return channel.send('*lyrics command not supported for this stream type*');}
-    if (searchTermRemix ? (!await sendSongLyrics(sentMsg, searchTermRemix, messageMemberId, reactionCallback) &&
-        !await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), messageMemberId, reactionCallback) &&
-        !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) :
-      !await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback)) {
+    if (
+      searchTermRemix
+        ? !(await sendSongLyrics(sentMsg, searchTermRemix, messageMemberId, reactionCallback)) &&
+          !(await sendSongLyrics(sentMsg, searchTermRemix.replace(' remix', ''), messageMemberId, reactionCallback)) &&
+          !(await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback))
+        : !(await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback))
+    ) {
       if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
         if (!(await getYoutubeSubtitles(sentMsg, lUrl, infos, reactionCallback))) {
           if (searchTerm.toLowerCase().includes('lyrics')) {
@@ -149,8 +153,7 @@ function runLyricsCommand(channel: TextChannel, reactionCallback: any, args: str
           }
           sentMsg.edit('no results found');
         }
-      }
-      else {
+      } else {
         sentMsg.edit('no results found');
       }
     }
@@ -165,7 +168,12 @@ function runLyricsCommand(channel: TextChannel, reactionCallback: any, args: str
  * @param reactionCallback Callback for when the full text is sent.
  * @returns {Promise<Boolean>} The status of if the song lyrics were found and sent. True if successful.
  */
-async function sendSongLyrics(message: Message, searchTerm: string, messageMemberId: string, reactionCallback: any): Promise<boolean> {
+async function sendSongLyrics(
+  message: Message,
+  searchTerm: string,
+  messageMemberId: string,
+  reactionCallback: any
+): Promise<boolean> {
   try {
     const firstSong = (await GeniusClient.songs.search(searchTerm))[0];
     await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async (sentMsg) => {
@@ -178,13 +186,13 @@ async function sendSongLyrics(message: Message, searchTerm: string, messageMembe
       collector.once('collect', async () => {
         try {
           lyrics = await firstSong.lyrics();
-        }
-        catch (e) {
+        } catch (e) {
           lyrics = '*could not retrieve*';
         }
         // send the lyrics text on reaction click
-        const sentLyricsMsg = await (new EmbedBuilderLocal())
-          .setDescription((lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics)).send(message.channel);
+        const sentLyricsMsg = await new EmbedBuilderLocal()
+          .setDescription(lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics)
+          .send(message.channel);
         reactionCallback();
         // start reactionCollector for lyrics
         sentLyricsMsg.react(reactions.X).then();
@@ -192,7 +200,9 @@ async function sendSongLyrics(message: Message, searchTerm: string, messageMembe
           return user.id === messageMemberId && [reactions.X].includes(reaction.emoji.name);
         };
         const lyricsCollector = sentLyricsMsg.createReactionCollector({
-          filter: lyricsFilter, time: 300000, dispose: true,
+          filter: lyricsFilter,
+          time: 300000,
+          dispose: true
         });
         lyricsCollector.once('collect', () => {
           if (sentLyricsMsg.deletable) sentLyricsMsg.delete();
@@ -204,8 +214,7 @@ async function sendSongLyrics(message: Message, searchTerm: string, messageMembe
       });
     });
     return true;
-  }
-  catch (e) {
+  } catch (e) {
     // GeniusClient.songs.search throws an error if the song is not found
     return false;
   }
@@ -226,36 +235,32 @@ function getYoutubeSubtitles(message: Message, url: string, infos: any, reaction
       const playerResp = infos.player_response;
       const tracks = playerResp.captions.playerCaptionsTracklistRenderer.captionTracks;
       let data = '';
-      https.get(tracks[0].baseUrl.toString(), function(res: any) {
+      https.get(tracks[0].baseUrl.toString(), function (res: any) {
         if (res.statusCode >= 200 && res.statusCode < 400) {
-          res.on('data', function(data_: { toString: () => string; }) {
+          res.on('data', function (data_: { toString: () => string }) {
             data += data_.toString();
           });
-          res.on('end', function() {
-            parser.parseString(data, function(err: any, result: { transcript: { text: any; }; }) {
+          res.on('end', function () {
+            parser.parseString(data, function (err: any, result: { transcript: { text: any } }) {
               if (err) {
                 console.log('ERROR in getYouTubeSubtitles', err);
                 resolve(false);
-              }
-              else {
+              } else {
                 let finalString = '';
                 let prevDuration = 0;
                 let newDuration;
                 for (const i of result.transcript.text) {
                   if (!i._) continue;
                   if (i._.trim().substring(0, 1) === '[') {
-                    finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') +
-                      i._;
+                    finalString += (finalString.substr(finalString.length - 1, 1) === ']' ? ' ' : '\n') + i._;
                     prevDuration -= 5;
-                  }
-                  else {
+                  } else {
                     newDuration = parseInt(i.$.start);
-                    finalString += ((newDuration - prevDuration > 9) ? '\n' : ' ') +
-                      i._;
+                    finalString += (newDuration - prevDuration > 9 ? '\n' : ' ') + i._;
                     prevDuration = newDuration;
                   }
                 }
-                finalString = finalString.replace(/&#39;/g, '\'').trim();
+                finalString = finalString.replace(/&#39;/g, "'").trim();
                 finalString = finalString.length > 1910 ? finalString.substring(0, 1910) + '...' : finalString;
                 message.edit('Could not find lyrics. Video captions are available.').then((sentMsg: Message) => {
                   const mb = '📄';
@@ -278,8 +283,7 @@ function getYoutubeSubtitles(message: Message, url: string, infos: any, reaction
         }
       });
       resolve(true);
-    }
-    catch (e) {
+    } catch (e) {
       message.edit('no results found');
       resolve(false);
     }

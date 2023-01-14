@@ -2,12 +2,20 @@
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 // the db bot instance
 const bot = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildInvites,
-    GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildPresences, GatewayIntentBits.GuildIntegrations, GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.DirectMessageReactions,
-    GatewayIntentBits.MessageContent],
-  partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildInvites,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildIntegrations,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.DirectMessageReactions,
+    GatewayIntentBits.MessageContent
+  ],
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User]
 });
 // the id of the bot
 const botID = '987108278486065283';
@@ -46,10 +54,10 @@ const CORE_ADM = Object.freeze(['443150640823271436', '268554823283113985']);
  * @type {{TWITCH: string, SOUNDCLOUD: string, SPOTIFY: string, YOUTUBE: string}}
  */
 enum StreamType {
-  'SOUNDCLOUD'= 'sc',
+  'SOUNDCLOUD' = 'sc',
   'SPOTIFY' = 'sp',
   'YOUTUBE' = 'yt',
-  'TWITCH' = 'tw',
+  'TWITCH' = 'tw'
 }
 
 const INVITE_LINK = 'https://discord.com/oauth2/authorize?client_id=987108278486065283&permissions=1076288&scope=bot';
@@ -59,7 +67,25 @@ const DB_BOT_ICON_MED = 'https://raw.githubusercontent.com/Reply2Zain/db-bot/mas
 const DB_SPOTIFY_EMBED_ICON = 'https://github.com/Reply2Zain/db-bot/blob/master/assets/dbBotspotifyIcon.jpg?raw=true';
 
 export {
-  MAX_QUEUE_S, bot, checkActiveMS, setOfBotsOn, commandsMap, whatspMap, botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK,
-  TWITCH_BASE_LINK, LEAVE_VC_TIMEOUT, StreamType, startupDevMode, CORE_ADM, MAX_KEY_LENGTH, INVITE_MSG, PREFIX_SN,
-  startupTest, ZWSP, DB_BOT_ICON_MED, DB_SPOTIFY_EMBED_ICON
+  MAX_QUEUE_S,
+  bot,
+  checkActiveMS,
+  setOfBotsOn,
+  commandsMap,
+  whatspMap,
+  botID,
+  SPOTIFY_BASE_LINK,
+  SOUNDCLOUD_BASE_LINK,
+  TWITCH_BASE_LINK,
+  LEAVE_VC_TIMEOUT,
+  StreamType,
+  startupDevMode,
+  CORE_ADM,
+  MAX_KEY_LENGTH,
+  INVITE_MSG,
+  PREFIX_SN,
+  startupTest,
+  ZWSP,
+  DB_BOT_ICON_MED,
+  DB_SPOTIFY_EMBED_ICON
 };

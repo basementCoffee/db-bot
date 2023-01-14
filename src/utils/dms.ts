@@ -1,7 +1,7 @@
-import {ClientUser, Message, MessageReaction, User} from "discord.js";
+import { ClientUser, Message, MessageReaction, User } from 'discord.js';
 import { bot, botID, INVITE_MSG } from './lib/constants';
-import {getHelpList} from "./help";
-import reactions from "./lib/reactions";
+import { getHelpList } from './help';
+import reactions from './lib/reactions';
 const { version } = require('../../package.json');
 const CH = require('../../channel.json');
 
@@ -16,19 +16,26 @@ function dmHandler(message: Message, messageContent: string) {
   const mc = messageContent.toLowerCase().trim() + ' ';
   if (mc.length < 9) {
     if (mc.length < 7 && mc.includes('help ')) {
-
-      return message.author.send({embeds: [getHelpList('.', 1, version)[0].build()]});
-    }
-    else if (mc.includes('invite ')) {
+      return message.author.send({ embeds: [getHelpList('.', 1, version)[0].build()] });
+    } else if (mc.includes('invite ')) {
       return message.channel.send(INVITE_MSG);
     }
   }
   const mb = reactions.OUTBOX;
   // noinspection JSUnresolvedFunction
-  bot.channels.cache.get(CH.dm)
-    .send('------------------------------------------\n' +
-      '**From: ' + message.author.username + '** (' + message.author.id + ')\n' +
-      messageContent + '\n------------------------------------------').then((msg: Message) => {
+  bot.channels.cache
+    .get(CH.dm)
+    .send(
+      '------------------------------------------\n' +
+        '**From: ' +
+        message.author.username +
+        '** (' +
+        message.author.id +
+        ')\n' +
+        messageContent +
+        '\n------------------------------------------'
+    )
+    .then((msg: Message) => {
       msg.react(mb).then();
       const filter = (reaction: MessageReaction, user: User) => {
         return user.id !== botID;
@@ -56,28 +63,30 @@ function dmHandler(message: Message, messageContent: string) {
  */
 function sendMessageToUser(message: Message, userID: string, reactionUserID: string | undefined) {
   const user = bot.users.cache.get(userID);
-  message.channel.send('What would you like me to send to ' + user.username +
-    '? [type \'q\' to not send anything]').then((msg) => {
-    const filter = (m: any) => {
-      return ((message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== botID);
-    };
-    message.channel.awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
-      .then((messages) => {
-        if (messages.first()!.content && messages.first()!.content.trim() !== 'q') {
-          user.send(messages.first()!.content).then(() => {
-            message.channel.send('Message sent to ' + user.username + '.');
-            message.react(reactions.CHECK).then();
-          });
-        }
-        else if (messages.first()!.content.trim().toLowerCase() === 'q') {
+  message.channel
+    .send('What would you like me to send to ' + user.username + "? [type 'q' to not send anything]")
+    .then((msg) => {
+      const filter = (m: any) => {
+        return (message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== botID;
+      };
+      message.channel
+        .awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
+        .then((messages) => {
+          if (messages.first()!.content && messages.first()!.content.trim() !== 'q') {
+            user.send(messages.first()!.content).then(() => {
+              message.channel.send('Message sent to ' + user.username + '.');
+              message.react(reactions.CHECK).then();
+            });
+          } else if (messages.first()!.content.trim().toLowerCase() === 'q') {
+            message.channel.send('No message sent.');
+          }
+          msg.delete();
+        })
+        .catch(() => {
           message.channel.send('No message sent.');
-        }
-        msg.delete();
-      }).catch(() => {
-        message.channel.send('No message sent.');
-        msg.delete();
-      });
-  });
+          msg.delete();
+        });
+    });
 }
 
 export { dmHandler, sendMessageToUser };

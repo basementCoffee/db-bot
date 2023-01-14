@@ -4,8 +4,8 @@ import { playLinkToVC } from './stream';
 import { updateActiveEmbed, createEmbed } from '../../utils/embed';
 import { addLinkToQueue } from '../../utils/playlist';
 import { isCoreAdmin } from '../../utils/permissions';
-import {Message} from "discord.js";
-import LocalServer from "../../utils/lib/LocalServer";
+import { Message } from 'discord.js';
+import LocalServer from '../../utils/lib/LocalServer';
 
 /**
  * Sends a recommendation to a user. EXPERIMENTAL. This is a wrapper for sendRecommendation.
@@ -22,12 +22,10 @@ async function sendRecommendationWrapper(message: Message, args: string[], uMana
   if (args[1] && verifyUrl(args[1])) {
     url = args[1];
     args[1] = '';
-  }
-  else if (args.length > 2 && verifyUrl(args[args.length - 1])) {
+  } else if (args.length > 2 && verifyUrl(args[args.length - 1])) {
     url = args[args.length - 1];
     args[args.length - 1] = '';
-  }
-  else {
+  } else {
     url = server.queue[0]?.url;
     infos = server.queue[0]?.infos;
   }
@@ -48,16 +46,15 @@ async function sendRecommendation(message: Message, content = '', url: string, u
   if (!url) return;
   else url = url.trim();
   try {
-    const recUser = await uManager.fetch((message.author.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]));
+    const recUser = await uManager.fetch(message.author.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]);
     // formatting for the content
-    const desc = (content.trim() ? `:\n*${content.trim()}*` : '');
+    const desc = content.trim() ? `:\n*${content.trim()}*` : '';
     await recUser.send({
       content: `**${message.author.username}** has a recommendation for you${desc}\n\<${url}\>`,
-      embeds: [(await createEmbed(url, infos)).embed.build()],
+      embeds: [(await createEmbed(url, infos)).embed.build()]
     });
     message.channel.send(`*recommendation sent to ${recUser.username}*`);
-  }
-  catch (e) {
+  } catch (e) {
     console.log(e);
   }
 }
@@ -84,21 +81,25 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
   const channel = await user.createDM();
   let num = parseInt(args[1]);
   // hot-swap function on whether a link is relevant/applicable
-  let isRelevant = (m: Message) => {return false;};
+  let isRelevant = (m: Message) => {
+    return false;
+  };
   if (num < 1) {
     message.channel.send('*provided number must be positive*');
     return;
   }
-  if (num) {isRelevant = (m: Message) => num > 0;}
-  else {
+  if (num) {
+    isRelevant = (m: Message) => num > 0;
+  } else {
     num = 0;
     // if the message was created in the last 48 hours
-    isRelevant = (m: Message) => (Date.now() - m.createdTimestamp) < 172800000;
+    isRelevant = (m: Message) => Date.now() - m.createdTimestamp < 172800000;
   }
   // attempts to get a valid url from a regex.exec or message
   const getUrl = (res: any, m: Message) => {
-    if (res && res[1]) {return res[1];}
-    else if (m.embeds.length > 0) {
+    if (res && res[1]) {
+      return res[1];
+    } else if (m.embeds.length > 0) {
       return m.embeds[0].url;
     }
     return undefined;
@@ -132,8 +133,7 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
       if (isRelevant(m)) {
         recs.push(url);
         num--;
-      }
-      else {
+      } else {
         isMore = true;
         break;
       }
@@ -142,8 +142,9 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
   if (recs.length < 1) {
     if (isMore) {
       message.channel.send('***no new recommendations***, *provide a number to get a specific number of recs*');
+    } else {
+      message.channel.send('*no more recommendations (the queue contains all of them)*');
     }
-    else {message.channel.send('*no more recommendations (the queue contains all of them)*');}
     return;
   }
   const wasEmpty = !server.queue[0];
@@ -152,8 +153,7 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
   }
   if (!botInVC(message) || wasEmpty) {
     playLinkToVC(message, server.queue[0], message.member!.voice.channel, server);
-  }
-  else {
+  } else {
     message.channel.send(`*added ${recs.length} recommendation${recs.length > 1 ? 's' : ''} to queue*`);
     updateActiveEmbed(server);
   }

@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 import { Worker } from 'worker_threads';
-import processStats from "../utils/lib/ProcessStats";
-import {logError} from "../utils/utils";
+import processStats from '../utils/lib/ProcessStats';
+import { logError } from '../utils/utils';
 const worker = new Worker(__dirname + '/worker.js', { argv: process.argv.slice(2) });
 
 /**
@@ -10,13 +10,17 @@ const worker = new Worker(__dirname + '/worker.js', { argv: process.argv.slice(2
  * @param cReqs {{channelId?: string | null, messageId?: string | null}} Additional data pass-through.
  * @param commandArgs {Array<any>} A list of arguments to pass to a function.
  */
-function parentThread(commandName: string, cReqs: {channelId?: string | null, messageId?: string | null}, commandArgs: any) {
+function parentThread(
+  commandName: string,
+  cReqs: { channelId?: string | null; messageId?: string | null },
+  commandArgs: any
+) {
   worker.postMessage({
     content: {
       commandName,
       cReqs,
-      commandArgs,
-    },
+      commandArgs
+    }
   });
 }
 
@@ -25,12 +29,12 @@ function parentThread(commandName: string, cReqs: {channelId?: string | null, me
  */
 function initialize() {
   // what is received by the worker thread
-  worker.on('message', function(m) {
+  worker.on('message', function (m) {
     switch (m.content.commandName) {
-    case 'lyrics':
-      const server = processStats.getServer(m.content.guildId);
-      if (server) server.numSinceLastEmbed = 10;
-      break;
+      case 'lyrics':
+        const server = processStats.getServer(m.content.guildId);
+        if (server) server.numSinceLastEmbed = 10;
+        break;
     }
   });
 
@@ -46,5 +50,4 @@ function initialize() {
 
 initialize();
 
-
-export {parentThread};
+export { parentThread };

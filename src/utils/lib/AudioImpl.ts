@@ -1,5 +1,5 @@
-import {AudioPlayer, AudioResource, VoiceConnection} from "@discordjs/voice";
-import {Guild, GuildMember} from "discord.js";
+import { AudioPlayer, AudioResource, VoiceConnection } from '@discordjs/voice';
+import { Guild, GuildMember } from 'discord.js';
 
 const { joinVoiceChannel } = require('@discordjs/voice');
 
@@ -22,8 +22,7 @@ class AudioImpl {
       try {
         this.connection.destroy();
         this.connection.disconnect();
-      }
-      catch (e) {}
+      } catch (e) {}
     }
     this.player = undefined;
     this.resource = undefined;
@@ -44,7 +43,7 @@ class AudioImpl {
     this.connection = joinVoiceChannel({
       channelId: voiceChannelId,
       guildId: guild.id,
-      adapterCreator: guild.voiceAdapterCreator,
+      adapterCreator: guild.voiceAdapterCreator
     });
     return this.connection!;
   }
@@ -68,4 +67,4 @@ class AudioImpl {
   }
 }
 
-export default AudioImpl
+export default AudioImpl;

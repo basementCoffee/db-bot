@@ -1,5 +1,5 @@
-import {Message, TextChannel} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { Message, TextChannel } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 
 import { getAssumptionMultipleMethods } from './search';
 import { verifyPlaylist, createQueueItem, getLinkType, botInVC, setSeamless } from '../utils/utils';
@@ -20,10 +20,19 @@ import { universalLinkFormatter } from '../utils/formatUtils';
  * @param addToFront {boolean?} True if to add to the front
  * @param isShuffle {boolean?} Whether it is a shuffle command (will shuffle the queue if no args are provided)
  */
-async function runRandomToQueue(wArray: Array<string>, message: Message, sheetName: string, server: LocalServer, addToFront: boolean | null = false, isShuffle: boolean | null = false) {
+async function runRandomToQueue(
+  wArray: Array<string>,
+  message: Message,
+  sheetName: string,
+  server: LocalServer,
+  addToFront: boolean | null = false,
+  isShuffle: boolean | null = false
+) {
   wArray = wArray.filter((x: any) => x);
   if (!message.member!.voice?.channel) {
-    const sentMsg = await message.channel.send(`must be in a voice channel to ${isShuffle ? 'shuffle' : 'play random'}`);
+    const sentMsg = await message.channel.send(
+      `must be in a voice channel to ${isShuffle ? 'shuffle' : 'play random'}`
+    );
     if (!botInVC(message)) {
       setSeamless(server, runRandomToQueue, [wArray, message, sheetName, server, addToFront], sentMsg);
     }
@@ -35,8 +44,7 @@ async function runRandomToQueue(wArray: Array<string>, message: Message, sheetNa
   if (wArray.length < 1) {
     if (isShuffle) {
       return playRandomKeys(message, firstWord, undefined, server, false, addToFront);
-    }
-    else {
+    } else {
       message.channel.send('must provide an argument (can be a number, key, or playlist-link)');
     }
     return;
@@ -66,12 +74,10 @@ async function runRandomToQueue(wArray: Array<string>, message: Message, sheetNa
   if (!numToPlay) {
     if (firstWord) {
       playRandomKeys(message, firstWord, xdb.globalKeys, server, true, addToFront).then();
-    }
-    else {
+    } else {
       playRandomKeys(message, 1, xdbPlaylist || xdb.globalKeys, server, false, addToFront).then();
     }
-  }
-  else {
+  } else {
     if (numToPlay < 1) return message.channel.send('*invalid number*');
     // firstWord is a number
     let firstWordAsNum = parseInt(firstWord);
@@ -79,8 +85,14 @@ async function runRandomToQueue(wArray: Array<string>, message: Message, sheetNa
       message.channel.send('*max limit for random is ' + MAX_QUEUE_S + '*');
       firstWordAsNum = MAX_QUEUE_S;
     }
-    playRandomKeys(message, firstWordAsNum, xdbPlaylist || xdb.playlists.get('GENERAL') ||
-      xdb.globalKeys, server, false, addToFront).then();
+    playRandomKeys(
+      message,
+      firstWordAsNum,
+      xdbPlaylist || xdb.playlists.get('GENERAL') || xdb.globalKeys,
+      server,
+      false,
+      addToFront
+    ).then();
   }
 }
 
@@ -128,7 +140,13 @@ function shuffleArray(array: any[]): void {
  * @param isPlaylist {boolean} if it is a playlist link or playlist world (from db).
  * @return {Promise<{err: string}|{keys: *[], update: string}>}
  */
-async function getRandomKeys(input: string | number, cdb: any, serverQueue: Array<any>, prefix: string, isPlaylist: boolean): Promise<{ err?: string,  keys?: any[]; update?: string; }> {
+async function getRandomKeys(
+  input: string | number,
+  cdb: any,
+  serverQueue: Array<any>,
+  prefix: string,
+  isPlaylist: boolean
+): Promise<{ err?: string; keys?: any[]; update?: string }> {
   // the playlist url
   let playlistUrl;
   const randomKeysArr = [];
@@ -145,30 +163,31 @@ async function getRandomKeys(input: string | number, cdb: any, serverQueue: Arra
       playlistUrl = cdb.get(input.toUpperCase());
       if (!playlistUrl) {
         // tries to get a close match
-        const assumption = getAssumptionMultipleMethods(input, [...cdb.values()].map((item) => item.name));
+        const assumption = getAssumptionMultipleMethods(
+          input,
+          [...cdb.values()].map((item) => item.name)
+        );
         if (assumption) {
           updateMsg = `could not find '${input}'. **Assuming '${assumption}'**`;
           playlistUrl = cdb.get(assumption.toUpperCase());
         }
       }
       if (playlistUrl) playlistUrl = playlistUrl.link;
-    }
-    else {
+    } else {
       playlistUrl = input;
     }
     if (!playlistUrl) {
       return {
-        err: `*could not find **${input}** in the keys list*`,
+        err: `*could not find **${input}** in the keys list*`
       };
     }
     input = '1';
-  }
-  else {
+  } else {
     valArray = [];
     cdb.forEach((value: any) => valArray.push(value.link));
     if (valArray.length < 1) {
       return {
-        err: 'Your saved-links list is empty *(Try  `' + prefix + 'add` to add to a list)*',
+        err: 'Your saved-links list is empty *(Try  `' + prefix + 'add` to add to a list)*'
       };
     }
   }
@@ -181,18 +200,18 @@ async function getRandomKeys(input: string | number, cdb: any, serverQueue: Arra
     numOfTimes = cdb.size;
   }
   // mutate numberOfTimes to not exceed MAX_QUEUE_S
-  if ((numOfTimes + serverQueue.length) > MAX_QUEUE_S) {
+  if (numOfTimes + serverQueue.length > MAX_QUEUE_S) {
     numOfTimes = MAX_QUEUE_S - serverQueue.length;
     if (numOfTimes < 1) {
       return {
-        err: '*max queue size has been reached*',
+        err: '*max queue size has been reached*'
       };
     }
     addAll = false;
   }
   try {
     let tempArray;
-    for (let i = 0; i < numOfTimes;) {
+    for (let i = 0; i < numOfTimes; ) {
       if (isPlaylist) tempArray = [playlistUrl];
       else tempArray = [...valArray];
       let url;
@@ -204,8 +223,7 @@ async function getRandomKeys(input: string | number, cdb: any, serverQueue: Arra
             // if it is a queueItem
             randomKeysArr.push(url);
             i++;
-          }
-          else if (verifyPlaylist(url)) {
+          } else if (verifyPlaylist(url)) {
             // if it is a playlist, un-package the playlist
             // the number of items added to tempArray
             const addedItems = await getPlaylistItems(url, tempArray);
@@ -214,14 +232,13 @@ async function getRandomKeys(input: string | number, cdb: any, serverQueue: Arra
               if (addAll) numOfTimes += addedItems - 1;
               // numOfTimes is new definitive value
               else numOfTimes = addedItems;
-              if ((randomKeysArr.length + serverQueue.length + numOfTimes - i) > MAX_QUEUE_S) {
+              if (randomKeysArr.length + serverQueue.length + numOfTimes - i > MAX_QUEUE_S) {
                 // reduce numOfTimes if greater than MAX_QUEUE_S
                 // add i because numOfTimes is in respect to i, which is num added so far
                 numOfTimes = Math.max(MAX_QUEUE_S + i - randomKeysArr.length + serverQueue.length, 0);
               }
             }
-          }
-          else {
+          } else {
             // add url to queue
             randomKeysArr.push(createQueueItem(url, getLinkType(url), null));
             i++;
@@ -232,12 +249,11 @@ async function getRandomKeys(input: string | number, cdb: any, serverQueue: Arra
       }
     }
     // here - queue should have all the items
-  }
-  catch (e) {
+  } catch (e) {
     console.log('error in getRandomKeys: ', e);
     if (isPlaylist) {
       return {
-        err: 'There was an error.',
+        err: 'There was an error.'
       };
     }
     updateMsg = 'there was an issue completing your request';
@@ -252,7 +268,7 @@ async function getRandomKeys(input: string | number, cdb: any, serverQueue: Arra
   }
   return {
     update: updateMsg,
-    keys: randomKeysArr,
+    keys: randomKeysArr
   };
 }
 
@@ -265,25 +281,29 @@ async function getRandomKeys(input: string | number, cdb: any, serverQueue: Arra
  * @param isPlaylist True if to randomize just a playlist
  * @param addToFront True if to add items to the front of the queue
  */
-async function playRandomKeys(message: Message, numOfTimes: number | string, cdb: Map<string, any> | undefined, server: LocalServer, isPlaylist: boolean, addToFront: boolean | null = false) {
+async function playRandomKeys(
+  message: Message,
+  numOfTimes: number | string,
+  cdb: Map<string, any> | undefined,
+  server: LocalServer,
+  isPlaylist: boolean,
+  addToFront: boolean | null = false
+) {
   let sentMsg: any = message.channel.send('generating random from your keys...');
   const data = await getRandomKeys(numOfTimes, cdb, server.queue, server.prefix!, isPlaylist);
   sentMsg = await sentMsg;
   if (!data || data.err || !data.keys) {
-    const errorTxt = data?.err || '*there was an error generating random from your keys*'
+    const errorTxt = data?.err || '*there was an error generating random from your keys*';
     message.channel.send(errorTxt);
     if (sentMsg && sentMsg.deletable) sentMsg.delete();
     return;
-  }
-  else if (data.update) {
+  } else if (data.update) {
     try {
       sentMsg.edit({ content: data.update });
-    }
-    catch (e) {
+    } catch (e) {
       message.channel.send(data.update);
     }
-  }
-  else if (sentMsg && sentMsg.deletable) {
+  } else if (sentMsg && sentMsg.deletable) {
     setTimeout(() => {
       sentMsg.delete();
     }, 1500);
@@ -303,20 +323,19 @@ async function playRandomKeysToVC(message: Message, server: LocalServer, addToFr
   const queueIsEmpty = server.queue.length < 1;
   const availableSpace = MAX_QUEUE_S - server.queue.length;
   if (keys.length > availableSpace) keys = keys.slice(0, availableSpace);
-  server.queue.splice((addToFront ? 0 : server.queue.length), 0, ...keys);
+  server.queue.splice(addToFront ? 0 : server.queue.length, 0, ...keys);
 
   if (addToFront || (queueIsEmpty && server.queue.length === keys.length)) {
     await playLinkToVC(message, server.queue[0], message.member!.voice?.channel, server);
-  }
-  else if (!botInVC(message)) {
+  } else if (!botInVC(message)) {
     if (botInVC(message)) {
-      if (keys.length > 0) {updatedQueueMessage(<TextChannel>message.channel, `*added ${keys.length} to queue*`, server);}
-    }
-    else {
+      if (keys.length > 0) {
+        updatedQueueMessage(<TextChannel>message.channel, `*added ${keys.length} to queue*`, server);
+      }
+    } else {
       await playLinkToVC(message, server.queue[0], message.member!.voice?.channel, server);
     }
-  }
-  else {
+  } else {
     updatedQueueMessage(<TextChannel>message.channel, `*added ${keys.length} to queue*`, server);
   }
 }

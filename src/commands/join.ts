@@ -1,6 +1,6 @@
-import {Message} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
-import {LEAVE_VC_TIMEOUT} from "../utils/lib/constants";
+import { Message } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
+import { LEAVE_VC_TIMEOUT } from '../utils/lib/constants';
 
 const { sessionEndEmbed } = require('../utils/embed');
 const { resetSession, botInVC, catchVCJoinError } = require('../utils/utils');
@@ -16,10 +16,10 @@ const { pauseComputation } = require('./stream/utils');
 async function joinVoiceChannelSafe(message: Message, server: LocalServer): Promise<boolean> {
   const connection = server.audio.connection;
   const vc = message.member?.voice?.channel;
-  if (vc && (!botInVC(message) || !connection || (server.audio.voiceChannelId !== vc.id))) {
+  if (vc && (!botInVC(message) || !connection || server.audio.voiceChannelId !== vc.id)) {
     if (server.currentEmbed) {
       if (server.currentEmbed.channel.id !== message.channel.id) {
-        await server.currentEmbed.channel.send('\`session ended: requested in another channel\`');
+        await server.currentEmbed.channel.send('`session ended: requested in another channel`');
       }
       await sessionEndEmbed(server, server.queue[0] || server.queueHistory[server.queueHistory.length - 1]);
     }
@@ -37,16 +37,13 @@ async function joinVoiceChannelSafe(message: Message, server: LocalServer): Prom
       server.audio.joinVoiceChannel(message.guild!, vc.id);
       server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server), LEAVE_VC_TIMEOUT);
       return true;
-    }
-    catch (e) {
+    } catch (e) {
       catchVCJoinError(e, message.channel);
     }
-  }
-  else {
+  } else {
     message.channel.send('*in voice channel*');
   }
   return false;
 }
 
 export { joinVoiceChannelSafe };
-

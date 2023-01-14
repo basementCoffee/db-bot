@@ -1,7 +1,7 @@
-import LocalServer from "../utils/lib/LocalServer";
-import {GuildMember, Message, Snowflake, User} from "discord.js";
-import {getVoiceConnection} from "@discordjs/voice";
-import {bot} from "../utils/lib/constants";
+import LocalServer from '../utils/lib/LocalServer';
+import { GuildMember, Message, Snowflake, User } from 'discord.js';
+import { getVoiceConnection } from '@discordjs/voice';
+import { bot } from '../utils/lib/constants';
 import { botInVC, notInVoiceChannelErrorMsg, getVCMembers } from '../utils/utils';
 import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
 import { formatDuration } from '../utils/formatUtils';
@@ -25,32 +25,43 @@ function runDictatorCommand(message: Message, mgid: string, prefixString: string
   }
   if (server.dictator) {
     if (server.dictator === message.member) {
-      return message.channel.send('***You are the dictator.*** *If you want to forfeit your powers say \`' + prefixString + 'resign\`*');
-    }
-    else {
+      return message.channel.send(
+        '***You are the dictator.*** *If you want to forfeit your powers say `' + prefixString + 'resign`*'
+      );
+    } else {
       const dic = server.dictator;
       for (const i of vcMembersId) {
         if (i === dic.id) {
-          return (message.channel.send((dic.nickname ? dic.nickname : dic.user.username) +
-            ' is the dictator, and has control over ' + (message.guild!.members.me?.nickname ?
-            message.guild!.members.me.nickname : message.guild!.members.me?.user.username)));
+          return message.channel.send(
+            (dic.nickname ? dic.nickname : dic.user.username) +
+              ' is the dictator, and has control over ' +
+              (message.guild!.members.me?.nickname
+                ? message.guild!.members.me.nickname
+                : message.guild!.members.me?.user.username)
+          );
         }
       }
       server.dictator = message.member ?? undefined;
-      message.channel.send('The dictator is missing! ***' + (message.member!.nickname ?
-        message.member!.nickname : message.member!.user.username) + ' is now the new dictator.***');
+      message.channel.send(
+        'The dictator is missing! ***' +
+          (message.member!.nickname ? message.member!.nickname : message.member!.user.username) +
+          ' is now the new dictator.***'
+      );
     }
-  }
-  else {
+  } else {
     server.dictator = message.member ?? undefined;
-    message.channel.send('***' + (message.member!.nickname ?
-      message.member!.nickname : message.member!.user.username) + ', you are the dictator.***');
+    message.channel.send(
+      '***' +
+        (message.member!.nickname ? message.member!.nickname : message.member!.user.username) +
+        ', you are the dictator.***'
+    );
   }
   new EmbedBuilderLocal()
     .setTitle('Dictator Commands')
-    .setDescription('\`resign\` - forfeit being dictator')
+    .setDescription('`resign` - forfeit being dictator')
     .setFooter('The dictator has control over all music commands for the session. Enjoy!')
-    .send(message.channel).then();
+    .send(message.channel)
+    .then();
 }
 
 /**
@@ -65,11 +76,12 @@ function createDJTimer(message: Message, server: LocalServer, duration: number) 
     const mem = server.voteAdmin[0];
     let resignMsg;
     if (!server.audio.voiceChannelId) return;
-    const gmArray: Array<[Snowflake, GuildMember]> = Array.from(bot.channels.cache.get(getVoiceConnection(server.guildId)!.joinConfig.channelId).members);
+    const gmArray: Array<[Snowflake, GuildMember]> = Array.from(
+      bot.channels.cache.get(getVoiceConnection(server.guildId)!.joinConfig.channelId).members
+    );
     if (gmArray.filter(([, gm]) => gm.id).includes(mem.id)) {
-      resignMsg = '*Time\'s up: ' + (mem.nickname ? mem.nickname : mem.user.username) + ' is no longer the DJ.*\n';
-    }
-    else {
+      resignMsg = "*Time's up: " + (mem.nickname ? mem.nickname : mem.user.username) + ' is no longer the DJ.*\n';
+    } else {
       resignMsg = '*No DJ detected.*\n';
     }
     server.voteAdmin.pop();
@@ -118,50 +130,61 @@ function runDJCommand(message: Message, server: LocalServer) {
   if (!botInVC(message) || !message.member?.voice || !message.member.voice.channel) {
     return message.channel.send(notInVoiceChannelErrorMsg(message.guild!));
   }
-  const vcMembersId = getVCMembers(message.guild!.id).map((x: User) => x.id).map((x: any) => x.id);
+  const vcMembersId = getVCMembers(message.guild!.id)
+    .map((x: User) => x.id)
+    .map((x: any) => x.id);
   if (!vcMembersId.includes(message.member.id)) return message.channel.send(notInVoiceChannelErrorMsg(message.guild!));
   if (server.dictator) return message.channel.send('There is a dictator, cannot enable DJ mode.');
   if (server.voteAdmin.length < 1) {
     server.voteAdmin.push(message.member);
-    const dj = (message.member.nickname ? message.member.nickname : message.member.user.username);
+    const dj = message.member.nickname ? message.member.nickname : message.member.user.username;
     message.channel.send('***DJ mode has been enabled for this session (DJ: ' + dj + ')*** *[30 min]*');
     createDJTimer(message, server, 1800000);
-  }
-  else {
+  } else {
     let ix = 0;
     let newMemAdded = false;
     for (const x of server.voteAdmin) {
       if (!vcMembersId.includes(x.id)) {
         let oldMem = server.voteAdmin[ix];
-        oldMem = (oldMem.nickname ? oldMem.nickname : oldMem.user.username);
+        oldMem = oldMem.nickname ? oldMem.nickname : oldMem.user.username;
         if (!newMemAdded) {
           const newMem = message.member;
           server.voteAdmin[ix] = newMem;
-          const newMemName = (newMem.nickname ? newMem.nickname : newMem.user.username);
+          const newMemName = newMem.nickname ? newMem.nickname : newMem.user.username;
           message.channel.send('*DJ ' + oldMem + ' is missing.* ***' + newMemName + ' is now the new DJ.***');
           createDJTimer(message, server, 1800000);
           newMemAdded = true;
-        }
-        else {
+        } else {
           message.channel.send('*DJ ' + oldMem + ' is also missing and has forfeit being DJ*');
         }
       }
       ix++;
     }
     const currentAdmin = server.voteAdmin[0];
-    message.channel.send('***' + (currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) + ' is ' +
-      'the DJ.*** *(' + getTimeLeft(server.djTimer.duration, server.djTimer.startTime).split(' ')[0] + ' remaining)*');
+    message.channel.send(
+      '***' +
+        (currentAdmin.nickname ? currentAdmin.nickname : currentAdmin.user.username) +
+        ' is ' +
+        'the DJ.*** *(' +
+        getTimeLeft(server.djTimer.duration, server.djTimer.startTime).split(' ')[0] +
+        ' remaining)*'
+    );
   }
   new EmbedBuilderLocal()
     .setTitle('DJ Commands')
-    .setDescription('\`forceskip\` - force skip a track [fs]\n' +
-    '\`forcerewind\`- force rewind a track [fr]\n' +
-    '\`force[play/pause]\` - force play/pause a track f[pl/pa]\n' +
-    '\`lock-queue\` - Prevent the queue from being added to [toggle]\n' +
-    '\`resign\` - forfeit DJ permissions')
-    .setFooter('DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
-      'The DJ can override voting by using the force commands above.')
-    .send(message.channel).then();
+    .setDescription(
+      '`forceskip` - force skip a track [fs]\n' +
+        '`forcerewind`- force rewind a track [fr]\n' +
+        '`force[play/pause]` - force play/pause a track f[pl/pa]\n' +
+        '`lock-queue` - Prevent the queue from being added to [toggle]\n' +
+        '`resign` - forfeit DJ permissions'
+    )
+    .setFooter(
+      'DJ mode requires users to vote to skip, rewind, play, and pause tracks. ' +
+        'The DJ can override voting by using the force commands above.'
+    )
+    .send(message.channel)
+    .then();
 }
 
 /**
@@ -172,20 +195,23 @@ function runDJCommand(message: Message, server: LocalServer) {
 function runResignCommand(message: Message, server: LocalServer) {
   if (!server.voteAdmin.length && !server.dictator) {
     message.channel.send('There is no DJ or dictator right now');
-  }
-  else if (server.dictator) {
+  } else if (server.dictator) {
     if (message.member!.id === server.dictator.id) {
       server.dictator = undefined;
-      message.channel.send((message.member!.nickname ? message.member!.nickname : message.member!.user.username) +
-        ' has resigned from being the dictator!');
-    }
-    else {
+      message.channel.send(
+        (message.member!.nickname ? message.member!.nickname : message.member!.user.username) +
+          ' has resigned from being the dictator!'
+      );
+    } else {
       message.channel.send('Only the dictator can resign');
     }
-  }
-  else if (server.voteAdmin.includes(message.member)) {
-    server.voteAdmin.splice(server.voteAdmin.findIndex((val: User) => val.id === message.member!.id), 1);
-    let resignMsg = (message.member!.nickname ? message.member!.nickname : message.member!.user.username) +
+  } else if (server.voteAdmin.includes(message.member)) {
+    server.voteAdmin.splice(
+      server.voteAdmin.findIndex((val: User) => val.id === message.member!.id),
+      1
+    );
+    let resignMsg =
+      (message.member!.nickname ? message.member!.nickname : message.member!.user.username) +
       ' has resigned from being DJ.';
     if (server.voteAdmin.length < 1) {
       server.voteSkipMembersId = [];
@@ -195,8 +221,7 @@ function runResignCommand(message: Message, server: LocalServer) {
       resignMsg += ' DJ mode disabled.';
     }
     message.channel.send(resignMsg);
-  }
-  else {
+  } else {
     message.channel.send('Only the DJ can resign');
   }
 }

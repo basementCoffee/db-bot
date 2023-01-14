@@ -1,6 +1,6 @@
-import {parentThread} from "../threads/parentThread";
-import LocalServer from "../utils/lib/LocalServer";
-import {GuildMember, Message, TextChannel, VoiceBasedChannel} from "discord.js";
+import { parentThread } from '../threads/parentThread';
+import LocalServer from '../utils/lib/LocalServer';
+import { GuildMember, Message, TextChannel, VoiceBasedChannel } from 'discord.js';
 import { addCustomPlaylist, runAddCommandWrapper } from './add';
 import { changePrefix } from './changePrefix';
 import { playPlaylistDB, runDatabasePlayCommand } from './databasePlayCommand';
@@ -24,7 +24,6 @@ import { runRandomToQueue, shuffleQueue } from './playRandomKeys';
 import { getSettings, setSettings } from '../database/retrieval';
 import { removeFormattingLink } from '../utils/formatUtils';
 import { queueFind } from './queueFind';
-
 
 // A common handler for user commands.
 class CommandHandlerCommon {
@@ -51,7 +50,14 @@ class CommandHandlerCommon {
    * @param member The member that is requesting the add.
    * @returns {*}
    */
-  static async addKeyToDB(channel: any, args: any, sheetName: string, printMsgToChannel: any, server: LocalServer, member: any) {
+  static async addKeyToDB(
+    channel: any,
+    args: any,
+    sheetName: string,
+    printMsgToChannel: any,
+    server: LocalServer,
+    member: any
+  ) {
     return runAddCommandWrapper(channel, args, sheetName, printMsgToChannel, server, member);
   }
 
@@ -64,7 +70,14 @@ class CommandHandlerCommon {
    * @param addToFront Optional - true if to add to the front
    * @param isShuffle Whether it is a shuffle cmd.
    */
-  static async addRandomKeysToQueue(num: Array<string>, message: Message, sheetName: string, server: LocalServer, addToFront = false, isShuffle = false) {
+  static async addRandomKeysToQueue(
+    num: Array<string>,
+    message: Message,
+    sheetName: string,
+    server: LocalServer,
+    addToFront = false,
+    isShuffle = false
+  ) {
     return runRandomToQueue(num, message, sheetName, server, addToFront, isShuffle);
   }
 
@@ -100,7 +113,13 @@ class CommandHandlerCommon {
    * @param sheetName {string} The sheet name to use.
    * @returns {Promise<number>} The position to insert or a negative if failed.
    */
-  static async insert(message: Message, mgid: string, args: string[], server: LocalServer, sheetName: string): Promise<number> {
+  static async insert(
+    message: Message,
+    mgid: string,
+    args: string[],
+    server: LocalServer,
+    sheetName: string
+  ): Promise<number> {
     return runInsertCommand(message, mgid, args, server, sheetName);
   }
 
@@ -134,7 +153,14 @@ class CommandHandlerCommon {
    * @param specificPage {string?} The name of the page to display (to show instead of the playlist-page).
    * @param overrideName {string?} overrides the name displayed for the keys list.
    */
-  static async keys(message: Message, server: LocalServer, sheetName: string, user?: any, specificPage?: string, overrideName?: string) {
+  static async keys(
+    message: Message,
+    server: LocalServer,
+    sheetName: string,
+    user?: any,
+    specificPage?: string,
+    overrideName?: string
+  ) {
     return runKeysCommand(message, server, sheetName, user, specificPage, overrideName);
   }
 
@@ -171,7 +197,13 @@ class CommandHandlerCommon {
    * @param args A list of keys and single playlist (the playlist should be the one to move the keys into).
    * @returns {void}
    */
-  static moveKeysBetweenPlaylists(server: LocalServer, channel: TextChannel, sheetName: string, xdb: any, args: string[]) {
+  static moveKeysBetweenPlaylists(
+    server: LocalServer,
+    channel: TextChannel,
+    sheetName: string,
+    xdb: any,
+    args: string[]
+  ) {
     return moveKeysWrapper(server, channel, sheetName, xdb, args);
   }
 
@@ -185,7 +217,14 @@ class CommandHandlerCommon {
    * @param sheetLetter Required if dbKey is given - a letter enum representing the type of sheet being referenced
    * (server or personal)
    */
-  static async nowPlaying(server: LocalServer, message: Message, voiceChannel: any, keyName?: string, sheetName?: string, sheetLetter?: string) {
+  static async nowPlaying(
+    server: LocalServer,
+    message: Message,
+    voiceChannel: any,
+    keyName?: string,
+    sheetName?: string,
+    sheetLetter?: string
+  ) {
     return runWhatsPCommand(server, message, voiceChannel, keyName, sheetName, sheetLetter);
   }
 
@@ -199,7 +238,14 @@ class CommandHandlerCommon {
    * @param noPrintMsg Optional - Whether to print a message to the channel when not in DJ mode
    * @returns {boolean} if successful
    */
-  static pauseStream(message: Message, actionUser: GuildMember, server: LocalServer, noErrorMsg = false, force = false, noPrintMsg = false) {
+  static pauseStream(
+    message: Message,
+    actionUser: GuildMember,
+    server: LocalServer,
+    noErrorMsg = false,
+    force = false,
+    noPrintMsg = false
+  ) {
     return pauseCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg);
   }
 
@@ -225,7 +271,15 @@ class CommandHandlerCommon {
    * @param seekSec {number?} Optional - The amount of time to seek in seconds
    * @param adjustQueue {boolean?} Whether to adjust the queue (is true by default).
    */
-  static async playLinkNow(message: Message, args: string[], mgid: string, server: LocalServer, sheetName?: string, seekSec?: any, adjustQueue?: any) {
+  static async playLinkNow(
+    message: Message,
+    args: string[],
+    mgid: string,
+    server: LocalServer,
+    sheetName?: string,
+    seekSec?: any,
+    adjustQueue?: any
+  ) {
     return playLinkNow(message, args, mgid, server, sheetName, seekSec, adjustQueue);
   }
 
@@ -261,7 +315,13 @@ class CommandHandlerCommon {
    * @param channel The channel to send the response to.
    * @returns {Promise<boolean>}
    */
-  static async removeDBPlaylist(server: LocalServer, sheetName: string, playlistName: string, xdb: any, channel: TextChannel) {
+  static async removeDBPlaylist(
+    server: LocalServer,
+    sheetName: string,
+    playlistName: string,
+    xdb: any,
+    channel: TextChannel
+  ) {
     return removePlaylist(server, sheetName, playlistName, xdb, channel);
   }
 
@@ -274,7 +334,13 @@ class CommandHandlerCommon {
    * @param newName The new name of the key.
    * @returns {Promise<boolean>} True if successful
    */
-  static async renameKey(channel: TextChannel, server: LocalServer, sheetName: string, oldName: string, newName: string): Promise<boolean> {
+  static async renameKey(
+    channel: TextChannel,
+    server: LocalServer,
+    sheetName: string,
+    oldName: string,
+    newName: string
+  ): Promise<boolean> {
     return renameKey(channel, server, sheetName, oldName, newName);
   }
 
@@ -287,7 +353,13 @@ class CommandHandlerCommon {
    * @param newName The new name of the playlist.
    * @returns {Promise<boolean>} True if successful
    */
-  static async renamePlaylist(channel: TextChannel, server: LocalServer, sheetName: string, oldName: string, newName: string) {
+  static async renamePlaylist(
+    channel: TextChannel,
+    server: LocalServer,
+    sheetName: string,
+    oldName: string,
+    newName: string
+  ) {
     return renamePlaylist(channel, server, sheetName, oldName, newName);
   }
 
@@ -313,7 +385,14 @@ class CommandHandlerCommon {
    * @param noPrintMsg {*?} Optional - Whether to print a message to the channel when not in DJ mode
    * @returns {boolean}
    */
-  static resumeStream(message: Message, actionUser: GuildMember, server: LocalServer, noErrorMsg = false, force = false, noPrintMsg = false) {
+  static resumeStream(
+    message: Message,
+    actionUser: GuildMember,
+    server: LocalServer,
+    noErrorMsg = false,
+    force = false,
+    noPrintMsg = false
+  ) {
     return playCommandUtil(message, actionUser, server, noErrorMsg, force, noPrintMsg);
   }
 
@@ -328,7 +407,15 @@ class CommandHandlerCommon {
    * @param shuffle {boolean?}
    * @returns {Promise<void>}
    */
-  static async playDBPlaylist(args: string[], message: Message, sheetName: string, playRightNow: boolean, printErrorMsg: boolean, server: LocalServer, shuffle?: boolean) {
+  static async playDBPlaylist(
+    args: string[],
+    message: Message,
+    sheetName: string,
+    playRightNow: boolean,
+    printErrorMsg: boolean,
+    server: LocalServer,
+    shuffle?: boolean
+  ) {
     await playPlaylistDB(args, message, sheetName, playRightNow, printErrorMsg, server, shuffle);
   }
 
@@ -342,7 +429,14 @@ class CommandHandlerCommon {
    * @param server {LocalServer} The server playback metadata
    * @returns {Promise<boolean>} whether the play command has been handled accordingly
    */
-  static async playDBKeys(args: string[], message: Message, sheetName: string, playRightNow: boolean, printErrorMsg: boolean, server: LocalServer) {
+  static async playDBKeys(
+    args: string[],
+    message: Message,
+    sheetName: string,
+    playRightNow: boolean,
+    printErrorMsg: boolean,
+    server: LocalServer
+  ) {
     return runDatabasePlayCommand(args, message, sheetName, playRightNow, printErrorMsg, server);
   }
 
@@ -413,12 +507,18 @@ class CommandHandlerCommon {
    * @param addToFront {boolean} Whether to add to the front of the queue.
    * @param isShuffle {boolean} Whether to shuffle the new keys before adding them to the queue.
    */
-  static shuffleQueueOrPlayRandom(wildcardRandomArr: any[] = [], message: Message, sheetName: string, server: LocalServer, addToFront?: boolean, isShuffle?: boolean) {
+  static shuffleQueueOrPlayRandom(
+    wildcardRandomArr: any[] = [],
+    message: Message,
+    sheetName: string,
+    server: LocalServer,
+    addToFront?: boolean,
+    isShuffle?: boolean
+  ) {
     wildcardRandomArr = wildcardRandomArr.filter((x) => x);
     if (wildcardRandomArr.length < 1) {
       this.shuffleQueue(server, message);
-    }
-    else {
+    } else {
       this.addRandomKeysToQueue(wildcardRandomArr, message, sheetName, server, addToFront, isShuffle).then();
     }
   }
@@ -433,10 +533,16 @@ class CommandHandlerCommon {
    * @param actionUser Optional - The member requesting to stop playing, used in the case of verifying a dj or dictator
    * @returns {void}
    */
-  static stopPlaying(mgid: string, voiceChannel: VoiceBasedChannel | null | undefined, stayInVC: boolean, server: LocalServer, message: Message, actionUser: any) {
+  static stopPlaying(
+    mgid: string,
+    voiceChannel: VoiceBasedChannel | null | undefined,
+    stayInVC: boolean,
+    server: LocalServer,
+    message: Message,
+    actionUser: any
+  ) {
     return stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUser);
   }
 }
-
 
 export default CommandHandlerCommon;

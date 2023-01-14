@@ -1,7 +1,7 @@
-import {MAX_QUEUE_S} from "./lib/constants";
-import LocalServer from "./lib/LocalServer";
-import {Message, TextChannel} from "discord.js";
-import {hasDJPermissions} from "./permissions";
+import { MAX_QUEUE_S } from './lib/constants';
+import LocalServer from './lib/LocalServer';
+import { Message, TextChannel } from 'discord.js';
+import { hasDJPermissions } from './permissions';
 import { botInVC, resetSession } from './utils';
 
 /**
@@ -13,7 +13,12 @@ import { botInVC, resetSession } from './utils';
  * @param actionDescription A brief description of the command/action.
  * @return {boolean} Returns true if the command should NOT proceed.
  */
-function isValidRequestSpecific(server: LocalServer, channel: TextChannel, memberId: string, actionDescription: string): boolean {
+function isValidRequestSpecific(
+  server: LocalServer,
+  channel: TextChannel,
+  memberId: string,
+  actionDescription: string
+): boolean {
   if (server.dictator && memberId !== server.dictator.id) {
     channel.send(`only the dictator can ${actionDescription}`);
     return false;
@@ -50,13 +55,11 @@ function isValidRequestWPlay(server: LocalServer, message: Message, actionDescri
   // in case of force disconnect
   if (!botInVC(message)) {
     resetSession(server);
-  }
-  else if (server.queue.length >= MAX_QUEUE_S) {
+  } else if (server.queue.length >= MAX_QUEUE_S) {
     message.channel.send('*max queue size has been reached*');
     return false;
   }
   return true;
 }
-
 
 export { isValidRequestWPlay };

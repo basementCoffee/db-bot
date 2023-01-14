@@ -1,9 +1,9 @@
-import {Message} from "discord.js";
-import LocalServer from "../utils/lib/LocalServer";
+import { Message } from 'discord.js';
+import LocalServer from '../utils/lib/LocalServer';
 import { DB_BOT_ICON_MED } from '../utils/lib/constants';
-import {getTitle} from "../utils/utils";
-import EmbedBuilderLocal from "../utils/lib/EmbedBuilderLocal";
-import processStats from "../utils/lib/ProcessStats";
+import { getTitle } from '../utils/utils';
+import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
+import processStats from '../utils/lib/ProcessStats';
 
 /**
  * Find a title within the queue.
@@ -28,7 +28,8 @@ async function queueFind(message: Message, server: LocalServer, term: string) {
     .setTitle(`'${term}' within the queue`)
     .setDescription(resultString || 'no results found')
     .setThumbnail(DB_BOT_ICON_MED)
-    .edit(sentMsg).catch((error: Error) => processStats.debug(error));
+    .edit(sentMsg)
+    .catch((error: Error) => processStats.debug(error));
 }
 
 export { queueFind };
