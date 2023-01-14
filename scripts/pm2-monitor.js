@@ -26,7 +26,9 @@ fs.readFile(FILE_PATH_MIN_VERSION, (err, contents) => {
     }
   }
   // if the local variable has a larger version
-  fs.writeFile(FILE_PATH_MIN_VERSION, minSupportedVersion, (e) => {console.log(e);});
+  fs.writeFile(FILE_PATH_MIN_VERSION, minSupportedVersion, (e) => {
+    if (e) console.log(e);
+  });
 });
 
 // returns a negative if versionA is smaller, 0 if they are equal, positive if version A is larger
