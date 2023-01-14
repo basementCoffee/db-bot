@@ -77,6 +77,7 @@ function createDJTimer(message: Message, server: LocalServer, duration: number) 
     let resignMsg;
     if (!server.audio.voiceChannelId) return;
     const gmArray: Array<[Snowflake, GuildMember]> = Array.from(
+      // @ts-ignore
       bot.channels.cache.get(getVoiceConnection(server.guildId)!.joinConfig.channelId).members
     );
     if (gmArray.filter(([, gm]) => gm.id).includes(mem.id)) {

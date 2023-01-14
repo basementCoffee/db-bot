@@ -1,6 +1,6 @@
 import { bot, botID } from '../utils/lib/constants';
 import { removeDBMessage, logError } from '../utils/utils';
-import { TextChannel } from 'discord.js';
+import { Channel, ChannelType, GuildChannel, GuildTextBasedChannel, TextChannel, VoiceBasedChannel } from 'discord.js';
 import { runLyricsCommand } from '../commands/lyrics';
 import { parentPort } from 'worker_threads';
 const token = process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n');
@@ -16,13 +16,13 @@ parentPort!.on('message', async (m: any) => {
     switch (m.content.commandName) {
       case 'lyrics':
         if (!loggedIn) await login();
-        bot.channels.fetch(m.content.cReqs.channelId).then((channel: TextChannel) => {
+        bot.channels.fetch(m.content.cReqs.channelId).then((channel: Channel | null) => {
           if (channel) {
             const reactionsCallback = () => {
               parentPort!.postMessage({
                 content: {
                   commandName: m.content.commandName,
-                  guildId: channel.guild.id,
+                  guildId: (<GuildTextBasedChannel>channel).guild.id,
                   pageWasClicked: true
                 }
               });
@@ -55,7 +55,7 @@ parentPort!.on('message', async (m: any) => {
  */
 async function login() {
   await bot.login(token);
-  if (bot.user.id !== botID) throw new Error('Invalid botID');
+  if (bot.user!.id !== botID) throw new Error('Invalid botID');
   loggedIn = true;
   console.log('-worker process logged in-');
 }

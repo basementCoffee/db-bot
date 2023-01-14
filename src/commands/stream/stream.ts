@@ -992,11 +992,11 @@ async function generatePlaybackReactions(
   // should be in the order of how they should be displayed
   const playbackReactions = [reactions.REWIND, reactions.PPAUSE, reactions.SKIP, reactions.STOP, reactions.BOOK_O];
   const filter = (reaction: MessageReaction, user: User) => {
-    if (user.id === bot.user.id) return false;
-    if (!voiceChannel || !voiceChannel.members.has(bot.user.id)) {
-      voiceChannel = bot.channels.cache.get(server.audio.voiceChannelId);
+    if (user.id === bot.user!.id) return false;
+    if (!voiceChannel || !voiceChannel.members.has(bot.user!.id)) {
+      voiceChannel = <VoiceBasedChannel>bot.channels.cache.get(server.audio.voiceChannelId!);
     }
-    if (voiceChannel && voiceChannel.members.has(bot.user.id)) {
+    if (voiceChannel && voiceChannel.members.has(bot.user!.id)) {
       if (voiceChannel.members.has(user.id)) {
         return playbackReactions.includes(reaction.emoji.name!);
       }
