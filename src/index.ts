@@ -1,15 +1,7 @@
 /* eslint-disable camelcase */
 'use strict';
 import {
-  ActivityType,
-  Guild,
-  GuildMember,
-  GuildTextBasedChannel,
-  If,
-  Message,
-  Snowflake,
-  TextBasedChannel,
-  TextChannel,
+  ActivityType, Guild, GuildMember, GuildTextBasedChannel, If, Message, Snowflake, TextBasedChannel, TextChannel,
   VoiceState
 } from "discord.js";
 require('dotenv').config();
