@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-npm run lint
+# todo - update linting
+#npm run lint

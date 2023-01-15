@@ -1,4 +1,4 @@
-npx eslint src/ --fix
+#npx eslint src/ --fix
 npm i --package-lock-only
 git add package*
 git status

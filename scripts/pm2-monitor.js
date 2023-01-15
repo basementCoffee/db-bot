@@ -9,7 +9,7 @@ const WAIT_TIME = 12000;
 // the maximum number of PM2 restarts allowed
 const MAX_RESTARTS = 5;
 // The last supported version that this project can be safely rolled back to
-let minSupportedVersion = '8.5.6';
+let minSupportedVersion = '8.6.1';
 // path of where the minSupportedVersion is stored (to be stored outside the git project)
 const FILE_PATH_MIN_VERSION = './.min_version_vibe.txt';
 
@@ -26,7 +26,9 @@ fs.readFile(FILE_PATH_MIN_VERSION, (err, contents) => {
     }
   }
   // if the local variable has a larger version
-  fs.writeFile(FILE_PATH_MIN_VERSION, minSupportedVersion, (e) => {console.log(e);});
+  fs.writeFile(FILE_PATH_MIN_VERSION, minSupportedVersion, (e) => {
+    if (e) console.log(e);
+  });
 });
 
 // returns a negative if versionA is smaller, 0 if they are equal, positive if version A is larger
