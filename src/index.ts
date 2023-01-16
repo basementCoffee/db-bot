@@ -1640,7 +1640,7 @@ async function devProcessCommands(message: Message) {
 
       if (processStats.isInactive || processStats.devMode) {
         message.channel.send(`*updating process ${process.pid}*`);
-        devUpdateCommand();
+        devUpdateCommand(undefined, zargs.slice(2));
       }
       break;
     case 'b':
