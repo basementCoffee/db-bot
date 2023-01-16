@@ -1,14 +1,5 @@
 /* eslint-disable camelcase */
-import {
-  Channel,
-  Collection,
-  ColorResolvable,
-  Guild,
-  GuildMember,
-  Message,
-  MessagePayloadOption,
-  TextBasedChannel
-} from 'discord.js';
+import { Channel, Collection, ColorResolvable, Guild, GuildMember, Message, TextBasedChannel } from 'discord.js';
 import fetch from 'isomorphic-unfetch';
 import ytdl from 'ytdl-core-discord';
 import ytpl from 'ytpl';
@@ -23,7 +14,6 @@ const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
-const CH = require('../../channel.json');
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
@@ -310,40 +300,6 @@ function removeDBMessage(channelID: string, deleteNum = 1, onlyDB: boolean) {
 }
 
 /**
- * Logs an error to a channel.
- * @param errText The error object or message to send.
- */
-function logError(errText: string | MessagePayloadOption | Error) {
-  bot.channels
-    .fetch(CH.err)
-    .then((channel: Channel | null) => {
-      if (errText instanceof Error) {
-        errText = `${errText.stack}`;
-      }
-      // @ts-ignore
-      channel?.send(errText);
-    })
-    .catch((e: Error) => console.log('Failed sending error message: ', e));
-}
-
-/**
- * Handles the error upon voice channel join. Sends the appropriate message to the user.
- * @param error The error.
- * @param textChannel The text channel to notify.
- */
-function catchVCJoinError(error: Error, textChannel: TextBasedChannel) {
-  const eMsg = error.toString();
-  if (eMsg.includes('it is full')) {
-    textChannel.send('`error: cannot join voice channel; it is full`');
-  } else if (eMsg.includes('VOICE_JOIN_CHANNEL')) {
-    textChannel.send('`permissions error: cannot join voice channel`');
-  } else {
-    textChannel.send('error when joining your VC:\n`' + error.message + '`');
-    logError(`voice channel join error:\n\`${error.message}\``);
-  }
-}
-
-/**
  * Returns the error message informing the user that it is not in a voice channel with the bot.
  * @param guild The guild.
  * @return {string} The error message.
@@ -440,8 +396,6 @@ export {
   getLinkType,
   createMemoryEmbed,
   removeDBMessage,
-  catchVCJoinError,
-  logError,
   linkValidator,
   getSheetName,
   isPersonalSheet,

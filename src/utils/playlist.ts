@@ -1,5 +1,5 @@
 import { Message } from 'discord.js';
-import { createQueueItem, getLinkType, verifyPlaylist, logError, isPlaylistSpotifyLink } from './utils';
+import { createQueueItem, getLinkType, verifyPlaylist, isPlaylistSpotifyLink } from './utils';
 import { StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
 import LocalServer from './lib/LocalServer';
 import { linkFormatter } from './formatUtils';
@@ -129,7 +129,7 @@ async function getPlaylistArray(playlistUrl: string, type: string) {
     case StreamType.SOUNDCLOUD:
       return (await scdl.playlists.getPlaylist(linkFormatter(playlistUrl, SOUNDCLOUD_BASE_LINK))).tracks;
     default:
-      logError(`Error: invalid linkType argument within addPlaylistToQueue (provided '${type}'`);
+      processStats.logError(`Error: invalid linkType argument within addPlaylistToQueue (provided '${type}'`);
       throw new Error(`Incorrect type provided, provided ${type}`);
   }
 }

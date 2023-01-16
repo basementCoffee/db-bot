@@ -2,7 +2,7 @@ import { ClientUser, Message, MessageReaction, User } from 'discord.js';
 import { bot, botID, INVITE_MSG } from './lib/constants';
 import { getHelpList } from './help';
 import reactions from './lib/reactions';
-import { logError } from './utils';
+import { logErrorCore } from './errorUtils';
 const { version } = require('../../package.json');
 const CH = require('../../channel.json');
 
@@ -34,7 +34,7 @@ async function dmHandler(message: Message, messageContent: string) {
     '\n------------------------------------------';
   const channel = await bot.channels.fetch(CH.dm);
   if (!channel) {
-    logError(`error: could not find DM channel\nmessage-payload:\n${messagePayload}`);
+    logErrorCore(`error: could not find DM channel\nmessage-payload:\n${messagePayload}`);
     return;
   }
   // @ts-ignore

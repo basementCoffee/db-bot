@@ -3,7 +3,7 @@ import LocalServer from '../utils/lib/LocalServer';
 import { Message } from 'discord.js';
 import processStats from '../utils/lib/ProcessStats';
 import { PREFIX_SN } from '../utils/lib/constants';
-import { botInVC, logError } from '../utils/utils';
+import { botInVC } from '../utils/utils';
 import { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } from './api/api';
 
 /**
@@ -91,7 +91,7 @@ async function getServerPrefix(server: LocalServer, mgid: string) {
       }
     }
   } catch (e: any) {
-    logError(e);
+    processStats.logError(e);
     server.prefix = '.';
     gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);
   }

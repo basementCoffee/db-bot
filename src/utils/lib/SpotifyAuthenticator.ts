@@ -1,4 +1,4 @@
-import { logError } from '../utils';
+import { logErrorCore } from '../errorUtils';
 const SpotifyWebApi = require('spotify-web-api-node');
 
 class SpotifyApi {
@@ -16,7 +16,7 @@ class SpotifyApi {
     this.expiryDateMS = 0;
     this.#authenticate().catch((e) => {
       const errMsg = `[ERROR][id: ${process.pid.toString()}] Missing spotify token credentials.\n${e.stack}`;
-      logError(errMsg);
+      logErrorCore(errMsg);
     });
   }
 

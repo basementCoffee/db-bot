@@ -1,7 +1,6 @@
 /* eslint-disable camelcase */
 import { Worker } from 'worker_threads';
 import processStats from '../utils/lib/ProcessStats';
-import { logError } from '../utils/utils';
 const worker = new Worker(__dirname + '/worker.js', { argv: process.argv.slice(2) });
 
 /**
@@ -42,7 +41,7 @@ function initialize() {
     const closeMsg = `worker process exited with code ${code}`;
     if (code === 1) {
       initialize();
-      logError(closeMsg);
+      processStats.logError(closeMsg);
     }
     console.log(closeMsg);
   });

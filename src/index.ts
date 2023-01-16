@@ -23,7 +23,6 @@ import {
   endStream,
   createQueueItem,
   createMemoryEmbed,
-  logError,
   getSheetName,
   createVisualEmbed,
   getTitle,
@@ -116,9 +115,9 @@ async function runCommandCases(message: Message) {
   const statement = args[0].substring(1).toLowerCase();
   // @ts-ignore
   if (isAdmin(message.member!.id)) {
-    runDevCommands(message, statement, server, args, prefixString).catch((err) => logError(err));
+    runDevCommands(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
   } else {
-    runUserCommands(message, statement, server, args, prefixString).catch((err) => logError(err));
+    runUserCommands(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
   }
 }
 
@@ -1222,7 +1221,7 @@ async function runDevCommands(
       if (args[1]) sendListSize(message, server, 'entries', args[1]).then();
       break;
     default:
-      runUserCommands(message, statement, server, args, prefixString).catch((err) => logError(err));
+      runUserCommands(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
       break;
   }
 }
@@ -1860,7 +1859,7 @@ function processEnvFile(message: Message) {
 
 bot.on('error', (e: Error) => {
   console.log('BOT ERROR:\n', e);
-  logError(`BOT ERROR: ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
+  processStats.logError(`BOT ERROR: ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 });
 process.on('error', (e) => {
   console.log('PROCESS ERROR:\n', e);
@@ -1878,7 +1877,7 @@ process
 function uncaughtExceptionAction(e: Error) {
   processStats.debug('uncaughtException: ', e);
   if (e.message === 'Unknown Message') return;
-  logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
+  processStats.logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
 }
 
 // The main method

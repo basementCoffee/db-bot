@@ -1,7 +1,7 @@
 import LocalServer from './lib/LocalServer';
 import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
 import ytdl from 'ytdl-core-discord';
-import { getQueueText, logError } from './utils';
+import { getQueueText } from './utils';
 import { formatDuration, convertYTFormatToMS } from './formatUtils';
 import { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, DB_SPOTIFY_EMBED_ICON } from './lib/constants';
 import processStats from './lib/ProcessStats';
@@ -227,7 +227,7 @@ async function sessionEndEmbed(server: LocalServer, queueItem: any) {
     const embed = (await createEmbed(queueItem.url, queueItem.infos)).embed;
     sessionEndEmbedWEmbed(server, embed);
   } catch (e: any) {
-    logError(e);
+    processStats.logError(e);
   }
 }
 
