@@ -3,7 +3,7 @@ import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
 import reactions from '../utils/lib/reactions';
 import { Message, MessageReaction, User } from 'discord.js';
 import { botID, DB_BOT_ICON_MED } from '../utils/lib/constants';
-import { botInVC, getTitle, createQueueItem, getSheetName, getLinkType } from '../utils/utils';
+import { botInVC, createQueueItem, getLinkType, getSheetName, getTitle } from '../utils/utils';
 import { updateActiveEmbed } from '../utils/embed';
 import { runInsertCommand } from './insert';
 import { isValidRequestWPlay } from '../utils/validation';

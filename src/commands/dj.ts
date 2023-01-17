@@ -2,7 +2,7 @@ import LocalServer from '../utils/lib/LocalServer';
 import { GuildMember, Message, Snowflake, User } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { bot } from '../utils/lib/constants';
-import { botInVC, notInVoiceChannelErrorMsg, getVCMembers } from '../utils/utils';
+import { botInVC, getVCMembers, notInVoiceChannelErrorMsg } from '../utils/utils';
 import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
 import { formatDuration } from '../utils/formatUtils';
 

@@ -1,5 +1,6 @@
 import { Channel, MessagePayloadOption, TextChannel } from 'discord.js';
 import { bot } from './lib/constants';
+
 const CH = require('../../channel.json');
 
 /**

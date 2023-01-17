@@ -1,11 +1,12 @@
 import { Message } from 'discord.js';
-import { createQueueItem, getLinkType, verifyPlaylist, isPlaylistSpotifyLink } from './utils';
-import { StreamType, SOUNDCLOUD_BASE_LINK, MAX_QUEUE_S, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
+import { createQueueItem, getLinkType, isPlaylistSpotifyLink, verifyPlaylist } from './utils';
+import { MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from './lib/constants';
 import LocalServer from './lib/LocalServer';
 import { linkFormatter } from './formatUtils';
 import ytpl from 'ytpl';
 import processStats from '../utils/lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
+
 const { SoundCloud: scdl } = require('scdl-core');
 scdl.connect();
 const fetch = require('isomorphic-unfetch');

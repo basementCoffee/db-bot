@@ -1,6 +1,7 @@
 /* eslint-disable camelcase */
 import { Worker } from 'worker_threads';
 import processStats from '../utils/lib/ProcessStats';
+
 const worker = new Worker(__dirname + '/worker.js', { argv: process.argv.slice(2) });
 
 /**

@@ -1,7 +1,8 @@
 import { getXdb2 } from '../database/retrieval';
 import { Message } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
-import { verifyUrl, verifyPlaylist, botInVC } from '../utils/utils';
+import { botInVC, verifyPlaylist, verifyUrl } from '../utils/utils';
+
 const leven = require('leven');
 
 /**

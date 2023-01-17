@@ -3,24 +3,24 @@ import LocalServer from '../../utils/lib/LocalServer';
 import { Message, MessageReaction, TextChannel, User, VoiceBasedChannel } from 'discord.js';
 import {
   botInVC,
-  getLinkType,
-  verifyUrl,
-  endStream,
   createQueueItem,
+  endStream,
+  getLinkType,
   getQueueText,
   getSheetName,
-  resetSession
+  resetSession,
+  verifyUrl
 } from '../../utils/utils';
 import {
-  StreamType,
-  SPOTIFY_BASE_LINK,
-  whatspMap,
-  commandsMap,
-  SOUNDCLOUD_BASE_LINK,
-  TWITCH_BASE_LINK,
-  LEAVE_VC_TIMEOUT,
   bot,
-  MAX_QUEUE_S
+  commandsMap,
+  LEAVE_VC_TIMEOUT,
+  MAX_QUEUE_S,
+  SOUNDCLOUD_BASE_LINK,
+  SPOTIFY_BASE_LINK,
+  StreamType,
+  TWITCH_BASE_LINK,
+  whatspMap
 } from '../../utils/lib/constants';
 import ytdl_core from 'ytdl-core';
 import ytdl from 'ytdl-core-discord';
@@ -31,18 +31,19 @@ import { shutdown } from '../../process/shutdown';
 import reactions from '../../utils/lib/reactions';
 import { getXdb2 } from '../../database/retrieval';
 import {
-  stopPlayingUtil,
-  voteSystem,
-  pauseCommandUtil,
   endAudioDuringSession,
-  playCommandUtil,
+  pauseCommandUtil,
   pauseComputation,
-  playComputation
+  playCommandUtil,
+  playComputation,
+  stopPlayingUtil,
+  voteSystem
 } from './utils';
-import { linkFormatter, convertYTFormatToMS, formatDuration } from '../../utils/formatUtils';
+import { convertYTFormatToMS, formatDuration, linkFormatter } from '../../utils/formatUtils';
 import { runKeysCommand } from '../keys';
 import EmbedBuilderLocal from '../../utils/lib/EmbedBuilderLocal';
 import { QueueItem } from '../../utils/lib/types';
+
 const fetch = require('isomorphic-unfetch');
 const { getData } = require('spotify-url-info')(fetch);
 const m3u8stream = require('m3u8stream');

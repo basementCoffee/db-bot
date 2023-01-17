@@ -3,7 +3,7 @@ import LocalServer from '../utils/lib/LocalServer';
 import { getXdb2 } from '../database/retrieval';
 import { getAssumptionMultipleMethods } from './search';
 import { playLinkToVC } from './stream/stream';
-import { botInVC, setSeamless, verifyPlaylist, createQueueItem, adjustQueueForPlayNow } from '../utils/utils';
+import { adjustQueueForPlayNow, botInVC, createQueueItem, setSeamless, verifyPlaylist } from '../utils/utils';
 import { MAX_QUEUE_S } from '../utils/lib/constants';
 import { updateActiveEmbed } from '../utils/embed';
 import { addPlaylistToQueue } from '../utils/playlist';

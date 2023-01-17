@@ -10,7 +10,7 @@ import {
 import LocalServer from '../utils/lib/LocalServer';
 import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
 import { botInVC, isPersonalSheet, linkValidator } from '../utils/utils';
-import { getXdb2, getSettings } from '../database/retrieval';
+import { getSettings, getXdb2 } from '../database/retrieval';
 import { getAssumptionMultipleMethods } from './search';
 import reactions from '../utils/lib/reactions';
 import { botID } from '../utils/lib/constants';

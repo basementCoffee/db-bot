@@ -1,5 +1,5 @@
 import LocalServer from '../utils/lib/LocalServer';
-import { gsUpdateOverwrite, deleteRows } from './api/api';
+import { deleteRows, gsUpdateOverwrite } from './api/api';
 
 /**
  * Serialize data. Assumes that the playlist exists or will create a new playlist.

@@ -1,4 +1,5 @@
 import { logErrorCore } from '../errorUtils';
+
 const SpotifyWebApi = require('spotify-web-api-node');
 
 class SpotifyApi {

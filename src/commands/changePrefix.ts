@@ -1,4 +1,4 @@
-import { gsrun, gsUpdateOverwrite, gsUpdateAdd } from '../database/api/api';
+import { gsrun, gsUpdateAdd, gsUpdateOverwrite } from '../database/api/api';
 import { PREFIX_SN } from '../utils/lib/constants';
 import { getBotDisplayName } from '../utils/utils';
 import { Message, PermissionsBitField } from 'discord.js';

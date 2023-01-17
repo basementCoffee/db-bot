@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { Channel, Collection, ColorResolvable, Guild, GuildMember, Message, TextBasedChannel } from 'discord.js';
+import { Channel, Collection, ColorResolvable, Guild, GuildMember, Message } from 'discord.js';
 import fetch from 'isomorphic-unfetch';
 import ytdl from 'ytdl-core-discord';
 import ytpl from 'ytpl';
@@ -7,8 +7,9 @@ import LocalServer from './lib/LocalServer';
 import { AudioResource, getVoiceConnection } from '@discordjs/voice';
 import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
 import { linkFormatter } from './formatUtils';
-import { botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot } from './lib/constants';
+import { bot, botID, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from './lib/constants';
 import { QueueItem } from './lib/types';
+
 const { getData } = require('spotify-url-info')(fetch);
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');

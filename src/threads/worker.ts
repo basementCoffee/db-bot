@@ -4,6 +4,7 @@ import { Channel, ChannelType, GuildTextBasedChannel } from 'discord.js';
 import { runLyricsCommand } from '../commands/lyrics';
 import { parentPort } from 'worker_threads';
 import { logErrorCore } from '../utils/errorUtils';
+
 const token = process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n');
 const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
 

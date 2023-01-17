@@ -1,6 +1,6 @@
-/* eslint-disable camelcase */
 'use strict';
 require('dotenv').config();
+import { congratsCommand } from './commands/congrats';
 import {
   ActivityType,
   Channel,
@@ -17,48 +17,47 @@ import {
   VoiceState
 } from 'discord.js';
 import buildNo from './utils/lib/BuildNumber';
-import { gsrun, deleteRows } from './database/api/api';
+import { deleteRows, gsrun } from './database/api/api';
 import {
   botInVC,
-  endStream,
-  createQueueItem,
+  botInVcGuild,
   createMemoryEmbed,
-  getSheetName,
+  createQueueItem,
   createVisualEmbed,
-  getTitle,
-  botInVcGuild
+  endStream,
+  getSheetName,
+  getTitle
 } from './utils/utils';
 import { formatDuration } from './utils/formatUtils';
-import { runDictatorCommand, runDJCommand, clearDJTimer, runResignCommand } from './commands/dj';
+import { clearDJTimer, runDictatorCommand, runDJCommand, runResignCommand } from './commands/dj';
 import {
   bot,
-  checkActiveMS,
-  setOfBotsOn,
-  commandsMap,
-  whatspMap,
   botID,
-  TWITCH_BASE_LINK,
-  StreamType,
+  checkActiveMS,
+  commandsMap,
   INVITE_MSG,
   PREFIX_SN,
-  startupTest
+  setOfBotsOn,
+  startupTest,
+  StreamType,
+  TWITCH_BASE_LINK,
+  whatspMap
 } from './utils/lib/constants';
 import reactions from './utils/lib/reactions';
-import { updateActiveEmbed, sessionEndEmbed } from './utils/embed';
+import { sessionEndEmbed, updateActiveEmbed } from './utils/embed';
 import {
   checkStatusOfYtdl,
   playLinkToVC,
-  skipLink,
+  runRewindCommand,
   runSkipCommand,
-  sendLinkAsEmbed,
-  runRewindCommand
+  sendLinkAsEmbed
 } from './commands/stream/stream';
 import { shutdown } from './process/shutdown';
 import { playRecommendation, sendRecommendationWrapper } from './commands/stream/recommendations';
 import { checkToSeeActive } from './process/checkToSeeActive';
-import { runQueueCommand, createVisualText } from './commands/generateQueue';
-import { sendListSize, getServerPrefix, getXdb2 } from './database/retrieval';
-import { isAdmin, hasDJPermissions } from './utils/permissions';
+import { createVisualText, runQueueCommand } from './commands/generateQueue';
+import { getServerPrefix, getXdb2, sendListSize } from './database/retrieval';
+import { hasDJPermissions, isAdmin } from './utils/permissions';
 import { dmHandler, sendMessageToUser } from './utils/dms';
 import { runDeleteKeyCommand_P } from './database/delete';
 import { parentThread } from './threads/parentThread';
@@ -68,6 +67,7 @@ import fs from 'fs';
 import LocalServer from './utils/lib/LocalServer';
 import processStats from './utils/lib/ProcessStats';
 import commandHandlerCommon from './commands/CommandHandlerCommon';
+
 const token =
   process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n') ||
   (() => {
@@ -147,58 +147,7 @@ async function runUserCommands(
     case 'omedetou':
     case 'congratulations':
     case 'congrats':
-      if (!botInVC(message)) {
-        server.queue.length = 0;
-        server.queueHistory.length = 0;
-        server.loop = false;
-      }
-      server.numSinceLastEmbed++;
-      const args2 = message.content.toLowerCase().replace(/\s+/g, ' ').split(' ');
-      const findIndexOfWord = (word: string) => {
-        for (const w in args) {
-          if (args[w].includes(word)) {
-            return w;
-          }
-        }
-        return '-1';
-      };
-      let name;
-      let indexOfWord = findIndexOfWord('grats') || findIndexOfWord('congratulations');
-      if (indexOfWord !== '-1') {
-        name = args2[parseInt(indexOfWord) + 1];
-        const excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
-        if (excludedWords.includes(name)) name = '';
-        if (name && name.length > 1) name = name.substring(0, 1).toUpperCase() + name.substring(1);
-      } else {
-        name = '';
-      }
-      commandsMap.set('congrats', (commandsMap.get('congrats') || 0) + 1);
-      message.channel.send('Congratulations' + (name ? ' ' + name : '') + '!');
-      const congratsLink = statement.includes('omedetou')
-        ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4'
-        : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8';
-      if (server.queue[0]?.url !== congratsLink) {
-        server.queue.unshift(createQueueItem(congratsLink, StreamType.YOUTUBE, null));
-      } else {
-        return;
-      }
-      if (message.member!.voice?.channel) {
-        const vc = message.member!.voice.channel;
-        setTimeout(() => {
-          if (whatspMap.get(vc.id) === congratsLink) {
-            skipLink(message, vc, false, server, true);
-          }
-          const item = server.queueHistory.findIndex((val) => val.url === congratsLink);
-          if (item !== -1) server.queueHistory.splice(item, 1);
-        }, 20000);
-        const embedStatus = server.silence;
-        server.silence = true;
-        playLinkToVC(message, server.queue[0], vc, server).catch((er: Error) => processStats.debug(er));
-        setTimeout(() => (server.silence = embedStatus), 4000);
-        const item = server.queueHistory.findIndex((val) => val.url === congratsLink);
-        if (item !== -1) server.queueHistory.splice(item, 1);
-        return;
-      }
+      congratsCommand(message, server, statement, args);
       break;
     // tell the user a joke
     case 'joke':

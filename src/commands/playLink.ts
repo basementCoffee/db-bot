@@ -1,13 +1,13 @@
 import LocalServer from '../utils/lib/LocalServer';
 import { Message } from 'discord.js';
 import {
-  botInVC,
-  setSeamless,
-  verifyPlaylist,
-  verifyUrl,
-  pushQueue,
   adjustQueueForPlayNow,
-  unshiftQueue
+  botInVC,
+  pushQueue,
+  setSeamless,
+  unshiftQueue,
+  verifyPlaylist,
+  verifyUrl
 } from '../utils/utils';
 import { removeFormattingLink } from '../utils/formatUtils';
 import { addLinkToQueue } from '../utils/playlist';
