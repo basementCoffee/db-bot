@@ -14,6 +14,7 @@ import {
   TextBasedChannel,
   TextChannel,
   User,
+  VoiceChannel,
   VoiceState
 } from 'discord.js';
 import buildNo from './utils/lib/BuildNumber';
@@ -35,6 +36,7 @@ import {
   botID,
   checkActiveMS,
   commandsMap,
+  CORE_ADM,
   INVITE_MSG,
   PREFIX_SN,
   setOfBotsOn,
@@ -1460,11 +1462,14 @@ async function devProcessCommands(message: Message) {
               if (!processStats.isInactive && bot.voice.adapters.size > 0) {
                 let hasDeveloper = false;
                 if (bot.voice.adapters.size === 1) {
-                  bot.voice.adapters.forEach((x: any) => {
-                    if (x.channel.members.get('443150640823271436') || x.channel.members.get('268554823283113985')) {
+                  bot.voice.adapters.forEach((_adapter, guildId) => {
+                    const gMems = (<VoiceChannel>(
+                      bot.channels.cache.get(getVoiceConnection(guildId)!.joinConfig.channelId!)
+                    ))!.members;
+                    if (gMems.get(CORE_ADM[0]) || gMems.get(CORE_ADM[1])) {
                       hasDeveloper = true;
-                      x.disconnect();
-                      processStats.removeActiveStream(x.channel.guild.id);
+                      const server = processStats.getServer(guildId);
+                      processStats.disconnectConnection(server);
                     }
                   });
                 }
