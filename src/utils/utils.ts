@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { Channel, Collection, ColorResolvable, Guild, GuildMember, Message } from 'discord.js';
+import { Channel, Collection, ColorResolvable, Guild, GuildMember, Message, VoiceChannel } from 'discord.js';
 import fetch from 'isomorphic-unfetch';
 import ytdl from 'ytdl-core-discord';
 import ytpl from 'ytpl';
@@ -354,10 +354,9 @@ function isPersonalSheet(sheetName: string): boolean {
 function getVCMembers(guildId: string): Array<any> {
   const voiceConnection = getVoiceConnection(guildId);
   if (voiceConnection) {
-    const collectionOfMembers: Collection<string, GuildMember> = bot.channels.cache.get(
-      voiceConnection.joinConfig.channelId!
-      // @ts-ignore
-    )?.members;
+    const collectionOfMembers: Collection<string, GuildMember> = (<VoiceChannel>(
+      bot.channels.cache.get(voiceConnection.joinConfig.channelId!)
+    ))?.members;
     if (collectionOfMembers) {
       const gmArray = Array.from(collectionOfMembers);
       gmArray.map((item: any) => item[1].user.username);
