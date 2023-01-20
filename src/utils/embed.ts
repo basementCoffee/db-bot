@@ -6,8 +6,7 @@ import { convertYTFormatToMS, formatDuration } from './formatUtils';
 import { DB_SPOTIFY_EMBED_ICON, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
 import processStats from './lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
-
-const fetch = require('isomorphic-unfetch');
+import fetch from 'isomorphic-unfetch';
 const { getData } = require('spotify-url-info')(fetch);
 const scdl = require('soundcloud-downloader').default;
 const { isNumber } = require('node-os-utils/util');

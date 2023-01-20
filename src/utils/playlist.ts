@@ -6,10 +6,10 @@ import { linkFormatter } from './formatUtils';
 import ytpl from 'ytpl';
 import processStats from '../utils/lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
+import fetch from 'isomorphic-unfetch';
 
 const { SoundCloud: scdl } = require('scdl-core');
 scdl.connect();
-const fetch = require('isomorphic-unfetch');
 const { getData, getTracks } = require('spotify-url-info')(fetch);
 
 /**

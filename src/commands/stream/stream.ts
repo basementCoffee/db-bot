@@ -43,8 +43,8 @@ import { convertYTFormatToMS, formatDuration, linkFormatter } from '../../utils/
 import { runKeysCommand } from '../keys';
 import EmbedBuilderLocal from '../../utils/lib/EmbedBuilderLocal';
 import { QueueItem } from '../../utils/lib/types';
-
-const fetch = require('isomorphic-unfetch');
+import fluentFfmpeg from 'fluent-ffmpeg';
+import fetch from 'isomorphic-unfetch';
 const { getData } = require('spotify-url-info')(fetch);
 const m3u8stream = require('m3u8stream');
 const twitch = require('twitch-m3u8');
@@ -57,7 +57,8 @@ const {
   getVoiceConnection
 } = require('@discordjs/voice');
 const CH = require('../../../channel.json');
-const fluentFfmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
