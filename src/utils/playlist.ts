@@ -13,19 +13,19 @@ scdl.connect();
 const { getData, getTracks } = require('spotify-url-info')(fetch);
 
 /**
- * Gets the url of the item from the infos.
+ * Gets the url of the item from the metadata (infos).
  * @param item A single track's metadata.
- * @param type {string} Either 'sp' 'sc' or 'yt' depending on the source of the infos.
+ * @param type The StreamType that the link is. This method does not support twitch.
  * @returns {string} The url.
  */
-function getUrl(item: any, type: string): string {
+function getUrlFromInfos(item: any, type: StreamType): string {
   switch (type) {
-    case 'sp':
+    case StreamType.SPOTIFY:
       return item.external_urls.spotify;
-    case 'yt':
+    case StreamType.YOUTUBE:
       if (item.videoId) return `https://youtube.com/watch?v=${item.videoId}`;
       return item.shortUrl || item.url;
-    case 'sc':
+    case StreamType.SOUNDCLOUD:
       return item.permalink_url;
     default:
       const errString = `Error: Incorrect type provided, provided ${type}`;
@@ -66,7 +66,7 @@ async function getPlaylistItems(url: string, tempArray: any[]): Promise<number> 
   try {
     // add all the songs from the playlist to the tempArray
     for (const j of playlist) {
-      url = getUrl(j, linkType);
+      url = getUrlFromInfos(j, linkType);
       if (url) {
         tempArray.push(createQueueItem(url, linkType, j));
         itemCounter++;
@@ -81,10 +81,10 @@ async function getPlaylistItems(url: string, tempArray: any[]): Promise<number> 
 /**
  * Gets the array of playlist items.
  * @param playlistUrl The playlist URL.
- * @param type {string} Either 'sp', 'yt' or 'sc' regarding the type of URL.
+ * @param type {string} The StreamType that the link is. This method does not support twitch.
  * @returns {Promise<[]>} An Array of link metadata.
  */
-async function getPlaylistArray(playlistUrl: string, type: string) {
+async function getPlaylistArray(playlistUrl: string, type: StreamType) {
   switch (type) {
     case StreamType.SPOTIFY:
       try {
@@ -141,7 +141,7 @@ async function getPlaylistArray(playlistUrl: string, type: string) {
  * @param qArray {Array} The queue to add to.
  * @param numItems {number} The number of items added to queue
  * @param playlistUrl {string} The url of the playlist
- * @param linkType {string} Either 'sp' 'sc' or 'yt' depending on the type of link.
+ * @param linkType {string} A StreamType. Does not support twitch.
  * @param addToFront {boolean=} Optional - true if to add to the front of the queue
  * @param position {number=} Optional - the position of the queue to add the item to
  * @returns {Promise<Number>} The number of items added to the queue
@@ -169,7 +169,7 @@ async function addPlaylistToQueue(
       while (lowestLengthIndex > -1) {
         pItem = playlist[lowestLengthIndex];
         lowestLengthIndex--;
-        url = getUrl(pItem, linkType);
+        url = getUrlFromInfos(pItem, linkType);
         if (itemsLeft > 0) {
           if (url) {
             qArray.unshift(createQueueItem(url, linkType, pItem));
@@ -184,7 +184,7 @@ async function addPlaylistToQueue(
     } else {
       let itemsLeft = MAX_QUEUE_S - qArray.length;
       for (const pItem of playlist) {
-        url = getUrl(pItem, linkType);
+        url = getUrlFromInfos(pItem, linkType);
         if (itemsLeft > 0) {
           if (url) {
             if (position && !(position > qArray.length)) {
@@ -226,7 +226,7 @@ async function addLinkToQueue(
   server: LocalServer,
   mgid: string,
   addToFront = false,
-  queueFunction: any
+  queueFunction: (array: any[], obj: { type: StreamType; url: string; infos: any }) => void
 ) {
   if (url.includes(SPOTIFY_BASE_LINK)) {
     url = linkFormatter(url, SPOTIFY_BASE_LINK);

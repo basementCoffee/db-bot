@@ -71,7 +71,7 @@ function verifyUrl(url: string) {
  * @param url The url to verify.
  * @returns {string | boolean} A StreamType or false.
  */
-function verifyPlaylist(url: string): string | boolean {
+function verifyPlaylist(url: string = ''): string | boolean {
   try {
     url = url.toLowerCase();
     if (url.includes(SPOTIFY_BASE_LINK)) {

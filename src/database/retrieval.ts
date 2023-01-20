@@ -6,6 +6,13 @@ import { PREFIX_SN } from '../utils/lib/constants';
 import { botInVC } from '../utils/utils';
 import { getJSON, gsrun, gsrun_P, gsUpdateAdd, gsUpdateOverwrite } from './api/api';
 
+type KeyObject = {
+  name: string;
+  link: string;
+  timeStamp: number | undefined;
+  playlistName: string;
+};
+
 /**
  * Gets the user keys from the database.
  * @param server {LocalServer} The server object.
@@ -17,7 +24,7 @@ async function getXdb2(
   server: LocalServer,
   sheetName: string,
   save: boolean
-): Promise<{ playlistArray: []; playlists: Map<string, Map<string, any>>; globalKeys: any }> {
+): Promise<{ playlistArray: []; playlists: Map<string, Map<string, KeyObject>>; globalKeys: Map<string, KeyObject> }> {
   if (!save) return server.userKeys.get(sheetName) || (await gsrun_P('E', 'F', sheetName));
   let xdb = server.userKeys.get(sheetName);
   if (!xdb) {

@@ -57,7 +57,7 @@ async function renameKey(
   }
   const oldNameUpper = oldName.toUpperCase();
   const keyObj = xdb.globalKeys.get(oldNameUpper);
-  if (!keyObj) {
+  if (keyObj === undefined) {
     await channel.send('*key does not exist*');
     return false;
   }
@@ -68,11 +68,15 @@ async function renameKey(
   }
   const playlistName = keyObj.playlistName;
   const playlist = xdb.playlists.get(playlistName.toUpperCase());
-  if (!playlist) {
+  if (playlist === undefined) {
     await channel.send('*playlist does not exist*');
     return false;
   }
   const keyData = playlist.get(oldNameUpper);
+  if (keyData === undefined) {
+    await channel.send('*there was an error*');
+    return false;
+  }
   keyData.name = newName;
 
   const replacementMap = new Map();

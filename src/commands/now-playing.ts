@@ -24,12 +24,15 @@ async function runWhatsPCommand(
 ) {
   if (keyName && sheetName) {
     const xdb = await getXdb2(server, sheetName, !!voiceChannel);
-    let link = xdb.globalKeys.get(keyName.toUpperCase()).link;
+    let link = xdb.globalKeys.get(keyName.toUpperCase())?.link;
     // update link value here
     if (!link) {
-      const sObj = runSearchCommand(keyName, xdb.globalKeys);
+      const sObj = runSearchCommand(
+        keyName,
+        Array.from(xdb.globalKeys.values()).map((x) => x.name)
+      );
       if (sObj.ssi === 1 && sObj.ss) {
-        link = `Assuming **${sObj.ss}**\n${xdb.globalKeys.get(sObj.ss.toUpperCase())}`;
+        link = `Assuming **${sObj.ss}**\n${xdb.globalKeys.get(sObj.ss.toUpperCase())!.link}`;
       }
     }
     if (link) {

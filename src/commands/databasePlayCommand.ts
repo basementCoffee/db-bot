@@ -186,17 +186,17 @@ async function runDatabasePlayCommand(
           // push to queue and play
           adjustQueueForPlayNow(server.audio.resource!, server);
           if (playlistType) {
-            await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
+            await addPlaylistToQueue(message, server.queue, 0, tempUrl!, playlistType, playRightNow);
           } else {
-            server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
+            server.queue.unshift(createQueueItem(tempUrl!, playlistType, null));
           }
           playLinkToVC(message, server.queue[0], voiceChannel, server);
           message.channel.send('*playing now*');
           return true;
         } else if (playlistType) {
-          dbAddedToQueue = await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
+          dbAddedToQueue = await addPlaylistToQueue(message, server.queue, 0, tempUrl!, playlistType, playRightNow);
         } else {
-          server.queue.push(createQueueItem(tempUrl, playlistType, null));
+          server.queue.push(createQueueItem(tempUrl!, playlistType, null));
         }
       } else if (!printErrorMsg) {
         message.channel.send(`*could not find **${args[1]}** in the keys list*`);
