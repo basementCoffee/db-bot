@@ -22,6 +22,8 @@
   "dependencies": {
     "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": "^0.14.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@types/fluent-ffmpeg": "^2.1.20",
     "cheerio": "^1.0.0-rc.12",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
@@ -29,7 +31,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "genius-lyrics": "^4.4.0",
     "googleapis": "^110.0.0",
-    "isomorphic-unfetch": "^3.1.0",
+    "isomorphic-unfetch": "^4.0.2",
     "leven": "~3.1.0",
     "libsodium": "^0.7.10",
     "libsodium-wrappers": "^0.7.10",
