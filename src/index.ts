@@ -744,7 +744,10 @@ async function runUserCommands(
       break;
     case 'clearqueue':
     case 'clear':
-      if (!message.member!.voice?.channel) return message.channel.send('must be in a voice channel to clear');
+      if (!message.member!.voice?.channel) {
+        if (server.queue.length > 0) message.channel.send('must be in a voice channel to clear');
+        return;
+      }
       if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member)) {
         return message.channel.send('only the DJ can clear the queue');
       }
@@ -760,7 +763,6 @@ async function runUserCommands(
       }
       message.channel.send('The queue has been scrubbed clean');
       break;
-    case 'inv':
     case 'invite':
       message.channel.send(INVITE_MSG);
       break;
