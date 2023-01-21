@@ -7,6 +7,7 @@ import { DB_SPOTIFY_EMBED_ICON, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, TWITCH_
 import processStats from './lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
 import fetch from 'isomorphic-unfetch';
+
 const { getData } = require('spotify-url-info')(fetch);
 const scdl = require('soundcloud-downloader').default;
 const { isNumber } = require('node-os-utils/util');

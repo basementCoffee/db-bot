@@ -4,7 +4,7 @@ import fetch from 'isomorphic-unfetch';
 import ytdl from 'ytdl-core-discord';
 import ytpl from 'ytpl';
 import LocalServer from './lib/LocalServer';
-import { AudioResource, getVoiceConnection } from '@discordjs/voice';
+import { getVoiceConnection } from '@discordjs/voice';
 import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
 import { linkFormatter } from './formatUtils';
 import { bot, botID, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from './lib/constants';

@@ -45,6 +45,7 @@ import EmbedBuilderLocal from '../../utils/lib/EmbedBuilderLocal';
 import { QueueItem } from '../../utils/lib/types';
 import fluentFfmpeg from 'fluent-ffmpeg';
 import fetch from 'isomorphic-unfetch';
+
 const { getData } = require('spotify-url-info')(fetch);
 const m3u8stream = require('m3u8stream');
 const twitch = require('twitch-m3u8');
