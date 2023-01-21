@@ -4,7 +4,7 @@ import { Message } from 'discord.js';
 import processStats from '../utils/lib/ProcessStats';
 import { PREFIX_SN } from '../utils/lib/constants';
 import { botInVC } from '../utils/utils';
-import { getJSON, gsrun, gsrun_P, gsUpdateAdd, gsUpdateOverwrite } from './api/api';
+import { getJSON, gsrun, gsrun_P, gsUpdateAdd, gsUpdateOverwrite, UserKeysData } from './api/api';
 
 type KeyObject = {
   name: string;
@@ -20,11 +20,7 @@ type KeyObject = {
  * @param save {boolean} Whether to save the function to the server
  * @returns {Promise<{playlistArray: [], playlists: Map<unknown, unknown>, globalKeys: any}>}
  */
-async function getXdb2(
-  server: LocalServer,
-  sheetName: string,
-  save: boolean
-): Promise<{ playlistArray: []; playlists: Map<string, Map<string, KeyObject>>; globalKeys: Map<string, KeyObject> }> {
+async function getXdb2(server: LocalServer, sheetName: string, save: boolean): Promise<UserKeysData> {
   if (!save) return server.userKeys.get(sheetName) || (await gsrun_P('E', 'F', sheetName));
   let xdb = server.userKeys.get(sheetName);
   if (!xdb) {

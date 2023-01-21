@@ -1,9 +1,10 @@
 /* eslint-disable camelcase */
-import { gsrun, gsUpdateAdd, gsUpdateOverwrite } from './api/api';
+import { gsrun, gsUpdateAdd, gsUpdateOverwrite, UserKeysData } from './api/api';
 import { getXdb2 } from './retrieval';
 import LocalServer from '../utils/lib/LocalServer';
 import { Message } from 'discord.js';
 import { serializeAndUpdate } from './utils';
+import { logErrorCore } from '../utils/errorUtils';
 
 /**
  * The command to add a key, value pair to a given database.
@@ -96,7 +97,7 @@ async function addToDatabase_P(
   sheetName: string,
   printMsgToChannel: boolean,
   playlistName: string = 'general',
-  xdb?: any
+  xdb?: UserKeysData
 ): Promise<void> {
   let songsAddedInt = 0;
   let z = 0;
@@ -142,14 +143,17 @@ async function addToDatabase_P(
     }
     z = z + 2;
   }
-  await serializeAndUpdate(server, sheetName, playlistName, xdb);
+  const status = await serializeAndUpdate(server, sheetName, playlistName, xdb);
+  if (!status) {
+    channel.send('there was an error while trying to add your key');
+    logErrorCore(`error when attempting to update sheet ${sheetName}`);
+    return;
+  }
   if (printMsgToChannel) {
     const ps = server.prefix;
     if (songsAddedInt === 1) {
       channel.send(`*link added to your **${playlistName}** playlist. (use \`${ps}d ${keysList[0]}\` to play)*`);
     } else if (songsAddedInt > 1) {
-      await new Promise((res) => setTimeout(res, 1000));
-      gsUpdateOverwrite(10, sheetName, xdb.dsInt);
       channel.send('*' + songsAddedInt + " songs added to the keys list. (see '" + ps + "keys')*");
     }
   }

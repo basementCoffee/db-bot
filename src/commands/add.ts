@@ -7,6 +7,7 @@ import { addToDatabase_P } from '../database/add';
 import { linkValidator } from '../utils/utils';
 import { getXdb2 } from '../database/retrieval';
 import { universalLinkFormatter } from '../utils/formatUtils';
+import { UserKeysData } from '../database/api/api';
 
 /**
  * create a string that warns the user that the itemName of type 'type' is exceeding a maximum length.
@@ -62,7 +63,7 @@ async function runAddCommandWrapper(
   let playlistName: string | undefined;
   let keyName = args[0];
   let link = args[1];
-  let xdb: any;
+  let xdb: UserKeysData;
   if (args.length === 3) {
     playlistName = args[0];
     keyName = args[1];
@@ -84,7 +85,7 @@ async function runAddCommandWrapper(
       link = universalLinkFormatter(link);
       if (linkValidator(link)) {
         server.userKeys.set(sheetName, null);
-        addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb);
+        addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb!);
         return;
       }
       xdb = await getXdb2(server, sheetName, false);
