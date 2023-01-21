@@ -109,17 +109,6 @@ function resetSession(server: LocalServer) {
 }
 
 /**
- * Adjusts the queue for play now depending on the stream time.
- * @param dsp {import('@discordjs/voice').AudioResource} The dispatcher to reference.
- * @param server {LocalServer} The server to use.
- */
-function adjustQueueForPlayNow(dsp: AudioResource, server: LocalServer) {
-  if (server.queue[0] && dsp?.playbackDuration && dsp.playbackDuration > 21000) {
-    server.queueHistory.push(server.queue.shift());
-  }
-}
-
-/**
  * Gets the title of a link.
  * @param queueItem The queue item to get the title.
  * @param cutoff {number=} A number representing the cutoff value.
@@ -382,7 +371,6 @@ function createVisualEmbed(title: string, text: string, color?: ColorResolvable)
 
 export {
   botInVC,
-  adjustQueueForPlayNow,
   verifyUrl,
   verifyPlaylist,
   resetSession,

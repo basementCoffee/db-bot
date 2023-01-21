@@ -20,10 +20,11 @@ import { renameKey, renamePlaylist } from './rename';
 import { playLinkNow, runPlayLinkCommand } from './playLink';
 import { ZWSP } from '../utils/lib/constants';
 import { runSeekCommand } from './seek';
-import { runRandomToQueue, shuffleQueue } from './playRandomKeys';
+import { runRandomToQueue } from './playRandomKeys';
 import { getSettings, setSettings } from '../database/retrieval';
 import { removeFormattingLink } from '../utils/formatUtils';
 import { queueFind } from './queueFind';
+import { shuffleQueueCommand } from './shuffle';
 
 // A common handler for user commands.
 class CommandHandlerCommon {
@@ -495,7 +496,7 @@ class CommandHandlerCommon {
    * @param message The message metadata.
    */
   static shuffleQueue(server: LocalServer, message: Message) {
-    shuffleQueue(server, message);
+    shuffleQueueCommand(server, message);
   }
 
   /**

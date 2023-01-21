@@ -3,11 +3,12 @@ import LocalServer from '../utils/lib/LocalServer';
 import { getXdb2 } from '../database/retrieval';
 import { getAssumptionMultipleMethods } from './search';
 import { playLinkToVC } from './stream/stream';
-import { adjustQueueForPlayNow, botInVC, createQueueItem, setSeamless, verifyPlaylist } from '../utils/utils';
+import { botInVC, createQueueItem, setSeamless, verifyPlaylist } from '../utils/utils';
 import { MAX_QUEUE_S } from '../utils/lib/constants';
 import { updateActiveEmbed } from '../utils/embed';
 import { addPlaylistToQueue } from '../utils/playlist';
 import { isValidRequestWPlay } from '../utils/validation';
+import { adjustQueueForPlayNow, shuffleArray, shuffleQueue } from '../utils/arrayUtils';
 
 /**
  * Plays an entire custom playlist.
@@ -17,7 +18,7 @@ import { isValidRequestWPlay } from '../utils/validation';
  * @param playRightNow {boolean} If the playlist should be played right now.
  * @param printErrorMsg {boolean} If an error message should be printed.
  * @param server {LocalServer} The server metadata.
- * @param shuffle {boolean?}
+ * @param shuffle {boolean?} Whether to shuffle the playlist.
  * @returns {Promise<void>}
  */
 async function playPlaylistDB(
@@ -27,7 +28,7 @@ async function playPlaylistDB(
   playRightNow: boolean,
   printErrorMsg: boolean,
   server: LocalServer,
-  shuffle: boolean | null | undefined
+  shuffle?: boolean
 ): Promise<void> {
   if (args.length < 1) {
     message.channel.send('*input playlist names after the command to play a specific playlists*');
@@ -71,7 +72,17 @@ async function playPlaylistDB(
     message.channel.send('*no keys found in the playlists provided*');
     return;
   }
-  await runDatabasePlayCommand(keys, message, sheetName, playRightNow, printErrorMsg, server);
+  const prevQueueSize = botInVC(message) ? server.queue.length : 0;
+  const numAdded = await runDatabasePlayCommand(keys, message, sheetName, playRightNow, printErrorMsg, server);
+  if (numAdded > 0) {
+    if (prevQueueSize) {
+      const itemsToShuffle = server.queue.splice(prevQueueSize, server.queue.length + 1 - numAdded);
+      shuffleArray(itemsToShuffle);
+      server.queue.concat(itemsToShuffle);
+    } else {
+      shuffleQueue(server);
+    }
+  }
 }
 
 /**
@@ -82,7 +93,7 @@ async function playPlaylistDB(
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
  * @param server {LocalServer} The server playback metadata
- * @returns {Promise<boolean>} whether the play command has been handled accordingly
+ * @returns The number of items added to the queue
  */
 async function runDatabasePlayCommand(
   args: string[],
@@ -91,10 +102,10 @@ async function runDatabasePlayCommand(
   playRightNow: boolean,
   printErrorMsg: boolean,
   server: LocalServer
-): Promise<boolean> {
+): Promise<number> {
   if (!args[1]) {
     message.channel.send('*put a key-name after the command to play a specific key*');
-    return true;
+    return 0;
   }
   const voiceChannel = message.member!.voice?.channel;
   if (!voiceChannel) {
@@ -107,9 +118,9 @@ async function runDatabasePlayCommand(
         sentMsg
       );
     }
-    return true;
+    return 0;
   }
-  if (!isValidRequestWPlay(server, message, 'add keys')) return true;
+  if (!isValidRequestWPlay(server, message, 'add keys')) return 0;
   server.numSinceLastEmbed++;
   let tempMsg;
   if (args.length > 100) tempMsg = await message.channel.send('*getting keys...*');
@@ -120,6 +131,7 @@ async function runDatabasePlayCommand(
     queueWasEmpty = true;
   }
   let tempUrl;
+  // the number of items added to the queue
   let dbAddedToQueue = 0;
   if (args[2]) {
     let dbAddInt: number;
@@ -161,7 +173,7 @@ async function runDatabasePlayCommand(
     }
     if (playRightNow) {
       playLinkToVC(message, server.queue[0], voiceChannel, server);
-      return true;
+      return dbAddedToQueue;
     } else {
       const msgTxt = '*added ' + (dbAddedToQueue > 1 ? dbAddedToQueue + ' ' : '') + 'to queue*';
       if (tempMsg && tempMsg.deletable) {
@@ -192,7 +204,7 @@ async function runDatabasePlayCommand(
           }
           playLinkToVC(message, server.queue[0], voiceChannel, server);
           message.channel.send('*playing now*');
-          return true;
+          return dbAddedToQueue;
         } else if (playlistType) {
           dbAddedToQueue = await addPlaylistToQueue(message, server.queue, 0, tempUrl!, playlistType, playRightNow);
         } else {
@@ -200,13 +212,13 @@ async function runDatabasePlayCommand(
         }
       } else if (!printErrorMsg) {
         message.channel.send(`*could not find **${args[1]}** in the keys list*`);
-        return true;
+        return dbAddedToQueue;
       } else if (ss && ss.length > 0) {
         message.channel.send("*could not find '" + args[1] + "' in database*\n*Did you mean: " + ss + '*');
-        return true;
+        return dbAddedToQueue;
       } else {
         message.channel.send(`*could not find **${args[1]}** in the keys list*`);
-        return true;
+        return dbAddedToQueue;
       }
     } else {
       // if it was found within the database
@@ -221,7 +233,7 @@ async function runDatabasePlayCommand(
         }
         playLinkToVC(message, server.queue[0], voiceChannel, server);
         message.channel.send('*playing now*');
-        return true;
+        return dbAddedToQueue;
       } else if (playlistType) {
         // push to queue
         await addPlaylistToQueue(message, server.queue, 0, tempUrl, playlistType, playRightNow);
@@ -243,7 +255,7 @@ async function runDatabasePlayCommand(
   if (queueWasEmpty && server.queue.length > 0) {
     playLinkToVC(message, server.queue[0], voiceChannel, server);
   }
-  return true;
+  return dbAddedToQueue;
 }
 
 /**
