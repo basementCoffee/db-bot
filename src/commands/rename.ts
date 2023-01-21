@@ -78,23 +78,14 @@ async function renameKey(
     return false;
   }
   keyData.name = newName;
-
-  const replacementMap = new Map();
-
-  playlist.forEach((val: any, key: any) => {
-    if (key === oldNameUpper) {
-      val.name = newName;
-      replacementMap.set(newNameUpper, val);
-    } else {
-      replacementMap.set(key, val);
-    }
-  });
-  xdb.playlists.delete(playlistName);
-  xdb.playlists.set(playlistName, replacementMap);
-  xdb.globalKeys.set(newName.toUpperCase(), keyData);
-  xdb.globalKeys.delete(oldName.toUpperCase());
+  // add new name
+  playlist.set(newNameUpper, keyData);
+  xdb.globalKeys.set(newNameUpper, keyData);
+  // delete old name
+  playlist.delete(oldNameUpper);
+  xdb.globalKeys.delete(oldNameUpper);
   await serializeAndUpdate(server, sheetName, playlistName, xdb, false);
-  channel.send('*key has been renamed*');
+  await channel.send('*key has been renamed*');
   return true;
 }
 
