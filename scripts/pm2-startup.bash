@@ -1,6 +1,8 @@
 #!/bin/bash
 
-echo running pm2 script...
+echo "compiling js..."
+tsc
+echo "running pm2 script..."
 NAME=${1:-vibe}
 
 if pm2 restart $NAME ; then
