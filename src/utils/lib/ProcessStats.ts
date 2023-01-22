@@ -1,7 +1,7 @@
 import LocalServer from './LocalServer';
 import { startupDevMode } from './constants';
 import { formatDuration } from '../formatUtils';
-import { MessageCreateOptions, MessagePayloadOption, TextBasedChannel } from 'discord.js';
+import { MessageCreateOptions, TextBasedChannel } from 'discord.js';
 import { logErrorCore } from '../errorUtils';
 
 // process related statistics
