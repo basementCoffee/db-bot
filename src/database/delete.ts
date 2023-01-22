@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 import { Message } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
-import { gsrun, gsUpdateOverwrite, deleteRows } from './api/api';
+import { deleteRows, gsrun, gsUpdateOverwrite } from './api/api';
 import { runSearchCommand } from '../commands/search';
 import { getXdb2 } from './retrieval';
 import { serializeAndUpdate } from './utils';

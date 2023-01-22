@@ -1,8 +1,8 @@
 import LocalServer from '../utils/lib/LocalServer';
-import { GuildMember, Message, Snowflake, User } from 'discord.js';
+import { GuildMember, Message, User, VoiceChannel } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { bot } from '../utils/lib/constants';
-import { botInVC, notInVoiceChannelErrorMsg, getVCMembers } from '../utils/utils';
+import { botInVC, getVCMembers, notInVoiceChannelErrorMsg } from '../utils/utils';
 import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
 import { formatDuration } from '../utils/formatUtils';
 
@@ -73,15 +73,13 @@ function runDictatorCommand(message: Message, mgid: string, prefixString: string
 function createDJTimer(message: Message, server: LocalServer, duration: number) {
   clearDJTimer(server);
   server.djTimer.timer = setTimeout(() => {
-    const mem = server.voteAdmin[0];
+    const admin = server.voteAdmin[0];
     let resignMsg;
     if (!server.audio.voiceChannelId) return;
-    const gmArray: Array<[Snowflake, GuildMember]> = Array.from(
-      // @ts-ignore
-      bot.channels.cache.get(getVoiceConnection(server.guildId)!.joinConfig.channelId).members
-    );
-    if (gmArray.filter(([, gm]) => gm.id).includes(mem.id)) {
-      resignMsg = "*Time's up: " + (mem.nickname ? mem.nickname : mem.user.username) + ' is no longer the DJ.*\n';
+    const gMems = (<VoiceChannel>bot.channels.cache.get(getVoiceConnection(server.guildId)!.joinConfig.channelId!))!
+      .members;
+    if (gMems.get(admin.id)) {
+      resignMsg = "*Time's up: " + (admin.nickname ? admin.nickname : admin.user.username) + ' is no longer the DJ.*\n';
     } else {
       resignMsg = '*No DJ detected.*\n';
     }

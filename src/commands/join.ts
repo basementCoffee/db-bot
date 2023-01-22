@@ -1,8 +1,9 @@
 import { Message } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
 import { LEAVE_VC_TIMEOUT } from '../utils/lib/constants';
+
 const { sessionEndEmbed } = require('../utils/embed');
-const { resetSession, botInVC, catchVCJoinError } = require('../utils/utils');
+const { resetSession, botInVC } = require('../utils/utils');
 const processStats = require('../utils/lib/ProcessStats');
 const { pauseComputation } = require('./stream/utils');
 
@@ -38,7 +39,7 @@ async function joinVoiceChannelSafe(message: Message, server: LocalServer): Prom
       server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server), LEAVE_VC_TIMEOUT);
       return true;
     } catch (e) {
-      catchVCJoinError(e, message.channel);
+      processStats.catchVCJoinError(e, message.channel);
     }
   } else {
     message.channel.send('*in voice channel*');

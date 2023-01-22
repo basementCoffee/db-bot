@@ -1,12 +1,13 @@
 import LocalServer from './lib/LocalServer';
 import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
 import ytdl from 'ytdl-core-discord';
-import { getQueueText, logError } from './utils';
-import { formatDuration, convertYTFormatToMS } from './formatUtils';
-import { SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, DB_SPOTIFY_EMBED_ICON } from './lib/constants';
+import { getQueueText } from './utils';
+import { convertYTFormatToMS, formatDuration } from './formatUtils';
+import { DB_SPOTIFY_EMBED_ICON, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
 import processStats from './lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
-const fetch = require('isomorphic-unfetch');
+import fetch from 'isomorphic-unfetch';
+
 const { getData } = require('spotify-url-info')(fetch);
 const scdl = require('soundcloud-downloader').default;
 const { isNumber } = require('node-os-utils/util');
@@ -227,7 +228,7 @@ async function sessionEndEmbed(server: LocalServer, queueItem: any) {
     const embed = (await createEmbed(queueItem.url, queueItem.infos)).embed;
     sessionEndEmbedWEmbed(server, embed);
   } catch (e: any) {
-    logError(e);
+    processStats.logError(e);
   }
 }
 

@@ -1,57 +1,56 @@
 /* eslint-disable camelcase */
 import LocalServer from '../../utils/lib/LocalServer';
 import { Message, MessageReaction, TextChannel, User, VoiceBasedChannel } from 'discord.js';
-
 import {
   botInVC,
-  catchVCJoinError,
-  getLinkType,
-  verifyUrl,
-  endStream,
-  logError,
   createQueueItem,
+  endStream,
+  getLinkType,
   getQueueText,
   getSheetName,
-  resetSession
+  resetSession,
+  verifyUrl
 } from '../../utils/utils';
 import {
-  StreamType,
-  SPOTIFY_BASE_LINK,
-  whatspMap,
-  commandsMap,
-  SOUNDCLOUD_BASE_LINK,
-  TWITCH_BASE_LINK,
-  LEAVE_VC_TIMEOUT,
   bot,
-  MAX_QUEUE_S
+  commandsMap,
+  LEAVE_VC_TIMEOUT,
+  MAX_QUEUE_S,
+  SOUNDCLOUD_BASE_LINK,
+  SPOTIFY_BASE_LINK,
+  StreamType,
+  TWITCH_BASE_LINK,
+  whatspMap
 } from '../../utils/lib/constants';
 import ytdl_core from 'ytdl-core';
 import ytdl from 'ytdl-core-discord';
 import ytsr from 'ytsr';
-const fetch = require('isomorphic-unfetch');
-const { getData } = require('spotify-url-info')(fetch);
-const m3u8stream = require('m3u8stream');
-const twitch = require('twitch-m3u8');
-const { SoundCloud: scdl } = require('scdl-core');
-scdl.connect();
 import { createEmbed } from '../../utils/embed';
 import processStats from '../../utils/lib/ProcessStats';
 import { shutdown } from '../../process/shutdown';
 import reactions from '../../utils/lib/reactions';
 import { getXdb2 } from '../../database/retrieval';
 import {
-  stopPlayingUtil,
-  voteSystem,
-  pauseCommandUtil,
   endAudioDuringSession,
-  playCommandUtil,
+  pauseCommandUtil,
   pauseComputation,
-  playComputation
+  playCommandUtil,
+  playComputation,
+  stopPlayingUtil,
+  voteSystem
 } from './utils';
-import { linkFormatter, convertYTFormatToMS, formatDuration } from '../../utils/formatUtils';
+import { convertYTFormatToMS, formatDuration, linkFormatter } from '../../utils/formatUtils';
 import { runKeysCommand } from '../keys';
 import EmbedBuilderLocal from '../../utils/lib/EmbedBuilderLocal';
 import { QueueItem } from '../../utils/lib/types';
+import fluentFfmpeg from 'fluent-ffmpeg';
+import fetch from 'isomorphic-unfetch';
+
+const { getData } = require('spotify-url-info')(fetch);
+const m3u8stream = require('m3u8stream');
+const twitch = require('twitch-m3u8');
+const { SoundCloud: scdl } = require('scdl-core');
+scdl.connect();
 const {
   createAudioResource,
   createAudioPlayer,
@@ -59,7 +58,8 @@ const {
   getVoiceConnection
 } = require('@discordjs/voice');
 const CH = require('../../../channel.json');
-const fluentFfmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -147,7 +147,7 @@ async function playLinkToVC(
       if (e.message !== 'VOICE_JOIN_CHANNEL_LIVE') {
         resetSession(server);
       }
-      catchVCJoinError(e, message.channel);
+      processStats.catchVCJoinError(e, message.channel);
       return;
     }
     if (processStats.startUpMessage.length > 1 && server.startUpMessage !== processStats.startUpMessage) {
@@ -308,7 +308,7 @@ async function playLinkToVC(
       }
       skipLink(message, vc!, false, server, false).catch((er) => processStats.debug(er));
       // noinspection JSUnresolvedFunction
-      logError({
+      processStats.logError({
         embeds: [
           new EmbedBuilderLocal()
             .setTitle('Dispatcher Error')
@@ -379,7 +379,9 @@ async function playLinkToVC(
             .send('*db vibe appears to be facing some issues: automated diagnosis is underway.*')
             .then(() => {
               // noinspection JSUnresolvedFunction
-              logError('***status code 404 error***' + '\n*if this error persists, try to change the active process*');
+              processStats.logError(
+                '***status code 404 error***' + '\n*if this error persists, try to change the active process*'
+              );
             });
         }
       }
@@ -410,7 +412,7 @@ async function playLinkToVC(
     if (processStats.devMode) {
       processStats.debug('[ERROR] playLinkToVC error: ', e);
     } else {
-      logError(`playLinkToVC error:\n${whatToPlay}\n${e.stack}`);
+      processStats.logError(`playLinkToVC error:\n${whatToPlay}\n${e.stack}`);
     }
     if (server.skipTimes > 3) {
       processStats.disconnectConnection(server);
@@ -431,12 +433,7 @@ async function playLinkToVC(
     if (server.skipTimes < 2) searchForBrokenLinkWithinDB(message, server, whatToPlay);
     whatspMap.set(vc.id, '');
     skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
-    if (processStats.devMode) {
-      processStats.debug('there was a playback error within playLinkToVC:', e);
-    } else {
-      logError(`there was a playback error within playLinkToVC: ${whatToPlay}`);
-      logError(e);
-    }
+    processStats.logError(`there was a playback error within playLinkToVC: ${whatToPlay}\n${e.stack}`);
     // end of try catch
   }
   // load the next link if conditions are met
@@ -587,7 +584,7 @@ async function checkStatusOfYtdl(server: LocalServer, message?: Message) {
       if (message.deletable) message.edit(diagnosisStr);
       else message.channel.send(diagnosisStr);
     }
-    logError('ytdl status is unhealthy, shutting off bot');
+    processStats.logError('ytdl status is unhealthy, shutting off bot');
     processStats.disconnectConnection(server);
     if (processStats.isInactive) setTimeout(() => process.exit(0), 2000);
     else shutdown('YTDL-POOR')();

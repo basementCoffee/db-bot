@@ -1,5 +1,5 @@
 import LocalServer from '../utils/lib/LocalServer';
-import { gsUpdateOverwrite, deleteRows } from './api/api';
+import { deleteRows, gsUpdateOverwrite, UserKeysData } from './api/api';
 
 /**
  * Serialize data. Assumes that the playlist exists or will create a new playlist.
@@ -7,7 +7,10 @@ import { gsUpdateOverwrite, deleteRows } from './api/api';
  * @param playlistName {string}
  * @returns {{keysString: string, valuesString: string}}
  */
-function serializeData(keysMap: Map<string, any>, playlistName: string): { keysString: string; valuesString: string } {
+function serializeData(
+  keysMap: Map<string, { name: string; timeStamp: string; link: string }>,
+  playlistName: string
+): { keysString: string; valuesString: string } {
   if (!keysMap) keysMap = new Map();
   if (!playlistName) throw new Error('expected playlist name');
   let valuesString = '';
@@ -48,16 +51,16 @@ function serializeData(keysMap: Map<string, any>, playlistName: string): { keysS
  * @param xdb - the XDB data - is required
  * @param removePlaylist True if to delete the playlist.
  * @param newPlaylist Optional - the new playlist name IF renaming an existing playlist
- * @returns {Promise<void>}
+ * @returns Whether the update request was sent.
  */
 async function serializeAndUpdate(
   server: LocalServer,
   sheetName: string,
   playlistName: string,
-  xdb: any,
+  xdb: UserKeysData,
   removePlaylist = false,
   newPlaylist = ''
-) {
+): Promise<boolean> {
   // get the row number of the item to add/remove
   const playlistArrayUpper = xdb.playlistArray.map((item: any) => item.toUpperCase());
   let row = playlistArrayUpper.indexOf(playlistName.toUpperCase());
@@ -66,7 +69,9 @@ async function serializeAndUpdate(
   if (removePlaylist) {
     await deleteRows(sheetName, row + 2);
   } else {
-    const serializedData = serializeData(xdb.playlists.get(playlistName.toUpperCase()), newPlaylist || playlistName);
+    const playlist = xdb.playlists.get(playlistName.toUpperCase());
+    if (!playlist) return false;
+    const serializedData = serializeData(playlist, newPlaylist || playlistName);
     await gsUpdateOverwrite(
       [serializedData.keysString, serializedData.valuesString],
       sheetName,
@@ -77,6 +82,7 @@ async function serializeAndUpdate(
     );
   }
   server.userKeys.delete(sheetName);
+  return true;
 }
 
 export { serializeAndUpdate };

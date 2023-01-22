@@ -48,8 +48,10 @@ const TWITCH_BASE_LINK = 'twitch.tv';
 const LEAVE_VC_TIMEOUT = 2700000;
 // a zero-width space, useful for preventing responses from becoming commands
 const ZWSP = '​';
-// z, k
+// z, k, b
+const ADMINS = Object.freeze(['443150640823271436 ', '268554823283113985 ', '987108278486065283 ']);
 const CORE_ADM = Object.freeze(['443150640823271436', '268554823283113985']);
+
 /**
  * Enum - Acceptable link sources.
  * @type {{TWITCH: string, SOUNDCLOUD: string, SPOTIFY: string, YOUTUBE: string}}
@@ -68,6 +70,7 @@ const DB_BOT_ICON_MED = 'https://raw.githubusercontent.com/Reply2Zain/db-bot/mas
 const DB_SPOTIFY_EMBED_ICON = 'https://github.com/Reply2Zain/db-bot/blob/master/assets/dbBotspotifyIcon.jpg?raw=true';
 
 export {
+  ADMINS,
   MAX_QUEUE_S,
   bot,
   checkActiveMS,

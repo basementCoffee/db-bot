@@ -1,14 +1,6 @@
 import LocalServer from '../utils/lib/LocalServer';
 import { Message } from 'discord.js';
-import {
-  botInVC,
-  setSeamless,
-  verifyPlaylist,
-  verifyUrl,
-  pushQueue,
-  adjustQueueForPlayNow,
-  unshiftQueue
-} from '../utils/utils';
+import { botInVC, pushQueue, setSeamless, unshiftQueue, verifyPlaylist, verifyUrl } from '../utils/utils';
 import { removeFormattingLink } from '../utils/formatUtils';
 import { addLinkToQueue } from '../utils/playlist';
 import { playLinkToVC } from './stream/stream';
@@ -17,6 +9,7 @@ import { playCommandUtil } from './stream/utils';
 import { runDatabasePlayCommand } from './databasePlayCommand';
 import { runYoutubeSearch } from './stream/youtubeSearch';
 import { isValidRequestWPlay } from '../utils/validation';
+import { adjustQueueForPlayNow } from '../utils/arrayUtils';
 
 /**
  * Runs the commands and checks to play a link

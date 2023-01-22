@@ -1,4 +1,4 @@
-import { CORE_ADM } from './lib/constants';
+import { ADMINS, CORE_ADM } from './lib/constants';
 import { TextBasedChannel } from 'discord.js';
 
 /**
@@ -9,7 +9,7 @@ import { TextBasedChannel } from 'discord.js';
 function isAdmin(id: string) {
   // kzb
   // add a space to ensure exact match
-  return ['268554823283113985 ', '443150640823271436 ', '987108278486065283 '].includes(`${id} `);
+  return ADMINS.includes(`${id} `);
 }
 
 /**

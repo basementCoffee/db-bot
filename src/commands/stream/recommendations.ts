@@ -1,7 +1,7 @@
-import { botInVC, setSeamless, resetSession, pushQueue, verifyUrl } from '../../utils/utils';
-import { bot, SPOTIFY_BASE_LINK, CORE_ADM } from '../../utils/lib/constants';
+import { botInVC, pushQueue, resetSession, setSeamless, verifyUrl } from '../../utils/utils';
+import { bot, CORE_ADM, SPOTIFY_BASE_LINK } from '../../utils/lib/constants';
 import { playLinkToVC } from './stream';
-import { updateActiveEmbed, createEmbed } from '../../utils/embed';
+import { createEmbed, updateActiveEmbed } from '../../utils/embed';
 import { addLinkToQueue } from '../../utils/playlist';
 import { isCoreAdmin } from '../../utils/permissions';
 import { Message } from 'discord.js';
@@ -58,6 +58,29 @@ async function sendRecommendation(message: Message, content = '', url: string, u
     console.log(e);
   }
 }
+/**
+ * Determines if a link is within an array.
+ * Expects the queue param to have a '.url' field.
+ * @param queue {Array<Object>} The queue to check.
+ * @param link {string} The link to filter.
+ * @returns {Boolean} Returns true if the item exists within the queue.
+ */
+const isInQueue = (queue: any[], link: string) => queue.some((val) => val.url === link);
+
+/**
+ * Attempts to get a valid url from a Message.
+ * @param m The message.
+ */
+const getUrlFromMsg = (m: Message): string | null => {
+  const regex = /<(((?!discord).)*)>/g;
+  const res = regex.exec(m.content);
+  if (res && res[1]) {
+    return res[1];
+  } else if (m.embeds.length > 0) {
+    return m.embeds[0].url;
+  }
+  return null;
+};
 
 /**
  * Plays a recommendation.
@@ -95,17 +118,8 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
     // if the message was created in the last 48 hours
     isRelevant = (m: Message) => Date.now() - m.createdTimestamp < 172800000;
   }
-  // attempts to get a valid url from a regex.exec or message
-  const getUrl = (res: any, m: Message) => {
-    if (res && res[1]) {
-      return res[1];
-    } else if (m.embeds.length > 0) {
-      return m.embeds[0].url;
-    }
-    return undefined;
-  };
   // links that should be forwarded by default (meet func criteria)
-  const recs = [];
+  const recs: string[] = [];
   // array of messages, the earliest message are in the front
   const messages = await channel.messages.fetch({ limit: 99 });
   const filterUrlArgs = (link: string) => {
@@ -114,19 +128,9 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
   };
   // if there are more links available
   let isMore = false;
-  /**
-   * Determines if a link is within an array.
-   * Expects the queue param to have a '.url' field.
-   * @param queue {Array<Object>} The queue to check.
-   * @param link {string} The link to filter.
-   * @returns {Boolean} Returns true if the item exists within the queue.
-   */
-  const isInQueue = (queue: any[], link: string) => queue.some((val) => val.url === link);
   for (const [, m] of messages) {
     if (m.author.id !== bot.user!.id) continue;
-    const regex = /<(((?!discord).)*)>/g;
-    const res = regex.exec(m.content);
-    let url = getUrl(res, m);
+    let url = getUrlFromMsg(m);
     if (url) {
       url = filterUrlArgs(url);
       if (isInQueue(server.queue, url) || recs.slice(-1)[0] === url) continue;

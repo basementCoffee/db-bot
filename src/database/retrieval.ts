@@ -3,8 +3,15 @@ import LocalServer from '../utils/lib/LocalServer';
 import { Message } from 'discord.js';
 import processStats from '../utils/lib/ProcessStats';
 import { PREFIX_SN } from '../utils/lib/constants';
-import { botInVC, logError } from '../utils/utils';
-import { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } from './api/api';
+import { botInVC } from '../utils/utils';
+import { getJSON, gsrun, gsrun_P, gsUpdateAdd, gsUpdateOverwrite, UserKeysData } from './api/api';
+
+type KeyObject = {
+  name: string;
+  link: string;
+  timeStamp: number | undefined;
+  playlistName: string;
+};
 
 /**
  * Gets the user keys from the database.
@@ -13,11 +20,7 @@ import { gsrun, gsUpdateAdd, gsrun_P, getJSON, gsUpdateOverwrite } from './api/a
  * @param save {boolean} Whether to save the function to the server
  * @returns {Promise<{playlistArray: [], playlists: Map<unknown, unknown>, globalKeys: any}>}
  */
-async function getXdb2(
-  server: LocalServer,
-  sheetName: string,
-  save: boolean
-): Promise<{ playlistArray: []; playlists: Map<string, Map<string, any>>; globalKeys: any }> {
+async function getXdb2(server: LocalServer, sheetName: string, save: boolean): Promise<UserKeysData> {
   if (!save) return server.userKeys.get(sheetName) || (await gsrun_P('E', 'F', sheetName));
   let xdb = server.userKeys.get(sheetName);
   if (!xdb) {
@@ -91,7 +94,7 @@ async function getServerPrefix(server: LocalServer, mgid: string) {
       }
     }
   } catch (e: any) {
-    logError(e);
+    processStats.logError(e);
     server.prefix = '.';
     gsUpdateAdd(mgid, '.', 'A', 'B', PREFIX_SN);
   }

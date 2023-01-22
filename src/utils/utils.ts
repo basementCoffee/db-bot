@@ -1,29 +1,20 @@
 /* eslint-disable camelcase */
-import {
-  Channel,
-  Collection,
-  ColorResolvable,
-  Guild,
-  GuildMember,
-  Message,
-  MessagePayloadOption,
-  TextBasedChannel
-} from 'discord.js';
+import { Channel, Collection, ColorResolvable, Guild, GuildMember, Message, VoiceChannel } from 'discord.js';
 import fetch from 'isomorphic-unfetch';
 import ytdl from 'ytdl-core-discord';
 import ytpl from 'ytpl';
 import LocalServer from './lib/LocalServer';
-import { AudioResource, getVoiceConnection } from '@discordjs/voice';
+import { getVoiceConnection } from '@discordjs/voice';
 import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
 import { linkFormatter } from './formatUtils';
-import { botID, SPOTIFY_BASE_LINK, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK, StreamType, bot } from './lib/constants';
+import { bot, botID, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from './lib/constants';
 import { QueueItem } from './lib/types';
+
 const { getData } = require('spotify-url-info')(fetch);
 const scdl = require('soundcloud-downloader').default;
 const unpipe = require('unpipe');
 const cpu = require('node-os-utils').cpu;
 const os = require('os');
-const CH = require('../../channel.json');
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
@@ -80,7 +71,7 @@ function verifyUrl(url: string) {
  * @param url The url to verify.
  * @returns {string | boolean} A StreamType or false.
  */
-function verifyPlaylist(url: string): string | boolean {
+function verifyPlaylist(url: string = ''): string | boolean {
   try {
     url = url.toLowerCase();
     if (url.includes(SPOTIFY_BASE_LINK)) {
@@ -115,17 +106,6 @@ function resetSession(server: LocalServer) {
   server.loop = false;
   server.audio.reset();
   server.mapFinishedLinks.clear();
-}
-
-/**
- * Adjusts the queue for play now depending on the stream time.
- * @param dsp {import('@discordjs/voice').AudioResource} The dispatcher to reference.
- * @param server {LocalServer} The server to use.
- */
-function adjustQueueForPlayNow(dsp: AudioResource, server: LocalServer) {
-  if (server.queue[0] && dsp?.playbackDuration && dsp.playbackDuration > 21000) {
-    server.queueHistory.push(server.queue.shift());
-  }
 }
 
 /**
@@ -310,40 +290,6 @@ function removeDBMessage(channelID: string, deleteNum = 1, onlyDB: boolean) {
 }
 
 /**
- * Logs an error to a channel.
- * @param errText The error object or message to send.
- */
-function logError(errText: string | MessagePayloadOption | Error) {
-  bot.channels
-    .fetch(CH.err)
-    .then((channel: Channel | null) => {
-      if (errText instanceof Error) {
-        errText = `${errText.stack}`;
-      }
-      // @ts-ignore
-      channel?.send(errText);
-    })
-    .catch((e: Error) => console.log('Failed sending error message: ', e));
-}
-
-/**
- * Handles the error upon voice channel join. Sends the appropriate message to the user.
- * @param error The error.
- * @param textChannel The text channel to notify.
- */
-function catchVCJoinError(error: Error, textChannel: TextBasedChannel) {
-  const eMsg = error.toString();
-  if (eMsg.includes('it is full')) {
-    textChannel.send('`error: cannot join voice channel; it is full`');
-  } else if (eMsg.includes('VOICE_JOIN_CHANNEL')) {
-    textChannel.send('`permissions error: cannot join voice channel`');
-  } else {
-    textChannel.send('error when joining your VC:\n`' + error.message + '`');
-    logError(`voice channel join error:\n\`${error.message}\``);
-  }
-}
-
-/**
  * Returns the error message informing the user that it is not in a voice channel with the bot.
  * @param guild The guild.
  * @return {string} The error message.
@@ -397,10 +343,9 @@ function isPersonalSheet(sheetName: string): boolean {
 function getVCMembers(guildId: string): Array<any> {
   const voiceConnection = getVoiceConnection(guildId);
   if (voiceConnection) {
-    const collectionOfMembers: Collection<string, GuildMember> = bot.channels.cache.get(
-      voiceConnection.joinConfig.channelId!
-      // @ts-ignore
-    )?.members;
+    const collectionOfMembers: Collection<string, GuildMember> = (<VoiceChannel>(
+      bot.channels.cache.get(voiceConnection.joinConfig.channelId!)
+    ))?.members;
     if (collectionOfMembers) {
       const gmArray = Array.from(collectionOfMembers);
       gmArray.map((item: any) => item[1].user.username);
@@ -426,7 +371,6 @@ function createVisualEmbed(title: string, text: string, color?: ColorResolvable)
 
 export {
   botInVC,
-  adjustQueueForPlayNow,
   verifyUrl,
   verifyPlaylist,
   resetSession,
@@ -440,8 +384,6 @@ export {
   getLinkType,
   createMemoryEmbed,
   removeDBMessage,
-  catchVCJoinError,
-  logError,
   linkValidator,
   getSheetName,
   isPersonalSheet,

@@ -1,14 +1,14 @@
 {
   "name": "discordbotz",
-  "version": "9.0.3",
+  "version": "9.0.11",
   "description": "A discord playback bot with a UI.",
   "main": "src/index.js",
   "scripts": {
     "start": "tsc && node ./dist/index.js",
-    "dev": "tsc && node --trace-warnings ./dist/index.js --dev",
-    "dev-test": "tsc && node --trace-warnings ./dist/index.js --dev --test 987120641549430824",
+    "dev": "tsc -p tsconfig.dev.json && node -r source-map-support/register dist/index.js --dev",
+    "dev-test": "tsc -p tsconfig.dev.json && node -r source-map-support/register dist/index.js --dev --test 987120641549430824",
     "pm2": "tsc && bash ./scripts/pm2-startup.bash vibe",
-    "pm2-dev": "tsc && pm2 delete vibeDEV && echo running pm2 script...\npm2 start dist/index.js --name vibeDEV -- --dev && pm2 monit",
+    "pm2-dev": "tsc -p tsconfig.dev.json && pm2 delete vibeDEV && echo running pm2 script...\npm2 start dist/index.js --name vibeDEV -- --dev && pm2 monit",
     "test": "jest --detectOpenHandles --setupFiles dotenv/config --forceExit",
     "format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "release": "bash ./scripts/release.bash",
@@ -22,6 +22,8 @@
   "dependencies": {
     "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": "^0.14.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@types/fluent-ffmpeg": "^2.1.20",
     "cheerio": "^1.0.0-rc.12",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
@@ -29,7 +31,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "genius-lyrics": "^4.4.0",
     "googleapis": "^110.0.0",
-    "isomorphic-unfetch": "^3.1.0",
+    "isomorphic-unfetch": "^4.0.2",
     "leven": "~3.1.0",
     "libsodium": "^0.7.10",
     "libsodium-wrappers": "^0.7.10",
@@ -54,6 +56,7 @@
   "devDependencies": {
     "jest": "^29.3.1",
     "prettier": "^2.8.3",
+    "source-map-support": "^0.5.21",
     "typescript": "^4.9.4"
   }
 }

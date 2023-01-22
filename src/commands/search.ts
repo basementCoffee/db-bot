@@ -1,7 +1,8 @@
 import { getXdb2 } from '../database/retrieval';
 import { Message } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
-import { verifyUrl, verifyPlaylist, botInVC } from '../utils/utils';
+import { botInVC, verifyPlaylist, verifyUrl } from '../utils/utils';
+
 const leven = require('leven');
 
 /**
@@ -113,7 +114,7 @@ async function searchForSingleKey(
   providedString: string,
   server: LocalServer
 ): Promise<
-  | { valueObj: { ss: string; ssi: number }; link: string; message: string }
+  | { valueObj: { ss: string; ssi: number }; link: string | undefined; message: string }
   | { message: string; link: undefined; valueObj: undefined }
 > {
   const xdb = await getXdb2(server, sheetName, true);
@@ -123,7 +124,7 @@ async function searchForSingleKey(
   );
   if (so.ssi) {
     let link;
-    if (so.ssi === 1) link = xdb.globalKeys.get(so.ss.toUpperCase())?.link;
+    if (so.ssi === 1) link = xdb.globalKeys.get(so.ss.toUpperCase())!.link;
     return {
       valueObj: so,
       link,

@@ -1,9 +1,12 @@
 import { bot, botID } from '../utils/lib/constants';
-import { removeDBMessage, logError } from '../utils/utils';
-import { Channel, ChannelType, GuildChannel, GuildTextBasedChannel, TextChannel, VoiceBasedChannel } from 'discord.js';
+import { removeDBMessage } from '../utils/utils';
+import { Channel, ChannelType, GuildTextBasedChannel } from 'discord.js';
 import { runLyricsCommand } from '../commands/lyrics';
 import { parentPort } from 'worker_threads';
+import { logErrorCore } from '../utils/errorUtils';
+
 const token = process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n');
+const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
 
 let loggedIn = false;
 
@@ -61,6 +64,5 @@ async function login() {
 }
 
 process.on('uncaughtException', (error) => {
-  logError(`(worker process error) ${error.name}: ${error.message}`);
-  console.log(error);
+  logErrorCore(`worker process error [${hardwareTag}]:\n${error.stack}`);
 });

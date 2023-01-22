@@ -1,12 +1,12 @@
 import LocalServer from '../utils/lib/LocalServer';
+import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
+import reactions from '../utils/lib/reactions';
 import { Message, MessageReaction, User } from 'discord.js';
-const { botID, DB_BOT_ICON_MED } = require('../utils/lib/constants');
-const { botInVC, getTitle, createQueueItem, getSheetName } = require('../utils/utils');
-const { reactions } = require('../utils/lib/reactions');
-const { updateActiveEmbed } = require('../utils/embed');
-const { runInsertCommand } = require('./insert');
-const { EmbedBuilderLocal } = require('../utils/lib/EmbedBuilderLocal');
-const { isValidRequestWPlay } = require('../utils/validation');
+import { botID, DB_BOT_ICON_MED } from '../utils/lib/constants';
+import { botInVC, createQueueItem, getLinkType, getSheetName, getTitle } from '../utils/utils';
+import { updateActiveEmbed } from '../utils/embed';
+import { runInsertCommand } from './insert';
+import { isValidRequestWPlay } from '../utils/validation';
 
 /**
  * Displays the queue in the channel.
@@ -108,7 +108,7 @@ function runQueueCommand(
           if (user.id === mem[1].id) {
             return (
               user.id !== botID &&
-              [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX, reactions.ARROW_L].includes(reaction.emoji.name)
+              [reactions.ARROW_R, reactions.INBOX, reactions.OUTBOX, reactions.ARROW_L].includes(reaction.emoji.name!)
             );
           }
         }
@@ -168,7 +168,7 @@ function runQueueCommand(
                   msg.delete();
                   return;
                 }
-                serverQueue.splice(num, 0, createQueueItem(link, null, null));
+                serverQueue.splice(num, 0, createQueueItem(link, getLinkType(link), null));
                 if (server.queue.length > 0) updateActiveEmbed(server).then();
                 let pageNum;
                 if (num === 11) pageNum = 0;

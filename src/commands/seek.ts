@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
-import { linkValidator, getSheetName } from '../utils/utils';
+import { getSheetName, linkValidator } from '../utils/utils';
 import { convertSeekFormatToSec } from '../utils/formatUtils';
 import { playLinkNow } from './playLink';
 

@@ -9,7 +9,7 @@ const WAIT_TIME = 12000;
 // the maximum number of PM2 restarts allowed
 const MAX_RESTARTS = 5;
 // The last supported version that this project can be safely rolled back to
-let minSupportedVersion = '8.6.1';
+let minSupportedVersion = '9.0.7';
 // path of where the minSupportedVersion is stored (to be stored outside the git project)
 const FILE_PATH_MIN_VERSION = './.min_version_vibe.txt';
 
@@ -49,26 +49,25 @@ function compareTwoVersions(versionA, versionB) {
     const difference = versionArr1[num] - versionArr2[num];
     if (difference === 0) {
       return determineDifference(num + 1);
-    }
-    else {
+    } else {
       return difference;
     }
   };
   return determineDifference();
 }
 
-pm2.connect(async function(err) {
+pm2.connect(async function (err) {
   if (err) {
     console.error(err);
     process.exit(2);
   }
   console.log(`determining pm2 process health of ${name}....`);
   await new Promise((res) => setTimeout(res, WAIT_TIME));
-  pm2.list(function(err, processes) {
+  pm2.list(function (err, processes) {
     if (err) throw err;
     processes = processes.filter((x) => x.name === name);
 
-    processes.forEach(function(process) {
+    processes.forEach(function (process) {
       if (process.pm2_env.restart_time > MAX_RESTARTS) {
         console.log(`[ERROR] process is in bad standing {restarts: ${process.pm2_env.restart_time}}`);
         const res = compareTwoVersions(process.pm2_env.version, minSupportedVersion);
@@ -85,12 +84,10 @@ pm2.connect(async function(err) {
               }
             });
           });
-        }
-        else {
+        } else {
           console.log('version too old to rollback');
         }
-      }
-      else {
+      } else {
         console.log('[PASS] process is in good standing');
       }
     });

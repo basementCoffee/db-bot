@@ -1,7 +1,7 @@
 import { Message, TextChannel } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
 import { getAssumptionMultipleMethods } from './search';
-import { verifyPlaylist, createQueueItem, getLinkType, botInVC, setSeamless } from '../utils/utils';
+import { botInVC, createQueueItem, getLinkType, setSeamless, verifyPlaylist } from '../utils/utils';
 import { MAX_QUEUE_S } from '../utils/lib/constants';
 import { getPlaylistItems } from '../utils/playlist';
 import { updateActiveEmbed } from '../utils/embed';
@@ -92,41 +92,6 @@ async function runRandomToQueue(
       false,
       addToFront
     ).then();
-  }
-}
-
-// shuffles the queue
-function shuffleQueue(server: LocalServer, message: Message) {
-  if (!botInVC(message)) {
-    message.channel.send('*must be in an active session to shuffle the queue*');
-    return;
-  }
-  if (server.queue.length < 3) {
-    message.channel.send('*not enough links in queue to shuffle*');
-    return;
-  }
-  // save the first item to prevent it from being shuffled
-  const firstItem = server.queue.shift();
-  shuffleArray(server.queue);
-  server.queue.unshift(firstItem);
-  message.channel.send('*your queue has been shuffled*');
-}
-
-/**
- * Shuffles the provided array in place. Does not shuffle the first item in the array.
- * @param array {Array<*>} The array to shuffle.
- * @returns {void}
- */
-function shuffleArray(array: any[]): void {
-  // indices for shuffling
-  let currentIndex = array.length;
-  let randomIndex;
-  // exclude what's actively playing (at index 0)
-  while (currentIndex > 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex) + 1;
-    currentIndex--;
-    // swap current and random index locations
-    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
   }
 }
 
@@ -350,4 +315,4 @@ function updatedQueueMessage(channel: TextChannel, messageText: string, server: 
   updateActiveEmbed(server).then();
 }
 
-export { runRandomToQueue, shuffleQueue };
+export { runRandomToQueue };

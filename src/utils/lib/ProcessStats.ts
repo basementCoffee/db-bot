@@ -1,6 +1,8 @@
 import LocalServer from './LocalServer';
 import { startupDevMode } from './constants';
 import { formatDuration } from '../formatUtils';
+import { MessagePayloadOption, TextBasedChannel } from 'discord.js';
+import { logErrorCore } from '../errorUtils';
 
 // process related statistics
 class ProcessStats {
@@ -157,6 +159,35 @@ class ProcessStats {
       return formatDuration(this.activeMS + Date.now() - this.dateActive);
     } else {
       return formatDuration(this.activeMS);
+    }
+  }
+
+  /**
+   * Logs an error depending on the devMode status.
+   * @param errText The error object or message to send.
+   */
+  logError(errText: string | MessagePayloadOption | Error) {
+    if (this.devMode) {
+      this.debug(errText);
+    } else {
+      logErrorCore(errText);
+    }
+  }
+
+  /**
+   * Handles the error upon voice channel join. Sends the appropriate message to the user.
+   * @param error The error.
+   * @param textChannel The text channel to notify.
+   */
+  catchVCJoinError(error: Error, textChannel: TextBasedChannel) {
+    const eMsg = error.toString();
+    if (eMsg.includes('it is full')) {
+      textChannel.send('`error: cannot join voice channel; it is full`');
+    } else if (eMsg.includes('VOICE_JOIN_CHANNEL')) {
+      textChannel.send('`permissions error: cannot join voice channel`');
+    } else {
+      textChannel.send('error when joining your VC:\n`' + error.message + '`');
+      this.logError(`voice channel join error:\n\`${error.message}\``);
     }
   }
 }
