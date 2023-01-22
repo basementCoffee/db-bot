@@ -1,4 +1,4 @@
-import { ClientUser, Message, MessageReaction, User } from 'discord.js';
+import { ClientUser, Message, MessageReaction, TextChannel, User } from 'discord.js';
 import { bot, botID, INVITE_MSG } from './lib/constants';
 import { getHelpList } from './help';
 import reactions from './lib/reactions';
@@ -33,13 +33,12 @@ async function dmHandler(message: Message, messageContent: string) {
     ')\n' +
     messageContent +
     '\n------------------------------------------';
-  const channel = await bot.channels.fetch(CH.dm);
+  const channel = <TextChannel>await bot.channels.fetch(CH.dm);
   if (!channel) {
     logErrorCore(`error: could not find DM channel\nmessage-payload:\n${messagePayload}`);
     return;
   }
-  // @ts-ignore
-  channel.send(messagePayload).then((msg: Message) => {
+  channel.send(messagePayload).then((msg) => {
     msg.react(mb).then();
     const filter = (reaction: MessageReaction, user: User) => {
       return user.id !== botID;

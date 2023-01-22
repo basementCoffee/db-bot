@@ -1,6 +1,6 @@
 import { parentThread } from '../threads/parentThread';
 import LocalServer from '../utils/lib/LocalServer';
-import { GuildMember, Message, TextChannel, VoiceBasedChannel } from 'discord.js';
+import { BaseGuildTextChannel, GuildMember, Message, VoiceBasedChannel } from 'discord.js';
 import { addCustomPlaylist, runAddCommandWrapper } from './add';
 import { changePrefix } from './changePrefix';
 import { playPlaylistDB, runDatabasePlayCommand } from './databasePlayCommand';
@@ -200,7 +200,7 @@ class CommandHandlerCommon {
    */
   static moveKeysBetweenPlaylists(
     server: LocalServer,
-    channel: TextChannel,
+    channel: BaseGuildTextChannel,
     sheetName: string,
     xdb: any,
     args: string[]
@@ -321,7 +321,7 @@ class CommandHandlerCommon {
     sheetName: string,
     playlistName: string,
     xdb: any,
-    channel: TextChannel
+    channel: BaseGuildTextChannel
   ) {
     return removePlaylist(server, sheetName, playlistName, xdb, channel);
   }
@@ -336,7 +336,7 @@ class CommandHandlerCommon {
    * @returns {Promise<boolean>} True if successful
    */
   static async renameKey(
-    channel: TextChannel,
+    channel: BaseGuildTextChannel,
     server: LocalServer,
     sheetName: string,
     oldName: string,
@@ -355,7 +355,7 @@ class CommandHandlerCommon {
    * @returns {Promise<boolean>} True if successful
    */
   static async renamePlaylist(
-    channel: TextChannel,
+    channel: BaseGuildTextChannel,
     server: LocalServer,
     sheetName: string,
     oldName: string,
@@ -475,7 +475,7 @@ class CommandHandlerCommon {
    * @param url {string} The image to set as a splash-screen.
    * @returns {Promise<void>}
    */
-  static async setSplashscreen(server: LocalServer, channel: TextChannel, sheetName: string, url: string) {
+  static async setSplashscreen(server: LocalServer, channel: BaseGuildTextChannel, sheetName: string, url: string) {
     if (!url || !url.includes('.')) {
       channel.send(`*provide an icon URL to set a splash screen for your playlists \`${server.prefix} [url]\`*`);
       return;

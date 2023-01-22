@@ -1,6 +1,6 @@
 import { bot, botID } from '../utils/lib/constants';
 import { removeDBMessage } from '../utils/utils';
-import { Channel, ChannelType, GuildTextBasedChannel } from 'discord.js';
+import { Channel, ChannelType, TextChannel } from 'discord.js';
 import { runLyricsCommand } from '../commands/lyrics';
 import { parentPort } from 'worker_threads';
 import { logErrorCore } from '../utils/errorUtils';
@@ -25,13 +25,16 @@ parentPort!.on('message', async (m: any) => {
               parentPort!.postMessage({
                 content: {
                   commandName: m.content.commandName,
-                  guildId: (<GuildTextBasedChannel>channel).guild.id,
+                  guildId: (<TextChannel>channel).guild.id,
                   pageWasClicked: true
                 }
               });
             };
-            // @ts-ignore
-            runLyricsCommand(channel, reactionsCallback, ...m.content.commandArgs);
+            runLyricsCommand(
+              <TextChannel>channel,
+              reactionsCallback,
+              ...(m.content.commandArgs as [string[], any, string])
+            );
           }
         });
         break;

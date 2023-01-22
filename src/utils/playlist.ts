@@ -38,9 +38,9 @@ function getUrlFromInfos(item: any, type: StreamType): string {
  * A wrapper for getTracks to handle errors regarding Spotify requests.
  * @param playlistUrl {string} The url to get the tracks for.
  * @param retries {number=} Used within the function for error handling.
- * @returns { Promise<Tracks[]> | Tracks[]}
+ * @returns The tracks in an array.
  */
-async function getTracksWrapper(playlistUrl: string, retries = 0): Promise<any> {
+async function getTracksWrapper(playlistUrl: string, retries = 0): Promise<any[]> {
   try {
     return await getTracks(playlistUrl);
   } catch (e) {

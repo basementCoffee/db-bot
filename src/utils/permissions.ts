@@ -1,5 +1,5 @@
 import { ADMINS, CORE_ADM } from './lib/constants';
-import { TextBasedChannel } from 'discord.js';
+import { BaseGuildTextChannel } from 'discord.js';
 
 /**
  * Returns whether a given ID has Admin rights.
@@ -30,7 +30,7 @@ function isCoreAdmin(id: string): boolean {
  * @returns {boolean} Returns true if the member has DJ permissions.
  */
 function hasDJPermissions(
-  channel: TextBasedChannel,
+  channel: BaseGuildTextChannel,
   memberID: string,
   printErrMsg: boolean,
   voteAdminList: Array<any>

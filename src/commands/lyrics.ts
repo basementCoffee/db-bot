@@ -1,5 +1,5 @@
 import reactions from '../utils/lib/reactions';
-import { Message, MessageReaction, TextChannel, User } from 'discord.js';
+import { BaseGuildTextChannel, Message, MessageReaction, User } from 'discord.js';
 import { botID, StreamType } from '../utils/lib/constants';
 import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
 import ytdl from 'ytdl-core-discord';
@@ -24,7 +24,7 @@ const GeniusClient = new Genius.Client();
  * @returns {*}
  */
 function runLyricsCommand(
-  channel: TextChannel,
+  channel: BaseGuildTextChannel,
   reactionCallback: any,
   args: string[],
   queueItem: any,

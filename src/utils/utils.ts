@@ -1,5 +1,15 @@
 /* eslint-disable camelcase */
-import { Channel, Collection, ColorResolvable, Guild, GuildMember, Message, VoiceChannel } from 'discord.js';
+import {
+  Channel,
+  Collection,
+  ColorResolvable,
+  Guild,
+  GuildMember,
+  Message,
+  Snowflake,
+  TextChannel,
+  VoiceChannel
+} from 'discord.js';
 import fetch from 'isomorphic-unfetch';
 import ytdl from 'ytdl-core-discord';
 import ytpl from 'ytpl';
@@ -18,23 +28,22 @@ const os = require('os');
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
- * @param message {import('discord.js').Message} The message that triggered the bot.
- * @returns {Object} The voice channel if the bot is in a voice channel.
+ * @param message The message that triggered the bot.
+ * @returns A boolean value.
  */
-function botInVC(message: Message) {
-  return botInVcGuild(message.guild!);
+function botInVC(message: Message): boolean {
+  return botInVcGuild(message.guild!.id);
 }
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
- * @param guild {import('discord.js').Guild} The guild.
- * @returns {boolean} The voice channel if the bot is in a voice channel.
+ * @param guildId The guild id.
+ * @returns A boolean value.
  */
-function botInVcGuild(guild: Guild): boolean {
+function botInVcGuild(guildId: string): boolean {
   try {
-    // @ts-ignore
-    const members = bot.channels.cache.get(getVoiceConnection(guild.id)?.joinConfig.channelId!)?.members;
-    return bot.voice.adapters.get(guild.id) && members && members.has(bot.user!.id);
+    const members = (<VoiceChannel>bot.channels.cache.get(getVoiceConnection(guildId)?.joinConfig.channelId!))?.members;
+    return !!bot.voice.adapters.get(guildId) && members && members.has(bot.user!.id);
   } catch (e) {
     return false;
   }
@@ -270,21 +279,22 @@ function removeDBMessage(channelID: string, deleteNum = 1, onlyDB: boolean) {
     // the number of messages to fetch
     const NUM_TO_FETCH = 30;
     bot.channels.fetch(channelID).then((channel: Channel | null) =>
-      // @ts-ignore
-      channel.messages.fetch(NUM_TO_FETCH).then(async (msgs: any) => {
-        for (const [, item] of msgs) {
-          if (item.deletable) {
-            if (firstRun) {
-              firstRun = false;
-              await item.delete();
-            } else if (!onlyDB || item?.member?.id === botID) {
-              await item.delete();
-              deleteNum--;
+      (<TextChannel>channel).messages
+        .fetch({ limit: NUM_TO_FETCH, cache: false })
+        .then(async (msgs: Collection<Snowflake, Message>) => {
+          for (const [, item] of msgs) {
+            if (item.deletable) {
+              if (firstRun) {
+                firstRun = false;
+                await item.delete();
+              } else if (!onlyDB || item?.member?.id === botID) {
+                await item.delete();
+                deleteNum--;
+              }
+              if (!deleteNum) break;
             }
-            if (!deleteNum) break;
           }
-        }
-      })
+        })
     );
   } catch (e) {}
 }

@@ -1,6 +1,6 @@
 import { MAX_QUEUE_S } from './lib/constants';
 import LocalServer from './lib/LocalServer';
-import { Message, TextChannel } from 'discord.js';
+import { BaseGuildTextChannel, Message, TextChannel } from 'discord.js';
 import { hasDJPermissions } from './permissions';
 import { botInVC, resetSession } from './utils';
 
@@ -15,7 +15,7 @@ import { botInVC, resetSession } from './utils';
  */
 function isValidRequestSpecific(
   server: LocalServer,
-  channel: TextChannel,
+  channel: BaseGuildTextChannel,
   memberId: string,
   actionDescription: string
 ): boolean {

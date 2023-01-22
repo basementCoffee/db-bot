@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 import { gsrun, gsUpdateAdd, gsUpdateOverwrite, UserKeysData } from './api/api';
 import { getXdb2 } from './retrieval';
 import LocalServer from '../utils/lib/LocalServer';
