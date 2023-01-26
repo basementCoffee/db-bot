@@ -5,8 +5,7 @@ import buildNumber from '../utils/lib/BuildNumber';
 import { gsrun } from '../database/api/api';
 
 const CH = require('../../channel.json');
-
-let resHandlerTimeout: any = undefined;
+let resHandlerTimeout: NodeJS.Timeout | null = null;
 
 /**
  * Sends a message to a shared channel to see all active processes, responds accordingly using responseHandler.
@@ -28,8 +27,8 @@ function checkToSeeActive() {
  * Check to see if there was a response. If not then makes the current bot active.
  */
 async function responseHandler() {
-  if (!processStats.isPendingStatus) return;
   resHandlerTimeout = null;
+  if (!processStats.isPendingStatus) return;
   if (setOfBotsOn.size < 1 && processStats.isInactive) {
     await becomeActiveProcess();
     // waits 9 - 27 seconds
