@@ -893,6 +893,7 @@ async function runDevCommands(
             "\n=gzl - return all bot's ping and latency" +
             '\n=gzk - start/kill a process' +
             '\n=gzd [process #] - toggle dev mode' +
+            '\n=gzb [process #] [+/-] - increase/decrease build number' +
             '\n=gzupdate - updates all (inactive) pi instances of the bot' +
             '\n\n**dev-testing commands**' +
             `\n ${prefixString} gzcpf - change prefix for testing (if in devmode)` +
