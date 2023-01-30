@@ -1773,7 +1773,6 @@ async function updateVoiceState(oldState: VoiceState, newState: VoiceState, serv
     } catch (e) {}
     server.seamless.function = () => {};
     server.seamless.message?.delete();
-    ``;
     server.seamless.message = undefined;
   }
 }
