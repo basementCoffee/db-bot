@@ -263,7 +263,10 @@ function setSeamless(server: LocalServer, fName: any, args: Array<any>, message:
   server.seamless.args = args;
   server.seamless.message = message;
   if (server.seamless.timeout) clearTimeout(server.seamless.timeout);
-  server.seamless.timeout = setTimeout(() => (server.seamless.function = () => {}), 9000);
+  server.seamless.timeout = setTimeout(() => {
+    server.seamless.function = () => {};
+    server.seamless.message = undefined;
+  }, 9000);
 }
 
 /**
