@@ -103,7 +103,8 @@ async function getPlaylistArray(playlistUrl: string, type: StreamType) {
               additionalRequests--;
             } else {
               // floor would not work instead of ceil for cases where total == limit
-              additionalRequests = Math.min(5, Math.ceil(requestData.total / (requestData.limit || 100))) - 1;
+              additionalRequests =
+                Math.min(Math.ceil(MAX_QUEUE_S / 100), Math.ceil(requestData.total / (requestData.limit || 100))) - 1;
             }
             tracks = tracks.concat(requestItems.map((x: any) => x.track).filter((x: any) => x));
             i++;
