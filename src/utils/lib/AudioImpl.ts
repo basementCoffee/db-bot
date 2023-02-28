@@ -49,15 +49,6 @@ class AudioImpl {
   }
 
   /**
-   * Determine if the voice channel is active.
-   * @param voiceChannelId {string} The id of the voice channel
-   * @returns {boolean} If the voice channel is active
-   */
-  isActiveVoiceChannel(voiceChannelId: string): boolean {
-    return !!(this.voiceChannelId && this.voiceChannelId === voiceChannelId);
-  }
-
-  /**
    * Returns true if the member is in the active voice channel.
    * @param member The member object
    * @returns {boolean} If the member is in the active voice channel

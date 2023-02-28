@@ -1,5 +1,5 @@
 import LocalServer from '../utils/lib/LocalServer';
-import { GuildMember, Message, TextChannel } from 'discord.js';
+import { BaseGuildTextChannel, GuildMember, Message } from 'discord.js';
 import { updateActiveEmbed } from '../utils/embed';
 import { serializeAndUpdate } from '../database/utils';
 
@@ -60,7 +60,7 @@ async function removePlaylist(
   sheetName: string,
   playlistName: string,
   xdb: any,
-  channel: TextChannel
+  channel: BaseGuildTextChannel
 ) {
   const existingPlaylist = xdb.playlists.get(playlistName.toUpperCase());
   if (!existingPlaylist) {

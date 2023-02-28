@@ -3,15 +3,13 @@ require('dotenv').config();
 import { congratsCommand } from './commands/congrats';
 import {
   ActivityType,
+  BaseGuildTextChannel,
   Channel,
   Guild,
   GuildMember,
-  GuildTextBasedChannel,
-  If,
   Message,
   MessageReaction,
   Snowflake,
-  TextBasedChannel,
   TextChannel,
   User,
   VoiceChannel,
@@ -115,7 +113,6 @@ async function runCommandCases(message: Message) {
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   // the command name
   const statement = args[0].substring(1).toLowerCase();
-  // @ts-ignore
   if (isAdmin(message.member!.id)) {
     runDevCommands(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
   } else {
@@ -475,7 +472,7 @@ async function runUserCommands(
     case 'playrec':
     case 'playrecc':
     case 'playrecs':
-      playRecommendation(message, server, args).catch((er: Error) => processStats.debug(er));
+      playRecommendation(message, server, args).catch((er: Error) => processStats.logError(er));
       break;
     case 'rec':
     case 'recc':
@@ -576,7 +573,7 @@ async function runUserCommands(
     case 'forcesk':
     case 'forceskip':
       if (isShortCommand(message.guild!, statement)) return;
-      if (hasDJPermissions(message.channel, message.member!.id, true, server.voteAdmin)) {
+      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
         runSkipCommand(message, message.member!.voice?.channel, server, args[1], true, true, message.member);
       }
       break;
@@ -585,27 +582,27 @@ async function runUserCommands(
     case 'forcerw':
     case 'forcerewind':
       if (isShortCommand(message.guild!, statement)) return;
-      if (hasDJPermissions(message.channel, message.member!.id, true, server.voteAdmin)) {
+      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
         runRewindCommand(message, mgid, message.member!.voice?.channel!, args[1], true, false, message.member, server);
       }
       break;
     case 'fp':
       if (isShortCommand(message.guild!, statement)) return;
-      if (hasDJPermissions(message.channel, message.member!.id, true, server.voteAdmin)) {
+      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
         message.channel.send("use 'fpl' to force play and 'fpa' to force pause.");
       }
       break;
     case 'fpl':
     case 'forcepl':
     case 'forceplay':
-      if (hasDJPermissions(message.channel, message.member!.id, true, server.voteAdmin)) {
+      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
         commandHandlerCommon.resumeStream(message, message.member!, server, false, true);
       }
       break;
     case 'fpa':
     case 'forcepa':
     case 'forcepause':
-      if (hasDJPermissions(message.channel, message.member!.id, true, server.voteAdmin)) {
+      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
         commandHandlerCommon.pauseStream(message, message.member!, server, false, true, false);
       }
       break;
@@ -829,8 +826,9 @@ async function runUserCommands(
         message.channel.send(`*guessing from 1-${numToCheck}... chosen: **${randomInt2}***`);
       } else if (message.member?.voice?.channel) {
         try {
-          // @ts-ignore
-          let gmArray = Array.from(bot.channels.cache.get(message.member!.voice.channel.id.toString())!.members);
+          let gmArray = Array.from(
+            (<VoiceChannel>bot.channels.cache.get(message.member!.voice.channel.id.toString())).members
+          );
           gmArray = gmArray.map((item: any) => item[1].nickname || item[1].user.username);
           if (gmArray.length < 1) {
             return message.channel.send('Need at least 1 person in a voice channel.');
@@ -867,7 +865,7 @@ async function runDevCommands(
       // =gztest
       // this method is for testing purposes only. (cmd: npm run dev-test)
       if (!processStats.devMode) return;
-      runDevTest(message.channel, ['']).catch((err) => processStats.debug(err));
+      runDevTest(<TextChannel>message.channel, ['']).catch((err) => processStats.debug(err));
       break;
     case 'devadd':
       message.channel.send(
@@ -895,6 +893,7 @@ async function runDevCommands(
             "\n=gzl - return all bot's ping and latency" +
             '\n=gzk - start/kill a process' +
             '\n=gzd [process #] - toggle dev mode' +
+            '\n=gzb [process #] [+/-] - increase/decrease build number' +
             '\n=gzupdate - updates all (inactive) pi instances of the bot' +
             '\n\n**dev-testing commands**' +
             `\n ${prefixString} gzcpf - change prefix for testing (if in devmode)` +
@@ -1104,20 +1103,19 @@ async function runDevCommands(
           const updateMsg = '`NOTICE: db vibe is about to be updated. Expect a brief interruption within 5 minutes.`';
           bot.voice.adapters.forEach((x: any, gId: string) => {
             try {
-              // @ts-ignore
-              const guildToUpdate = bot.channels.cache.get(getVoiceConnection(gId)?.joinConfig.channelId!)?.guild;
+              const guildToUpdate = (<VoiceChannel | undefined>(
+                bot.channels.cache.get(getVoiceConnection(gId)?.joinConfig.channelId!)
+              ))?.guild;
               const currentEmbedChannelId = guildToUpdate
                 ? processStats.getServer(guildToUpdate.id).currentEmbedChannelId
                 : null;
               const currentTextChannel = currentEmbedChannelId ? bot.channels.cache.get(currentEmbedChannelId) : null;
               if (currentTextChannel) {
-                // @ts-ignore
-                bot.channels.cache.get(currentEmbedChannelId!)?.send(updateMsg);
+                (<TextChannel>bot.channels.cache.get(currentEmbedChannelId!))?.send(updateMsg);
               } else {
-                bot.channels.cache
-                  .get(getVoiceConnection(gId)?.joinConfig.channelId!)
-                  // @ts-ignore
-                  ?.guild.systemChannel.send(updateMsg);
+                (<VoiceChannel | undefined>(
+                  bot.channels.cache.get(getVoiceConnection(gId)?.joinConfig.channelId!)
+                ))?.guild.systemChannel?.send(updateMsg);
               }
             } catch (e) {}
           });
@@ -1134,8 +1132,7 @@ async function runDevCommands(
           try {
             // guild member array
             const gmArray: Array<[Snowflake, GuildMember]> = Array.from(
-              // @ts-ignore
-              bot.channels.cache.get(getVoiceConnection(g)!.joinConfig.channelId!)!.members
+              (<VoiceChannel>bot.channels.cache.get(getVoiceConnection(g)!.joinConfig.channelId!)).members
             );
             gx += `${gmArray[0][1].guild.name}: *`;
             gmArray.map((item) => item[1].user.username).forEach((y) => (gx += `${y}, `));
@@ -1186,7 +1183,7 @@ async function runDevCommands(
  * @returns {boolean} False if the cmd is short with no active session.
  */
 function isShortCommand(guild: Guild, statement: string) {
-  return !botInVcGuild(guild) && statement.length < 3;
+  return !botInVcGuild(guild.id) && statement.length < 3;
 }
 
 /**
@@ -1243,8 +1240,7 @@ bot.once('ready', () => {
       } else {
         bot.channels.fetch(process.argv[index + 1]).then((channel: Channel | null) => {
           if (channel && channel['lastMessageId' as keyof Channel]) {
-            // @ts-ignore
-            channel.send('=gztest').then();
+            (<TextChannel>channel).send('=gztest').then();
           } else {
             console.log('not a text channel');
           }
@@ -1259,10 +1255,11 @@ bot.once('ready', () => {
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
     (async () =>
-      // @ts-ignore
-      (await bot.channels.fetch(CH.process))!.send(`starting: ${process.pid} [${buildNo.getBuildNo()}]`).then(() => {
-        checkToSeeActive();
-      }))();
+      (<TextChannel>await bot.channels.fetch(CH.process))
+        .send(`starting: ${process.pid} [${buildNo.getBuildNo()}]`)
+        .then(() => {
+          checkToSeeActive();
+        }))();
   }
 });
 
@@ -1668,7 +1665,7 @@ bot.on('messageCreate', (message: Message) => {
  * @param channel The text channel to run the test in.
  * @param messagesToRun Array of message IDs to test.
  */
-async function runDevTest(channel: If<boolean, GuildTextBasedChannel, TextBasedChannel>, messagesToRun: Array<string>) {
+async function runDevTest(channel: BaseGuildTextChannel, messagesToRun: Array<string>) {
   channel.send('*test received*').catch((er: Error) => processStats.debug(er));
   // fetch should be the message to test/mimic
   for (const msgId of messagesToRun) {
@@ -1750,7 +1747,7 @@ async function updateVoiceState(oldState: VoiceState, newState: VoiceState, serv
     if (bot.voice.adapters.size < 1) {
       whatspMap.clear();
     }
-  } else if (botInVcGuild(newState.guild)) {
+  } else if (botInVcGuild(newState.guild.id)) {
     if ((oldState.channel?.members.filter((x) => !x.user.bot).size || 0) < 1) {
       let leaveVCInt = 1100;
       // if there is an active dispatch - timeout is 5 min
@@ -1776,7 +1773,6 @@ async function updateVoiceState(oldState: VoiceState, newState: VoiceState, serv
     } catch (e) {}
     server.seamless.function = () => {};
     server.seamless.message?.delete();
-    ``;
     server.seamless.message = undefined;
   }
 }

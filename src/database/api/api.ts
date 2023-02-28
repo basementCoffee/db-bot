@@ -376,7 +376,7 @@ const gsUpdateAdd = (
       }
     })
     .then(
-      function (response: any) {
+      function () {
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
       },
@@ -449,7 +449,7 @@ const gsUpdateOverwrite = (
       }
     })
     .then(
-      function (response: any) {
+      function () {
         // Handle the results here (response.result has the parsed body).
         // console.log("Response", response);
       },

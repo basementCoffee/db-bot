@@ -1,7 +1,7 @@
 import LocalServer from './LocalServer';
 import { startupDevMode } from './constants';
 import { formatDuration } from '../formatUtils';
-import { MessagePayloadOption, TextBasedChannel } from 'discord.js';
+import { MessageCreateOptions, TextBasedChannel } from 'discord.js';
 import { logErrorCore } from '../errorUtils';
 
 // process related statistics
@@ -166,7 +166,7 @@ class ProcessStats {
    * Logs an error depending on the devMode status.
    * @param errText The error object or message to send.
    */
-  logError(errText: string | MessagePayloadOption | Error) {
+  logError(errText: string | MessageCreateOptions | Error) {
     if (this.devMode) {
       this.debug(errText);
     } else {

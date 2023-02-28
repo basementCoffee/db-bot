@@ -1,18 +1,18 @@
 {
   "name": "discordbotz",
-  "version": "9.0.11",
+  "version": "9.0.15",
   "description": "A discord playback bot with a UI.",
   "main": "src/index.js",
   "scripts": {
     "start": "tsc && node ./dist/index.js",
     "dev": "tsc -p tsconfig.dev.json && node -r source-map-support/register dist/index.js --dev",
     "dev-test": "tsc -p tsconfig.dev.json && node -r source-map-support/register dist/index.js --dev --test 987120641549430824",
-    "pm2": "tsc && bash ./scripts/pm2-startup.bash vibe",
+    "pm2": "bash ./scripts/pm2-startup.bash vibe",
     "pm2-dev": "tsc -p tsconfig.dev.json && pm2 delete vibeDEV && echo running pm2 script...\npm2 start dist/index.js --name vibeDEV -- --dev && pm2 monit",
     "test": "jest --detectOpenHandles --setupFiles dotenv/config --forceExit",
     "format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "release": "bash ./scripts/release.bash",
-    "postinstall": "node scripts/postNodeInstallScript.js"
+    "postinstall": "node scripts/postNodeInstallScript.js && bash scripts/install-hooks.bash"
   },
   "engines": {
     "node": ">=18.x"

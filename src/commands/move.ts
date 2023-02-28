@@ -2,7 +2,7 @@
 import { botInVcGuild } from '../utils/utils';
 import { serializeAndUpdate } from '../database/utils';
 import LocalServer from '../utils/lib/LocalServer';
-import { TextChannel } from 'discord.js';
+import { BaseGuildTextChannel } from 'discord.js';
 
 /**
  * Mutates the provided array by moving an element at posA to posB.
@@ -12,8 +12,8 @@ import { TextChannel } from 'discord.js';
  * @param posB THe second position.
  * @returns {void}
  */
-function runMoveItemCommand(channel: TextChannel, arr: any[], posA: number | string, posB: number | string) {
-  if (!botInVcGuild(channel.guild)) return;
+function runMoveItemCommand(channel: BaseGuildTextChannel, arr: any[], posA: number | string, posB: number | string) {
+  if (!botInVcGuild(channel.guild.id)) return;
   posA = Math.floor(<number>posA);
   posB = Math.floor(<number>posB);
   const MIN_POS = 1;
@@ -41,7 +41,13 @@ function runMoveItemCommand(channel: TextChannel, arr: any[], posA: number | str
  * @param xdb The database object.
  * @param args A list of keys and single playlist (the playlist should be the one to move the keys into).
  */
-function moveKeysWrapper(server: LocalServer, channel: TextChannel, sheetName: string, xdb: any, args: string[]) {
+function moveKeysWrapper(
+  server: LocalServer,
+  channel: BaseGuildTextChannel,
+  sheetName: string,
+  xdb: any,
+  args: string[]
+) {
   let playlist;
   let playlistName;
   args = args
@@ -74,7 +80,7 @@ function moveKeysWrapper(server: LocalServer, channel: TextChannel, sheetName: s
  */
 async function moveKeysCommand(
   server: LocalServer,
-  channel: TextChannel,
+  channel: BaseGuildTextChannel,
   sheetName: string,
   xdb: any,
   listOfKeys: Array<string>,

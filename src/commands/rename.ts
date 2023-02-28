@@ -1,4 +1,4 @@
-import { TextChannel } from 'discord.js';
+import { BaseGuildTextChannel } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
 import { getXdb2 } from '../database/retrieval';
 import { serializeAndUpdate } from '../database/utils';
@@ -13,7 +13,7 @@ import { serializeAndUpdate } from '../database/utils';
  * @returns {Promise<boolean>} True if successful
  */
 async function renamePlaylist(
-  channel: TextChannel,
+  channel: BaseGuildTextChannel,
   server: LocalServer,
   sheetName: string,
   oldName: string,
@@ -44,7 +44,7 @@ async function renamePlaylist(
  * @returns {Promise<boolean>} True if successful
  */
 async function renameKey(
-  channel: TextChannel,
+  channel: BaseGuildTextChannel,
   server: LocalServer,
   sheetName: string,
   oldName: string,
