@@ -1839,10 +1839,12 @@ function uncaughtExceptionAction(e: Error) {
  * Assuming that there was a connection error. Tries to reconnect.
  */
 function fixConnection() {
-  const waitTime = 10000;
-  console.log(`no connection: retrying in ${waitTime} seconds...`);
+  let waitTimeMS = 10000;
+  const retryText = (time: number) => `retrying in ${time / 1000} seconds...`;
+  console.log(`no connection: ${retryText(waitTimeMS)}`);
   let retries = 3;
   const retryConnectionInterval = setInterval(() => {
+    waitTimeMS += 10000;
     console.log('connecting...');
     bot
       .login(token)
@@ -1851,14 +1853,14 @@ function fixConnection() {
         clearInterval(retryConnectionInterval);
       })
       .catch(() => {
-        console.log('connection failed.');
+        console.log(`connection failed.\n${retryText(waitTimeMS)}`);
         retries--;
         if (retries < 1) {
           console.log(`failed to connect after ${retries} tries. exiting...`);
           process.exit(1);
         }
       });
-  }, 10000);
+  }, waitTimeMS);
 }
 
 // The main method
