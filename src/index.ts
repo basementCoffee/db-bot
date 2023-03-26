@@ -1830,6 +1830,35 @@ function uncaughtExceptionAction(e: Error) {
   processStats.debug('uncaughtException: ', e);
   if (e.message === 'Unknown Message') return;
   processStats.logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
+  if (e.message.includes('getaddrinfo ENOTFOUND discord.com')) {
+    fixConnection();
+  }
+}
+
+/**
+ * Assuming that there was a connection error. Tries to reconnect.
+ */
+function fixConnection() {
+  const waitTime = 10000;
+  console.log(`no connection: retrying in ${waitTime} seconds...`);
+  let retries = 3;
+  const retryConnectionInterval = setInterval(() => {
+    console.log('connecting...');
+    bot
+      .login(token)
+      .then(() => {
+        console.log('connected.');
+        clearInterval(retryConnectionInterval);
+      })
+      .catch(() => {
+        console.log('connection failed.');
+        retries--;
+        if (retries < 1) {
+          console.log(`failed to connect after ${retries} tries. exiting...`);
+          process.exit(1);
+        }
+      });
+  }, 10000);
 }
 
 // The main method
