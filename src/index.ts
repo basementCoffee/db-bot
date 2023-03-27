@@ -1822,6 +1822,8 @@ process
   .on('SIGINT', shutdown('SIGINT'))
   .on('uncaughtException', uncaughtExceptionAction);
 
+// whether the process is attempting to reconnect
+let isFixingConnection = false;
 /**
  * The action to be performed if there is an uncaughtExceptionError.
  * @param e The Error Object.
@@ -1831,36 +1833,46 @@ function uncaughtExceptionAction(e: Error) {
   if (e.message === 'Unknown Message') return;
   processStats.logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
   if (e.message.includes('getaddrinfo ENOTFOUND discord.com')) {
-    fixConnection();
+    if (isFixingConnection) return;
+    isFixingConnection = true;
+    fixConnection().finally(() => {
+      isFixingConnection = false;
+    });
   }
 }
 
 /**
  * Assuming that there was a connection error. Tries to reconnect.
  */
-function fixConnection() {
+async function fixConnection(): Promise<boolean> {
   let waitTimeMS = 10000;
   const retryText = (time: number) => `retrying in ${time / 1000} seconds...`;
   console.log(`no connection: ${retryText(waitTimeMS)}`);
-  let retries = 3;
-  const retryConnectionInterval = setInterval(() => {
-    waitTimeMS += 10000;
+  let retries = 0;
+  const connect = async () => {
+    waitTimeMS *= 2;
     console.log('connecting...');
-    bot
-      .login(token)
-      .then(() => {
-        console.log('connected.');
-        clearInterval(retryConnectionInterval);
-      })
-      .catch(() => {
-        console.log(`connection failed.\n${retryText(waitTimeMS)}`);
-        retries--;
-        if (retries < 1) {
-          console.log(`failed to connect after ${retries} tries. exiting...`);
-          process.exit(1);
-        }
-      });
-  }, waitTimeMS);
+    try {
+      await bot.login(token);
+      console.log('connected.');
+      return true;
+    } catch (e) {
+      console.log(`connection failed.\n${retryText(waitTimeMS)}`);
+      retries++;
+      // if the wait time is greater than 10 minutes, then exit
+      if (waitTimeMS > 60_000 * 10) {
+        console.log(`failed to connect after ${retries} tries. exiting...`);
+        process.exit(1);
+      }
+    }
+    return false;
+  };
+  for (let i = 0; i < retries; i++) {
+    await new Promise((resolve) => setTimeout(resolve, waitTimeMS));
+    const res = await connect();
+    if (res) return true;
+  }
+  return false;
 }
 
 // The main method
