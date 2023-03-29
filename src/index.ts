@@ -67,6 +67,7 @@ import fs from 'fs';
 import LocalServer from './utils/lib/LocalServer';
 import processStats from './utils/lib/ProcessStats';
 import commandHandlerCommon from './commands/CommandHandlerCommon';
+import axios from 'axios';
 
 const token =
   process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n') ||
@@ -77,7 +78,6 @@ const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').su
 const { exec } = require('child_process');
 const version = require('../package.json').version;
 const CH = require('../channel.json');
-const request = require('request');
 
 process.setMaxListeners(0);
 
@@ -1633,7 +1633,7 @@ async function devProcessCommands(message: Message) {
     case 'env':
       // =gzenv
       if (zargs[1] !== process.pid.toString()) return;
-      processEnvFile(message);
+      await processEnvFile(message);
       break;
     default:
       if (processStats.devMode && !processStats.isInactive && message.guild) return runCommandCases(message);
@@ -1799,12 +1799,17 @@ function getTemperature(): Promise<{ value: string; isError: boolean }> {
  * Processes an updated env file to the local directory.
  * @param message The message containing the file.
  */
-function processEnvFile(message: Message) {
+async function processEnvFile(message: Message) {
   // sets the .env file
   if (!message.attachments.first() || !message.attachments.first()!.name?.includes('.txt')) {
     message.channel.send('no attachment found');
   } else {
-    request.get(message.attachments.first()!.url).on('error', console.error).pipe(fs.createWriteStream('.env'));
+    const response = await axios({
+      url: message.attachments.first()!.url,
+      method: 'GET',
+      responseType: 'stream'
+    });
+    response.data.pipe(fs.createWriteStream('.env'));
     message.channel.send('*contents changed. changes will take effect after a restart*');
   }
 }
