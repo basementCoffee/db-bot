@@ -1850,29 +1850,29 @@ async function fixConnection(): Promise<boolean> {
   console.log(`no connection: ${retryText(waitTimeMS)}`);
   let retries = 0;
   const connect = async () => {
-    waitTimeMS *= 2;
     console.log('connecting...');
     try {
       await bot.login(token);
       console.log('connected.');
       return true;
     } catch (e) {
-      console.log(`connection failed.\n${retryText(waitTimeMS)}`);
-      retries++;
-      // if the wait time is greater than 10 minutes, then exit
+      // if the wait time was greater than 10 minutes, then exit
       if (waitTimeMS > 60_000 * 10) {
         console.log(`failed to connect after ${retries} tries. exiting...`);
         process.exit(1);
       }
+      // after 3 tries, set the state to inactive
+      if (retries > 2) processStats.setProcessInactive();
+      retries++;
+      waitTimeMS *= 2;
+      console.log(`connection failed.\n${retryText(waitTimeMS)}`);
     }
     return false;
   };
-  for (let i = 0; i < retries; i++) {
+  while (true) {
     await new Promise((resolve) => setTimeout(resolve, waitTimeMS));
-    const res = await connect();
-    if (res) return true;
+    if (await connect()) return true;
   }
-  return false;
 }
 
 // The main method
