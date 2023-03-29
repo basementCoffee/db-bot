@@ -792,7 +792,7 @@ async function runUserCommands(
     case 'version':
       new EmbedBuilderLocal()
         .setTitle('Version')
-        .setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot)')
+        .setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot/commits/djs14)')
         .send(message.channel)
         .then();
       break;
