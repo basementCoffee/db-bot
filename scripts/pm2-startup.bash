@@ -1,7 +1,11 @@
 #!/bin/bash
 
+# install only production dependencies
+npm install --omit=dev
+
 echo "compiling js..."
 tsc
+
 echo "running pm2 script..."
 NAME=${1:-vibe}
 

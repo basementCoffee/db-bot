@@ -1341,7 +1341,7 @@ function devUpdateCommand(message?: Message, args: Array<string> = []) {
   switch (args[0]) {
     case 'default':
       processStats.setProcessInactive();
-      exec('git stash && git pull && npm i');
+      exec('git stash && git pull');
       setTimeout(() => {
         exec('npm run pm2');
       }, 5000);
