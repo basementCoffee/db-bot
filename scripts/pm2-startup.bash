@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# install only production dependencies
-npm install --omit=dev
+npm install
 
 echo "compiling js..."
 tsc
