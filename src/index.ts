@@ -1834,15 +1834,16 @@ let isFixingConnection = false;
  * @param e The Error Object.
  */
 function uncaughtExceptionAction(e: Error) {
-  processStats.debug('uncaughtException: ', e);
-  if (e.message === 'Unknown Message') return;
-  processStats.logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
   if (e.message.includes('getaddrinfo ENOTFOUND discord.com')) {
     if (isFixingConnection) return;
     isFixingConnection = true;
     fixConnection().finally(() => {
       isFixingConnection = false;
     });
+  } else {
+    processStats.debug('uncaughtException: ', e);
+    if (e.message === 'Unknown Message') return;
+    processStats.logError(`Uncaught Exception ${processStats.devMode ? '(development)' : ''}:\n${e.stack}`);
   }
 }
 
