@@ -68,11 +68,15 @@ function getQueueText(server: LocalServer) {
  * @returns {boolean} True if given a playable URL.
  */
 function verifyUrl(url: string) {
-  return url.includes(SPOTIFY_BASE_LINK)
-    ? url.includes('/track/')
-    : (url.includes(SOUNDCLOUD_BASE_LINK)
-        ? scdl.isValidUrl(linkFormatter(url, SOUNDCLOUD_BASE_LINK))
-        : ytdl.validateURL(url) || url.includes(TWITCH_BASE_LINK)) && !verifyPlaylist(url);
+  let isValid = false;
+  if (isSpotifyLink(url)) {
+    isValid = true;
+  } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
+    isValid = scdl.isValidUrl(linkFormatter(url, SOUNDCLOUD_BASE_LINK));
+  } else if (ytdl.validateURL(url) || url.includes(TWITCH_BASE_LINK)) {
+    isValid = true;
+  }
+  return isValid && !verifyPlaylist(url);
 }
 
 /**
@@ -83,7 +87,7 @@ function verifyUrl(url: string) {
 function verifyPlaylist(url: string = ''): string | boolean {
   try {
     url = url.toLowerCase();
-    if (url.includes(SPOTIFY_BASE_LINK)) {
+    if (isSpotifyLink(url)) {
       if (isPlaylistSpotifyLink(url)) {
         return StreamType.SPOTIFY;
       }
@@ -103,6 +107,10 @@ function verifyPlaylist(url: string = ''): string | boolean {
  */
 function isPlaylistSpotifyLink(url: string): boolean {
   return url.includes('/playlist') || url.includes('/album');
+}
+
+function isSpotifyLink(url: string): boolean {
+  return url.includes(SPOTIFY_BASE_LINK) || url.includes('spotify.link');
 }
 
 /**
@@ -244,7 +252,7 @@ function pushQueue(queue: Array<any>, queueItem: any) {
  * @returns {string} A StreamType.
  */
 const getLinkType = (url: string) => {
-  if (url.includes(SPOTIFY_BASE_LINK)) return StreamType.SPOTIFY;
+  if (isSpotifyLink(url)) return StreamType.SPOTIFY;
   else if (url.includes(SOUNDCLOUD_BASE_LINK)) return StreamType.SOUNDCLOUD;
   else if (url.includes(TWITCH_BASE_LINK)) return StreamType.TWITCH;
   return StreamType.YOUTUBE;
@@ -327,7 +335,7 @@ function getBotDisplayName(guild: Guild): string {
  * @returns {boolean} If the link is a valid, playable link.
  */
 function linkValidator(link: string): boolean {
-  return verifyUrl(link) || verifyPlaylist(link);
+  return verifyUrl(link) || !!verifyPlaylist(link);
 }
 
 /**
@@ -405,5 +413,6 @@ export {
   notInVoiceChannelErrorMsg,
   getVCMembers,
   botInVcGuild,
-  isPlaylistSpotifyLink
+  isPlaylistSpotifyLink,
+  isSpotifyLink
 };

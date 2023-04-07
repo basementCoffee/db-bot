@@ -1,7 +1,7 @@
 import LocalServer from './lib/LocalServer';
 import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
 import ytdl from 'ytdl-core-discord';
-import { getQueueText } from './utils';
+import { getQueueText, isSpotifyLink } from './utils';
 import { convertYTFormatToMS, formatDuration } from './formatUtils';
 import { DB_SPOTIFY_EMBED_ICON, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
 import processStats from './lib/ProcessStats';
@@ -70,7 +70,7 @@ async function getSpotifyIcon(infos: any, url: string) {
 async function createEmbed(url: string, infos: any): Promise<{ embed: EmbedBuilderLocal; infos: any; timeMS: number }> {
   let timeMS;
   let embed;
-  if (url.includes(SPOTIFY_BASE_LINK)) {
+  if (isSpotifyLink(url)) {
     if (!infos) infos = await getData(url);
     let artists = '';
     infos.artists.forEach((x: any) => (artists ? (artists += ', ' + x.name) : (artists += x.name)));

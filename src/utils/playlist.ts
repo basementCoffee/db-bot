@@ -1,5 +1,5 @@
 import { Message } from 'discord.js';
-import { createQueueItem, getLinkType, isPlaylistSpotifyLink, verifyPlaylist } from './utils';
+import { createQueueItem, getLinkType, isPlaylistSpotifyLink, isSpotifyLink, verifyPlaylist } from './utils';
 import { MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from './lib/constants';
 import LocalServer from './lib/LocalServer';
 import { linkFormatter } from './formatUtils';
@@ -229,8 +229,10 @@ async function addLinkToQueue(
   addToFront = false,
   queueFunction: (array: any[], obj: { type: StreamType; url: string; infos: any }) => void
 ) {
-  if (url.includes(SPOTIFY_BASE_LINK)) {
-    url = linkFormatter(url, SPOTIFY_BASE_LINK);
+  if (isSpotifyLink(url)) {
+    if (url.includes(SPOTIFY_BASE_LINK)) {
+      url = linkFormatter(url, SPOTIFY_BASE_LINK);
+    }
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SPOTIFY, addToFront);
   } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
     url = url.replace(/music.youtube/, 'youtube');
