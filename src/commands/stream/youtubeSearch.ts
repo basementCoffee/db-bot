@@ -6,7 +6,7 @@ import { createQueueItem } from '../../utils/utils';
 import { botID, StreamType } from '../../utils/lib/constants';
 import { updateActiveEmbed } from '../../utils/embed';
 import reactions from '../../utils/lib/reactions';
-import EmbedBuilderLocal from '../../utils/lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import { adjustQueueForPlayNow } from '../../utils/arrayUtils';
 
 const ytsr = require('ytsr');

@@ -7,9 +7,8 @@ import ytpl from 'ytpl';
 import processStats from '../utils/lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
 import fetch from 'isomorphic-unfetch';
+import { SoundCloud as scdl } from 'scdl-core';
 
-const { SoundCloud: scdl } = require('scdl-core');
-scdl.connect();
 const { getData, getTracks } = require('spotify-url-info')(fetch);
 
 /**

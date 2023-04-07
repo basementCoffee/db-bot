@@ -41,7 +41,7 @@ import {
 } from './utils';
 import { convertYTFormatToMS, formatDuration, linkFormatter } from '../../utils/formatUtils';
 import { runKeysCommand } from '../keys';
-import EmbedBuilderLocal from '../../utils/lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import { QueueItem } from '../../utils/lib/types';
 import fluentFfmpeg from 'fluent-ffmpeg';
 import fetch from 'isomorphic-unfetch';

@@ -3,7 +3,7 @@ import { GuildMember, Message, User, VoiceChannel } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { bot } from '../utils/lib/constants';
 import { botInVC, getVCMembers, notInVoiceChannelErrorMsg } from '../utils/utils';
-import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import { formatDuration } from '../utils/formatUtils';
 
 /**

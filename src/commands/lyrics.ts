@@ -1,7 +1,7 @@
 import reactions from '../utils/lib/reactions';
 import { BaseGuildTextChannel, Message, MessageReaction, User } from 'discord.js';
 import { botID, StreamType } from '../utils/lib/constants';
-import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import ytdl from 'ytdl-core-discord';
 import fetch from 'isomorphic-unfetch';
 

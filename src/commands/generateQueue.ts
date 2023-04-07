@@ -1,5 +1,5 @@
 import LocalServer from '../utils/lib/LocalServer';
-import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import reactions from '../utils/lib/reactions';
 import { Message, MessageReaction, User } from 'discord.js';
 import { botID, DB_BOT_ICON_MED } from '../utils/lib/constants';

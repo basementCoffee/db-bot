@@ -1,7 +1,6 @@
 import LocalServer from '../../utils/lib/LocalServer';
-import EmbedBuilderLocal from '../../utils/lib/EmbedBuilderLocal';
 import { GuildMember, Message, VoiceBasedChannel } from 'discord.js';
-
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import { botID } from '../../utils/lib/constants';
 import { botInVC } from '../../utils/utils';
 import { createEmbed, updateActiveEmbed } from '../../utils/embed';

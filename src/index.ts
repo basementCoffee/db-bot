@@ -62,7 +62,7 @@ import { dmHandler, sendMessageToUser } from './utils/dms';
 import { runDeleteKeyCommand_P } from './database/delete';
 import { parentThread } from './threads/parentThread';
 import { getVoiceConnection } from '@discordjs/voice';
-import EmbedBuilderLocal from './utils/lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import fs from 'fs';
 import LocalServer from './utils/lib/LocalServer';
 import processStats from './utils/lib/ProcessStats';

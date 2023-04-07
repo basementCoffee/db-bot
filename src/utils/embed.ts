@@ -1,5 +1,5 @@
 import LocalServer from './lib/LocalServer';
-import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import ytdl from 'ytdl-core-discord';
 import { getQueueText, isSpotifyLink } from './utils';
 import { convertYTFormatToMS, formatDuration } from './formatUtils';

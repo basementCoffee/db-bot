@@ -1,4 +1,4 @@
-import EmbedBuilderLocal from './lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 
 /**
  * Full description of the help list.

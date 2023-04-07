@@ -2,7 +2,7 @@ import { Message } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
 import { DB_BOT_ICON_MED } from '../utils/lib/constants';
 import { getTitle } from '../utils/utils';
-import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import processStats from '../utils/lib/ProcessStats';
 
 /**

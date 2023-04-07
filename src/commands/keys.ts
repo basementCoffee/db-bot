@@ -8,7 +8,7 @@ import {
   User
 } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
-import EmbedBuilderLocal from '../utils/lib/EmbedBuilderLocal';
+import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import { botInVC, isPersonalSheet, linkValidator } from '../utils/utils';
 import { getSettings, getXdb2 } from '../database/retrieval';
 import { getAssumptionMultipleMethods } from './search';
