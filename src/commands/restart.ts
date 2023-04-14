@@ -21,7 +21,7 @@ async function runRestartCommand(message: Message, mgid: string, keyword: string
   if (server.queue[0]) {
     await playLinkToVC(message, server.queue[0], message.member!.voice?.channel, server);
   } else if (server.queueHistory.length > 0) {
-    server.queue.unshift(server.queueHistory.pop());
+    server.queue.unshift(server.queueHistory.pop()!);
     await playLinkToVC(message, server.queue[0], message.member!.voice?.channel, server);
   } else {
     message.channel.send('there is nothing to ' + keyword);

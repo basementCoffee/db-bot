@@ -296,7 +296,7 @@ async function playLinkToVC(
       }
     }
     server.skipTimes = 0;
-    server.audio.player!.on('error', async (error) => {
+    server.audio.player!.once('error', async (error) => {
       if (resource.playbackDuration < 1000 && retries < 4) {
         processStats.debug('[ERROR] audio player error');
         if (playbackTimeout) clearTimeout(playbackTimeout);
@@ -306,9 +306,13 @@ async function playLinkToVC(
         }
         return;
       }
+      if (server.queue.length === 1) {
+        server.queue.push(queueItem);
+      }
       skipLink(message, vc!, false, server, false).catch((er) => processStats.debug(er));
       // noinspection JSUnresolvedFunction
       processStats.logError({
+        content: `Dispatcher Error: ${error}`,
         embeds: [
           new EmbedBuilderLocal()
             .setTitle('Dispatcher Error')
@@ -617,19 +621,19 @@ async function skipLink(
   if (server.streamData.type === StreamType.TWITCH) endStream(server);
   if (!botInVC(message)) return;
   if (server.followUpMessage) {
-    server.followUpMessage.delete();
+    await server.followUpMessage.delete();
     server.followUpMessage = undefined;
   }
   if (server.queue.length > 0) {
     const skippedLink = server.queue.shift();
     if (!noHistory) {
-      server.queueHistory.push(skippedLink);
+      server.queueHistory.push(skippedLink!);
     }
     if (playMessageToChannel) message.channel.send('*skipped*');
     // if there is still items in the queue then play next link
     if (server.queue.length > 0) {
       await playLinkToVC(message, server.queue[0], voiceChannel, server);
-    } else if (server.autoplay) {
+    } else if (server.autoplay && skippedLink) {
       runAutoplayCommand(message, server, voiceChannel, skippedLink).then();
     } else {
       stopPlayingUtil(message.guild!.id, voiceChannel, true, server, message, message.member!.id);
@@ -699,7 +703,7 @@ function runRewindCommand(
       return message.channel.send('*max queue size has been reached, cannot rewind further*');
     }
     // assumes there is no queueItem to enter while
-    isQueueItem = false;
+    isQueueItem = undefined;
     // remove undefined links from queueHistory
     while (server.queueHistory.length > 0 && !isQueueItem) {
       isQueueItem = server.queueHistory.pop();
@@ -783,7 +787,7 @@ async function runSkipCommand(
       if (skipTimes > 0 && skipTimes < 1001) {
         let skipCounter = 0;
         while (skipTimes > 1 && server.queue.length > 0) {
-          server.queueHistory.push(server.queue.shift());
+          server.queueHistory.push(server.queue.shift()!);
           skipTimes--;
           skipCounter++;
         }

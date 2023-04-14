@@ -180,7 +180,10 @@ async function runYoutubeSearch(
               if (playNum < 1 || playNum > res.length) {
                 message.channel.send('*invalid number*');
               } else {
-                server.queueHistory.push(server.queue.shift());
+                const item = server.queue.shift();
+                if (item) {
+                  server.queueHistory.push(item);
+                }
                 runYoutubeSearch(message, true, server, searchTerm, playNum + 1, searchResult, playlistMsg);
               }
             }

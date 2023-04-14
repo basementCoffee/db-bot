@@ -8,6 +8,9 @@ const CH = require('../../channel.json');
  * @param errText The error object or message to send.
  */
 function logErrorCore(errText: string | MessageCreateOptions | Error) {
+  if (errText instanceof Error) {
+    errText = `${errText.stack}`;
+  }
   bot.channels
     .fetch(CH.err)
     .then((channel: Channel | null) => {

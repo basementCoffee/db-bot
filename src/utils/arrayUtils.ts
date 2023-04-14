@@ -3,12 +3,12 @@ import { AudioResource } from '@discordjs/voice';
 
 /**
  * Adjusts the queue for play now depending on the stream time.
- * @param dsp {import('@discordjs/voice').AudioResource} The dispatcher to reference.
+ * @param dsp {AudioResource} The dispatcher to reference.
  * @param server {LocalServer} The server to use.
  */
 function adjustQueueForPlayNow(dsp: AudioResource, server: LocalServer) {
   if (server.queue[0] && dsp?.playbackDuration && dsp.playbackDuration > 21000) {
-    server.queueHistory.push(server.queue.shift());
+    server.queueHistory.push(server.queue.shift()!);
   }
 }
 
@@ -34,6 +34,7 @@ function shuffleArray(array: any[]): void {
 function shuffleQueue(server: LocalServer) {
   // save the first item to prevent it from being shuffled
   const firstItem = server.queue.shift();
+  if (!firstItem) return;
   shuffleArray(server.queue);
   server.queue.unshift(firstItem);
 }

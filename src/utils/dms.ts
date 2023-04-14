@@ -1,5 +1,5 @@
 import { ClientUser, Message, MessageReaction, TextChannel, User } from 'discord.js';
-import { bot, botID, INVITE_MSG } from './lib/constants';
+import { bot, botID, commandsMap, INVITE_MSG } from './lib/constants';
 import { getHelpList } from './help';
 import reactions from './lib/reactions';
 import { logErrorCore } from './errorUtils';
@@ -18,8 +18,10 @@ async function dmHandler(message: Message, messageContent: string) {
   const mc = messageContent.toLowerCase().trim() + ' ';
   if (mc.length < 9) {
     if (mc.length < 7 && mc.includes('help ')) {
+      commandsMap.set('help', (commandsMap.get('help') || 0) + 1);
       return message.author.send({ embeds: [getHelpList('.', 1, version)[0].build()] });
     } else if (mc.includes('invite ')) {
+      commandsMap.set('invite', (commandsMap.get('invite') || 0) + 1);
       return message.channel.send(INVITE_MSG);
     }
   }

@@ -1,5 +1,6 @@
 import AudioImpl from './AudioImpl';
 import { GuildMember, Message } from 'discord.js';
+import { QueueItem } from './types';
 
 type StreamData = {
   // the StreamType enum
@@ -14,9 +15,9 @@ type StreamData = {
 class LocalServer {
   guildId: string;
   // now playing is the first element
-  queue: Array<any>;
+  queue: Array<QueueItem>;
   // newest items are pushed
-  queueHistory: Array<any>;
+  queueHistory: Array<QueueItem>;
   /*
     a log of completed links and their metadata
     Map<url, {queueItem, numOfPlays: number}>
