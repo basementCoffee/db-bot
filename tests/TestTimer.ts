@@ -8,7 +8,7 @@ class StopwatchTest {
     this.stopwatchMap = new Map();
   }
 
-  startStopwatch(id) {
+  startStopwatch(id: any) {
     if (!id) {
       throw new Error('invalid id');
     }
@@ -20,7 +20,7 @@ class StopwatchTest {
     return currentDate;
   }
 
-  endStopwatch(id) {
+  endStopwatch(id: any) {
     if (!id || !this.stopwatchMap.get(id)) throw new Error('invalid id');
     const timeElapsed = Date.now() - this.stopwatchMap.get(id);
     console.log(`time for [${id}]: ${timeElapsed} `);
@@ -29,4 +29,5 @@ class StopwatchTest {
   }
 }
 
-module.exports = new StopwatchTest();
+const stopwatch = new StopwatchTest();
+export { stopwatch };

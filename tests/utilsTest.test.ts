@@ -1,19 +1,22 @@
-const { formatDuration } = require('../src/utils/formatUtils');
-const { bot } = require('../src/utils/lib/constants');
-const { runMoveItemCommand } = require('../src/commands/move');
-const utils = require('../src/utils/utils');
-const { revokeClient } = require('../src/database/api/api');
-const { MockVoice, MockChannel, MockMessage, MockGuild } = require('./MockTestClasses');
+import { formatDuration } from '../src/utils/formatUtils';
+import { bot } from '../src/utils/lib/constants';
+import { runMoveItemCommand } from '../src/commands/move';
+import * as utils from '../src/utils/utils';
+import { revokeClient } from '../src/database/api/api';
+import { MockVoice, MockChannel, MockMessage, MockGuild } from './MockTestClasses';
+import { BaseGuildTextChannel } from 'discord.js';
 
-let arr;
 const destroyBot = () => bot.destroy();
 
-
-let message;
-let messageNoVoice;
+let message: BaseGuildTextChannel | MockMessage;
+let messageNoVoice: MockMessage;
+const mockGuild = new MockGuild();
+mockGuild.voice = new MockVoice(new MockChannel(mockGuild));
 beforeEach(() => {
-  message = new MockMessage(new MockChannel(), new MockGuild(new MockVoice(new MockChannel())));
-  messageNoVoice = new MockMessage(new MockChannel(), new MockGuild());
+  message = <BaseGuildTextChannel>(
+    (<unknown>new MockMessage(new MockChannel(mockGuild), new MockGuild(new MockVoice(new MockChannel(mockGuild)))))
+  );
+  messageNoVoice = new MockMessage(new MockChannel(mockGuild), new MockGuild(undefined));
 });
 
 describe('startup', () => {
@@ -23,6 +26,7 @@ describe('startup', () => {
   });
 });
 
+let arr: any;
 describe('test formatDuration', () => {
   it('formatDuration()', () => {
     expect(formatDuration(-1)).toEqual('0m 0s');
@@ -34,8 +38,8 @@ describe('test formatDuration', () => {
     expect(formatDuration(700000)).toEqual('11m 40s');
   });
   it('formatDuration() undefined', () => {
-    expect(formatDuration(undefined)).toEqual('0m 0s');
-    expect(formatDuration(null)).toEqual('0m 0s');
+    expect(formatDuration(Number(undefined))).toEqual('0m 0s');
+    expect(formatDuration(Number(null))).toEqual('0m 0s');
   });
 });
 describe('test runMoveItemCommand', () => {
@@ -46,18 +50,18 @@ describe('test runMoveItemCommand', () => {
 
   // substring of what is sent on successful move
   const MOVED_SUBSTR = 'moved item to position';
-  const contentIncludes = (txt) => (message.getContent() || '').includes(txt);
+  const contentIncludes = (txt: any) => ((<any>message).getContent() || '').includes(txt);
 
   it('valid A < B', () => {
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(message.channel, arr, 1, 2);
+    runMoveItemCommand((<any>message).channel, arr, 1, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(true);
     expect(arr).toEqual(['A', 'C', 'B', 'D']);
   });
 
   it('valid A > B', () => {
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(message.channel, arr, 2, 1);
+    runMoveItemCommand((<any>message).channel, arr, 2, 1);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(true);
     expect(arr).toEqual(['A', 'C', 'B', 'D']);
     arr = ['A', 'B', 'C', 'D'];
@@ -65,22 +69,22 @@ describe('test runMoveItemCommand', () => {
 
   it('invalid - array is too small', () => {
     arr = ['A', 'B'];
-    runMoveItemCommand(message.channel, arr, 1, 2);
+    runMoveItemCommand((<any>message).channel, arr, 1, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual(['A', 'B']);
   });
 
   it('invalid - positions', () => {
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(message.channel, arr, 0, 2);
+    runMoveItemCommand((<any>message).channel, arr, 0, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
 
-    message.clearSent();
-    runMoveItemCommand(message.channel, arr, 2, 0);
+    (<any>message).clearSent();
+    runMoveItemCommand((<any>message).channel, arr, 2, 0);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
 
-    message.clearSent();
-    runMoveItemCommand(message.channel, arr, -1, -1);
+    (<any>message).clearSent();
+    runMoveItemCommand((<any>message).channel, arr, -1, -1);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
     // expect the arr to be the same
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
@@ -88,18 +92,18 @@ describe('test runMoveItemCommand', () => {
 
   it('invalid - empty array', () => {
     arr = [];
-    runMoveItemCommand(message.channel, arr, 2, 3);
+    runMoveItemCommand((<any>message).channel, arr, 2, 3);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual([]);
   });
 
   it('undefined - positions', () => {
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(message.channel, arr, undefined, 2);
+    runMoveItemCommand((<any>message).channel, arr, <any>undefined, 2);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
 
-    message.clearSent();
-    runMoveItemCommand(message.channel, arr, 2, undefined);
+    (<any>message).clearSent();
+    runMoveItemCommand((<any>message).channel, arr, 2, <any>undefined);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
 
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
@@ -110,7 +114,7 @@ describe('test runMoveItemCommand', () => {
     botInVCSpy.mockRestore();
     botInVCGuildSpy.mockRestore();
     arr = ['A', 'B', 'C', 'D'];
-    runMoveItemCommand(messageNoVoice, arr, 2, 3);
+    runMoveItemCommand(<any>messageNoVoice, arr, 2, 3);
     expect(contentIncludes(MOVED_SUBSTR)).toEqual(false);
     expect(arr).toEqual(['A', 'B', 'C', 'D']);
   });
@@ -120,8 +124,6 @@ afterAll(async () => {
   destroyBot();
   try {
     await revokeClient();
-  }
-  catch (e) {}
+  } catch (e) {}
   await new Promise((res) => setTimeout(res, 1000));
 });
-
