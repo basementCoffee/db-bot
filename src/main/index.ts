@@ -1356,7 +1356,7 @@ function devUpdateCommand(message?: Message, args: Array<string> = []) {
       break;
     case 'all':
       processStats.setProcessInactive();
-      exec('pm2 update PM2');
+      exec('pm2 update pm2');
       break;
     case 'custom':
       if (args[1]) {
