@@ -4,7 +4,7 @@ import { Channel, Guild, TextBasedChannel } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { parentThread } from '../threads/parentThread';
 
-const CH = require('../../channel.json');
+const CH = require('../../../channel.json');
 
 /**
  * Shuts down the current process.

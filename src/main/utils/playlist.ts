@@ -4,7 +4,7 @@ import { MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITC
 import LocalServer from './lib/LocalServer';
 import { linkFormatter } from './formatUtils';
 import ytpl from 'ytpl';
-import processStats from '../utils/lib/ProcessStats';
+import processStats from './lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
 import fetch from 'isomorphic-unfetch';
 import { SoundCloud as scdl } from 'scdl-core';

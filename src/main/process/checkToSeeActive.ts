@@ -4,7 +4,7 @@ import processStats from '../utils/lib/ProcessStats';
 import buildNumber from '../utils/lib/BuildNumber';
 import { gsrun } from '../database/api/api';
 
-const CH = require('../../channel.json');
+const CH = require('../../../channel.json');
 let resHandlerTimeout: NodeJS.Timeout | null = null;
 
 /**

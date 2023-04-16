@@ -1,8 +1,8 @@
-import { formatDuration } from '../src/utils/formatUtils';
-import { bot } from '../src/utils/lib/constants';
-import { runMoveItemCommand } from '../src/commands/move';
-import * as utils from '../src/utils/utils';
-import { revokeClient } from '../src/database/api/api';
+import { formatDuration } from '../main/utils/formatUtils';
+import { bot } from '../main/utils/lib/constants';
+import { runMoveItemCommand } from '../main/commands/move';
+import * as utils from '../main/utils/utils';
+import { revokeClient } from '../main/database/api/api';
 import { MockVoice, MockChannel, MockMessage, MockGuild } from './MockTestClasses';
 import { BaseGuildTextChannel } from 'discord.js';
 

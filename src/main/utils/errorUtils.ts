@@ -1,7 +1,7 @@
 import { Channel, MessageCreateOptions, TextChannel } from 'discord.js';
 import { bot } from './lib/constants';
 
-const CH = require('../../channel.json');
+const CH = require('../../../channel.json');
 
 /**
  * Logs an error to a channel. NOTE: Does not console.log the error.

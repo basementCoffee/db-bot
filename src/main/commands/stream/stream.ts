@@ -57,7 +57,7 @@ const {
   StreamType: VoiceStreamType,
   getVoiceConnection
 } = require('@discordjs/voice');
-const CH = require('../../../channel.json');
+const CH = require('../../../../channel.json');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 

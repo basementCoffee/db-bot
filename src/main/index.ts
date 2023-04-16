@@ -76,8 +76,8 @@ const token =
   })();
 const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
 const { exec } = require('child_process');
-const version = require('../package.json').version;
-const CH = require('../channel.json');
+const version = require('../../package.json').version;
+const CH = require('../../channel.json');
 
 process.setMaxListeners(0);
 
