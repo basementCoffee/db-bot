@@ -2,7 +2,7 @@
   "name": "discordbotz",
   "version": "9.2.0",
   "description": "A discord playback bot with a UI.",
-  "main": "src/index.js",
+  "main": "dist/src/main/index.js",
   "scripts": {
     "start": "tsc && node ./dist/index.js",
     "dev": "tsc -p tsconfig.dev.json && node -r source-map-support/register dist/src/main/index.js --dev",
