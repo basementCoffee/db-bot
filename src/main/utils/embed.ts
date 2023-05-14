@@ -152,6 +152,8 @@ async function createEmbed(url: string, infos: any): Promise<{ embed: EmbedBuild
       if (infos.formats && infos.formats[0]) {
         timeMS = parseInt(infos.formats[0].approxDurationMs || videoDetails.lengthSeconds * 1000);
         duration = formatDuration(timeMS || 0);
+      } else if (videoDetails.duration === null) {
+        duration = 'N/A';
       } else {
         timeMS =
           videoDetails.durationSec * 1000 ||
