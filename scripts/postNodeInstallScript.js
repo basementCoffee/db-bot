@@ -19,9 +19,9 @@ const fileReplacementCallback = (err, name) => {
   }
 };
 
-replaceContents('./node_modules/ytdl-core/lib/sig.js', './scripts/textFileAssets/ytdlCoreSig.txt', (err) => {
-  fileReplacementCallback(err, 'ytdl-core scripts');
-});
+// replaceContents('./node_modules/ytdl-core/lib/sig.js', './scripts/textFileAssets/ytdlCoreSig.txt', (err) => {
+//   fileReplacementCallback(err, 'ytdl-core scripts');
+// });
 
 replaceContents(
   './node_modules/spotify-url-info/src/index.js',
