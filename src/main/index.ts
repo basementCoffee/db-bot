@@ -1295,7 +1295,6 @@ function processHandler(message: Message) {
     } else if (message.content.substring(11, 15) === '-off') {
       // compare process IDs
       if (message.content.substring(24) !== process.pid.toString()) {
-        // if the bot is in more than 1 voice channels then throw an error
         if (bot.voice!.adapters.size > 1) {
           processStats.logError('[WARN] sidelined instance is in 1 or more voice channels');
         }
