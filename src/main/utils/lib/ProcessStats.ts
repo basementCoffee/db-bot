@@ -137,7 +137,7 @@ class ProcessStats {
   }
 
   /**
-   * Retrieves the server for the provided guid id. Creates a new server if one does not exist.
+   * Retrieves the server for the provided guild id. Creates a new server if one does not exist.
    * @param guildId {string} The guild id.
    * @returns {LocalServer} The LocalServer object for the guild.
    */

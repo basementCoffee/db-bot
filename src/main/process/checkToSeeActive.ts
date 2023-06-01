@@ -3,8 +3,7 @@ import { bot, PREFIX_SN, setOfBotsOn } from '../utils/lib/constants';
 import processStats from '../utils/lib/ProcessStats';
 import buildNumber from '../utils/lib/BuildNumber';
 import { gsrun } from '../database/api/api';
-
-const CH = require('../../../channel.json');
+import config from '../../../config.json';
 let resHandlerTimeout: NodeJS.Timeout | null = null;
 
 /**
@@ -14,7 +13,7 @@ function checkToSeeActive() {
   setOfBotsOn.clear();
   // see if any bots are active
   // noinspection JSUnresolvedFunction
-  bot.channels.fetch(CH.process).then((channel: Channel | null) =>
+  bot.channels.fetch(config.process).then((channel: Channel | null) =>
     (<TextBasedChannel>channel).send('=gzk').then(() => {
       processStats.isPendingStatus = true;
       // Active bots should populate the setOfBotsOn set.
@@ -52,7 +51,7 @@ async function becomeActiveProcess() {
   processStats.setProcessActive();
   processStats.setDevMode(false);
   // noinspection JSUnresolvedFunction
-  bot.channels.fetch(CH.process).then((channel: Channel | null) => {
+  bot.channels.fetch(config.process).then((channel: Channel | null) => {
     (<TextBasedChannel>channel).send('~db-process-off' + buildNumber.getBuildNo() + '-' + process.pid.toString());
   });
   const xdb = await gsrun('A', 'B', PREFIX_SN);

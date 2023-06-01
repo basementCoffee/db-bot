@@ -57,7 +57,7 @@ const {
   StreamType: VoiceStreamType,
   getVoiceConnection
 } = require('@discordjs/voice');
-const CH = require('../../../../channel.json');
+import config from '../../../../config.json';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
@@ -421,7 +421,7 @@ async function playLinkToVC(
     if (server.skipTimes > 3) {
       processStats.disconnectConnection(server);
       message.channel.send('***db vibe is facing some issues, may restart***');
-      checkStatusOfYtdl(processStats.getServer(CH['check-in-guild']), message).then();
+      checkStatusOfYtdl(processStats.getServer(config['check-in-guild']), message).then();
       return;
     } else {
       server.skipTimes++;
@@ -568,14 +568,14 @@ async function checkStatusOfYtdl(server: LocalServer, message?: Message) {
   let connection;
   try {
     connection = await server.audio.joinVoiceChannel(
-      await bot.guilds.fetch(CH['check-in-guild']),
-      CH['check-in-voice']
+      await bot.guilds.fetch(config['check-in-guild']),
+      config['check-in-voice']
     );
   } catch (e) {
     // if cannot join check-in voice channel, try the backup voice channel
     connection = await server.audio.joinVoiceChannel(
-      await bot.guilds.fetch(CH['check-in-guild']),
-      CH['check-in-voice-2']
+      await bot.guilds.fetch(config['check-in-guild']),
+      config['check-in-voice-2']
     );
   }
   try {

@@ -3,8 +3,7 @@ import processStats from '../utils/lib/ProcessStats';
 import { Channel, Guild, TextBasedChannel } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 import { parentThread } from '../threads/parentThread';
-
-const CH = require('../../../channel.json');
+import config from '../../../config.json';
 
 /**
  * Shuts down the current process.
@@ -21,14 +20,14 @@ function shutdown(type: string) {
     try {
       if (!processStats.devMode) {
         bot.channels
-          .fetch(CH.process)
+          .fetch(config.process)
           .then((channel: Channel | null) => {
             (<TextBasedChannel>channel).send(`shutting down: '${process.pid}' (${type})`);
           })
           .catch((e) => console.log('shutdown error: ', e));
         if (wasActive)
           bot.channels
-            .fetch(CH.process)
+            .fetch(config.process)
             .then((channel: any) => channel.send('=gzz'))
             .catch((e) => console.log('shutdown error: ', e));
       }

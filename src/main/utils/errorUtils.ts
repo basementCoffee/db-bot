@@ -1,7 +1,6 @@
 import { Channel, MessageCreateOptions, TextChannel } from 'discord.js';
 import { bot } from './lib/constants';
-
-const CH = require('../../../channel.json');
+import config from '../../../config.json';
 
 /**
  * Logs an error to a channel. NOTE: Does not console.log the error.
@@ -12,7 +11,7 @@ function logErrorCore(errText: string | MessageCreateOptions | Error) {
     errText = `${errText.stack}`;
   }
   bot.channels
-    .fetch(CH.err)
+    .fetch(config.err)
     .then((channel: Channel | null) => {
       if (errText instanceof Error) {
         errText = `${errText.stack}`;

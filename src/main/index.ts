@@ -68,6 +68,7 @@ import LocalServer from './utils/lib/LocalServer';
 import processStats from './utils/lib/ProcessStats';
 import commandHandlerCommon from './commands/CommandHandlerCommon';
 import axios from 'axios';
+import config from '../../config.json';
 
 const token =
   process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n') ||
@@ -77,8 +78,6 @@ const token =
 const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
 const { exec } = require('child_process');
 const version = require('../../package.json').version;
-const CH = require('../../channel.json');
-
 process.setMaxListeners(0);
 
 /**
@@ -92,7 +91,7 @@ async function runCommandCases(message: Message) {
   const server = processStats.getServer(mgid);
   if (processStats.devMode && !server.prefix) {
     // devmode prefix
-    server.prefix = '=';
+    server.prefix = config.devPrefix;
   }
   if (server.currentEmbedChannelId === message.channel.id && server.numSinceLastEmbed < 10) {
     server.numSinceLastEmbed += 2;
@@ -1230,7 +1229,7 @@ bot.once('ready', () => {
   parentThread('STARTUP', {}, []);
   // bot starts up as inactive, if no response from the channel then activates itself
   // noinspection JSUnresolvedFunction
-  processStats.getServer(CH['check-in-guild']);
+  processStats.getServer(config['check-in-guild']);
   if (processStats.devMode) {
     processStats.setProcessActive();
     if (startupTest) {
@@ -1248,14 +1247,14 @@ bot.once('ready', () => {
       }
     }
   } else {
-    checkStatusOfYtdl(processStats.getServer(CH['check-in-guild'])).then();
+    checkStatusOfYtdl(processStats.getServer(config['check-in-guild'])).then();
     setProcessInactiveAndMonitor();
     bot.user!.setActivity('beats | .db-vibe', { type: ActivityType.Playing });
     console.log('-starting up sidelined-');
     console.log('checking status of other bots...');
     // bot logs - startup (NOTICE: "starting:" is reserved)
     (async () =>
-      (<TextChannel>await bot.channels.fetch(CH.process))
+      (<TextChannel>await bot.channels.fetch(config.process))
         .send(`starting: ${process.pid} [${buildNo.getBuildNo()}]`)
         .then(() => {
           checkToSeeActive();
@@ -1385,7 +1384,7 @@ async function devProcessCommands(message: Message) {
   switch (zargs[0].substring(3)) {
     case 'k':
       // =gzk
-      if (CH.process === message.channel.id) {
+      if (config.process === message.channel.id) {
         if (!processStats.isInactive && !processStats.devMode) {
           const dbOnMsg = `~db-process-on${Math.min(bot.voice.adapters.size, 9)}${buildNo.getBuildNo()}ver${
             process.pid
@@ -1646,9 +1645,12 @@ async function devProcessCommands(message: Message) {
 
 // parses message, provides a response
 bot.on('messageCreate', (message: Message) => {
-  if ((message.content.substring(0, 3) === '=gz' || message.channel.id === CH.process) && isAdmin(message.author.id)) {
+  if (
+    (message.content.substring(0, 3) === '=gz' || message.channel.id === config.process) &&
+    isAdmin(message.author.id)
+  ) {
     void devProcessCommands(message);
-    if (message.channel.id === CH.process) {
+    if (message.channel.id === config.process) {
       if (!processStats.devMode) {
         processHandler(message);
       }
@@ -1889,4 +1891,5 @@ async function fixConnection(): Promise<boolean> {
   // login to discord
   await bot.login(token);
   if (bot.user!.id !== botID) throw new Error('Invalid botID');
+  console.log('Logged into discord.');
 })();
