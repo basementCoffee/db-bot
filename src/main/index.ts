@@ -1839,7 +1839,7 @@ let isFixingConnection = false;
  * @param e The Error Object.
  */
 function uncaughtExceptionAction(e: Error) {
-  if (e.message.includes('getaddrinfo ENOTFOUND discord.com')) {
+  if (e.message.includes('getaddrinfo') && e.message.includes('discord.com')) {
     if (isFixingConnection) return;
     isFixingConnection = true;
     fixConnection().finally(() => {
