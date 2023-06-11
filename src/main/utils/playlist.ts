@@ -160,6 +160,7 @@ async function addPlaylistToQueue(
     message.channel.send('*could not get data from the link provided*');
     return 0;
   }
+
   try {
     let url;
     if (addToFront) {
@@ -231,6 +232,9 @@ async function addLinkToQueue(
   if (isSpotifyLink(url)) {
     if (url.includes(SPOTIFY_BASE_LINK)) {
       url = linkFormatter(url, SPOTIFY_BASE_LINK);
+    }
+    if (url.includes('?')) {
+      url = url.substring(0, url.indexOf('?'));
     }
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SPOTIFY, addToFront);
   } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
