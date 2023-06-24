@@ -1260,6 +1260,7 @@ bot.once('ready', () => {
           checkToSeeActive();
         }))();
   }
+  console.log('-ready-');
 });
 
 function processHandler(message: Message) {
@@ -1891,5 +1892,5 @@ async function fixConnection(): Promise<boolean> {
   // login to discord
   await bot.login(token);
   if (bot.user!.id !== botID) throw new Error('Invalid botID');
-  console.log('Logged into discord.');
+  console.log('Logged into discord. Waiting for ready event...');
 })();
