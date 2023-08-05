@@ -175,7 +175,7 @@ async function addPlaylistToQueue(
         url = getUrlFromInfos(pItem, linkType);
         if (itemsLeft > 0) {
           if (url) {
-            qArray.unshift(createQueueItem(url, linkType, pItem));
+            qArray.unshift(createQueueItem(url, linkType, pItem, playlistUrl));
             numItems++;
             itemsLeft--;
           }
@@ -191,10 +191,10 @@ async function addPlaylistToQueue(
         if (itemsLeft > 0) {
           if (url) {
             if (position && !(position > qArray.length)) {
-              qArray.splice(position, 0, createQueueItem(url, linkType, pItem));
+              qArray.splice(position, 0, createQueueItem(url, linkType, pItem, playlistUrl));
               position++;
             } else {
-              qArray.push(createQueueItem(url, linkType, pItem));
+              qArray.push(createQueueItem(url, linkType, pItem, playlistUrl));
             }
             numItems++;
             itemsLeft--;
