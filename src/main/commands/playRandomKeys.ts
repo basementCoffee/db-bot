@@ -40,19 +40,19 @@ async function runRandomToQueue(
   // temporarily take just the first argument.
   if (!isValidRequestWPlay(server, message, 'shuffle keys')) return;
   let firstWord = wArray[0] || '';
-  if (wArray.length < 1) {
+  if (firstWord.includes('.')) {
+    const link = universalLinkFormatter(firstWord);
+    if (verifyPlaylist(link)) {
+      return playRandomKeys(message, link, undefined, server, true, addToFront);
+    }
+  }
+  if (!wArray.length) {
     if (isShuffle) {
       return playRandomKeys(message, firstWord, undefined, server, false, addToFront);
     } else {
       message.channel.send('must provide an argument (can be a number, key, or playlist-link)');
     }
     return;
-  }
-  if (firstWord.includes('.')) {
-    const link = universalLinkFormatter(firstWord);
-    if (verifyPlaylist(link)) {
-      return playRandomKeys(message, link, undefined, server, true, addToFront);
-    }
   }
   // get the xdb playlist name if applicable
   let xdbPlaylist;
@@ -72,7 +72,10 @@ async function runRandomToQueue(
   server.numSinceLastEmbed++;
   if (!numToPlay) {
     if (firstWord) {
-      playRandomKeys(message, firstWord, xdb.globalKeys, server, true, addToFront).then();
+      playRandomKeys(message, firstWord.replace(',', ''), xdb.globalKeys, server, true, addToFront).then();
+      if (wArray.length > 1) {
+        message.channel.send('can not shuffle multiple links at once, only the first one will be shuffled');
+      }
     } else {
       playRandomKeys(message, 1, xdbPlaylist || xdb.globalKeys, server, false, addToFront).then();
     }
@@ -280,7 +283,6 @@ async function playRandomKeysToVC(message: Message, server: LocalServer, addToFr
   const availableSpace = MAX_QUEUE_S - server.queue.length;
   if (keys.length > availableSpace) keys = keys.slice(0, availableSpace);
   server.queue.splice(addToFront ? 0 : server.queue.length, 0, ...keys);
-
   if (addToFront || (queueIsEmpty && server.queue.length === keys.length)) {
     await playLinkToVC(message, server.queue[0], message.member!.voice?.channel, server);
   } else if (!botInVC(message)) {

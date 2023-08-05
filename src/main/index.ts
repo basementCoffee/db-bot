@@ -273,7 +273,7 @@ async function runUserCommands(
       break;
     case 'shuffle':
       commandHandlerCommon.shuffleQueueOrPlayRandom(
-        [args[1]],
+        args.slice(1),
         message,
         getSheetName(message.member!.id),
         server,
