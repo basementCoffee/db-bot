@@ -19,7 +19,10 @@ function runMoveItemCommand(channel: BaseGuildTextChannel, arr: any[], posA: num
   const MIN_POS = 1;
   const MIN_ARR_SIZE = 3;
   if (!(posA && posB)) {
-    channel.send("*two numbers expected: the position of the item to move and it's new position*\n`ex: move 1 5`");
+    channel.send(
+      "*two numbers expected: the position of the item to move and it's new position*\n`ex: move 1 5`\n" +
+        'if you want to move a key to a different playlist then use `move-key`'
+    );
   } else if (arr.length < MIN_ARR_SIZE) {
     channel.send('*not enough items in the queue*');
   } else if (posA < MIN_POS || posB < MIN_POS) {
