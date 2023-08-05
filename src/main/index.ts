@@ -396,6 +396,13 @@ async function runUserCommands(
     case 'find':
     case 'lookup':
     case 'search':
+      if (!args[1]) {
+        const lookupItem = server.queue[0];
+        if (lookupItem.source) {
+          message.channel.send('from playlist: <' + lookupItem.source + '>');
+          return;
+        }
+      }
       commandHandlerCommon
         .searchForKeyUniversal(
           message,

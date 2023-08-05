@@ -8,6 +8,7 @@ import processStats from './lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
 import fetch from 'isomorphic-unfetch';
 import { SoundCloud as scdl } from 'scdl-core';
+import { QueueItem } from './lib/types';
 
 const { getData, getTracks } = require('spotify-url-info')(fetch);
 
@@ -54,25 +55,26 @@ async function getTracksWrapper(playlistUrl: string, retries = 0): Promise<any[]
 
 /**
  * Un-package the playlist url and pushes each url to the given array.
- * @param url A Spotify or YouTube playlist link.
+ * @param playlistUrl A Spotify or YouTube playlist link.
  * @param tempArray The array to push to.
  * @returns {Promise<number>} The number of items pushed to the array.
  */
-async function getPlaylistItems(url: string, tempArray: any[]): Promise<number> {
-  const linkType = getLinkType(url);
-  const playlist = await getPlaylistArray(url, linkType);
+async function getPlaylistItems(playlistUrl: string, tempArray: QueueItem[]): Promise<number> {
+  const linkType = getLinkType(playlistUrl);
+  const playlist = await getPlaylistArray(playlistUrl, linkType);
   let itemCounter = 0;
   try {
     // add all the songs from the playlist to the tempArray
+    let linkUrl;
     for (const j of playlist) {
-      url = getUrlFromInfos(j, linkType);
-      if (url) {
-        tempArray.push(createQueueItem(url, linkType, j));
+      linkUrl = getUrlFromInfos(j, linkType);
+      if (playlistUrl) {
+        tempArray.push(createQueueItem(linkUrl, linkType, j, playlistUrl));
         itemCounter++;
       }
     }
   } catch (e) {
-    processStats.debug(`Error in getPlaylistItems: ${url}\n`, e);
+    processStats.debug(`Error in getPlaylistItems: ${playlistUrl}\n`, e);
   }
   return itemCounter;
 }

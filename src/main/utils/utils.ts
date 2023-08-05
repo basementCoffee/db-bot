@@ -226,14 +226,16 @@ function unshiftQueue(queue: Array<any>, queueItem: any) {
  * @param url {string} The URL to add.
  * @param type {any?} The type of URL. Provided as a StreamType.
  * @param infos {any?} The infos of the URL.
- * @returns {{type, url, infos}}
+ * @param source The source of the URL, if it came from a playlist
+ * @returns {{type, url, infos, source}}
  */
-function createQueueItem(url: string, type: StreamType, infos?: any): QueueItem {
+function createQueueItem(url: string, type: StreamType, infos?: any, source?: string): QueueItem {
   if (!type) type = getLinkType(url);
   return {
-    url: url,
-    type: type,
-    infos: infos
+    url,
+    type,
+    infos,
+    source
   };
 }
 

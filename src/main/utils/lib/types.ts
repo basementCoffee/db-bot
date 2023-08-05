@@ -7,4 +7,6 @@ export type QueueItem = {
   infos: any;
   urlAlt?: string;
   embed?: any;
+  // where the item was added, if from a playlist
+  source?: string;
 };

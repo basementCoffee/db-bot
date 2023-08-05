@@ -221,14 +221,6 @@ async function getRandomKeys(
       };
     }
     updateMsg = 'there was an issue completing your request';
-    // commented out because not sure if it is needed
-    // const rn = Math.floor(Math.random() * valArray.length);
-    // if (verifyPlaylist(valArray[rn])) {
-    //   return {
-    //     err: 'There was an error.',
-    //   };
-    // }
-    // randomKeysArr.push(createQueueItem(valArray[rn], null, null));
   }
   return {
     update: updateMsg,
