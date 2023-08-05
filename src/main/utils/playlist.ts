@@ -157,7 +157,7 @@ async function addPlaylistToQueue(
 ) {
   const playlist = (await getPlaylistArray(playlistUrl, linkType)) || [];
   if (playlist.length < 1) {
-    message.channel.send('*could not get data from the link provided*');
+    message.channel.send('*could not get data from the link provided:*\n' + playlistUrl);
     return 0;
   }
 
