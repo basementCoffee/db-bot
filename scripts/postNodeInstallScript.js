@@ -19,10 +19,6 @@ const fileReplacementCallback = (err, name) => {
   }
 };
 
-// replaceContents('./node_modules/ytdl-core/lib/sig.js', './scripts/textFileAssets/ytdlCoreSig.txt', (err) => {
-//   fileReplacementCallback(err, 'ytdl-core scripts');
-// });
-
 replaceContents(
   './node_modules/spotify-url-info/src/index.js',
   './scripts/textFileAssets/spotify-url-info-index.txt',
@@ -32,5 +28,9 @@ replaceContents(
 );
 
 replaceContents('./node_modules/ytsr/lib/parseItem.js', './scripts/textFileAssets/ytsr-parseItem.txt', (err) => {
-  fileReplacementCallback(err, 'ytsr scripts');
+  fileReplacementCallback(err, 'ytsr parseItem script file');
+});
+
+replaceContents('./node_modules/ytsr/lib/utils.js', './scripts/textFileAssets/ytsr-utils.txt', (err) => {
+  fileReplacementCallback(err, 'ytsr utils.js script file');
 });
