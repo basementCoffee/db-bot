@@ -255,8 +255,8 @@ async function runDatabasePlayCommand(
 }
 
 function shuffle(server: LocalServer, message: Message, numAdded: number) {
-  const prevQueueSize = botInVC(message) ? server.queue.length : 0;
   if (!numAdded) return;
+  const prevQueueSize = botInVC(message) ? server.queue.length - numAdded : 0;
   if (prevQueueSize) {
     const itemsToShuffle = server.queue.splice(prevQueueSize, server.queue.length + 1 - numAdded);
     shuffleArray(itemsToShuffle);
