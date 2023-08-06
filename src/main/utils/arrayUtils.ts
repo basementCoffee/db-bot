@@ -21,8 +21,8 @@ function shuffleArray(array: any[]): void {
   // indices for shuffling
   let currentIndex = array.length;
   let randomIndex;
-  while (currentIndex > -1) {
-    randomIndex = Math.floor(Math.random() * currentIndex) + 1;
+  while (currentIndex > 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex--;
     // swap current and random index locations
     [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
