@@ -13,7 +13,7 @@ function adjustQueueForPlayNow(dsp: AudioResource, server: LocalServer) {
 }
 
 /**
- * Shuffles the provided array in place. Does not shuffle the first item in the array.
+ * Shuffles the provided array in place.
  * @param array {Array<*>} The array to shuffle.
  * @returns {void}
  */
@@ -21,8 +21,7 @@ function shuffleArray(array: any[]): void {
   // indices for shuffling
   let currentIndex = array.length;
   let randomIndex;
-  // exclude what's actively playing (at index 0)
-  while (currentIndex > 0) {
+  while (currentIndex > -1) {
     randomIndex = Math.floor(Math.random() * currentIndex) + 1;
     currentIndex--;
     // swap current and random index locations

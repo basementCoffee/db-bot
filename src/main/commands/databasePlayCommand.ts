@@ -8,17 +8,17 @@ import { MAX_QUEUE_S } from '../utils/lib/constants';
 import { updateActiveEmbed } from '../utils/embed';
 import { addPlaylistToQueue } from '../utils/playlist';
 import { isValidRequestWPlay } from '../utils/validation';
-import { adjustQueueForPlayNow, shuffleArray, shuffleQueue } from '../utils/arrayUtils';
+import { adjustQueueForPlayNow, shuffleArray } from '../utils/arrayUtils';
 
 /**
  * Plays an entire custom playlist.
  * @param args {Array<string>} The array of playlists to play.
- * @param message {import('Discord.js').Message} The message object.
+ * @param message {import("Discord.js").Message} The message object.
  * @param sheetName {string} The name of the sheet to reference.
  * @param playRightNow {boolean} If the playlist should be played right now.
  * @param printErrorMsg {boolean} If an error message should be printed.
  * @param server {LocalServer} The server metadata.
- * @param shuffle {boolean?} Whether to shuffle the playlist.
+ * @param isShuffle {boolean?} Whether to shuffle the playlist.
  * @returns {Promise<void>}
  */
 async function playPlaylistDB(
@@ -28,7 +28,7 @@ async function playPlaylistDB(
   playRightNow: boolean,
   printErrorMsg: boolean,
   server: LocalServer,
-  shuffle?: boolean
+  isShuffle?: boolean
 ): Promise<void> {
   if (args.length < 1) {
     message.channel.send('*input playlist names after the command to play a specific playlists*');
@@ -72,17 +72,7 @@ async function playPlaylistDB(
     message.channel.send('*no keys found in the playlists provided*');
     return;
   }
-  const prevQueueSize = botInVC(message) ? server.queue.length : 0;
-  const numAdded = await runDatabasePlayCommand(keys, message, sheetName, playRightNow, printErrorMsg, server);
-  if (numAdded > 0) {
-    if (prevQueueSize) {
-      const itemsToShuffle = server.queue.splice(prevQueueSize, server.queue.length + 1 - numAdded);
-      shuffleArray(itemsToShuffle);
-      server.queue.concat(itemsToShuffle);
-    } else {
-      shuffleQueue(server);
-    }
-  }
+  await runDatabasePlayCommand(keys, message, sheetName, playRightNow, printErrorMsg, server, isShuffle);
 }
 
 /**
@@ -93,6 +83,7 @@ async function playPlaylistDB(
  * @param playRightNow bool of whether to play now or now
  * @param printErrorMsg prints error message, should be true unless attempting a followup db run
  * @param server {LocalServer} The server playback metadata
+ * @param isShuffle Whether to shuffle what is being added to the queue
  * @returns The number of items added to the queue
  */
 async function runDatabasePlayCommand(
@@ -101,7 +92,8 @@ async function runDatabasePlayCommand(
   sheetName: string,
   playRightNow: boolean,
   printErrorMsg: boolean,
-  server: LocalServer
+  server: LocalServer,
+  isShuffle?: boolean
 ): Promise<number> {
   if (!args[1]) {
     message.channel.send('*put a key-name after the command to play a specific key*');
@@ -172,6 +164,7 @@ async function runDatabasePlayCommand(
       message.channel.send(unFoundString);
     }
     if (playRightNow) {
+      if (isShuffle) shuffle(server, message, dbAddedToQueue);
       playLinkToVC(message, server.queue[0], voiceChannel, server);
       return dbAddedToQueue;
     } else {
@@ -202,6 +195,7 @@ async function runDatabasePlayCommand(
           } else {
             server.queue.unshift(createQueueItem(tempUrl!, playlistType, null));
           }
+          if (isShuffle) shuffle(server, message, dbAddedToQueue);
           playLinkToVC(message, server.queue[0], voiceChannel, server);
           message.channel.send('*playing now*');
           return dbAddedToQueue;
@@ -231,6 +225,7 @@ async function runDatabasePlayCommand(
         } else {
           server.queue.unshift(createQueueItem(tempUrl, playlistType, null));
         }
+        if (isShuffle) shuffle(server, message, dbAddedToQueue);
         playLinkToVC(message, server.queue[0], voiceChannel, server);
         message.channel.send('*playing now*');
         return dbAddedToQueue;
@@ -251,11 +246,22 @@ async function runDatabasePlayCommand(
       await updateActiveEmbed(server);
     }
   }
+  if (isShuffle) shuffle(server, message, dbAddedToQueue);
   // if queue was empty then play
   if (queueWasEmpty && server.queue.length > 0) {
     playLinkToVC(message, server.queue[0], voiceChannel, server);
   }
   return dbAddedToQueue;
+}
+
+function shuffle(server: LocalServer, message: Message, numAdded: number) {
+  const prevQueueSize = botInVC(message) ? server.queue.length : 0;
+  if (!numAdded) return;
+  if (prevQueueSize) {
+    const itemsToShuffle = server.queue.splice(prevQueueSize, server.queue.length + 1 - numAdded);
+    shuffleArray(itemsToShuffle);
+    server.queue.push(...itemsToShuffle);
+  } else shuffleArray(server.queue);
 }
 
 /**

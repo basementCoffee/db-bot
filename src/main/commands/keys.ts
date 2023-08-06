@@ -9,7 +9,7 @@ import {
 } from 'discord.js';
 import LocalServer from '../utils/lib/LocalServer';
 import { EmbedBuilderLocal } from '@hoursofza/djs-common';
-import { botInVC, isPersonalSheet, linkValidator } from '../utils/utils';
+import { botInVC, getSheetName, isPersonalSheet, linkValidator } from '../utils/utils';
 import { getSettings, getXdb2 } from '../database/retrieval';
 import { getAssumptionMultipleMethods } from './search';
 import reactions from '../utils/lib/reactions';
@@ -19,6 +19,7 @@ import { renameKey, renamePlaylist } from './rename';
 import { serializeAndUpdate } from '../database/utils';
 import { removePlaylist } from './remove';
 import { universalLinkFormatter } from '../utils/formatUtils';
+import commandHandlerCommon from './CommandHandlerCommon';
 
 // returns an array of tips
 const getTips = (prefixS: string) => [
@@ -198,8 +199,10 @@ async function runKeysCommand(
         sentMsg
           .react(reactions.ARROW_L)
           .then(() => sentMsg.react(reactions.ARROW_R))
-          .then(() => sentMsg.react(reactions.QUESTION))
-          .then(() => sentMsg.react(reactions.GEAR));
+          .then(() => sentMsg.react(reactions.SHUFFLE))
+          .then(() => sentMsg.react(reactions.GEAR))
+          .then(() => sentMsg.react(reactions.QUESTION));
+
         const filter = (reaction: MessageReaction, user2: User) => {
           return (
             user2.id !== botID &&
@@ -255,6 +258,33 @@ async function runKeysCommand(
                 sheetName
               );
               if (wasChanged) sentMsg.edit({ embeds: [(await generateKeysEmbed(true)).build()] });
+            } else if (reaction.emoji.name === reactions.SHUFFLE) {
+              await reaction.users.remove(user.id);
+              if (pageIndex === 0) {
+                commandHandlerCommon
+                  .playDBPlaylist(
+                    [...xdb.playlistArray],
+                    message,
+                    getSheetName(message.member!.id),
+                    false,
+                    true,
+                    server,
+                    true
+                  )
+                  .then();
+              } else {
+                commandHandlerCommon
+                  .playDBPlaylist(
+                    [xdb.playlistArray[pageIndex - 1]],
+                    message,
+                    getSheetName(message.member!.id),
+                    false,
+                    true,
+                    server,
+                    true
+                  )
+                  .then();
+              }
             }
           }
         });
