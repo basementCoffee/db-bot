@@ -16,8 +16,13 @@ const DEFAULT_CONTEXT = {
 };
 
 exports.parseFilters = json => {
-  const pc = json.header.searchHeaderRenderer.searchFilterButton.buttonRenderer.command.openPopupAction.popup;
-  const filterWrapper = pc.searchFilterOptionsDialogRenderer.groups || [];
+  const pc = json.contents.twoColumnSearchResultsRenderer.primaryContents;
+  const wrapper = pc.sectionListRenderer || pc.richGridRenderer;
+  let filterWrapper = (wrapper.subMenu || wrapper.submenu).searchSubMenuRenderer.groups;
+  if (filterWrapper === undefined) {
+    const pc1 = json.header.searchHeaderRenderer.searchFilterButton.buttonRenderer.command.openPopupAction.popup;
+    filterWrapper = pc1.searchFilterOptionsDialogRenderer.groups || [];
+  }
   const parsedGroups = new Map();
   for (const filterGroup of filterWrapper) {
     const singleFilterGroup = new Map();
@@ -165,7 +170,7 @@ exports.parseWrapper = primaryContents => {
       .itemSectionRenderer.contents;
     continuation = primaryContents.sectionListRenderer.contents
       .find(x => Object.keys(x)[0] === 'continuationItemRenderer');
-    // Newer Format
+  // Newer Format
   } else if (primaryContents.richGridRenderer) {
     rawItems = primaryContents.richGridRenderer.contents
       .filter(x => !Object.prototype.hasOwnProperty.call(x, 'continuationItemRenderer'))
@@ -185,12 +190,12 @@ exports.parsePage2Wrapper = continuationItems => {
     // Older Format
     if (Object.prototype.hasOwnProperty.call(ci, 'itemSectionRenderer')) {
       rawItems.push(...ci.itemSectionRenderer.contents);
-      // Newer Format
+    // Newer Format
     } else if (Object.prototype.hasOwnProperty.call(ci, 'richItemRenderer')) {
       rawItems.push(ci.richItemRenderer.content);
     } else if (Object.prototype.hasOwnProperty.call(ci, 'richSectionRenderer')) {
       rawItems.push(ci.richSectionRenderer.content);
-      // Continuation
+    // Continuation
     } else if (Object.prototype.hasOwnProperty.call(ci, 'continuationItemRenderer')) {
       continuation = ci;
     }
@@ -246,7 +251,7 @@ const between = (haystack, left, right) => {
  * @param {string} mixedJson
  * @returns {string}
  * @throws {Error} no json or invalid json
- */
+*/
 const cutAfterJSON = exports.cutAfterJSON = mixedJson => {
   let open, close;
   if (mixedJson[0] === '[') {
