@@ -140,7 +140,7 @@ class CommandHandlerCommon {
    * @param channel The text-channel to send the joke to.
    * @returns {Promise<void>}
    */
-  static async joke(channel: any) {
+  static async joke(channel: any): Promise<void> {
     const joke = await getJoke();
     channel.send(`${ZWSP}${joke}`);
   }
