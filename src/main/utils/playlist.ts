@@ -138,7 +138,7 @@ async function getPlaylistArray(playlistUrl: string, type: StreamType) {
 }
 
 /**
- * Adds playlists to the reference array passed in. Can handle Spotify and SoundCloud tracks.
+ * Adds single links or playlists to the reference array passed in. Can handle Spotify and SoundCloud tracks.
  * @param message The message metadata
  * @param qArray {Array} The queue to add to.
  * @param numItems {number} The number of items added to queue
@@ -257,4 +257,4 @@ async function addLinkToQueue(
   return 1;
 }
 
-export { getPlaylistItems, addPlaylistToQueue, addLinkToQueue };
+export { getPlaylistItems, addPlaylistToQueue, addLinkToQueue, getPlaylistArray };

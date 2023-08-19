@@ -44,9 +44,6 @@ import { runKeysCommand } from '../keys';
 import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import { QueueItem } from '../../utils/lib/types';
 import fluentFfmpeg from 'fluent-ffmpeg';
-import fetch from 'isomorphic-unfetch';
-
-const { getData } = require('spotify-url-info')(fetch);
 const m3u8stream = require('m3u8stream');
 const twitch = require('twitch-m3u8');
 const { SoundCloud: scdl } = require('scdl-core');
@@ -58,6 +55,7 @@ const {
   getVoiceConnection
 } = require('@discordjs/voice');
 import config from '../../../../config.json';
+import { getPlaylistArray } from '../../utils/playlist';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
@@ -455,7 +453,7 @@ async function getYTUrlFromSpotifyUrl(queueItem: any, whatToPlay: string): Promi
     let itemIndex = 0;
     if (!queueItem.infos) {
       try {
-        queueItem.infos = await getData(whatToPlay);
+        queueItem.infos = (await getPlaylistArray(whatToPlay, StreamType.SPOTIFY))[0];
       } catch (e) {
         console.log(e);
         return {
