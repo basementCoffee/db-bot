@@ -189,7 +189,20 @@ async function createMemoryEmbed() {
  */
 function endStream(server: LocalServer) {
   try {
-    if (server.streamData.type === StreamType.SOUNDCLOUD) {
+    if (server.streamData.type === StreamType.YOUTUBE) {
+      if (server.streamData.ytPlayer === 'play-dl') {
+        server.streamData.stream.pause();
+        server.streamData.stream.destroy();
+      } else {
+        try {
+          if (server.streamData.ytPlayer === 'fluent') {
+            server.streamData.stream.kill();
+          } else {
+            server.streamData.stream.destroy();
+          }
+        } catch (e) {}
+      }
+    } else if (server.streamData.type === StreamType.SOUNDCLOUD) {
       if (!server.streamData.stream._readableState.closed) {
         console.log(`not closed: ${server.streamData.stream._readableState.pipes.length}`);
       }
@@ -208,8 +221,6 @@ function endStream(server: LocalServer) {
   } catch (e) {
     console.log('Error: attempt stream close - ', e);
   }
-  server.streamData.stream = undefined;
-  server.streamData.type = undefined;
 }
 
 /**

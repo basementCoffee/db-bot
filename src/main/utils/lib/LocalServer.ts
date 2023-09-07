@@ -9,7 +9,8 @@ type StreamData = {
   stream: any;
   // urlAlt is added if it's a YT stream
   urlAlt: string | undefined;
-  isFluent: any;
+  // the specific stream source for YT streams (fluent, ytdl-core-discord, play-dl)
+  ytPlayer: string | undefined;
 };
 
 class LocalServer {
@@ -141,7 +142,7 @@ class LocalServer {
       type: undefined,
       stream: undefined,
       urlAlt: undefined,
-      isFluent: undefined
+      ytPlayer: undefined
     };
     this.twitchNotif = {
       isSent: false,
@@ -172,7 +173,7 @@ class LocalServer {
     this.streamData.type = undefined;
     this.streamData.stream = undefined;
     this.streamData.urlAlt = undefined;
-    this.streamData.isFluent = undefined;
+    this.streamData.ytPlayer = undefined;
   }
 }
 

@@ -176,17 +176,7 @@ async function playLinkToVC(
     server.currentEmbed.delete().catch((er) => processStats.debug(er));
     server.currentEmbed = undefined;
   }
-  if (server.streamData.type === StreamType.YOUTUBE) {
-    try {
-      if (server.streamData.isFluent) {
-        server.streamData.stream.kill();
-      } else {
-        await server.streamData.stream.destroy();
-      }
-    } catch (e) {}
-  } else if (server.streamData.stream) {
-    endStream(server);
-  }
+  endStream(server);
   server.resetStreamData();
   if (whatToPlay !== whatspMap.get(vc.id)) return;
   try {
@@ -247,7 +237,7 @@ async function playLinkToVC(
         .toFormat('mp3')
         .setStartTime(Math.ceil(seekSec));
       server.streamData.type = StreamType.YOUTUBE;
-      server.streamData.isFluent = true;
+      server.streamData.ytPlayer = 'fluent';
       queueItem.urlAlt = urlAlt;
     } else {
       try {
@@ -257,10 +247,12 @@ async function playLinkToVC(
           highWaterMark: 1 << 25
         });
         audioResourceOptions = { inputType: VoiceStreamType.Opus };
+        server.streamData.ytPlayer = 'ytdl-core-discord';
       } catch (e) {
-        const playObj = await play.stream(urlAlt, { discordPlayerCompatibility: true });
+        const playObj = await play.stream(urlAlt);
         stream = playObj.stream;
         audioResourceOptions = { inputType: playObj.type };
+        server.streamData.ytPlayer = 'play-dl';
       }
       queueItem.urlAlt = urlAlt;
       server.streamData.type = StreamType.YOUTUBE;
