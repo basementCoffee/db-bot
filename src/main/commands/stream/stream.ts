@@ -59,7 +59,6 @@ import { getPlaylistArray } from '../../utils/playlist';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 import play from 'play-dl';
-import { StreamType as DjsStreamType } from '@discordjs/voice';
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
@@ -193,7 +192,7 @@ async function playLinkToVC(
   try {
     let playbackTimeout: any;
     let stream;
-    let playObj;
+    let audioResourceOptions;
     // noinspection JSCheckFunctionSignatures
     if (queueItem.type === StreamType.SOUNDCLOUD) {
       commandsMap.set('SOUNDCLOUD', (commandsMap.get('SOUNDCLOUD') || 0) + 1);
@@ -251,14 +250,18 @@ async function playLinkToVC(
       server.streamData.isFluent = true;
       queueItem.urlAlt = urlAlt;
     } else {
-      playObj = await play.stream(urlAlt, { discordPlayerCompatibility: true });
-      stream = playObj.stream;
-      // stream = await ytdl(urlAlt, {
-      //   // @ts-ignore
-      //   filter: retries % 2 === 0 ? () => ['251'] : '',
-      //   highWaterMark: 1 << 25
-      // });
-      // audioResourceOptions = { inputType: VoiceStreamType.Opus };
+      try {
+        stream = await ytdl(urlAlt, {
+          // @ts-ignore
+          filter: retries % 2 === 0 ? () => ['251'] : '',
+          highWaterMark: 1 << 25
+        });
+        audioResourceOptions = { inputType: VoiceStreamType.Opus };
+      } catch (e) {
+        const playObj = await play.stream(urlAlt, { discordPlayerCompatibility: true });
+        stream = playObj.stream;
+        audioResourceOptions = { inputType: playObj.type };
+      }
       queueItem.urlAlt = urlAlt;
       server.streamData.type = StreamType.YOUTUBE;
     }
@@ -269,7 +272,7 @@ async function playLinkToVC(
       server.audio.player.removeAllListeners('idle');
       server.audio.player.removeAllListeners('error');
     }
-    const resource = createAudioResource(stream, { inputType: playObj?.type || DjsStreamType.Arbitrary });
+    const resource = createAudioResource(stream, audioResourceOptions);
     server.audio.connection!.subscribe(server.audio.player!);
     server.audio.player!.play(resource);
     server.audio.resource = resource;
