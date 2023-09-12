@@ -241,18 +241,36 @@ async function playLinkToVC(
       queueItem.urlAlt = urlAlt;
     } else {
       try {
-        stream = await ytdl(urlAlt, {
-          // @ts-ignore
-          filter: retries % 2 === 0 ? () => ['251'] : '',
-          highWaterMark: 1 << 25
-        });
-        audioResourceOptions = { inputType: VoiceStreamType.Opus };
-        server.streamData.ytPlayer = 'ytdl-core-discord';
-      } catch (e) {
         const playObj = await play.stream(urlAlt);
         stream = playObj.stream;
         audioResourceOptions = { inputType: playObj.type };
         server.streamData.ytPlayer = 'play-dl';
+      } catch (e) {
+        try {
+          stream = await ytdl(urlAlt, {
+            // @ts-ignore
+            filter: retries % 2 === 0 ? () => ['251'] : '',
+            highWaterMark: 1 << 25
+          });
+          audioResourceOptions = { inputType: VoiceStreamType.Opus };
+          server.streamData.ytPlayer = 'ytdl-core-discord';
+        } catch (e) {
+          processStats.logError(`[ERROR] all stream methods failed\n<${urlAlt}>`);
+          if (!retries) {
+            return playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
+          }
+          server.errors.continuousStreamErrors++;
+          message.channel.send('*could not get stream*');
+          whatspMap.set(vc.id, '');
+          if (server.errors.continuousStreamErrors < 4) {
+            skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
+          } else {
+            processStats.disconnectConnection(server);
+            message.channel.send('***db vibe is facing some issues, please try again later***');
+            checkStatusOfYtdl(processStats.getServer(config['check-in-guild']), message).then();
+          }
+          return;
+        }
       }
       queueItem.urlAlt = urlAlt;
       server.streamData.type = StreamType.YOUTUBE;
@@ -293,6 +311,7 @@ async function playLinkToVC(
       }
     }
     server.skipTimes = 0;
+    server.errors.continuousStreamErrors = 0;
     server.audio.player!.once('error', async (error) => {
       if (resource.playbackDuration < 1000 && retries < 4) {
         processStats.debug('[ERROR] audio player error');

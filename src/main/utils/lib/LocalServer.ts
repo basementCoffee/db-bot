@@ -106,6 +106,7 @@ class LocalServer {
   errors: {
     // if a reaction permissions error occurred
     permissionReaction: boolean;
+    continuousStreamErrors: number;
   };
   // whether to display the embed
   silence;
@@ -164,7 +165,8 @@ class LocalServer {
     };
     this.djMessageDate = false;
     this.errors = {
-      permissionReaction: false
+      permissionReaction: false,
+      continuousStreamErrors: 0
     };
     this.silence = false;
   }
