@@ -73,7 +73,7 @@ class LocalServer {
   };
   // hold a ready-to-go function in case of vc join
   seamless: {
-    function: (...[]) => any;
+    function: ([]) => any;
     args: Array<Object> | undefined;
     message: Message | undefined;
     timeout: any;

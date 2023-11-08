@@ -260,7 +260,11 @@ async function playLinkToVC(
             return playLinkToVC(message, queueItem, vc, server, ++retries, seekSec);
           }
           server.errors.continuousStreamErrors++;
-          message.channel.send('*could not get stream*');
+          let errorMessage = 'could not retrieve link data';
+          if (server.streamData.type === StreamType.YOUTUBE) {
+            errorMessage += ', ensure video is playable from a private browser';
+          }
+          message.channel.send(`*${errorMessage}*`);
           whatspMap.set(vc.id, '');
           if (server.errors.continuousStreamErrors < 4) {
             skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));

@@ -1,4 +1,6 @@
 'use strict';
+import { commandHandler } from './handler/CommandHandler';
+
 require('dotenv').config();
 import { congratsCommand } from './commands/congrats';
 import {
@@ -25,7 +27,8 @@ import {
   createVisualEmbed,
   endStream,
   getSheetName,
-  getTitle
+  getTitle,
+  isShortCommand
 } from './utils/utils';
 import { formatDuration } from './utils/formatUtils';
 import { clearDJTimer, runDictatorCommand, runDJCommand, runResignCommand } from './commands/dj';
@@ -69,6 +72,7 @@ import processStats from './utils/lib/ProcessStats';
 import commandHandlerCommon from './commands/CommandHandlerCommon';
 import axios from 'axios';
 import config from '../../config.json';
+import { MessageEventLocal } from './utils/lib/types';
 
 const token =
   process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n') ||
@@ -136,56 +140,27 @@ async function runUserCommands(
   prefixString: string
 ) {
   commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
+  const cmd = await commandHandler.getCommand(statement, message.author.id);
+  if (cmd) {
+    const event: MessageEventLocal = {
+      statement,
+      message,
+      args: args.slice(1),
+      prefix: prefixString,
+      data: new Map(),
+      server: server,
+      mgid: message.guild!.id
+    };
+    await cmd.run(event);
+    return;
+  }
   const mgid = message.guild!.id;
   switch (statement) {
-    case 'db-bot':
-    case 'db-vibe':
-      commandHandlerCommon.help(message, server, version);
-      break;
-    case 'omedetou':
-    case 'congratulations':
-    case 'congrats':
-      congratsCommand(message, server, statement, args);
-      break;
-    // tell the user a joke
-    case 'joke':
-      commandHandlerCommon.joke(message.channel).then();
-      break;
-    // the normal play command
-    case 'play':
-    case 'p':
-      commandHandlerCommon.playLink(message, args, mgid, server, undefined).then();
-      break;
-    case 'mplay':
-    case 'mp':
-      commandHandlerCommon.playLink(message, args, mgid, server, getSheetName(message.member!.id)).then();
-      break;
-    // the play now command
-    case 'pnow':
-    case 'playnow':
-    case 'pn':
-      commandHandlerCommon.playLinkNow(message, args, mgid, server, undefined).then();
-      break;
     // the personal play now command
     case 'mplaynow':
     case 'mpnow':
     case 'mpn':
       commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.author.id)).then();
-      break;
-    // allows seeking of YouTube and Spotify links
-    case 'seek':
-      commandHandlerCommon.playWithSeek(message, server, args, mgid).then();
-      break;
-    case 'join':
-      commandHandlerCommon.joinVoiceChannelSafe(message, server).then();
-      break;
-    // stop session commands
-    case 'disconnect':
-    case 'quit':
-    case 'leave':
-    case 'end':
-    case 'e':
-      commandHandlerCommon.stopPlaying(mgid, message.member!.voice?.channel, false, server, message, message.member);
       break;
     case 'smartplay':
     case 'autoplay':
@@ -270,16 +245,6 @@ async function runUserCommands(
     case 'mdnow':
     case 'mdn':
       commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member!.id)).then();
-      break;
-    case 'shuffle':
-      commandHandlerCommon.shuffleQueueOrPlayRandom(
-        args.slice(1),
-        message,
-        getSheetName(message.member!.id),
-        server,
-        false,
-        true
-      );
       break;
     case 'rn':
     case 'randnow':
@@ -624,31 +589,6 @@ async function runUserCommands(
     case 'resign':
       runResignCommand(message, server);
       break;
-    // !pa
-    case 'stop':
-    case 'pause':
-    case 'pa':
-      if (isShortCommand(message.guild!, statement)) return;
-      commandHandlerCommon.pauseStream(message, message.member!, server, false, false, false);
-      break;
-    // !pl
-    case 'pl':
-    case 'res':
-    case 'resume':
-      if (isShortCommand(message.guild!, statement)) return;
-      commandHandlerCommon.resumeStream(message, message.member!, server);
-      break;
-    case 'ts':
-    case 'time':
-    case 'timestamp':
-      if (!message.member!.voice?.channel) {
-        message.channel.send('must be in a voice channel');
-      } else if (server.audio.isVoiceChannelMember(message.member!)) {
-        message.channel.send('timestamp: ' + formatDuration(server.audio.resource?.playbackDuration || 0));
-      } else {
-        message.channel.send('nothing is playing right now');
-      }
-      break;
     case 'verbose':
       if (!server.verbose) {
         server.verbose = true;
@@ -793,14 +733,6 @@ async function runUserCommands(
       if (server.audio.isVoiceChannelMember(message.member!)) {
         sendLinkAsEmbed(message, server.queue[0], message.member!.voice?.channel, server, false).then();
       }
-      break;
-    // print out the version number
-    case 'version':
-      new EmbedBuilderLocal()
-        .setTitle('Version')
-        .setDescription('[' + version + '](https://github.com/Reply2Zain/db-bot/commits/djs14)')
-        .send(message.channel)
-        .then();
       break;
     case 'congratulate':
       // congratulate a friend
@@ -1180,16 +1112,6 @@ async function runDevCommands(
       runUserCommands(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
       break;
   }
-}
-
-/**
- * Returns false if the command is short (less than 3 characters) and there is no active session.
- * @param guild {import('discord.js').Guild} The message.
- * @param statement {string} The command to check.
- * @returns {boolean} False if the cmd is short with no active session.
- */
-function isShortCommand(guild: Guild, statement: string) {
-  return !botInVcGuild(guild.id) && statement.length < 3;
 }
 
 /**
@@ -1782,8 +1704,11 @@ async function updateVoiceState(oldState: VoiceState, newState: VoiceState, serv
       server.seamless.timeout = undefined;
     }
     try {
+      // @ts-ignore
       server.seamless.function(...server.seamless.args);
-    } catch (e) {}
+    } catch (e) {
+      processStats.debug(e);
+    }
     server.seamless.function = () => {};
     server.seamless.message?.delete();
     server.seamless.message = undefined;
@@ -1900,4 +1825,5 @@ async function fixConnection(): Promise<boolean> {
   await bot.login(token);
   if (bot.user!.id !== botID) throw new Error('Invalid botID');
   console.log('Logged into discord. Waiting for ready event...');
+  commandHandler.loadAllCommands();
 })();
