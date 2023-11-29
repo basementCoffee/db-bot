@@ -26,17 +26,18 @@ async function runPlayLinkCommand(
   server: LocalServer,
   sheetName: string
 ) {
+  let initialLink = args[0];
   if (!message.member!.voice?.channel) {
     const sentMsg = await message.channel.send('must be in a voice channel to play');
-    if (!botInVC(message) && args[1]) {
+    if (!botInVC(message) && initialLink) {
       setSeamless(server, runPlayLinkCommand, [message, args, mgid, server, sheetName], sentMsg);
     }
     return;
   }
-  if (!isValidRequestPlayLink(server, message, args[1])) return;
-  if (args[1].includes('.')) {
-    args[1] = removeFormattingLink(args[1]);
-    if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
+  if (!isValidRequestPlayLink(server, message, initialLink)) return;
+  if (initialLink.includes('.')) {
+    initialLink = removeFormattingLink(initialLink);
+    if (!(verifyPlaylist(initialLink) || verifyUrl(initialLink))) {
       return playFromWord(message, args, sheetName, server, mgid, false);
     }
   } else {
@@ -50,9 +51,9 @@ async function runPlayLinkCommand(
   // the number of added links
   let pNums = 0;
   // counter to iterate over remaining link args
-  let linkItem = 1;
+  let linkItem = 0;
   while (args[linkItem]) {
-    let url = args[linkItem];
+    let url = removeFormattingLink(args[linkItem]);
     if (url[url.length - 1] === ',') url = url.replace(/,/, '');
     pNums += await addLinkToQueue(args[linkItem], message, server, mgid, false, pushQueue);
     linkItem++;
@@ -85,23 +86,24 @@ async function playLinkNow(
   seekSec: number,
   adjustQueue = true
 ) {
+  let initialLink = args[0];
   const voiceChannel = message.member!.voice?.channel;
   if (!voiceChannel) {
     const sentMsg = await message.channel.send('must be in a voice channel to play');
-    if (!botInVC(message) && args[1]) {
+    if (!botInVC(message) && initialLink) {
       setSeamless(server, playLinkNow, [message, args, mgid, server, sheetName], sentMsg);
     }
     return;
   }
-  if (!isValidRequestPlayLink(server, message, args[1])) return;
+  if (!isValidRequestPlayLink(server, message, initialLink)) return;
   if (server.followUpMessage) {
     server.followUpMessage.delete();
     server.followUpMessage = undefined;
   }
   server.numSinceLastEmbed += 2;
-  if (args[1].includes('.')) {
-    args[1] = removeFormattingLink(args[1]);
-    if (!(verifyPlaylist(args[1]) || verifyUrl(args[1]))) {
+  if (initialLink.includes('.')) {
+    initialLink = removeFormattingLink(initialLink);
+    if (!(verifyPlaylist(initialLink) || verifyUrl(initialLink))) {
       return playFromWord(message, args, sheetName, server, mgid, true);
     }
   } else {
@@ -115,6 +117,7 @@ async function playLinkNow(
     while (linkItem > 0) {
       let url = args[linkItem];
       if (url[url.length - 1] === ',') url = url.replace(/,/, '');
+      url = removeFormattingLink(url);
       await addLinkToQueue(url, message, server, mgid, true, unshiftQueue);
       linkItem--;
     }
@@ -123,7 +126,7 @@ async function playLinkNow(
 }
 
 /**
- * Determines what to play from a word, dependent on sheetName. The word is provided from args[1].
+ * Determines what to play from a word, dependent on sheetName. The word is provided from initalLink.
  * Uses the database if a sheetName is provided, else uses YouTube.
  * @param message The message metadata.
  * @param args The args pertaining the content. The first argument is ignored.
