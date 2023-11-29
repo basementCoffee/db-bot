@@ -85,7 +85,7 @@ function universalLinkFormatter(link: string): string {
  */
 function removeFormattingLink(link: string): string {
   if (link[0] === '<' && link[link.length - 1] === '>') {
-    link = link.substring(1, link.length - 1);
+    link = link.substring(1, link.length - 2);
   }
   return link;
 }
