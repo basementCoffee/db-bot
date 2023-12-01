@@ -1,5 +1,4 @@
 import { MessageEventLocal } from '../../../../utils/lib/types';
-import commandHandlerCommon from '../../../CommandHandlerCommon';
 import { formatDuration } from '../../../../utils/formatUtils';
 
 exports.run = async (event: MessageEventLocal) => {

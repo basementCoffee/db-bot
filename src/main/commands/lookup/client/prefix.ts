@@ -1,6 +1,6 @@
 import { MessageEventLocal } from '../../../utils/lib/types';
-import { INVITE_MSG } from '../../../utils/lib/constants';
 
 exports.run = async (event: MessageEventLocal) => {
-  event.message.channel.send(INVITE_MSG);
+  const message = event.message;
+  message.channel.send("use the command `changeprefix` to change the bot's prefix");
 };

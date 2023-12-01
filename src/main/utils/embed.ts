@@ -3,7 +3,7 @@ import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import ytdl from 'ytdl-core-discord';
 import { getQueueText, isSpotifyLink } from './utils';
 import { convertYTFormatToMS, formatDuration } from './formatUtils';
-import { DB_SPOTIFY_EMBED_ICON, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
+import { DB_SPOTIFY_EMBED_ICON, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
 import processStats from './lib/ProcessStats';
 import spotifyAuth from './lib/SpotifyAuthenticator';
 import fetch from 'isomorphic-unfetch';

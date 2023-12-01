@@ -44,6 +44,10 @@ import { runKeysCommand } from '../keys';
 import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import { QueueItem } from '../../utils/lib/types';
 import fluentFfmpeg from 'fluent-ffmpeg';
+import config from '../../../../config.json';
+import { getPlaylistArray } from '../../utils/playlist';
+import play from 'play-dl';
+
 const m3u8stream = require('m3u8stream');
 const twitch = require('twitch-m3u8');
 const { SoundCloud: scdl } = require('scdl-core');
@@ -54,11 +58,8 @@ const {
   StreamType: VoiceStreamType,
   getVoiceConnection
 } = require('@discordjs/voice');
-import config from '../../../../config.json';
-import { getPlaylistArray } from '../../utils/playlist';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
-import play from 'play-dl';
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.

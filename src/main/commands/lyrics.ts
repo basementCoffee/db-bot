@@ -40,8 +40,7 @@ function runLyricsCommand(
     let artistName;
     const lUrl = queueItem.url;
     let infos;
-    if (args[1]) {
-      args[0] = '';
+    if (args[0]) {
       searchTerm = args.join(' ').trim();
     } else if (queueItem.type === StreamType.SPOTIFY) {
       infos = queueItem.infos || (await getData(lUrl));
@@ -139,7 +138,7 @@ function runLyricsCommand(
           !(await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback))
         : !(await sendSongLyrics(sentMsg, searchTerm, messageMemberId, reactionCallback))
     ) {
-      if (!args[1] && !lUrl.toLowerCase().includes('spotify')) {
+      if (!args[0] && !lUrl.toLowerCase().includes('spotify')) {
         if (!(await getYoutubeSubtitles(sentMsg, lUrl, infos, reactionCallback))) {
           if (searchTerm.toLowerCase().includes('lyrics')) {
             const newSearchArr = searchTerm.toLowerCase().split(' ');

@@ -13,7 +13,11 @@ export type QueueItem = {
   source?: string;
 };
 
-export type MessageEventLocal = MessageEventCore<string> & {
+export type MessageEventLocal = MessageEventCore<EventDataKeyEnum> & {
   server: LocalServer;
   mgid: string;
 };
+
+export enum EventDataKeyEnum {
+  BOT_VERSION
+}

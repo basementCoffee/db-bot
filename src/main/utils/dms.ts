@@ -4,6 +4,7 @@ import { getHelpList } from './help';
 import reactions from './lib/reactions';
 import { logErrorCore } from './errorUtils';
 import config from '../../../config.json';
+
 const { version } = require('../../../package.json');
 
 /**

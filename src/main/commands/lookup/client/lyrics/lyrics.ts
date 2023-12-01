@@ -1,8 +1,6 @@
 import { MessageEventLocal } from '../../../../utils/lib/types';
 import commandHandlerCommon from '../../../CommandHandlerCommon';
 
-const version = require('../../../../../../package.json').version;
-
 exports.run = async (event: MessageEventLocal) => {
-  commandHandlerCommon.help(event.message, event.server, version);
+  commandHandlerCommon.lyrics(event.message.channel.id, event.message.member!.id, event.args, event.server.queue[0]);
 };

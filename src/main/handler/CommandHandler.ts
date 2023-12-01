@@ -1,12 +1,13 @@
 import fs from 'fs';
 import { CommandHandler } from '@hoursofza/djs-common';
 import { isAdmin } from '../utils/permissions';
+import { EventDataKeyEnum } from '../utils/lib/types';
 
 // list of commands that should not be process-specific
 // const MULTI_PROCESS_CMDS = ['boot', 'update'];
 // the output directory name where source files are generated
 
-class CommandHandlerLocal extends CommandHandler<string> {
+class CommandHandlerLocal extends CommandHandler<EventDataKeyEnum> {
   constructor() {
     super(isAdmin, `./dist/src/main/commands/lookup`, '../commands/lookup');
   }

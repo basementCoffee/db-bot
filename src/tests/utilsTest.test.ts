@@ -3,7 +3,7 @@ import { bot } from '../main/utils/lib/constants';
 import { runMoveItemCommand } from '../main/commands/move';
 import * as utils from '../main/utils/utils';
 import { revokeClient } from '../main/database/api/api';
-import { MockVoice, MockChannel, MockMessage, MockGuild } from './MockTestClasses';
+import { MockChannel, MockGuild, MockMessage, MockVoice } from './MockTestClasses';
 import { BaseGuildTextChannel } from 'discord.js';
 
 const destroyBot = () => bot.destroy();

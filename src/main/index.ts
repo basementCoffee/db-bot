@@ -1,7 +1,6 @@
 'use strict';
-import { commandHandler } from './handler/CommandHandler';
-
 require('dotenv').config();
+import { commandHandler } from './handler/CommandHandler';
 import {
   ActivityType,
   BaseGuildTextChannel,
@@ -23,10 +22,8 @@ import {
   botInVcGuild,
   createMemoryEmbed,
   createQueueItem,
-  createVisualEmbed,
   endStream,
   getSheetName,
-  getTitle,
   isShortCommand
 } from './utils/utils';
 import { formatDuration } from './utils/formatUtils';
@@ -37,7 +34,6 @@ import {
   checkActiveMS,
   commandsMap,
   CORE_ADM,
-  INVITE_MSG,
   PREFIX_SN,
   setOfBotsOn,
   startupTest,
@@ -46,7 +42,7 @@ import {
   whatspMap
 } from './utils/lib/constants';
 import reactions from './utils/lib/reactions';
-import { sessionEndEmbed, updateActiveEmbed } from './utils/embed';
+import { sessionEndEmbed } from './utils/embed';
 import {
   checkStatusOfYtdl,
   playLinkToVC,
@@ -57,7 +53,7 @@ import {
 import { shutdown } from './process/shutdown';
 import { playRecommendation, sendRecommendationWrapper } from './commands/stream/recommendations';
 import { checkToSeeActive } from './process/checkToSeeActive';
-import { createVisualText, runQueueCommand } from './commands/generateQueue';
+import { runQueueCommand } from './commands/generateQueue';
 import { getServerPrefix, getXdb2, sendListSize } from './database/retrieval';
 import { hasDJPermissions, isAdmin } from './utils/permissions';
 import { dmHandler, sendMessageToUser } from './utils/dms';
@@ -71,12 +67,12 @@ import processStats from './utils/lib/ProcessStats';
 import commandHandlerCommon from './commands/CommandHandlerCommon';
 import axios from 'axios';
 import config from '../../config.json';
-import { MessageEventLocal } from './utils/lib/types';
+import { EventDataKeyEnum, MessageEventLocal } from './utils/lib/types';
 
 const token =
   process.env.V13_DISCORD_TOKEN?.replace(/\\n/gm, '\n') ||
   (() => {
-    throw new Error('missing params within .env file');
+    throw new Error('missing params within .env file, ensure dotenv setup is before imports');
   })();
 const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
 const { exec } = require('child_process');
@@ -150,6 +146,7 @@ async function runUserCommands(
       server: server,
       mgid: message.guild!.id
     };
+    event.data.set(EventDataKeyEnum.BOT_VERSION, version);
     await cmd.run(event);
     return;
   }
@@ -160,57 +157,6 @@ async function runUserCommands(
     case 'mpnow':
     case 'mpn':
       commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.author.id)).then();
-      break;
-    case 'smartplay':
-    case 'autoplay':
-    case 'auto':
-    case 'sp':
-    case 'ap':
-      if (!botInVC(message)) {
-        // avoid sending a message for smaller command names
-        if (args[0].length > 4) message.channel.send('must be playing something to use smartplay');
-        return;
-      }
-      if (server.autoplay) {
-        server.autoplay = false;
-        message.channel.send('*smartplay turned off*');
-      } else {
-        server.autoplay = true;
-        message.channel.send('*smartplay turned on*');
-      }
-      updateActiveEmbed(server).then();
-      break;
-    case 'unloop':
-      if (!botInVC(message)) {
-        // only send error message for 'loop' command
-        if (args[0].length > 1) await message.channel.send('must be actively playing to loop');
-        return;
-      }
-      if (server.loop) {
-        server.loop = false;
-        await message.channel.send('*looping disabled*');
-      } else {
-        await message.channel.send('*looping is already off*');
-      }
-      break;
-    case 'l':
-    case 'loop':
-      if (!botInVC(message)) {
-        // only send error message for 'loop' command
-        if (args[0].length > 1) await message.channel.send('must be actively playing to loop');
-        return;
-      }
-      if (server.loop) {
-        server.loop = false;
-        await message.channel.send('*looping disabled*');
-      } else {
-        server.loop = true;
-        await message.channel.send('*looping enabled (occurs on finish)*');
-      }
-      break;
-    case 'lyric':
-    case 'lyrics':
-      commandHandlerCommon.lyrics(message.channel.id, message.member!.id, args, server.queue[0]);
       break;
     case 'know':
     case 'kn':
@@ -251,52 +197,6 @@ async function runUserCommands(
       commandHandlerCommon
         .addRandomKeysToQueue([args[1] || '1'], message, getSheetName(message.member!.id), server, true)
         .then();
-      break;
-    case 'sync':
-      // assume that there is something playing
-      if (botInVC(message)) {
-        if (server.audio.isVoiceChannelMember(message.member!)) {
-          const MIN_SYNC_SECONDS = 7;
-          const MAX_SYNC_SECONDS = 60;
-          let seconds = MIN_SYNC_SECONDS;
-          if (args[1]) {
-            seconds = parseInt(args[1]);
-            if (!seconds || seconds < MIN_SYNC_SECONDS) seconds = MIN_SYNC_SECONDS;
-            else if (seconds > MAX_SYNC_SECONDS) seconds = MAX_SYNC_SECONDS;
-          }
-          const playArgs = [message, message.member, server, true, false, true];
-          commandHandlerCommon.pauseStream(...(playArgs as [any, any, any, any, any, any]));
-          const streamTime = server.audio.resource?.playbackDuration;
-          if (!streamTime) return message.channel.send('*could not find a valid stream time*');
-          // the seconds shown to the user (added 1 to get user ahead of actual stream)
-          const streamTimeSeconds = ((streamTime / 1000) % 60) + 1;
-          // the formatted duration (with seconds supposed to be replaced)
-          const duration = formatDuration(streamTime);
-          const vals = duration.split(' ');
-          // if the stream is close to next second (7 represents the tenth's place)
-          const isClose = +streamTimeSeconds.toString().split('.')[1][0] > 7;
-          if (!vals.slice(-1)[0].includes('s')) vals.push(`${Math.floor(streamTimeSeconds)}s`);
-          else vals[vals.length - 1] = `${Math.floor(streamTimeSeconds)}s`;
-          const syncMsg = await message.channel.send(
-            `timestamp is **${vals.join(' ')}**` + `\naudio will resume when I say 'now' (~${seconds} seconds)`
-          );
-          // convert seconds to ms and add another second
-          const syncTimeMS = seconds * 1000 + 1000;
-          setTimeout(async () => {
-            if (!server.audio.status) {
-              const newMsgStr = `timestamp is **${vals.join(' ')}**` + '\n***---now---***';
-              if (isClose) await syncMsg.edit(newMsgStr);
-              else syncMsg.edit(newMsgStr);
-              commandHandlerCommon.resumeStream(...(playArgs as [any, any, any, any, any, any]));
-              setTimeout(() => {
-                if (syncMsg.deletable) syncMsg.delete();
-              }, 5000);
-            }
-          }, syncTimeMS);
-        } else {
-          message.channel.send('no active link is playing');
-        }
-      }
       break;
     case 'mshuffle':
     case 'random':
@@ -433,9 +333,6 @@ async function runUserCommands(
         'm'
       );
       break;
-    case 'ping':
-      message.channel.send(`latency is ${Math.round(bot.ws.ping)}ms`);
-      break;
     case 'prec':
     case 'precc':
     case 'precs':
@@ -454,15 +351,9 @@ async function runUserCommands(
     case 'remove':
       await commandHandlerCommon.removeFromQueue(message, server, args[1]);
       break;
-    case 'move':
-      commandHandlerCommon.moveItemInQueue(message.channel, server, args[1], args[2]);
-      break;
     case 'input':
     case 'insert':
       commandHandlerCommon.insert(message, mgid, args.slice(1), server, getSheetName(message.member!.id)).then();
-      break;
-    case 'q':
-      runQueueCommand(server, message, mgid, true);
       break;
     case 'list':
     case 'upnext':
@@ -483,51 +374,6 @@ async function runUserCommands(
       commandHandlerCommon
         .queueFind(message, server, args.slice(1).join(' '))
         .catch((er: Error) => processStats.debug(er));
-      break;
-    case 'audit':
-    case 'freq':
-    case 'frequency':
-      if (!botInVC(message)) return;
-      const tempAuditArray = [];
-      for (const [key, value] of server.mapFinishedLinks) {
-        tempAuditArray.push({ url: key, title: await getTitle(value.queueItem), index: value.numOfPlays });
-      }
-      // sort by times played
-      tempAuditArray.sort((a, b) => {
-        return b.index - a.index;
-      });
-      createVisualEmbed(
-        'Link Frequency',
-        (await createVisualText(
-          server,
-          tempAuditArray,
-          (index: number, title: string, url: string) => `${index} | [${title}](${url})\n`
-        )) || 'no completed links'
-      )
-        .send(message.channel)
-        .then();
-      break;
-    case 'purge':
-      if (!args[1]) return message.channel.send('*input a term to purge from the queue*');
-      commandHandlerCommon.purgeWordFromQueue(message, server, args.slice(1).join(' ').toLowerCase()).then();
-      break;
-    case 'prefix':
-      message.channel.send("use the command `changeprefix` to change the bot's prefix");
-      break;
-    case 'changeprefix':
-      commandHandlerCommon.changePrefix(message, server, prefixString, args[1]);
-      break;
-    // list commands for public commands
-    case 'h':
-    case 'help':
-      if (isShortCommand(message.guild!, statement)) return;
-      commandHandlerCommon.help(message, server, version);
-      break;
-    // !skip
-    case 'next':
-    case 'sk':
-    case 'skip':
-      runSkipCommand(message, message.member!.voice?.channel, server, args[1], true, false, message.member);
       break;
     case 'dict':
     case 'dictator':
@@ -676,14 +522,6 @@ async function runUserCommands(
     case 'rewind':
       runRewindCommand(message, mgid, message.member!.voice?.channel!, args[1], false, false, message.member, server);
       break;
-    case 'rp':
-    case 'replay':
-      commandHandlerCommon.restartPlaying(message, mgid, 'replay', server);
-      break;
-    case 'rs':
-    case 'restart':
-      commandHandlerCommon.restartPlaying(message, mgid, 'restart', server);
-      break;
     case 'clearqueue':
     case 'clear':
       if (!message.member!.voice?.channel) {
@@ -704,78 +542,6 @@ async function runUserCommands(
         await sendLinkAsEmbed(message, currentQueueItem, message.member!.voice?.channel, server, false);
       }
       message.channel.send('The queue has been scrubbed clean');
-      break;
-    case 'invite':
-      message.channel.send(INVITE_MSG);
-      break;
-    case 'hide':
-    case 'silence':
-      if (!message.member!.voice?.channel) {
-        return message.channel.send('You must be in a voice channel to silence');
-      }
-      if (server.silence) {
-        return message.channel.send("*song notifications already silenced, use 'unsilence' to unsilence.*");
-      }
-      server.silence = true;
-      message.channel.send('*song notifications silenced for this session*');
-      break;
-    case 'unhide':
-    case 'unsilence':
-      if (!message.member!.voice?.channel) {
-        return message.channel.send('You must be in a voice channel to unsilence');
-      }
-      if (!server.silence) {
-        return message.channel.send('*song notifications already unsilenced*');
-      }
-      server.silence = false;
-      message.channel.send('*song notifications enabled*');
-      if (server.audio.isVoiceChannelMember(message.member!)) {
-        sendLinkAsEmbed(message, server.queue[0], message.member!.voice?.channel, server, false).then();
-      }
-      break;
-    case 'congratulate':
-      // congratulate a friend
-      if (!args[1]) return message.channel.send('*no friend provided*');
-      const friend = message.mentions.users.first();
-      if (!friend) return message.channel.send('*no friend provided*');
-      const friendName = friend.username;
-      const friendAvatar = friend.avatarURL()!;
-      new EmbedBuilderLocal()
-        .setTitle('Congrats!')
-        .setDescription(`${friendName} has been congratulated!`)
-        .setThumbnail(friendAvatar)
-        .setColor('#00ff00')
-        .setFooter({
-          text: `By ${message.author.username}`,
-          iconURL: message.author.avatarURL() || ''
-        })
-        .send(message.channel)
-        .then();
-      break;
-    // guess a member in a voice channel
-    case 'guess':
-      if (args[1]) {
-        const numToCheck = parseInt(args[1]);
-        if (!numToCheck || numToCheck < 1) {
-          return message.channel.send('Number has to be positive.');
-        }
-        const randomInt2 = Math.floor(Math.random() * numToCheck) + 1;
-        message.channel.send(`*guessing from 1-${numToCheck}... chosen: **${randomInt2}***`);
-      } else if (message.member?.voice?.channel) {
-        try {
-          let gmArray = Array.from(
-            (<VoiceChannel>bot.channels.cache.get(message.member!.voice.channel.id.toString())).members
-          );
-          gmArray = gmArray.map((item: any) => item[1].nickname || item[1].user.username);
-          if (gmArray.length < 1) {
-            return message.channel.send('Need at least 1 person in a voice channel.');
-          }
-          const randomInt = Math.floor(Math.random() * gmArray.length) + 1;
-          message.channel.send(`*chosen voice channel member: **${gmArray[randomInt - 1]}***`);
-        } catch (e) {}
-      } else {
-        message.channel.send('need to be in a voice channel for this command');
-      }
       break;
   }
 }
