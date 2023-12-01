@@ -14,14 +14,14 @@ import { playLinkNow } from './playLink';
  */
 async function runSeekCommand(message: Message, server: LocalServer, args: Array<string>, mgid: string) {
   const SEEK_ERR_MSG = '*provide a seek timestamp (ex: seek 5m32s)*';
-  if (args[1]) {
-    if (args[2]) {
+  if (args[0]) {
+    if (args[1]) {
       // assume exactly two arguments is provided
-      const validLink = linkValidator(args[1]);
-      const numSeconds = convertSeekFormatToSec(args[2]);
+      const validLink = linkValidator(args[0]);
+      const numSeconds = convertSeekFormatToSec(args[1]);
       if (validLink && numSeconds) {
         server.numSinceLastEmbed -= 2;
-        args.splice(2, args.length - 1);
+        args.splice(1, args.length - 1);
         await playLinkNow(message, args, mgid, server, getSheetName(message.member!.id), numSeconds, true);
         if (numSeconds > 1200) message.channel.send('*seeking...*');
         return;
@@ -32,10 +32,10 @@ async function runSeekCommand(message: Message, server: LocalServer, args: Array
         return message.channel.send(`*provide a seek link and timestamp (ex: ${args[0]} [link] 5m32s)*`);
       }
       // continues if only one argument was provided
-      const numSeconds = convertSeekFormatToSec(args[1]);
+      const numSeconds = convertSeekFormatToSec(args[0]);
       if (numSeconds) {
         server.numSinceLastEmbed -= 2;
-        args.splice(1, 1);
+        args.splice(0, 1);
         args.push(server.queue[0].url);
         await playLinkNow(message, args, mgid, server, getSheetName(message.member!.id), numSeconds, false);
         if (numSeconds > 1200) message.channel.send('*seeking...*');

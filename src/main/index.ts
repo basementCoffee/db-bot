@@ -2,7 +2,6 @@
 import { commandHandler } from './handler/CommandHandler';
 
 require('dotenv').config();
-import { congratsCommand } from './commands/congrats';
 import {
   ActivityType,
   BaseGuildTextChannel,

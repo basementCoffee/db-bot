@@ -38,10 +38,10 @@ async function runPlayLinkCommand(
   if (initialLink.includes('.')) {
     initialLink = removeFormattingLink(initialLink);
     if (!(verifyPlaylist(initialLink) || verifyUrl(initialLink))) {
-      return playFromWord(message, args, sheetName, server, mgid, false);
+      return playFromWord(message, args, sheetName, server, false);
     }
   } else {
-    return playFromWord(message, args, sheetName, server, mgid, false);
+    return playFromWord(message, args, sheetName, server, false);
   }
   // valid link
   let queueWasEmpty = false;
@@ -104,17 +104,17 @@ async function playLinkNow(
   if (initialLink.includes('.')) {
     initialLink = removeFormattingLink(initialLink);
     if (!(verifyPlaylist(initialLink) || verifyUrl(initialLink))) {
-      return playFromWord(message, args, sheetName, server, mgid, true);
+      return playFromWord(message, args, sheetName, server, true);
     }
   } else {
-    return playFromWord(message, args, sheetName, server, mgid, true);
+    return playFromWord(message, args, sheetName, server, true);
   }
   // places the currently playing into the queue history if played long enough
   if (adjustQueue) adjustQueueForPlayNow(server.audio.resource!, server);
   // counter to iterate over all args - excluding args[0]
   let linkItem = args.length - 1;
   if (adjustQueue) {
-    while (linkItem > 0) {
+    while (linkItem > -1) {
       let url = args[linkItem];
       if (url[url.length - 1] === ',') url = url.replace(/,/, '');
       url = removeFormattingLink(url);
@@ -135,26 +135,11 @@ async function playLinkNow(
  * @param mgid The guild id.
  * @param playNow Whether to play now.
  */
-function playFromWord(
-  message: Message,
-  args: string[],
-  sheetName: string,
-  server: LocalServer,
-  mgid: string,
-  playNow: boolean
-) {
+function playFromWord(message: Message, args: string[], sheetName: string, server: LocalServer, playNow: boolean) {
   if (sheetName) {
     runDatabasePlayCommand(args, message, sheetName, playNow, false, server).then();
   } else {
-    runYoutubeSearch(
-      message,
-      playNow,
-      server,
-      args
-        .map((x: string) => x)
-        .splice(1)
-        .join(' ')
-    ).then();
+    runYoutubeSearch(message, playNow, server, args.map((x: string) => x).join(' ')).then();
   }
 }
 

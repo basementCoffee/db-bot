@@ -4,7 +4,7 @@ import { getSheetName } from '../../../utils/utils';
 
 exports.run = async (event: MessageEventLocal) => {
   commandHandlerCommon.shuffleQueueOrPlayRandom(
-    event.args.slice(1),
+    event.args,
     event.message,
     getSheetName(event.message.member!.id),
     event.server,
