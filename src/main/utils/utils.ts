@@ -409,8 +409,19 @@ function createVisualEmbed(title: string, text: string, color?: ColorResolvable)
  * @param statement {string} The command to check.
  * @returns {boolean} False if the cmd is short with no active session.
  */
-function isShortCommand(guild: Guild, statement: string) {
+function isShortCommand(guild: Guild, statement: string): boolean {
   return !botInVcGuild(guild.id) && statement.length < 3;
+}
+
+/**
+ * Returns false if the command is short (less than 3 characters), there is no active session, and no cmd arguments.
+ * @param args {Array<string>} The arguments.
+ * @param guild {import('discord.js').Guild} The message.
+ * @param statement {string} The command to check.
+ * @returns {boolean} False if the cmd is short with no active session and cmd args.
+ */
+function isShortCommandNoArgs(args: Array<string>, guild: Guild, statement: string): boolean {
+  return !args[0] && isShortCommand(guild, statement);
 }
 
 export {
@@ -438,5 +449,6 @@ export {
   botInVcGuild,
   isPlaylistSpotifyLink,
   isSpotifyLink,
-  isShortCommand
+  isShortCommand,
+  isShortCommandNoArgs
 };

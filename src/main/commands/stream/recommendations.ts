@@ -19,9 +19,9 @@ import LocalServer from '../../utils/lib/LocalServer';
 async function sendRecommendationWrapper(message: Message, args: string[], uManager: any, server: LocalServer) {
   let url;
   let infos;
-  if (args[1] && verifyUrl(args[1])) {
-    url = args[1];
-    args[1] = '';
+  if (args[0] && verifyUrl(args[0])) {
+    url = args[0];
+    args[0] = '';
   } else if (args.length > 2 && verifyUrl(args[args.length - 1])) {
     url = args[args.length - 1];
     args[args.length - 1] = '';
@@ -102,7 +102,7 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
   if (!botInVC(message)) resetSession(server);
   const user = await bot.users.fetch(message.member!.id);
   const channel = await user.createDM();
-  let num = parseInt(args[1]);
+  let num = parseInt(args[0]);
   // hot-swap function on whether a link is relevant/applicable
   let isRelevant: (x: Message) => boolean = () => {
     return false;

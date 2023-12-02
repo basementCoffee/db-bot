@@ -50,7 +50,7 @@ function getPages(ps: string | undefined | null = '', version: string) {
       `\`${ps}link [key] \` Get the full link of a specific key  *[url]*\n` +
       `\`${ps}move-keys [keys] [playlist] \` move keys to a different playlist *[mk]*\n` +
       '\n-----------  **Playlists**  -----------\n' +
-      `\`${ps}pd [playlist] \` Play an entire playlist\n` +
+      `\`${ps}dpl [playlist] \` Play an entire playlist\n` +
       `\`${ps}ps [playlist] \` Shuffle and play a playlist\n` +
       `\`${ps}add-playlist [playlist] \` Add a new playlist  *[p-add]*\n` +
       `\`${ps}delete-playlist [playlist] \` Delete a playlist and its contents *[p-del]*\n` +

@@ -95,7 +95,7 @@ async function runDatabasePlayCommand(
   server: LocalServer,
   isShuffle?: boolean
 ): Promise<number> {
-  if (!args[1]) {
+  if (!args[0]) {
     message.channel.send('*put a key-name after the command to play a specific key*');
     return 0;
   }
@@ -125,7 +125,7 @@ async function runDatabasePlayCommand(
   let tempUrl;
   // the number of items added to the queue
   let dbAddedToQueue = 0;
-  if (args[2]) {
+  if (args[1]) {
     let dbAddInt: number;
     let unFoundString = '*could not find: ';
     let firstUnfoundRan = false;
@@ -177,14 +177,14 @@ async function runDatabasePlayCommand(
       await updateActiveEmbed(server);
     }
   } else {
-    tempUrl = xdb.globalKeys.get(args[1].toUpperCase())?.link;
+    tempUrl = xdb.globalKeys.get(args[0].toUpperCase())?.link;
     if (!tempUrl) {
       const ss = getAssumptionMultipleMethods(
-        args[1],
+        args[0],
         [...xdb.globalKeys.values()].map((item) => item.name)
       );
       if (ss) {
-        message.channel.send("could not find '" + args[1] + "'. **Assuming '" + ss + "'**");
+        message.channel.send("could not find '" + args[0] + "'. **Assuming '" + ss + "'**");
         tempUrl = xdb.globalKeys.get(ss.toUpperCase())?.link;
         const playlistType: any = verifyPlaylist(tempUrl);
         if (playRightNow) {
@@ -205,13 +205,13 @@ async function runDatabasePlayCommand(
           server.queue.push(createQueueItem(tempUrl!, playlistType, null));
         }
       } else if (!printErrorMsg) {
-        message.channel.send(`*could not find **${args[1]}** in the keys list*`);
+        message.channel.send(`*could not find **${args[0]}** in the keys list*`);
         return dbAddedToQueue;
       } else if (ss && ss.length > 0) {
-        message.channel.send("*could not find '" + args[1] + "' in database*\n*Did you mean: " + ss + '*');
+        message.channel.send("*could not find '" + args[0] + "' in database*\n*Did you mean: " + ss + '*');
         return dbAddedToQueue;
       } else {
-        message.channel.send(`*could not find **${args[1]}** in the keys list*`);
+        message.channel.send(`*could not find **${args[0]}** in the keys list*`);
         return dbAddedToQueue;
       }
     } else {

@@ -152,73 +152,6 @@ async function runUserCommands(
   }
   const mgid = message.guild!.id;
   switch (statement) {
-    // the personal play now command
-    case 'mplaynow':
-    case 'mpnow':
-    case 'mpn':
-      commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.author.id)).then();
-      break;
-    case 'know':
-    case 'kn':
-    case 'dnow':
-    case 'dn':
-      if (isShortCommandNoArgs(args, message.guild!, statement)) return;
-      commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member!.id)).then();
-      break;
-    case 'pd':
-      if (isShortCommandNoArgs(args, message.guild!, statement)) return;
-      commandHandlerCommon
-        .playDBPlaylist(args.splice(1), message, getSheetName(message.member!.id), false, true, server)
-        .then();
-      break;
-    case 'ps':
-    case 'pshuffle':
-      if (isShortCommandNoArgs(args, message.guild!, statement)) return;
-      commandHandlerCommon
-        .playDBPlaylist(args.splice(1), message, getSheetName(message.member!.id), false, true, server, true)
-        .then();
-      break;
-    // .md is retrieves and plays from the keys list
-    case 'md':
-    case 'd':
-      if (isShortCommandNoArgs(args, message.guild!, statement)) return;
-      commandHandlerCommon.playDBKeys(args, message, getSheetName(message.member!.id), false, true, server).then();
-      break;
-    // .mdnow retrieves and plays from the keys list immediately
-    case 'mkn':
-    case 'mknow':
-    case 'mdnow':
-    case 'mdn':
-      commandHandlerCommon.playLinkNow(message, args, mgid, server, getSheetName(message.member!.id)).then();
-      break;
-    case 'rn':
-    case 'randnow':
-    case 'randomnow':
-      commandHandlerCommon
-        .addRandomKeysToQueue([args[1] || '1'], message, getSheetName(message.member!.id), server, true)
-        .then();
-      break;
-    case 'mshuffle':
-    case 'random':
-    case 'rand':
-    case 'r':
-    case 'mr':
-      if (isShortCommandNoArgs(args, message.guild!, statement)) return;
-      commandHandlerCommon
-        .addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member!.id), server, false)
-        .then();
-      break;
-    case 'shufflenow':
-    case 'shufflen':
-    case 'mrn':
-      commandHandlerCommon
-        .addRandomKeysToQueue(args.slice(1), message, getSheetName(message.member!.id), server, true)
-        .then();
-      break;
-    case 'rename':
-      if (botInVC(message))
-        message.channel.send('try `rename-key` or `rename-playlist` with the old name followed by the new name');
-      break;
     case 'rename-key':
     case 'rename-keys':
     case 'renamekey':
@@ -256,26 +189,6 @@ async function runUserCommands(
         .setSplashscreen(server, <TextChannel>message.channel, getSheetName(message.member!.id), args[1])
         .then();
       break;
-    // .search is the search
-    case 'find':
-    case 'lookup':
-    case 'search':
-      if (!args[1]) {
-        const lookupItem = server.queue[0];
-        if (lookupItem.source) {
-          message.channel.send('from playlist: <' + lookupItem.source + '>');
-          return;
-        }
-      }
-      commandHandlerCommon
-        .searchForKeyUniversal(
-          message,
-          server,
-          getSheetName(message.member!.id),
-          args[1] ? args[1] : server.queue[0]?.url
-        )
-        .then();
-      break;
     case 'size':
       if (args[1]) sendListSize(message, server, getSheetName(message.member!.id), args[1]).then();
       break;
@@ -303,49 +216,6 @@ async function runUserCommands(
         getSheetName(message.member!.id),
         ''
       );
-      break;
-    case 'm?':
-    case 'mnow':
-      await commandHandlerCommon.nowPlaying(
-        server,
-        message,
-        message.member!.voice?.channel,
-        args[1],
-        getSheetName(message.member!.id),
-        'm'
-      );
-      break;
-    case 'url':
-    case 'link':
-      if (!args[1]) {
-        if (server.queue[0] && message.member!.voice.channel) {
-          return message.channel.send(server.queue[0].url);
-        } else {
-          return message.channel.send("*add a key to get it's " + statement + ' `(i.e. ' + statement + ' [key])`*');
-        }
-      }
-      await commandHandlerCommon.nowPlaying(
-        server,
-        message,
-        message.member!.voice?.channel,
-        args[1],
-        getSheetName(message.member!.id),
-        'm'
-      );
-      break;
-    case 'prec':
-    case 'precc':
-    case 'precs':
-    case 'playrec':
-    case 'playrecc':
-    case 'playrecs':
-      playRecommendation(message, server, args).catch((er: Error) => processStats.logError(er));
-      break;
-    case 'rec':
-    case 'recc':
-    case 'recommend':
-      args[0] = '';
-      sendRecommendationWrapper(message, args, bot.users, server).then();
       break;
     case 'rm':
     case 'remove':
@@ -506,42 +376,11 @@ async function runUserCommands(
         `*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`
       );
       break;
-    case 'twitch':
-      if (!args[1]) return message.channel.send(`*no channel name provided \` Ex: ${prefixString}twitch [channel]\`*`);
-      if (message.member!.voice?.channel) {
-        args[1] = `https://www.${TWITCH_BASE_LINK}/${args[1]}`;
-        server.queue.unshift(createQueueItem(args[1], StreamType.TWITCH, null));
-        playLinkToVC(message, args[1], message.member!.voice.channel, server);
-      } else {
-        message.channel.send('*must be in a voice channel*');
-      }
-      break;
     case 'prev':
     case 'previous':
     case 'rw':
     case 'rewind':
       runRewindCommand(message, mgid, message.member!.voice?.channel!, args[1], false, false, message.member, server);
-      break;
-    case 'clearqueue':
-    case 'clear':
-      if (!message.member!.voice?.channel) {
-        if (server.queue.length > 0) message.channel.send('must be in a voice channel to clear');
-        return;
-      }
-      if (server.voteAdmin.length > 0 && !server.voteAdmin.includes(message.member)) {
-        return message.channel.send('only the DJ can clear the queue');
-      }
-      if (server.dictator && server.dictator.id !== message.member!.id) {
-        return message.channel.send('only the Dictator can clear the queue');
-      }
-      const currentQueueItem = botInVC(message) ? server.queue[0] : undefined;
-      server.queue.length = 0;
-      server.queueHistory.length = 0;
-      if (currentQueueItem) {
-        server.queue[0] = currentQueueItem;
-        await sendLinkAsEmbed(message, currentQueueItem, message.member!.voice?.channel, server, false);
-      }
-      message.channel.send('The queue has been scrubbed clean');
       break;
   }
 }
@@ -877,17 +716,6 @@ async function runDevCommands(
       runUserCommands(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
       break;
   }
-}
-
-/**
- * Returns false if the command is short (less than 3 characters), there is no active session, and no cmd arguments.
- * @param args {Array<string>} The arguments.
- * @param guild {import('discord.js').Guild} The message.
- * @param statement {string} The command to check.
- * @returns {boolean} False if the cmd is short with no active session and cmd args.
- */
-function isShortCommandNoArgs(args: Array<string>, guild: Guild, statement: string) {
-  return !args[1] && isShortCommand(guild, statement);
 }
 
 /**
@@ -1359,6 +1187,17 @@ bot.on('messageCreate', (message: Message) => {
     void runCommandCases(message);
   }
 });
+
+/**
+ * Returns false if the command is short (less than 3 characters), there is no active session, and no cmd arguments.
+ * @param args {Array<string>} The arguments.
+ * @param guild {import('discord.js').Guild} The message.
+ * @param statement {string} The command to check.
+ * @returns {boolean} False if the cmd is short with no active session and cmd args.
+ */
+function isShortCommandNoArgs(args: Array<string>, guild: Guild, statement: string): boolean {
+  return !args[1] && isShortCommand(guild, statement);
+}
 
 /**
  * Runs a test.
