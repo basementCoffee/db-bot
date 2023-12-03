@@ -1,6 +1,6 @@
-import { Channel, MessageCreateOptions, TextChannel } from 'discord.js';
-import { bot } from './lib/constants';
-import config from '../../../config.json';
+import { Channel, MessageCreateOptions, TextChannel } from "discord.js";
+import { bot } from "./lib/constants";
+import config from "../../../config.json";
 
 /**
  * Logs an error to a channel. NOTE: Does not console.log the error.
@@ -18,7 +18,7 @@ function logErrorCore(errText: string | MessageCreateOptions | Error) {
       }
       (<TextChannel>channel)?.send(errText);
     })
-    .catch((e: Error) => console.log('Failed sending error message: ', e));
+    .catch((e: Error) => console.log("Failed sending error message: ", e));
 }
 
 export { logErrorCore };

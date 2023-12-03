@@ -1,5 +1,5 @@
-import LocalServer from './lib/LocalServer';
-import { AudioResource } from '@discordjs/voice';
+import LocalServer from "./lib/LocalServer";
+import { AudioResource } from "@discordjs/voice";
 
 /**
  * Adjusts the queue for play now depending on the stream time.

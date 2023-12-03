@@ -1,8 +1,8 @@
-import LocalServer from './LocalServer';
-import { startupDevMode } from './constants';
-import { formatDuration } from '../formatUtils';
-import { MessageCreateOptions, TextBasedChannel } from 'discord.js';
-import { logErrorCore } from '../errorUtils';
+import LocalServer from "./LocalServer";
+import { startupDevMode } from "./constants";
+import { formatDuration } from "../formatUtils";
+import { MessageCreateOptions, TextBasedChannel } from "discord.js";
+import { logErrorCore } from "../errorUtils";
 
 // process related statistics
 class ProcessStats {
@@ -19,7 +19,7 @@ class ProcessStats {
   // if the process is sidelined
   isInactive;
   // A message for users on first VC join
-  startUpMessage = '';
+  startUpMessage = "";
   // list of server playback metadata
   servers = new Map<string, LocalServer>();
   // the interval to view the active process
@@ -85,7 +85,7 @@ class ProcessStats {
   setProcessInactive() {
     this.serverPrefixes = null;
     this.isInactive = true;
-    console.log('-sidelined-');
+    console.log("-sidelined-");
     if (this.dateActive) {
       this.activeMS += Date.now() - this.dateActive;
       this.dateActive = null;
@@ -103,9 +103,10 @@ class ProcessStats {
         console.log(...args);
       };
     } else {
-      this.debugFunc = () => {};
+      this.debugFunc = () => {
+      };
     }
-    console.log(`-devMode ${status ? 'on' : 'off'}-`);
+    console.log(`-devMode ${status ? "on" : "off"}-`);
   }
 
   /**
@@ -132,7 +133,7 @@ class ProcessStats {
   setProcessActive() {
     this.servers.clear();
     this.isInactive = false;
-    console.log('-active-');
+    console.log("-active-");
     this.dateActive = Date.now();
   }
 
@@ -181,12 +182,12 @@ class ProcessStats {
    */
   catchVCJoinError(error: Error, textChannel: TextBasedChannel) {
     const eMsg = error.toString();
-    if (eMsg.includes('it is full')) {
-      textChannel.send('`error: cannot join voice channel; it is full`');
-    } else if (eMsg.includes('VOICE_JOIN_CHANNEL')) {
-      textChannel.send('`permissions error: cannot join voice channel`');
+    if (eMsg.includes("it is full")) {
+      textChannel.send("`error: cannot join voice channel; it is full`");
+    } else if (eMsg.includes("VOICE_JOIN_CHANNEL")) {
+      textChannel.send("`permissions error: cannot join voice channel`");
     } else {
-      textChannel.send('error when joining your VC:\n`' + error.message + '`');
+      textChannel.send("error when joining your VC:\n`" + error.message + "`");
       this.logError(`voice channel join error:\n\`${error.message}\``);
     }
   }

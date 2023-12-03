@@ -1,8 +1,8 @@
-import { MAX_QUEUE_S } from './lib/constants';
-import LocalServer from './lib/LocalServer';
-import { BaseGuildTextChannel, Message, TextChannel } from 'discord.js';
-import { hasDJPermissions } from './permissions';
-import { botInVC, resetSession } from './utils';
+import { MAX_QUEUE_S } from "./lib/constants";
+import LocalServer from "./lib/LocalServer";
+import { BaseGuildTextChannel, Message, TextChannel } from "discord.js";
+import { hasDJPermissions } from "./permissions";
+import { botInVC, resetSession } from "./utils";
 
 /**
  * Determines whether to proceed with the command, based on the request.
@@ -56,7 +56,7 @@ function isValidRequestWPlay(server: LocalServer, message: Message, actionDescri
   if (!botInVC(message)) {
     resetSession(server);
   } else if (server.queue.length >= MAX_QUEUE_S) {
-    message.channel.send('*max queue size has been reached*');
+    message.channel.send("*max queue size has been reached*");
     return false;
   }
   return true;

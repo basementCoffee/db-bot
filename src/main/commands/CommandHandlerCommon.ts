@@ -400,7 +400,7 @@ class CommandHandlerCommon {
   /**
    * Plays an entire custom playlist.
    * @param args {Array<string>} The array of playlists to play.
-   * @param message {import('Discord.js').Message} The message object.
+   * @param message {import("Discord.js").Message} The message object.
    * @param sheetName {string} The name of the sheet to reference.
    * @param playRightNow {boolean} If the playlist should be played right now.
    * @param printErrorMsg {boolean} If an error message should be printed.

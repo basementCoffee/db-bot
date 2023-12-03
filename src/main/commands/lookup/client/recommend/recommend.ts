@@ -1,6 +1,6 @@
-import { MessageEventLocal } from '../../../../utils/lib/types';
-import { sendRecommendationWrapper } from '../../../stream/recommendations';
-import { bot } from '../../../../utils/lib/constants';
+import { MessageEventLocal } from "../../../../utils/lib/types";
+import { sendRecommendationWrapper } from "../../../stream/recommendations";
+import { bot } from "../../../../utils/lib/constants";
 
 exports.run = async (event: MessageEventLocal) => {
   const message = event.message;

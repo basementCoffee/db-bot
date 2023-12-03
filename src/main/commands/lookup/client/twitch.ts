@@ -1,8 +1,7 @@
-import { MessageEventLocal } from '../../../utils/lib/types';
-import commandHandlerCommon from '../../CommandHandlerCommon';
-import { StreamType, TWITCH_BASE_LINK } from '../../../utils/lib/constants';
-import { createQueueItem } from '../../../utils/utils';
-import { playLinkToVC } from '../../stream/stream';
+import { MessageEventLocal } from "../../../utils/lib/types";
+import { StreamType, TWITCH_BASE_LINK } from "../../../utils/lib/constants";
+import { createQueueItem } from "../../../utils/utils";
+import { playLinkToVC } from "../../stream/stream";
 
 exports.run = async (event: MessageEventLocal) => {
   const message = event.message;
@@ -16,6 +15,6 @@ exports.run = async (event: MessageEventLocal) => {
     server.queue.unshift(createQueueItem(channelLink, StreamType.TWITCH, null));
     playLinkToVC(message, channelLink, message.member!.voice.channel, server);
   } else {
-    message.channel.send('*must be in a voice channel*');
+    message.channel.send("*must be in a voice channel*");
   }
 };

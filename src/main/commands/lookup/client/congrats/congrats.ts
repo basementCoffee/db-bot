@@ -1,10 +1,10 @@
-import { botInVC, createQueueItem } from '../../../../utils/utils';
-import { StreamType, whatspMap } from '../../../../utils/lib/constants';
-import processStats from '../../../../utils/lib/ProcessStats';
-import LocalServer from '../../../../utils/lib/LocalServer';
-import { Message } from 'discord.js';
-import { MessageEventLocal } from '../../../../utils/lib/types';
-import { playLinkToVC, skipLink } from '../../../stream/stream';
+import { botInVC, createQueueItem } from "../../../../utils/utils";
+import { StreamType, whatspMap } from "../../../../utils/lib/constants";
+import processStats from "../../../../utils/lib/ProcessStats";
+import LocalServer from "../../../../utils/lib/LocalServer";
+import { Message } from "discord.js";
+import { MessageEventLocal } from "../../../../utils/lib/types";
+import { playLinkToVC, skipLink } from "../../../stream/stream";
 
 exports.run = async (event: MessageEventLocal) => {
   congratsCommand(event.message, event.server, event.statement, event.args);
@@ -24,29 +24,29 @@ export function congratsCommand(message: Message, server: LocalServer, statement
     server.loop = false;
   }
   server.numSinceLastEmbed++;
-  const args2 = message.content.toLowerCase().replace(/\s+/g, ' ').split(' ');
+  const args2 = message.content.toLowerCase().replace(/\s+/g, " ").split(" ");
   const findIndexOfWord = (word: string) => {
     for (const w in args) {
       if (args[w].includes(word)) {
         return w;
       }
     }
-    return '-1';
+    return "-1";
   };
   let name;
-  let indexOfWord = findIndexOfWord('grats') || findIndexOfWord('congratulations');
-  if (indexOfWord !== '-1') {
+  let indexOfWord = findIndexOfWord("grats") || findIndexOfWord("congratulations");
+  if (indexOfWord !== "-1") {
     name = args2[parseInt(indexOfWord) + 1];
-    const excludedWords = ['on', 'the', 'my', 'for', 'you', 'dude', 'to', 'from', 'with', 'by'];
-    if (excludedWords.includes(name)) name = '';
+    const excludedWords = ["on", "the", "my", "for", "you", "dude", "to", "from", "with", "by"];
+    if (excludedWords.includes(name)) name = "";
     if (name && name.length > 1) name = name.substring(0, 1).toUpperCase() + name.substring(1);
   } else {
-    name = '';
+    name = "";
   }
-  message.channel.send('Congratulations' + (name ? ' ' + name : '') + '!');
-  const congratsLink = statement.includes('omedetou')
-    ? 'https://www.youtube.com/watch?v=hf1DkBQRQj4'
-    : 'https://www.youtube.com/watch?v=oyFQVZ2h0V8';
+  message.channel.send("Congratulations" + (name ? " " + name : "") + "!");
+  const congratsLink = statement.includes("omedetou")
+    ? "https://www.youtube.com/watch?v=hf1DkBQRQj4"
+    : "https://www.youtube.com/watch?v=oyFQVZ2h0V8";
   if (server.queue[0]?.url !== congratsLink) {
     server.queue.unshift(createQueueItem(congratsLink, StreamType.YOUTUBE, null));
   } else {

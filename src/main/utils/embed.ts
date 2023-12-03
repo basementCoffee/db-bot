@@ -1,16 +1,16 @@
-import LocalServer from './lib/LocalServer';
-import { EmbedBuilderLocal } from '@hoursofza/djs-common';
-import ytdl from 'ytdl-core-discord';
-import { getQueueText, isSpotifyLink } from './utils';
-import { convertYTFormatToMS, formatDuration } from './formatUtils';
-import { DB_SPOTIFY_EMBED_ICON, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } from './lib/constants';
-import processStats from './lib/ProcessStats';
-import spotifyAuth from './lib/SpotifyAuthenticator';
-import fetch from 'isomorphic-unfetch';
+import LocalServer from "./lib/LocalServer";
+import { EmbedBuilderLocal } from "@hoursofza/djs-common";
+import ytdl from "ytdl-core-discord";
+import { getQueueText, isSpotifyLink } from "./utils";
+import { convertYTFormatToMS, formatDuration } from "./formatUtils";
+import { DB_SPOTIFY_EMBED_ICON, SOUNDCLOUD_BASE_LINK, TWITCH_BASE_LINK } from "./lib/constants";
+import processStats from "./lib/ProcessStats";
+import spotifyAuth from "./lib/SpotifyAuthenticator";
+import fetch from "isomorphic-unfetch";
 
-const { getData } = require('spotify-url-info')(fetch);
-const scdl = require('soundcloud-downloader').default;
-const { isNumber } = require('node-os-utils/util');
+const { getData } = require("spotify-url-info")(fetch);
+const scdl = require("soundcloud-downloader").default;
+const { isNumber } = require("node-os-utils/util");
 
 /**
  * Gets the cover art of a spotify track url.
@@ -19,7 +19,7 @@ const { isNumber } = require('node-os-utils/util');
  */
 async function getSpotifyCoverArt(url: string): Promise<string | undefined> {
   // Extract the Spotify track or album ID from the URL
-  const id = url.split('/').pop();
+  const id = url.split("/").pop();
   let data;
   const spotifyApi = await spotifyAuth.getSpotifyApiNode();
   try {
@@ -72,22 +72,22 @@ async function createEmbed(url: string, infos: any): Promise<{ embed: EmbedBuild
   let embed;
   if (isSpotifyLink(url)) {
     if (!infos) infos = await getData(url);
-    let artists = '';
-    infos.artists.forEach((x: any) => (artists ? (artists += ', ' + x.name) : (artists += x.name)));
+    let artists = "";
+    infos.artists.forEach((x: any) => (artists ? (artists += ", " + x.name) : (artists += x.name)));
     infos.thumbnailUrl = infos.thumbnailUrl ?? (await getSpotifyIcon(infos, url));
     embed = new EmbedBuilderLocal()
       .setTitle(`${infos.name}`)
       .setURL(infos.external_urls.spotify)
-      .setColor('#1DB954')
+      .setColor("#1DB954")
       .addFields(
         {
           inline: true,
-          name: `Artist${infos.artists.length > 1 ? 's' : ''}`,
+          name: `Artist${infos.artists.length > 1 ? "s" : ""}`,
           value: artists
         },
         {
           inline: true,
-          name: 'Duration',
+          name: "Duration",
           value: formatDuration(infos.duration || infos.duration_ms)
         }
       )
@@ -95,57 +95,57 @@ async function createEmbed(url: string, infos: any): Promise<{ embed: EmbedBuild
     timeMS = parseInt(infos.duration || infos.duration_ms);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (!infos) infos = await scdl.getInfo(url);
-    const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || 'N/A';
+    const artist = infos.user.full_name || infos.user.username || infos.publisher_metadata.artist || "N/A";
     const title =
       (infos.publisher_metadata
         ? infos.publisher_metadata.release_title || infos.publisher_metadata.album_title
-        : '') ||
-      infos.title.replace(/"/g, '') ||
-      'SoundCloud';
+        : "") ||
+      infos.title.replace(/"/g, "") ||
+      "SoundCloud";
     embed = new EmbedBuilderLocal()
       .setTitle(title)
       .setURL(url)
-      .setColor('#ee4900')
+      .setColor("#ee4900")
       .addFields(
         {
           inline: true,
-          name: 'Artist',
+          name: "Artist",
           value: artist
         },
         {
           inline: true,
-          name: 'Duration',
+          name: "Duration",
           value: formatDuration(infos.duration || 0)
         }
       )
       .setThumbnail(infos.artwork_url || infos.user?.avatar_url || null);
-    timeMS = infos.duration || infos.full_duration || 'N/A';
+    timeMS = infos.duration || infos.full_duration || "N/A";
   } else if (url.includes(TWITCH_BASE_LINK)) {
-    const artist = url.substr(url.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, '');
+    const artist = url.substr(url.indexOf(TWITCH_BASE_LINK) + TWITCH_BASE_LINK.length + 1).replace(/\//g, "");
     embed = new EmbedBuilderLocal()
       .setTitle(`${artist}'s stream`)
       .setURL(url)
-      .setColor('#8a2aef')
+      .setColor("#8a2aef")
       .addFields(
         {
           inline: true,
-          name: 'Channel',
+          name: "Channel",
           value: artist
         },
         {
           inline: true,
-          name: 'Duration',
-          value: 'live'
+          name: "Duration",
+          value: "live"
         }
       )
-      .setThumbnail('https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg');
+      .setThumbnail("https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/twitchLogo.jpeg");
   } else {
     if (!infos) infos = await ytdl.getBasicInfo(url);
     let duration;
     let videoDetails = infos.videoDetails;
     if (!videoDetails) videoDetails = infos;
     if (videoDetails.isLiveContent || videoDetails.isLive) {
-      duration = 'live';
+      duration = "live";
       // set to 1hr
       timeMS = 3600000;
     } else {
@@ -153,34 +153,34 @@ async function createEmbed(url: string, infos: any): Promise<{ embed: EmbedBuild
         timeMS = parseInt(infos.formats[0].approxDurationMs || videoDetails.lengthSeconds * 1000);
         duration = formatDuration(timeMS || 0);
       } else if (videoDetails.duration === null) {
-        duration = 'N/A';
+        duration = "N/A";
       } else {
         timeMS =
           videoDetails.durationSec * 1000 ||
           (() => (isNumber(videoDetails.duration) ? videoDetails.duration : false))() ||
-          convertYTFormatToMS(videoDetails.duration.split(':'));
+          convertYTFormatToMS(videoDetails.duration.split(":"));
         duration = formatDuration(timeMS);
       }
-      if (duration === 'NaNm NaNs') {
-        duration = 'N/A';
+      if (duration === "NaNm NaNs") {
+        duration = "N/A";
         timeMS = 0;
       }
     }
     embed = new EmbedBuilderLocal()
       .setTitle(`${videoDetails.title}`)
       .setURL(videoDetails.video_url || videoDetails.shortUrl || infos.url)
-      .setColor('#c40d00')
+      .setColor("#c40d00")
       .addFields(
         {
           inline: true,
-          name: 'Channel',
+          name: "Channel",
           value:
-            `[${videoDetails.author.name || videoDetails.ownerChannelName || 'N/A'}]` +
+            `[${videoDetails.author.name || videoDetails.ownerChannelName || "N/A"}]` +
             `(${videoDetails.author.url || videoDetails.author.channel_url})`
         },
         {
           inline: true,
-          name: 'Duration',
+          name: "Duration",
           value: duration || videoDetails.duration
         }
       )
@@ -208,7 +208,7 @@ async function updateActiveEmbed(server: LocalServer) {
     const embed = embedObject.embed;
     embed.addFields({
       inline: true,
-      name: 'Queue',
+      name: "Queue",
       value: getQueueText(server)
     });
     // server.currentEmbed.edit({embeds: [embed]});
@@ -248,12 +248,12 @@ function sessionEndEmbedWEmbed(server: LocalServer, embed: EmbedBuilderLocal) {
       server.collector = null;
     }
   }
-  server.currentEmbedChannelId = '0';
+  server.currentEmbedChannelId = "0";
   server.numSinceLastEmbed = 0;
   embed.addFields({
     inline: true,
-    name: '-',
-    value: 'Session ended'
+    name: "-",
+    value: "Session ended"
   });
   embed.edit(server.currentEmbed);
   setTimeout(() => {

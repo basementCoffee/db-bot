@@ -34,7 +34,7 @@ async function sendRecommendationWrapper(message: Message, args: string[], uMana
 
 /**
  * Send a recommendation to a user. EXPERIMENTAL.
- * @param message {import('discord.js').Message} The message metadata.
+ * @param message {import("discord.js").Message} The message metadata.
  * @param content {string?} Optional - Text/description to add to the recommendation.
  * @param url {string} The url to recommend.
  * @param uManager bot.users
@@ -58,6 +58,7 @@ async function sendRecommendation(message: Message, content = '', url: string, u
     console.log(e);
   }
 }
+
 /**
  * Determines if a link is within an array.
  * Expects the queue param to have a '.url' field.

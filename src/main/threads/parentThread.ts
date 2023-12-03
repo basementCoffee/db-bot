@@ -1,8 +1,8 @@
 /* eslint-disable camelcase */
-import { Worker } from 'worker_threads';
-import processStats from '../utils/lib/ProcessStats';
+import { Worker } from "worker_threads";
+import processStats from "../utils/lib/ProcessStats";
 
-const worker = new Worker(__dirname + '/worker.js', { argv: process.argv.slice(2) });
+const worker = new Worker(__dirname + "/worker.js", { argv: process.argv.slice(2) });
 
 /**
  * Send computationally heavy commands to a worker process.
@@ -29,16 +29,16 @@ function parentThread(
  */
 function initialize() {
   // what is received by the worker thread
-  worker.on('message', function (m) {
+  worker.on("message", function(m) {
     switch (m.content.commandName) {
-      case 'lyrics':
+      case "lyrics":
         const server = processStats.getServer(m.content.guildId);
         if (server) server.numSinceLastEmbed = 10;
         break;
     }
   });
 
-  worker.on('exit', (code) => {
+  worker.on("exit", (code) => {
     const closeMsg = `worker process exited with code ${code}`;
     if (code === 1) {
       initialize();

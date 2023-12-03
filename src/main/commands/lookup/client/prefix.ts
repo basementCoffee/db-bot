@@ -1,4 +1,4 @@
-import { MessageEventLocal } from '../../../utils/lib/types';
+import { MessageEventLocal } from "../../../utils/lib/types";
 
 exports.run = async (event: MessageEventLocal) => {
   const message = event.message;

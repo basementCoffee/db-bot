@@ -1,9 +1,9 @@
-import { Channel, TextBasedChannel } from 'discord.js';
-import { bot, PREFIX_SN, setOfBotsOn } from '../utils/lib/constants';
-import processStats from '../utils/lib/ProcessStats';
-import buildNumber from '../utils/lib/BuildNumber';
-import { gsrun } from '../database/api/api';
-import config from '../../../config.json';
+import { Channel, TextBasedChannel } from "discord.js";
+import { bot, PREFIX_SN, setOfBotsOn } from "../utils/lib/constants";
+import processStats from "../utils/lib/ProcessStats";
+import buildNumber from "../utils/lib/BuildNumber";
+import { gsrun } from "../database/api/api";
+import config from "../../../config.json";
 
 let resHandlerTimeout: NodeJS.Timeout | null = null;
 
@@ -15,7 +15,7 @@ function checkToSeeActive() {
   // see if any bots are active
   // noinspection JSUnresolvedFunction
   bot.channels.fetch(config.process).then((channel: Channel | null) =>
-    (<TextBasedChannel>channel).send('=gzk').then(() => {
+    (<TextBasedChannel>channel).send("=gzk").then(() => {
       processStats.isPendingStatus = true;
       // Active bots should populate the setOfBotsOn set.
       if (!resHandlerTimeout) resHandlerTimeout = setTimeout(responseHandler, 11000);
@@ -53,9 +53,9 @@ async function becomeActiveProcess() {
   processStats.setDevMode(false);
   // noinspection JSUnresolvedFunction
   bot.channels.fetch(config.process).then((channel: Channel | null) => {
-    (<TextBasedChannel>channel).send('~db-process-off' + buildNumber.getBuildNo() + '-' + process.pid.toString());
+    (<TextBasedChannel>channel).send("~db-process-off" + buildNumber.getBuildNo() + "-" + process.pid.toString());
   });
-  const xdb = await gsrun('A', 'B', PREFIX_SN);
+  const xdb = await gsrun("A", "B", PREFIX_SN);
   for (const [gid, pfx] of xdb.congratsDatabase) {
     processStats.getServer(gid).prefix = pfx;
   }

@@ -272,7 +272,7 @@ async function playRandomKeys(
 
 /**
  * Given keys, adds the keys to the queue and, if applicable, plays them to a voice channel.
- * @param message {import('discord.js').Message} The message that triggered the bot
+ * @param message {import("discord.js").Message} The message that triggered the bot
  * @param server {LocalServer} The server object.
  * @param addToFront {boolean} True if to add items to the front of the queue
  * @param keys {Array<*>} The keys to add to the queue and play.

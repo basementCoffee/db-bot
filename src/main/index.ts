@@ -17,17 +17,9 @@ import {
 } from 'discord.js';
 import buildNo from './utils/lib/BuildNumber';
 import { deleteRows, gsrun } from './database/api/api';
-import {
-  botInVC,
-  botInVcGuild,
-  createMemoryEmbed,
-  createQueueItem,
-  endStream,
-  getSheetName,
-  isShortCommand
-} from './utils/utils';
+import { botInVcGuild, createMemoryEmbed, endStream } from './utils/utils';
 import { formatDuration } from './utils/formatUtils';
-import { clearDJTimer, runDictatorCommand, runDJCommand, runResignCommand } from './commands/dj';
+import { clearDJTimer } from './commands/dj';
 import {
   bot,
   botID,
@@ -37,25 +29,15 @@ import {
   PREFIX_SN,
   setOfBotsOn,
   startupTest,
-  StreamType,
-  TWITCH_BASE_LINK,
   whatspMap
 } from './utils/lib/constants';
 import reactions from './utils/lib/reactions';
 import { sessionEndEmbed } from './utils/embed';
-import {
-  checkStatusOfYtdl,
-  playLinkToVC,
-  runRewindCommand,
-  runSkipCommand,
-  sendLinkAsEmbed
-} from './commands/stream/stream';
+import { checkStatusOfYtdl } from './commands/stream/stream';
 import { shutdown } from './process/shutdown';
-import { playRecommendation, sendRecommendationWrapper } from './commands/stream/recommendations';
 import { checkToSeeActive } from './process/checkToSeeActive';
-import { runQueueCommand } from './commands/generateQueue';
 import { getServerPrefix, getXdb2, sendListSize } from './database/retrieval';
-import { hasDJPermissions, isAdmin } from './utils/permissions';
+import { isAdmin } from './utils/permissions';
 import { dmHandler, sendMessageToUser } from './utils/dms';
 import { runDeleteKeyCommand_P } from './database/delete';
 import { parentThread } from './threads/parentThread';
@@ -120,7 +102,7 @@ async function runCommandCases(message: Message) {
 
 /**
  * All user commands.
- * @param message {import('discord.js').Message} The message.
+ * @param message {import("discord.js").Message} The message.
  * @param statement {string} The command to process.
  * @param server {LocalServer} The server object.
  * @param args {Array<string>} The arguments provided with the command.
@@ -135,259 +117,22 @@ async function runUserCommands(
   prefixString: string
 ) {
   commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
-  const cmd = await commandHandler.getCommand(statement, message.author.id);
-  if (cmd) {
-    const event: MessageEventLocal = {
-      statement,
-      message,
-      args: args.slice(1),
-      prefix: prefixString,
-      data: new Map(),
-      server: server,
-      mgid: message.guild!.id
-    };
-    event.data.set(EventDataKeyEnum.BOT_VERSION, version);
-    await cmd.run(event);
-    return;
-  }
-  const mgid = message.guild!.id;
-  switch (statement) {
-    case 'rename-key':
-    case 'rename-keys':
-    case 'renamekey':
-    case 'renamekeys':
-      if (!args[1] || !args[2]) {
-        message.channel.send(`*expected a key-name and new key-name (i.e. ${args[0]} [A] [B])*`);
-        return;
-      }
-      commandHandlerCommon
-        .renameKey(<TextChannel>message.channel, server, getSheetName(message.member!.id), args[1], args[2])
-        .then();
-      break;
-    case 'rename-playlist':
-    case 'rename-playlists':
-    case 'renameplaylist':
-      if (!args[1] || !args[2]) {
-        message.channel.send(`*expected a playlist-name and new playlist-name (i.e. ${args[0]} [A] [B])*`);
-        return;
-      }
-      commandHandlerCommon
-        .renamePlaylist(<TextChannel>message.channel, server, getSheetName(message.member!.id), args[1], args[2])
-        .then();
-      break;
-    // .keys is personal keys
-    case 'key':
-    case 'keys':
-    case 'playlist':
-    case 'playlists':
-      commandHandlerCommon
-        .keys(message, server, getSheetName(message.member!.id), null, args[1], message.member!.nickname ?? undefined)
-        .then();
-      break;
-    case 'splash':
-      commandHandlerCommon
-        .setSplashscreen(server, <TextChannel>message.channel, getSheetName(message.member!.id), args[1])
-        .then();
-      break;
-    case 'size':
-      if (args[1]) sendListSize(message, server, getSheetName(message.member!.id), args[1]).then();
-      break;
-    case 'ticket':
-      if (args[1]) {
-        args[0] = '';
-        dmHandler(message, args.join(''));
-        message.channel.send('Your message has been sent');
-      } else {
-        return message.channel.send('*input a message after the command to submit a request/issue*');
-      }
-      break;
-    // !? is the command for what's playing?
-    case 'current':
-    case '?':
-    case 'np':
-    case 'nowplaying':
-    case 'playing':
-    case 'now':
-      await commandHandlerCommon.nowPlaying(
-        server,
-        message,
-        message.member!.voice?.channel,
-        args[1],
-        getSheetName(message.member!.id),
-        ''
-      );
-      break;
-    case 'rm':
-    case 'remove':
-      await commandHandlerCommon.removeFromQueue(message, server, args[1]);
-      break;
-    case 'input':
-    case 'insert':
-      commandHandlerCommon.insert(message, mgid, args.slice(1), server, getSheetName(message.member!.id)).then();
-      break;
-    case 'list':
-    case 'upnext':
-    case 'queue':
-      runQueueCommand(server, message, mgid, false);
-      break;
-    case 'queuesearch':
-    case 'searchqueue':
-    case 'queuefind':
-      if (!args[1]) {
-        message.channel.send('error: expected a term to search for within the queue');
-        return;
-      }
-      if (!botInVC(message)) {
-        message.channel.send('error: must be in a voice channel with db vibe');
-        return;
-      }
-      commandHandlerCommon
-        .queueFind(message, server, args.slice(1).join(' '))
-        .catch((er: Error) => processStats.debug(er));
-      break;
-    case 'dict':
-    case 'dictator':
-      runDictatorCommand(message, mgid, prefixString, server);
-      break;
-    case 'voteskip':
-    case 'vote':
-    case 'dj':
-      runDJCommand(message, server);
-      break;
-    case 'fs':
-    case 'fsk':
-    case 'forcesk':
-    case 'forceskip':
-      if (isShortCommand(message.guild!, statement)) return;
-      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
-        runSkipCommand(message, message.member!.voice?.channel, server, args[1], true, true, message.member);
-      }
-      break;
-    case 'fr':
-    case 'frw':
-    case 'forcerw':
-    case 'forcerewind':
-      if (isShortCommand(message.guild!, statement)) return;
-      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
-        runRewindCommand(message, mgid, message.member!.voice?.channel!, args[1], true, false, message.member, server);
-      }
-      break;
-    case 'fp':
-      if (isShortCommand(message.guild!, statement)) return;
-      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
-        message.channel.send("use 'fpl' to force play and 'fpa' to force pause.");
-      }
-      break;
-    case 'fpl':
-    case 'forcepl':
-    case 'forceplay':
-      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
-        commandHandlerCommon.resumeStream(message, message.member!, server, false, true);
-      }
-      break;
-    case 'fpa':
-    case 'forcepa':
-    case 'forcepause':
-      if (hasDJPermissions(<TextChannel>message.channel, message.member!.id, true, server.voteAdmin)) {
-        commandHandlerCommon.pauseStream(message, message.member!, server, false, true, false);
-      }
-      break;
-    case 'lock-queue':
-      if (server.voteAdmin.filter((x: any) => x.id === message.member!.id).length > 0) {
-        if (server.lockQueue) message.channel.send('***the queue has been unlocked:*** *any user can add to it*');
-        else message.channel.send('***the queue has been locked:*** *only the dj can add to it*');
-        server.lockQueue = !server.lockQueue;
-      } else {
-        message.channel.send('only a dj can lock the queue');
-      }
-      break;
-    case 'resign':
-      runResignCommand(message, server);
-      break;
-    case 'verbose':
-      if (!server.verbose) {
-        server.verbose = true;
-        message.channel.send('***verbose mode enabled***, *embeds will be kept during this listening session*');
-      } else {
-        server.verbose = false;
-        message.channel.send('***verbose mode disabled***');
-      }
-      break;
-    case 'unverbose':
-      if (!server.verbose) {
-        message.channel.send('*verbose mode is not currently enabled*');
-      } else {
-        server.verbose = false;
-        message.channel.send('***verbose mode disabled***');
-      }
-      break;
-    // .add is personal add
-    case 'add':
-      commandHandlerCommon.addKeyToDB(
-        message.channel,
-        args.slice(1),
-        getSheetName(message.member!.id),
-        true,
-        server,
-        message.member
-      );
-      break;
-    case 'playlist-add':
-    case 'add-playlist':
-      if (!args[1]) {
-        message.channel.send(`*error: expected a playlist name to add (i.e. \`${args[0]} [playlist-name]\`)*`);
-        return;
-      }
-      commandHandlerCommon.addCustomPlaylist(server, message.channel, getSheetName(message.member!.id), args[1]);
-      break;
-    case 'delete-playlist':
-    case 'playlist-delete':
-      commandHandlerCommon
-        .removeDBPlaylist(
-          server,
-          getSheetName(message.member!.id),
-          args[1],
-          await getXdb2(server, getSheetName(message.member!.id), false),
-          <TextChannel>message.channel
-        )
-        .then();
-      break;
-    // .del deletes database entries
-    case 'del':
-    case 'delete':
-    case 'delete-key':
-    case 'remove-key':
-      if (!args[1]) return message.channel.send('*no args provided*');
-      void runDeleteKeyCommand_P(message, args[1], getSheetName(message.member!.id), server);
-      break;
-    case 'move-key':
-    case 'move-keys':
-      if (!args[1]) return message.channel.send(`*no args provided (i.e. ${statement} [key] [playlist])*`);
-      commandHandlerCommon.moveKeysBetweenPlaylists(
-        server,
-        <TextChannel>message.channel,
-        getSheetName(message.member!.id),
-        await getXdb2(server, getSheetName(message.member!.id), false),
-        args.splice(1)
-      );
-      break;
-    case 'soundcloud':
-      message.channel.send(
-        `*try the play command with a soundcloud link \` Ex: ${prefixString}play [SOUNDCLOUD_URL]\`*`
-      );
-      break;
-    case 'prev':
-    case 'previous':
-    case 'rw':
-    case 'rewind':
-      runRewindCommand(message, mgid, message.member!.voice?.channel!, args[1], false, false, message.member, server);
-      break;
-  }
+  const event: MessageEventLocal = {
+    statement,
+    message,
+    args: args.slice(1),
+    prefix: prefixString,
+    data: new Map(),
+    server: server,
+    mgid: message.guild!.id
+  };
+  event.data.set(EventDataKeyEnum.BOT_VERSION, version);
+  await commandHandler.execute(event);
 }
 
 /**
  * All developer commands, for testing purposes.
- * @param message {import('discord.js').Message} The message.
+ * @param message {import("discord.js").Message} The message.
  * @param statement {string} The command to process.
  * @param server {LocalServer} The server object.
  * @param args {Array<string>} The arguments provided with the command.
@@ -1189,17 +934,6 @@ bot.on('messageCreate', (message: Message) => {
 });
 
 /**
- * Returns false if the command is short (less than 3 characters), there is no active session, and no cmd arguments.
- * @param args {Array<string>} The arguments.
- * @param guild {import('discord.js').Guild} The message.
- * @param statement {string} The command to check.
- * @returns {boolean} False if the cmd is short with no active session and cmd args.
- */
-function isShortCommandNoArgs(args: Array<string>, guild: Guild, statement: string): boolean {
-  return !args[1] && isShortCommand(guild, statement);
-}
-
-/**
  * Runs a test.
  * @param channel The text channel to run the test in.
  * @param messagesToRun Array of message IDs to test.
@@ -1371,6 +1105,7 @@ process
 
 // whether the process is attempting to reconnect
 let isFixingConnection = false;
+
 /**
  * The action to be performed if there is an uncaughtExceptionError.
  * @param e The Error Object.

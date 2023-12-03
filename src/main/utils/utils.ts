@@ -9,22 +9,22 @@ import {
   Snowflake,
   TextChannel,
   VoiceChannel
-} from 'discord.js';
-import fetch from 'isomorphic-unfetch';
-import ytdl from 'ytdl-core-discord';
-import ytpl from 'ytpl';
-import LocalServer from './lib/LocalServer';
-import { getVoiceConnection } from '@discordjs/voice';
-import { EmbedBuilderLocal } from '@hoursofza/djs-common';
-import { linkFormatter } from './formatUtils';
-import { bot, botID, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from './lib/constants';
-import { QueueItem } from './lib/types';
+} from "discord.js";
+import fetch from "isomorphic-unfetch";
+import ytdl from "ytdl-core-discord";
+import ytpl from "ytpl";
+import LocalServer from "./lib/LocalServer";
+import { getVoiceConnection } from "@discordjs/voice";
+import { EmbedBuilderLocal } from "@hoursofza/djs-common";
+import { linkFormatter } from "./formatUtils";
+import { bot, botID, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from "./lib/constants";
+import { QueueItem } from "./lib/types";
 
-const { getData } = require('spotify-url-info')(fetch);
-const scdl = require('soundcloud-downloader').default;
-const unpipe = require('unpipe');
-const cpu = require('node-os-utils').cpu;
-const os = require('os');
+const { getData } = require("spotify-url-info")(fetch);
+const scdl = require("soundcloud-downloader").default;
+const unpipe = require("unpipe");
+const cpu = require("node-os-utils").cpu;
+const os = require("os");
 
 /**
  * Returns whether the bot is in a voice channel within the guild.
@@ -57,8 +57,8 @@ function botInVcGuild(guildId: string): boolean {
 function getQueueText(server: LocalServer) {
   let content;
   if (server.queue.length > 1) content = `1 / ${server.queue.length}`;
-  else if (server.queue.length > 0) content = server.autoplay ? 'smartplay' : '1 / 1';
-  else content = 'empty';
+  else if (server.queue.length > 0) content = server.autoplay ? "smartplay" : "1 / 1";
+  else content = "empty";
   return content;
 }
 
@@ -84,7 +84,7 @@ function verifyUrl(url: string) {
  * @param url The url to verify.
  * @returns {string | boolean} A StreamType or false.
  */
-function verifyPlaylist(url: string = ''): string | boolean {
+function verifyPlaylist(url: string = ""): string | boolean {
   try {
     url = url.toLowerCase();
     if (isSpotifyLink(url)) {
@@ -93,10 +93,11 @@ function verifyPlaylist(url: string = ''): string | boolean {
       }
     } else if (url.includes(SOUNDCLOUD_BASE_LINK) && scdl.isPlaylistURL(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {
       return StreamType.SOUNDCLOUD;
-    } else if ((url.includes('list=') || ytpl.validateID(url)) && !url.includes('&index=')) {
+    } else if ((url.includes("list=") || ytpl.validateID(url)) && !url.includes("&index=")) {
       return StreamType.YOUTUBE;
     }
-  } catch (e) {}
+  } catch (e) {
+  }
   return false;
 }
 
@@ -106,11 +107,11 @@ function verifyPlaylist(url: string = ''): string | boolean {
  * @returns {boolean} Whether it is a Spotify playlist.
  */
 function isPlaylistSpotifyLink(url: string): boolean {
-  return url.includes('/playlist') || url.includes('/album');
+  return url.includes("/playlist") || url.includes("/album");
 }
 
 function isSpotifyLink(url: string): boolean {
-  return url.includes(SPOTIFY_BASE_LINK) || url.includes('spotify.link');
+  return url.includes(SPOTIFY_BASE_LINK) || url.includes("spotify.link");
 }
 
 /**
@@ -142,7 +143,7 @@ async function getTitle(queueItem: any, cutoff?: number): Promise<string> {
       if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await scdl.getInfo(queueItem.url));
       title = queueItem.infos.title;
     } else if (queueItem.type === StreamType.TWITCH) {
-      title = 'twitch livestream';
+      title = "twitch livestream";
     } else {
       if (isEmptyQueueItem) {
         queueItem.infos = Object.assign(queueItem.infos || {}, await ytdl.getBasicInfo(queueItem.url));
@@ -150,11 +151,11 @@ async function getTitle(queueItem: any, cutoff?: number): Promise<string> {
       title = queueItem.infos.videoDetails?.title || queueItem.infos.title;
     }
   } catch (e) {
-    console.log('broken_url', e);
-    title = 'broken_url';
+    console.log("broken_url", e);
+    title = "broken_url";
   }
   if (cutoff && title.length > cutoff) {
-    title = title.substring(0, cutoff) + '...';
+    title = title.substring(0, cutoff) + "...";
   }
   return title;
 }
@@ -174,12 +175,12 @@ async function createMemoryEmbed() {
   const memUsage = process.memoryUsage();
   const cpuUsage = await cpu.usage();
   return new EmbedBuilderLocal()
-    .setTitle('Memory Usage')
+    .setTitle("Memory Usage")
     .setDescription(
       `rss -  ${formatMemoryUsage(memUsage.rss)} MB\nheap -  ` +
-        `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB ` +
-        `(${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)\ncpu: ${cpuUsage}%` +
-        `\nload-avg: ${Math.round(os.loadavg()[1] * 100) / 100}%`
+      `${formatMemoryUsage(memUsage.heapUsed)} / ${formatMemoryUsage(memUsage.heapTotal)} MB ` +
+      `(${Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)}%)\ncpu: ${cpuUsage}%` +
+      `\nload-avg: ${Math.round(os.loadavg()[1] * 100) / 100}%`
     );
 }
 
@@ -190,17 +191,18 @@ async function createMemoryEmbed() {
 function endStream(server: LocalServer) {
   try {
     if (server.streamData.type === StreamType.YOUTUBE) {
-      if (server.streamData.ytPlayer === 'play-dl') {
+      if (server.streamData.ytPlayer === "play-dl") {
         server.streamData.stream.pause();
         server.streamData.stream.destroy();
       } else {
         try {
-          if (server.streamData.ytPlayer === 'fluent') {
+          if (server.streamData.ytPlayer === "fluent") {
             server.streamData.stream.kill();
           } else {
             server.streamData.stream.destroy();
           }
-        } catch (e) {}
+        } catch (e) {
+        }
       }
     } else if (server.streamData.type === StreamType.SOUNDCLOUD) {
       if (!server.streamData.stream._readableState.closed) {
@@ -219,7 +221,7 @@ function endStream(server: LocalServer) {
       unpipe(server.streamData.stream);
     }
   } catch (e) {
-    console.log('Error: attempt stream close - ', e);
+    console.log("Error: attempt stream close - ", e);
   }
 }
 
@@ -285,7 +287,8 @@ function setSeamless(server: LocalServer, fName: any, args: Array<any>, message:
   server.seamless.message = message;
   if (server.seamless.timeout) clearTimeout(server.seamless.timeout);
   server.seamless.timeout = setTimeout(() => {
-    server.seamless.function = () => {};
+    server.seamless.function = () => {
+    };
     server.seamless.message = undefined;
   }, 9000);
 }
@@ -320,7 +323,8 @@ function removeDBMessage(channelID: string, deleteNum = 1, onlyDB: boolean) {
           }
         })
     );
-  } catch (e) {}
+  } catch (e) {
+  }
 }
 
 /**
@@ -366,7 +370,7 @@ function getSheetName(userId: string): string {
  * @returns {boolean} True if is a user sheet.
  */
 function isPersonalSheet(sheetName: string): boolean {
-  return sheetName[0] === 'p';
+  return sheetName[0] === "p";
 }
 
 /**
@@ -400,12 +404,12 @@ function createVisualEmbed(title: string, text: string, color?: ColorResolvable)
   return new EmbedBuilderLocal()
     .setTitle(title)
     .setDescription(text)
-    .setColor(color || '#0099ff');
+    .setColor(color || "#0099ff");
 }
 
 /**
  * Returns false if the command is short (less than 3 characters) and there is no active session.
- * @param guild {import('discord.js').Guild} The message.
+ * @param guild {import("discord.js").Guild} The message.
  * @param statement {string} The command to check.
  * @returns {boolean} False if the cmd is short with no active session.
  */
@@ -416,7 +420,7 @@ function isShortCommand(guild: Guild, statement: string): boolean {
 /**
  * Returns false if the command is short (less than 3 characters), there is no active session, and no cmd arguments.
  * @param args {Array<string>} The arguments.
- * @param guild {import('discord.js').Guild} The message.
+ * @param guild {import("discord.js").Guild} The message.
  * @param statement {string} The command to check.
  * @returns {boolean} False if the cmd is short with no active session and cmd args.
  */

@@ -1,13 +1,13 @@
 /* eslint-disable camelcase */
-import LocalServer from '../utils/lib/LocalServer';
-import { GuildMember, MessageReaction, TextChannel, User } from 'discord.js';
-import { botID, MAX_KEY_LENGTH } from '../utils/lib/constants';
-import reactions from '../utils/lib/reactions';
-import { addToDatabase_P } from '../database/add';
-import { linkValidator } from '../utils/utils';
-import { getXdb2 } from '../database/retrieval';
-import { universalLinkFormatter } from '../utils/formatUtils';
-import { UserKeysData } from '../database/api/api';
+import LocalServer from "../utils/lib/LocalServer";
+import { GuildMember, MessageReaction, TextChannel, User } from "discord.js";
+import { botID, MAX_KEY_LENGTH } from "../utils/lib/constants";
+import reactions from "../utils/lib/reactions";
+import { addToDatabase_P } from "../database/add";
+import { linkValidator } from "../utils/utils";
+import { getXdb2 } from "../database/retrieval";
+import { universalLinkFormatter } from "../utils/formatUtils";
+import { UserKeysData } from "../database/api/api";
 
 /**
  * create a string that warns the user that the itemName of type 'type' is exceeding a maximum length.
@@ -30,7 +30,7 @@ function lengthErrorString(type: any, itemName: any, maxLength: any): string {
  */
 async function addCustomPlaylist(server: LocalServer, channel: TextChannel, sheetName: string, playlistName: string) {
   if (playlistName.length > MAX_KEY_LENGTH) {
-    channel.send(lengthErrorString('playlist', playlistName, MAX_KEY_LENGTH));
+    channel.send(lengthErrorString("playlist", playlistName, MAX_KEY_LENGTH));
     return;
   }
   const xdb = await getXdb2(server, sheetName, false);
@@ -78,7 +78,7 @@ async function runAddCommandWrapper(
   }
   if (keyName) {
     if (keyName.length > MAX_KEY_LENGTH) {
-      channel.send(lengthErrorString('key', keyName, MAX_KEY_LENGTH));
+      channel.send(lengthErrorString("key", keyName, MAX_KEY_LENGTH));
       return;
     }
     if (link) {
@@ -99,11 +99,11 @@ async function runAddCommandWrapper(
     }
     if (member.voice?.channel && server.queue[0]) {
       link = server.queue[0].url;
-      if (keyName.includes('.') || keyName.includes(',')) return channel.send("cannot add names with '.' or ','");
+      if (keyName.includes(".") || keyName.includes(",")) return channel.send("cannot add names with '.' or ','");
       channel
         .send(
           `Would you like to add what's currently playing as **${keyName}**? ${
-            playlistName ? `*[to ${playlistName}]*` : ''
+            playlistName ? `*[to ${playlistName}]*` : ""
           }`
         )
         .then((sentMsg) => {
@@ -116,18 +116,18 @@ async function runAddCommandWrapper(
             );
           };
           const collector = sentMsg.createReactionCollector({ filter, time: 60000, dispose: true });
-          collector.once('collect', (reaction) => {
+          collector.once("collect", (reaction) => {
             sentMsg.delete();
             if (reaction.emoji.name === reactions.CHECK) {
               server.userKeys.set(sheetName, null);
               addToDatabase_P(server, [keyName, link], channel, sheetName, printMsgToChannel, playlistName, xdb);
             } else {
-              channel.send('*cancelled*');
+              channel.send("*cancelled*");
             }
           });
-          collector.on('end', () => {
+          collector.on("end", () => {
             if (sentMsg.deletable && sentMsg.reactions) {
-              sentMsg.reactions.removeAll().then(() => sentMsg.edit('*cancelled*'));
+              sentMsg.reactions.removeAll().then(() => sentMsg.edit("*cancelled*"));
             }
           });
         });
@@ -135,18 +135,18 @@ async function runAddCommandWrapper(
     } else {
       channel.send(
         `You can only add links to the keys list. (Names cannot be more than one word) \` Ex: ${
-          server.prefix || ''
+          server.prefix || ""
         }add [name] [link]\``
       );
       return;
     }
   }
-  if (member.voice?.channel && server.queue[0]) channel.send('*error: expected a key-name to add*');
+  if (member.voice?.channel && server.queue[0]) channel.send("*error: expected a key-name to add*");
   else
     channel.send(
-      'Could not add to your keys list. Put a desired name followed by a link. *(ex:` ' +
-        server.prefix +
-        'add [key] [link]`)*'
+      "Could not add to your keys list. Put a desired name followed by a link. *(ex:` " +
+      server.prefix +
+      "add [key] [link]`)*"
     );
 }
 

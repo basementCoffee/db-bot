@@ -1,7 +1,7 @@
-import { AudioPlayer, AudioResource, VoiceConnection } from '@discordjs/voice';
-import { Guild, GuildMember } from 'discord.js';
+import { AudioPlayer, AudioResource, VoiceConnection } from "@discordjs/voice";
+import { Guild, GuildMember } from "discord.js";
 
-const { joinVoiceChannel } = require('@discordjs/voice');
+const { joinVoiceChannel } = require("@discordjs/voice");
 
 // Audio Implementation
 class AudioImpl {
@@ -22,7 +22,8 @@ class AudioImpl {
       try {
         this.connection.destroy();
         this.connection.disconnect();
-      } catch (e) {}
+      } catch (e) {
+      }
     }
     this.player = undefined;
     this.resource = undefined;
@@ -36,7 +37,7 @@ class AudioImpl {
    * Joins a voice channel.
    * @param guild The guild object
    * @param voiceChannelId The id of the voice channel
-   * @return {import('discord.js').VoiceConnection}
+   * @return {import("discord.js").VoiceConnection}
    */
   joinVoiceChannel(guild: Guild, voiceChannelId: string): VoiceConnection {
     this.voiceChannelId = voiceChannelId;

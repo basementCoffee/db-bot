@@ -1,11 +1,11 @@
-import { ClientUser, Message, MessageReaction, TextChannel, User } from 'discord.js';
-import { bot, botID, commandsMap, INVITE_MSG } from './lib/constants';
-import { getHelpList } from './help';
-import reactions from './lib/reactions';
-import { logErrorCore } from './errorUtils';
-import config from '../../../config.json';
+import { ClientUser, Message, MessageReaction, TextChannel, User } from "discord.js";
+import { bot, botID, commandsMap, INVITE_MSG } from "./lib/constants";
+import { getHelpList } from "./help";
+import reactions from "./lib/reactions";
+import { logErrorCore } from "./errorUtils";
+import config from "../../../config.json";
 
-const { version } = require('../../../package.json');
+const { version } = require("../../../package.json");
 
 /**
  * Handles message requests.
@@ -15,26 +15,26 @@ const { version } = require('../../../package.json');
  */
 async function dmHandler(message: Message, messageContent: string) {
   // the message content - formatted in lower case
-  const mc = messageContent.toLowerCase().trim() + ' ';
+  const mc = messageContent.toLowerCase().trim() + " ";
   if (mc.length < 9) {
-    if (mc.length < 7 && mc.includes('help ')) {
-      commandsMap.set('help', (commandsMap.get('help') || 0) + 1);
-      return message.author.send({ embeds: [getHelpList('.', 1, version)[0].build()] });
-    } else if (mc.includes('invite ')) {
-      commandsMap.set('invite', (commandsMap.get('invite') || 0) + 1);
+    if (mc.length < 7 && mc.includes("help ")) {
+      commandsMap.set("help", (commandsMap.get("help") || 0) + 1);
+      return message.author.send({ embeds: [getHelpList(".", 1, version)[0].build()] });
+    } else if (mc.includes("invite ")) {
+      commandsMap.set("invite", (commandsMap.get("invite") || 0) + 1);
       return message.channel.send(INVITE_MSG);
     }
   }
   const mb = reactions.OUTBOX;
   const messagePayload =
-    '------------------------------------------\n' +
-    '**From: ' +
+    "------------------------------------------\n" +
+    "**From: " +
     message.author.username +
-    '** (' +
+    "** (" +
     message.author.id +
-    ')\n' +
+    ")\n" +
     messageContent +
-    '\n------------------------------------------';
+    "\n------------------------------------------";
   const channel = <TextChannel>await bot.channels.fetch(config.dm);
   if (!channel) {
     logErrorCore(`error: could not find DM channel\nmessage-payload:\n${messagePayload}`);
@@ -48,13 +48,13 @@ async function dmHandler(message: Message, messageContent: string) {
 
     const collector = msg.createReactionCollector({ filter, time: 86400000 });
 
-    collector.on('collect', (reaction: MessageReaction, user: ClientUser) => {
+    collector.on("collect", (reaction: MessageReaction, user: ClientUser) => {
       if (reaction.emoji.name === mb) {
         sendMessageToUser(msg, message.author.id.toString(), user.id);
         reaction.users.remove(user).then();
       }
     });
-    collector.once('end', () => {
+    collector.once("end", () => {
       msg.reactions.cache.get(mb)?.remove().then();
     });
   });
@@ -69,30 +69,30 @@ async function dmHandler(message: Message, messageContent: string) {
 function sendMessageToUser(message: Message, userID: string, reactionUserID: string | undefined) {
   const user = bot.users.cache.get(userID);
   if (!user) {
-    message.channel.send('error: could not find user');
+    message.channel.send("error: could not find user");
     return;
   }
   message.channel
-    .send('What would you like me to send to ' + user.username + "? [type 'q' to not send anything]")
+    .send("What would you like me to send to " + user.username + "? [type 'q' to not send anything]")
     .then((msg) => {
       const filter = (m: any) => {
         return (message.author.id === m.author.id || reactionUserID === m.author.id) && m.author.id !== botID;
       };
       message.channel
-        .awaitMessages({ filter, time: 60000, max: 1, errors: ['time'] })
+        .awaitMessages({ filter, time: 60000, max: 1, errors: ["time"] })
         .then((messages) => {
-          if (messages.first()!.content && messages.first()!.content.trim() !== 'q') {
+          if (messages.first()!.content && messages.first()!.content.trim() !== "q") {
             user.send(messages.first()!.content).then(() => {
-              message.channel.send('Message sent to ' + user.username + '.');
+              message.channel.send("Message sent to " + user.username + ".");
               message.react(reactions.CHECK).then();
             });
-          } else if (messages.first()!.content.trim().toLowerCase() === 'q') {
-            message.channel.send('No message sent.');
+          } else if (messages.first()!.content.trim().toLowerCase() === "q") {
+            message.channel.send("No message sent.");
           }
           msg.delete();
         })
         .catch(() => {
-          message.channel.send('No message sent.');
+          message.channel.send("No message sent.");
           msg.delete();
         });
     });

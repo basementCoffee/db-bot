@@ -1,6 +1,6 @@
-import { MessageEventLocal } from '../../../../utils/lib/types';
-import { botInVC, createVisualEmbed, getTitle } from '../../../../utils/utils';
-import { createVisualText } from '../../../generateQueue';
+import { MessageEventLocal } from "../../../../utils/lib/types";
+import { botInVC, createVisualEmbed, getTitle } from "../../../../utils/utils";
+import { createVisualText } from "../../../generateQueue";
 
 exports.run = async (event: MessageEventLocal) => {
   const message = event.message;
@@ -15,12 +15,12 @@ exports.run = async (event: MessageEventLocal) => {
     return b.index - a.index;
   });
   createVisualEmbed(
-    'Link Frequency',
+    "Link Frequency",
     (await createVisualText(
       server,
       tempAuditArray,
       (index: number, title: string, url: string) => `${index} | [${title}](${url})\n`
-    )) || 'no completed links'
+    )) || "no completed links"
   )
     .send(message.channel)
     .then();

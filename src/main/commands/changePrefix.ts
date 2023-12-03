@@ -52,6 +52,7 @@ function changePrefix(message: Message, server: LocalServer, oldPrefix: string, 
         if (botObject.nickname) {
           name = botObject.nickname.substring(botObject.nickname.indexOf(']') + 1);
         }
+
         /**
          * Changes the prefix of the bot.
          */

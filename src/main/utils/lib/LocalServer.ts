@@ -1,6 +1,6 @@
-import AudioImpl from './AudioImpl';
-import { GuildMember, Message } from 'discord.js';
-import { QueueItem } from './types';
+import AudioImpl from "./AudioImpl";
+import { GuildMember, Message } from "discord.js";
+import { QueueItem } from "./types";
 
 type StreamData = {
   // the StreamType enum
@@ -79,7 +79,8 @@ class LocalServer {
     timeout: any;
   } = {
     // the name of the type of function
-    function: () => {},
+    function: () => {
+    },
     // args for the function
     args: undefined,
     // optional message to delete
@@ -110,6 +111,7 @@ class LocalServer {
   };
   // whether to display the embed
   silence;
+
   /**
    * Constructor for LocalServer.
    * @param guildId {string} The id of the server.
@@ -133,7 +135,7 @@ class LocalServer {
     this.votePlayPauseMembersId = [];
     this.lockQueue = false;
     this.dictator = undefined;
-    this.startUpMessage = '';
+    this.startUpMessage = "";
     this.leaveVCTimeout = undefined;
     this.skipTimes = 0;
     this.activeUserQuestion = new Map();
@@ -150,7 +152,8 @@ class LocalServer {
       isTimer: false
     };
     this.seamless = {
-      function: () => {},
+      function: () => {
+      },
       args: undefined,
       message: undefined,
       timeout: undefined

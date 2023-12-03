@@ -63,7 +63,7 @@ fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
 /**
  *  The play function. Plays a given link to the voice channel. Does not add the item to the server queue.
- * @param message {import('discord.js').Message} The message that triggered the bot.
+ * @param message {import("discord.js").Message} The message that triggered the bot.
  * @param queueItem The queue item to play (see createQueueItem).
  * @param vc The voice channel to play the song in.
  * @param server {LocalServer} The server playback metadata.

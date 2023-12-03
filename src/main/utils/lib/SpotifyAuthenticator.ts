@@ -1,6 +1,6 @@
-import { logErrorCore } from '../errorUtils';
+import { logErrorCore } from "../errorUtils";
 
-const SpotifyWebApi = require('spotify-web-api-node');
+const SpotifyWebApi = require("spotify-web-api-node");
 
 class SpotifyApi {
   // Date.now of when the token will expire

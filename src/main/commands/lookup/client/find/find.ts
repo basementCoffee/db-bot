@@ -1,6 +1,6 @@
-import { getSheetName } from '../../../../utils/utils';
-import { MessageEventLocal } from '../../../../utils/lib/types';
-import commandHandlerCommon from '../../../CommandHandlerCommon';
+import { getSheetName } from "../../../../utils/utils";
+import { MessageEventLocal } from "../../../../utils/lib/types";
+import commandHandlerCommon from "../../../CommandHandlerCommon";
 
 exports.run = async (event: MessageEventLocal) => {
   const message = event.message;
@@ -9,7 +9,7 @@ exports.run = async (event: MessageEventLocal) => {
   if (!lookupTerm) {
     const lookupItem = server.queue[0];
     if (lookupItem.source) {
-      message.channel.send('from playlist: <' + lookupItem.source + '>');
+      message.channel.send("from playlist: <" + lookupItem.source + ">");
       return;
     }
   }

@@ -1,5 +1,5 @@
-import { MessageEventLocal } from '../../../../utils/lib/types';
-import { runSkipCommand } from '../../../stream/stream';
+import { MessageEventLocal } from "../../../../utils/lib/types";
+import { runSkipCommand } from "../../../stream/stream";
 
 exports.run = async (event: MessageEventLocal) => {
   const message = event.message;

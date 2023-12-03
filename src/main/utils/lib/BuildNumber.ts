@@ -1,4 +1,4 @@
-const { version } = require('../../../../package.json');
+const { version } = require("../../../../package.json");
 
 // A class allowing for retrieval and change of the build number.
 class BuildNumber {
@@ -11,10 +11,10 @@ class BuildNumber {
 
   constructor() {
     this.baseVersionStr = version
-      .split('.')
+      .split(".")
       .map((x: string) => (x.length < 2 ? `0${x}` : x))
-      .join('');
-    this.extensionStr = '04';
+      .join("");
+    this.extensionStr = "04";
     this.buildNoStr = `${this.baseVersionStr}${this.extensionStr}`;
   }
 
