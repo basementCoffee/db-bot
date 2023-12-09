@@ -107,7 +107,7 @@ async function runCommandCases(message: Message) {
  * @param server {LocalServer} The server object.
  * @param args {Array<string>} The arguments provided with the command.
  * @param prefixString {string} The prefix used by the server.
- * @returns {Promise<undefined>}
+ * @returns {Promise<void>}
  */
 async function runUserCommands(
   message: Message,
@@ -115,7 +115,7 @@ async function runUserCommands(
   server: LocalServer,
   args: Array<string>,
   prefixString: string
-) {
+): Promise<void> {
   commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
   const event: MessageEventLocal = {
     statement,
@@ -153,43 +153,6 @@ async function runDevCommands(
       // this method is for testing purposes only. (cmd: npm run dev-test)
       if (!processStats.devMode) return;
       runDevTest(<TextChannel>message.channel, ['']).catch((err) => processStats.debug(err));
-      break;
-    case 'devadd':
-      message.channel.send(
-        "Here's the dev docs:\n" +
-          '<https://docs.google.com/spreadsheets/d/1jvH0Tjjcsp0bm2SPGT2xKg5I998jimtSRWdbGgQJdN0/edit#gid=1750635622>'
-      );
-      break;
-    // dev commands for testing purposes
-    case 'gzh':
-      new EmbedBuilderLocal()
-        .setTitle('Dev Commands')
-        .setDescription(
-          '**active bot commands**' +
-            `\n ${prefixString} gzs - statistics for the active bot` +
-            `\n ${prefixString} gzmem - see the process\'s memory usage` +
-            `\n ${prefixString} gzc - view commands stats` +
-            `\n ${prefixString} gznuke [num] [\'db\'?] - deletes [num] recent messages (or db only)` +
-            `\n ${prefixString} gzr [userId] - queries a message from the bot to the user` +
-            '\n\n**calibrate the active bot**' +
-            `\n ${prefixString} gzq - quit/restarts the active bot` +
-            `\n ${prefixString} gzupdate - updates the (active) pi instance of the bot` +
-            `\n ${prefixString} gzm update - sends a message to active guilds that the bot will be updating` +
-            `\n ${prefixString} gzsms [message] - set a default message for all users on VC join` +
-            '\n\n**calibrate multiple/other bots**' +
-            "\n=gzl - return all bot's ping and latency" +
-            '\n=gzk - start/kill a process' +
-            '\n=gzd [process #] - toggle dev mode' +
-            '\n=gzb [process #] [+/-] - increase/decrease build number' +
-            '\n=gzupdate - updates all (inactive) pi instances of the bot' +
-            '\n\n**dev-testing commands**' +
-            `\n ${prefixString} gzcpf - change prefix for testing (if in devmode)` +
-            `\n ${prefixString} gzid - guild, bot, and member id` +
-            `\n ${prefixString} devadd - access the database`
-        )
-        .setFooter({ text: `version: ${version}` })
-        .send(message.channel)
-        .then();
       break;
     // test purposes - play command
     case 'gplay':
@@ -735,7 +698,8 @@ async function devProcessCommands(message: Message) {
                     const gMems = (<VoiceChannel>(
                       bot.channels.cache.get(getVoiceConnection(guildId)!.joinConfig.channelId!)
                     ))!.members;
-                    if (gMems.get(CORE_ADM[0]) || gMems.get(CORE_ADM[1])) {
+                    const coreAdminIds = CORE_ADM.map((x) => x.substring(0, x.length - 1));
+                    if (gMems.get(coreAdminIds[0]) || gMems.get(coreAdminIds[1])) {
                       hasDeveloper = true;
                       const server = processStats.getServer(guildId);
                       processStats.disconnectConnection(server);

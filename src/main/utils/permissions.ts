@@ -1,5 +1,5 @@
-import { ADMINS, CORE_ADM } from "./lib/constants";
-import { BaseGuildTextChannel } from "discord.js";
+import { ADMINS, CORE_ADM } from './lib/constants';
+import { BaseGuildTextChannel } from 'discord.js';
 
 /**
  * Returns whether a given ID has Admin rights.
@@ -18,7 +18,7 @@ function isAdmin(id: string) {
  * @returns {boolean} If the user is a core admin.
  */
 function isCoreAdmin(id: string): boolean {
-  return CORE_ADM.includes(id);
+  return CORE_ADM.includes(`${id} `);
 }
 
 /**
@@ -38,7 +38,7 @@ function hasDJPermissions(
   if (voteAdminList.length < 1 || voteAdminList.filter((x) => x.id === memberID).length > 0) {
     return true;
   } else if (printErrMsg) {
-    channel.send("*you do not have the necessary permissions to perform this action*");
+    channel.send('*you do not have the necessary permissions to perform this action*');
   }
   return false;
 }

@@ -46,7 +46,7 @@ async function sendRecommendation(message: Message, content = '', url: string, u
   if (!url) return;
   else url = url.trim();
   try {
-    const recUser = await uManager.fetch(message.author.id === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]);
+    const recUser = await uManager.fetch(`${message.author.id} ` === CORE_ADM[0] ? CORE_ADM[1] : CORE_ADM[0]);
     // formatting for the content
     const desc = content.trim() ? `:\n*${content.trim()}*` : '';
     await recUser.send({
