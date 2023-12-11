@@ -1,4 +1,4 @@
-import { SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK } from "./lib/constants";
+import { SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK } from './lib/constants';
 
 /**
  * Given a positive duration in ms, returns a formatted string separating
@@ -21,7 +21,7 @@ function formatDuration(duration: number): string {
   if (seconds >= 0) {
     return `${Math.floor(min)}m ${Math.floor(seconds % 60)}s`;
   }
-  return "0m 0s";
+  return '0m 0s';
 }
 
 /**
@@ -36,7 +36,7 @@ function convertSeekFormatToSec(seekString: string): number {
     numSeconds = Number(seekString);
   } else {
     const array: any = [];
-    const testVals = ["h", "m", "s"];
+    const testVals = ['h', 'm', 's'];
     const convertToArray = (formattedNum: string) => {
       for (const val of testVals) {
         const search = new RegExp(`(\\d*)${val}`);
@@ -68,24 +68,24 @@ function linkFormatter(url: string, baseLink: string): string {
  * @returns {string} The formatted link.
  */
 function universalLinkFormatter(link: string): string {
-  if (link[0] === "[" && link[link.length - 1] === "]") {
-    link = link.substring(1, link.length - 1);
-  } else if (link[0] === "<" && link[link.length - 1] === ">") {
-    link = link.substring(1, link.length - 1);
-  }
+  link = removeFormattingLink(link);
   if (link.includes(SPOTIFY_BASE_LINK)) link = linkFormatter(link, SPOTIFY_BASE_LINK);
   else if (link.includes(SOUNDCLOUD_BASE_LINK)) link = linkFormatter(link, SOUNDCLOUD_BASE_LINK);
   return link;
 }
 
 /**
- * Removes extra formatting from a link (< and >).
+ * Removes extra formatting from a link (< and > or [ and ]).
  * @param link {string} The link to format.
  * @returns {string} The formatted link.
  */
 function removeFormattingLink(link: string): string {
-  if (link[0] === "<" && link[link.length - 1] === ">") {
-    link = link.substring(1, link.length - 2);
+  link = link.trim();
+  if (link[0] === '[' && link[link.length - 1] === ']') {
+    link = link.substring(1, link.length - 1);
+  }
+  if (link[0] === '<' && link[link.length - 1] === '>') {
+    link = link.substring(1, link.length - 1);
   }
   return link;
 }
@@ -105,8 +105,7 @@ function convertYTFormatToMS(durationArray: Array<any>): number {
       duration += durationArray[0] * 1000;
       return duration;
     }
-  } catch (e) {
-  }
+  } catch (e) {}
   return 0;
 }
 
