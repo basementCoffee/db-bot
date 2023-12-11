@@ -153,7 +153,7 @@ async function searchForSingleKey(
  * @param server {LocalServer} The local server object.
  * @returns {Promise<boolean>} If the request was a valid link.
  */
-async function runLookupLink(message: Message, sheetName: string, link: string, server: LocalServer) {
+async function runLookupLink(message: Message, sheetName: string, link: string, server: LocalServer): Promise<boolean> {
   if (!(verifyUrl(link) || verifyPlaylist(link))) return false;
   const xdb = await getXdb2(server, sheetName, false);
   for (const [, value] of xdb.globalKeys) {
