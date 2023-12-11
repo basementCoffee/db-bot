@@ -158,7 +158,7 @@ async function runLookupLink(message: Message, sheetName: string, link: string, 
   const xdb = await getXdb2(server, sheetName, false);
   for (const [, value] of xdb.globalKeys) {
     if (value.link === link) {
-      message.channel.send(`Found it! key name is: **${value.name}**`);
+      message.channel.send(`Found it! key name is: **${value.name}** *in ${value.playlistName}*`);
       return true;
     }
   }
