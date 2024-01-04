@@ -1,6 +1,6 @@
-import AudioImpl from "./AudioImpl";
-import { GuildMember, Message } from "discord.js";
-import { QueueItem } from "./types";
+import AudioImpl from './AudioImpl';
+import { GuildMember, Message } from 'discord.js';
+import { QueueItem } from './types';
 
 type StreamData = {
   // the StreamType enum
@@ -74,15 +74,14 @@ class LocalServer {
   // hold a ready-to-go function in case of vc join
   seamless: {
     function: ([]) => any;
-    args: Array<Object> | undefined;
+    args: Array<Object>;
     message: Message | undefined;
     timeout: any;
   } = {
     // the name of the type of function
-    function: () => {
-    },
+    function: () => {},
     // args for the function
-    args: undefined,
+    args: [],
     // optional message to delete
     message: undefined,
     // timeout before clearing this object
@@ -135,7 +134,7 @@ class LocalServer {
     this.votePlayPauseMembersId = [];
     this.lockQueue = false;
     this.dictator = undefined;
-    this.startUpMessage = "";
+    this.startUpMessage = '';
     this.leaveVCTimeout = undefined;
     this.skipTimes = 0;
     this.activeUserQuestion = new Map();
@@ -152,9 +151,8 @@ class LocalServer {
       isTimer: false
     };
     this.seamless = {
-      function: () => {
-      },
-      args: undefined,
+      function: () => {},
+      args: [],
       message: undefined,
       timeout: undefined
     };
