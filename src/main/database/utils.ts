@@ -72,14 +72,7 @@ async function serializeAndUpdate(
     const playlist = xdb.playlists.get(playlistName.toUpperCase());
     if (!playlist) return false;
     const serializedData = serializeData(playlist, newPlaylist || playlistName);
-    await gsUpdateOverwrite(
-      [serializedData.keysString, serializedData.valuesString],
-      sheetName,
-      'E',
-      row + 2,
-      'F',
-      row + 2
-    );
+    gsUpdateOverwrite([serializedData.keysString, serializedData.valuesString], sheetName, 'E', row + 2, 'F', row + 2);
   }
   server.userKeys.delete(sheetName);
   return true;
