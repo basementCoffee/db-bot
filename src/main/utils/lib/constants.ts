@@ -1,6 +1,7 @@
 // the max size of the queue
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
-
+import config from '../../../../config.json';
+const botVersion = require('../../../../package.json').version;
 // the db bot instance
 const bot = new Client({
   intents: [
@@ -69,7 +70,8 @@ const INVITE_MSG = `Here's the invite link!\n<${INVITE_LINK}>`;
 const DB_BOT_ICON_MED = 'https://raw.githubusercontent.com/Reply2Zain/db-bot/master/assets/dbBotIconMedium.jpg';
 
 const DB_SPOTIFY_EMBED_ICON = 'https://github.com/Reply2Zain/db-bot/blob/master/assets/dbBotspotifyIcon.jpg?raw=true';
-
+const hardwareTag = process.env.PERSONAL_HARDWARE_TAG?.replace(/\\n/gm, '\n').substring(0, 25) || 'unnamed';
+const appConfig = config;
 export {
   ADMINS,
   MAX_QUEUE_S,
@@ -92,5 +94,8 @@ export {
   startupTest,
   ZWSP,
   DB_BOT_ICON_MED,
-  DB_SPOTIFY_EMBED_ICON
+  DB_SPOTIFY_EMBED_ICON,
+  appConfig,
+  botVersion,
+  hardwareTag
 };
