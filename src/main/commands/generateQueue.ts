@@ -7,6 +7,7 @@ import { botInVC, createQueueItem, getLinkType, getSheetName, getTitle } from '.
 import { updateActiveEmbed } from '../utils/embed';
 import { runInsertCommand } from './insert';
 import { isValidRequestWPlay } from '../utils/validation';
+import processStats from '../utils/lib/ProcessStats';
 
 /**
  * Displays the queue in the channel.
@@ -75,7 +76,7 @@ function runQueueCommand(
     if (serverQueue.length > 11) {
       queueMsgEmbed.setFooter({ text: "use 'insert' & 'remove' to edit the queue" });
     }
-    if (tempMsg?.deletable) tempMsg.delete();
+    if (tempMsg?.deletable) tempMsg.delete().catch((e) => processStats.debug(e));
     if (sentMsg?.deletable) {
       await queueMsgEmbed.edit(sentMsg);
     } else {
@@ -119,11 +120,16 @@ function runQueueCommand(
     const arrowReactionTimeout = setTimeout(() => {
       sentMsg!.reactions.removeAll();
     }, 300500);
+    const newPageGeneration = (reaction: MessageReaction, reactionCollector: User, newStartingIndex: number) => {
+      reaction.users.remove(reactionCollector);
+      clearTimeout(arrowReactionTimeout);
+      collector.stop();
+      // edit the footer of the sentMsg embed to loading
+      new EmbedBuilderLocal(sentMsg?.embeds[0]).setFooter({ text: `loading page...` }).edit(sentMsg!);
+      generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
+    };
     collector.on('collect', (reaction, reactionCollector) => {
       if (reaction.emoji.name === reactions.ARROW_L) {
-        reaction.users.remove(reactionCollector);
-        clearTimeout(arrowReactionTimeout);
-        collector.stop();
         let newStartingIndex;
         if (startingIndex <= 0) {
           const lastDigit = Number(serverQueue.length.toString().slice(-1)[0]);
@@ -131,17 +137,14 @@ function runQueueCommand(
         } else {
           newStartingIndex = Math.max(0, startingIndex - 10);
         }
-        generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
+        newPageGeneration(reaction, reactionCollector, newStartingIndex);
       }
       if (reaction.emoji.name === reactions.ARROW_R) {
-        reaction.users.remove(reactionCollector);
-        clearTimeout(arrowReactionTimeout);
-        collector.stop();
         let newStartingIndex = startingIndex + 10;
         if (newStartingIndex >= serverQueue.length - 1) {
           newStartingIndex = 0;
         }
-        generateQueue(newStartingIndex, true, sentMsg, sentMsgArray);
+        newPageGeneration(reaction, reactionCollector, newStartingIndex);
       } else if (reaction.emoji.name === reactions.INBOX) {
         if (!isValidRequestWPlay(server, message, 'insert')) return;
         let link;
