@@ -109,11 +109,23 @@ function convertYTFormatToMS(durationArray: Array<any>): number {
   return 0;
 }
 
+/**
+ * Removes problematic parameters from a spotify link.
+ */
+function removeSpotifyLinkParams(url: string): string {
+  let index = url.indexOf('?si=');
+  if (index > -1) {
+    return url.substring(0, index);
+  }
+  return url;
+}
+
 export {
   formatDuration,
   linkFormatter,
   convertSeekFormatToSec,
   removeFormattingLink,
   universalLinkFormatter,
-  convertYTFormatToMS
+  convertYTFormatToMS,
+  removeSpotifyLinkParams
 };

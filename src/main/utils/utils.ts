@@ -16,7 +16,7 @@ import ytpl from 'ytpl';
 import LocalServer from './lib/LocalServer';
 import { getVoiceConnection } from '@discordjs/voice';
 import { EmbedBuilderLocal } from '@hoursofza/djs-common';
-import { linkFormatter } from './formatUtils';
+import { linkFormatter, removeSpotifyLinkParams } from './formatUtils';
 import { bot, botID, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from './lib/constants';
 import { QueueItem } from './lib/types';
 import processStats from './lib/ProcessStats';
@@ -135,10 +135,11 @@ function resetSession(server: LocalServer) {
  */
 async function getTitle(queueItem: any, cutoff?: number): Promise<string> {
   let title;
-  const isEmptyQueueItem = !queueItem.infos || !Object.keys(queueItem.infos).length;
+  const noUrlData = !queueItem.infos || !Object.keys(queueItem.infos).length;
   try {
     if (queueItem.type === StreamType.SPOTIFY) {
-      if (isEmptyQueueItem) {
+      if (noUrlData) {
+        queueItem.url = removeSpotifyLinkParams(queueItem.url);
         try {
           queueItem.infos = Object.assign(queueItem.infos || {}, await getData(queueItem.url));
         } catch (e) {
@@ -147,12 +148,12 @@ async function getTitle(queueItem: any, cutoff?: number): Promise<string> {
       }
       title = queueItem.infos.name;
     } else if (queueItem.type === StreamType.SOUNDCLOUD) {
-      if (isEmptyQueueItem) queueItem.infos = Object.assign(queueItem.infos || {}, await scdl.getInfo(queueItem.url));
+      if (noUrlData) queueItem.infos = Object.assign(queueItem.infos || {}, await scdl.getInfo(queueItem.url));
       title = queueItem.infos.title;
     } else if (queueItem.type === StreamType.TWITCH) {
       title = 'twitch livestream';
     } else {
-      if (isEmptyQueueItem) {
+      if (noUrlData) {
         queueItem.infos = Object.assign(queueItem.infos || {}, await ytdl.getBasicInfo(queueItem.url));
       }
       title = queueItem.infos.videoDetails?.title || queueItem.infos.title;
