@@ -1,7 +1,7 @@
 // A playable item in the queue
-import { StreamType } from "./constants";
-import { MessageEventCore } from "@hoursofza/djs-common";
-import LocalServer from "./LocalServer";
+import { StreamType } from './constants';
+import { MessageEventCore } from '@hoursofza/djs-common';
+import LocalServer from './LocalServer';
 
 export type QueueItem = {
   url: string;
@@ -18,6 +18,4 @@ export type MessageEventLocal = MessageEventCore<EventDataKeyEnum> & {
   mgid: string;
 };
 
-export enum EventDataKeyEnum {
-  BOT_VERSION
-}
+export enum EventDataKeyEnum {}
