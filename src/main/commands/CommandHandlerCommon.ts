@@ -10,8 +10,7 @@ import { joinVoiceChannelSafe } from './join';
 import { getJoke } from './joke';
 import { runKeysCommand } from './keys';
 import { moveKeysWrapper, runMoveItemCommand } from './move';
-import { runWhatsPCommand } from './now-playing';
-import { pauseCommandUtil, playCommandUtil, stopPlayingUtil } from './stream/utils';
+import { pauseCommandUtil, playCommandUtil } from './stream/utils';
 import { runPurgeCommand } from './purge';
 import { removePlaylist, runRemoveCommand } from './remove';
 import { runUniversalSearchCommand } from './search';
@@ -206,27 +205,6 @@ class CommandHandlerCommon {
     args: string[]
   ) {
     return moveKeysWrapper(server, channel, sheetName, xdb, args);
-  }
-
-  /**
-   * Runs the what's playing command. Can also look up database values if args[2] is present.
-   * @param server {LocalServer} The server metadata.
-   * @param {*} message the message that activated the bot
-   * @param {*} voiceChannel The active voice channel
-   * @param keyName Optional - A key to search for to retrieve a link
-   * @param {*} sheetName Required if dbKey is given - provides the name of the sheet reference.
-   * @param sheetLetter Required if dbKey is given - a letter enum representing the type of sheet being referenced
-   * (server or personal)
-   */
-  static async nowPlaying(
-    server: LocalServer,
-    message: Message,
-    voiceChannel: any,
-    keyName?: string,
-    sheetName?: string,
-    sheetLetter?: string
-  ) {
-    return runWhatsPCommand(server, message, voiceChannel, keyName, sheetName, sheetLetter);
   }
 
   /**
@@ -522,27 +500,6 @@ class CommandHandlerCommon {
     } else {
       this.addRandomKeysToQueue(wildcardRandomArr, message, sheetName, server, addToFront, isShuffle).then();
     }
-  }
-
-  /**
-   * Stops playing in the given voice channel and leaves. This is intended for when a user attempts to alter a session.
-   * @param mgid The current guild id
-   * @param voiceChannel The current voice channel
-   * @param stayInVC Whether to stay in the voice channel
-   * @param server {LocalServer} The server playback metadata
-   * @param message Optional - The message metadata, used in the case of verifying a dj or dictator
-   * @param actionUser Optional - The member requesting to stop playing, used in the case of verifying a dj or dictator
-   * @returns {void}
-   */
-  static stopPlaying(
-    mgid: string,
-    voiceChannel: VoiceBasedChannel | null | undefined,
-    stayInVC: boolean,
-    server: LocalServer,
-    message: Message,
-    actionUser: any
-  ) {
-    return stopPlayingUtil(mgid, voiceChannel, stayInVC, server, message, actionUser);
   }
 }
 

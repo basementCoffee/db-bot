@@ -17,7 +17,7 @@ import { sendLinkAsEmbed } from './stream/stream';
 async function runWhatsPCommand(
   server: LocalServer,
   message: Message,
-  voiceChannel: VoiceBasedChannel,
+  voiceChannel: VoiceBasedChannel | null | undefined,
   keyName?: string,
   sheetName?: string,
   sheetLetter?: string
