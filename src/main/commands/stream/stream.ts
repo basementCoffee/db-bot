@@ -76,8 +76,8 @@ async function playLinkToVC(
   queueItem: any,
   vc: VoiceBasedChannel | null | undefined,
   server: LocalServer,
-  retries = 0,
-  seekSec = 0
+  retries: number = 0,
+  seekSec: number = 0
 ): Promise<any> {
   if (!vc) {
     vc = message.member!.voice?.channel;
@@ -88,7 +88,7 @@ async function playLinkToVC(
   }
   if (processStats.isInactive) {
     message.channel.send(`*${message.guild!.members.me!.user.username} has been updated*`);
-    return stopPlayingUtil(message.guild!.id, vc, false, server);
+    return stopPlayingUtil(vc, false, server);
   }
   if (server.leaveVCTimeout) {
     clearTimeout(server.leaveVCTimeout);
@@ -100,7 +100,7 @@ async function playLinkToVC(
   if (!whatToPlay) {
     queueItem = server.queue[0];
     if (!queueItem || !queueItem.url) {
-      return stopPlayingUtil(message.guild!.id, vc, true, server);
+      return stopPlayingUtil(vc, true, server);
     }
     whatToPlay = queueItem.url;
   }
@@ -657,12 +657,12 @@ async function skipLink(
     } else if (server.autoplay && skippedLink) {
       runAutoplayCommand(message, server, voiceChannel, skippedLink).then();
     } else {
-      stopPlayingUtil(message.guild!.id, voiceChannel, true, server, message, message.member!.id);
+      stopPlayingUtil(voiceChannel, true, server, message, message.member!.id);
       if (server.leaveVCTimeout) clearTimeout(server.leaveVCTimeout);
       server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server), LEAVE_VC_TIMEOUT);
     }
   } else {
-    stopPlayingUtil(message.guild!.id, voiceChannel, true, server, message, message.member!.id);
+    stopPlayingUtil(voiceChannel, true, server, message, message.member!.id);
     if (!server.leaveVCTimeout) {
       server.leaveVCTimeout = setTimeout(() => processStats.disconnectConnection(server), LEAVE_VC_TIMEOUT);
     }
@@ -709,7 +709,7 @@ function runRewindCommand(
     message.channel.send('rewinding once');
   }
   if (server.voteAdmin.length > 0 && !force) {
-    if (voteSystem(message, message.guild!.id, 'rewind', mem, server.voteRewindMembersId, server)) {
+    if (voteSystem(message, 'rewind', mem, server.voteRewindMembersId, server)) {
       rewindTimes = 1;
       ignoreSingleRewind = true;
     } else {
@@ -785,7 +785,7 @@ async function runSkipCommand(
     return message.channel.send('only the dictator can perform this action');
   }
   if (server.voteAdmin.length > 0 && !forceSkip) {
-    if (voteSystem(message, message.guild!.id, 'skip', mem, server.voteSkipMembersId, server)) {
+    if (voteSystem(message, 'skip', mem, server.voteSkipMembersId, server)) {
       skipTimes = 1;
       sendSkipMsg = false;
     } else {
@@ -1094,7 +1094,7 @@ async function generatePlaybackReactions(
         break;
       case reactions.STOP:
         const mem = sentMsg.member!.voice?.channel?.members.get(user.id);
-        stopPlayingUtil(mgid, voiceChannel, false, server, sentMsg, mem?.id);
+        stopPlayingUtil(voiceChannel, false, server, sentMsg, mem?.id);
         if (server.followUpMessage) {
           server.followUpMessage.delete();
           server.followUpMessage = undefined;
