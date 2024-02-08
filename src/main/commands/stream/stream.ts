@@ -39,7 +39,7 @@ import {
   stopPlayingUtil,
   voteSystem
 } from './utils';
-import { convertYTFormatToMS, formatDuration, linkFormatter } from '../../utils/formatUtils';
+import { convertYTFormatToMS, formatDuration, linkFormatter, removeSpotifyLinkParams } from '../../utils/formatUtils';
 import { runKeysCommand } from '../keys';
 import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import { QueueItem } from '../../utils/lib/types';
@@ -96,7 +96,6 @@ async function playLinkToVC(
   }
   // the queue item's formal url (can be of any type)
   let whatToPlay = queueItem?.url;
-  processStats.debug(`[PLAYING] ${whatToPlay}`);
   if (!whatToPlay) {
     queueItem = server.queue[0];
     if (!queueItem || !queueItem.url) {
@@ -170,6 +169,7 @@ async function playLinkToVC(
       return;
     }
   }
+  processStats.debug(`[PLAYING] original: ${whatToPlay}\nurlAlt:${urlAlt}`);
   whatspMap.set(vc.id, whatToPlay);
   // remove previous embed buttons
   if (server.numSinceLastEmbed > 4 && server.currentEmbed && (!server.loop || whatspMap.get(vc.id) !== whatToPlay)) {
@@ -481,10 +481,11 @@ async function getYTUrlFromSpotifyUrl(queueItem: any, whatToPlay: string): Promi
   if (!queueItem.urlAlt) {
     let itemIndex = 0;
     if (!queueItem.infos) {
+      whatToPlay = removeSpotifyLinkParams(whatToPlay);
       try {
         queueItem.infos = (await getPlaylistArray(whatToPlay, StreamType.SPOTIFY))[0];
       } catch (e) {
-        console.log(e);
+        processStats.debug(e);
         return {
           ok: false,
           response: `error: could not get link metadata <${whatToPlay}>`
@@ -495,8 +496,8 @@ async function getYTUrlFromSpotifyUrl(queueItem: any, whatToPlay: string): Promi
     let queueItemNameLower: string;
     try {
       queueItemNameLower = queueItem.infos.name.toLowerCase();
-    } catch (e) {
-      processStats.logError(`[ERROR] getYTUrlFromSpotifyUrl: ${e}`);
+    } catch (e: any) {
+      processStats.logError(`[ERROR] getYTUrlFromSpotifyUrl: ${e?.message}\nqueueItem infos:\n${queueItem.infos}`);
       processStats.debug(e);
       return {
         ok: false,
