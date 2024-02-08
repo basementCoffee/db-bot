@@ -330,7 +330,13 @@ async function playLinkToVC(
       if (server.queue.length === 1) {
         server.queue.push(queueItem);
       }
-      skipLink(message, vc!, false, server, false).catch((er) => processStats.debug(er));
+      const prevLink = server.queueHistory[server.queueHistory.length - 1]?.url;
+      const videoDetails = queueItem.infos?.videoDetails;
+      if (videoDetails && (videoDetails.isLiveContent || videoDetails.isLive) && retries < 2) {
+        playLinkToVC(message, queueItem, vc, server, ++retries, seekSec).catch((er) => processStats.debug(er));
+      } else {
+        skipLink(message, vc!, false, server, false).catch((er) => processStats.debug(er));
+      }
       // noinspection JSUnresolvedFunction
       processStats.logError({
         content: `Dispatcher Error: ${error}`,
