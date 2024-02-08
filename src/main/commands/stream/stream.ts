@@ -339,9 +339,9 @@ async function playLinkToVC(
             .setTitle('Dispatcher Error')
             .setDescription(
               `url: ${urlAlt}
-        timestamp: ${formatDuration(resource.playbackDuration)}\nprevSong: ${
-                server.queueHistory[server.queueHistory.length - 1]?.url
-              }`
+        timestamp: ${formatDuration(resource.playbackDuration)}
+        prevSong: ${prevLink}
+        retries: ${retries}/3`
             )
             .build()
         ]
@@ -486,7 +486,17 @@ async function getYTUrlFromSpotifyUrl(queueItem: any, whatToPlay: string): Promi
       }
     }
     let artists = '';
-    const queueItemNameLower = queueItem.infos.name.toLowerCase();
+    let queueItemNameLower: string;
+    try {
+      queueItemNameLower = queueItem.infos.name.toLowerCase();
+    } catch (e) {
+      processStats.logError(`[ERROR] getYTUrlFromSpotifyUrl: ${e}`);
+      processStats.debug(e);
+      return {
+        ok: false,
+        response: `error: could not get link metadata <${whatToPlay}>`
+      };
+    }
     if (queueItem.infos.artists) {
       queueItem.infos.artists.forEach((x: any) => (artists += x.name + ' '));
       artists = artists.trim();
