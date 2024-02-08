@@ -1,7 +1,8 @@
-import fs from "fs";
-import { CommandHandler } from "@hoursofza/djs-common";
-import { isAdmin } from "../utils/permissions";
-import { EventDataKeyEnum } from "../utils/lib/types";
+import fs from 'fs';
+import { CommandHandler, MessageEventCore } from '@hoursofza/djs-common';
+import { isAdmin } from '../utils/permissions';
+import { EventDataKeyEnum } from '../utils/lib/types';
+import { commandsMap } from '../utils/lib/constants';
 
 // list of commands that should not be process-specific
 // const MULTI_PROCESS_CMDS = ['boot', 'update'];
@@ -9,7 +10,7 @@ import { EventDataKeyEnum } from "../utils/lib/types";
 
 class CommandHandlerLocal extends CommandHandler<EventDataKeyEnum> {
   constructor() {
-    super(isAdmin, `./dist/src/main/commands/lookup`, "../commands/lookup");
+    super(isAdmin, `./dist/src/main/commands/lookup`, '../commands/lookup');
   }
 
   getCommand(statement: string, userID: string) {
@@ -21,8 +22,20 @@ class CommandHandlerLocal extends CommandHandler<EventDataKeyEnum> {
     return require;
   }
 
-  protected fsModule(): typeof import("fs") {
+  protected fsModule(): typeof import('fs') {
     return fs;
+  }
+
+  protected commandNotFoundDuringExecution(event: MessageEventCore<EventDataKeyEnum>) {
+    this.saveStatement(event.statement);
+  }
+
+  protected postCommandExecution(event: MessageEventCore<EventDataKeyEnum>, isAdminCommand: boolean) {
+    if (!isAdminCommand) this.saveStatement(event.statement);
+  }
+
+  private saveStatement(statement: string) {
+    commandsMap.set(statement, (commandsMap.get(statement) || 0) + 1);
   }
 }
 
