@@ -4,7 +4,7 @@ import processStats from '../utils/lib/ProcessStats';
 import { dmHandler } from '../utils/dms';
 import { Message } from 'discord.js';
 import { devProcessCommands } from '../commands/dev/processDevCommands';
-import { runCommandCases } from '../commands/runCommandCases';
+import { runMessageCommand } from '../commands/runMessageCommand';
 import { processHandler } from '../process/utils';
 
 module.exports = async (message: Message) => {
@@ -24,6 +24,6 @@ module.exports = async (message: Message) => {
   if (message.guildId === null) {
     dmHandler(message, message.content).catch((err) => processStats.debug(err));
   } else {
-    void runCommandCases(message);
+    void runMessageCommand(message);
   }
 };

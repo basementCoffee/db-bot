@@ -2,16 +2,16 @@ import { Message } from 'discord.js';
 import processStats from '../utils/lib/ProcessStats';
 import { appConfig } from '../utils/lib/constants';
 import { getServerPrefix } from '../database/retrieval';
-import { isAdmin } from '../utils/permissions';
-import { runDevCommands } from './dev/runDevCommands';
-import { runUserCommands } from './runUserCommands';
+import LocalServer from '../utils/lib/LocalServer';
+import { MessageEventLocal } from '../utils/lib/types';
+import { commandHandler } from '../handler/CommandHandler';
 
 /**
- * The execution for all bot commands within a server.
+ * Processes the message for a command and executes the command. Should be the entrypoint for new message commands.
  * @param message the message that triggered the bot
  * @returns {Promise<void>}
  */
-export async function runCommandCases(message: Message) {
+export async function runMessageCommand(message: Message): Promise<void> {
   const mgid = message.guild!.id;
   // the server guild playback data
   const server = processStats.getServer(mgid);
@@ -38,9 +38,33 @@ export async function runCommandCases(message: Message) {
   const args = message.content.replace(/\s+/g, ' ').split(' ');
   // the command name
   const statement = args[0].substring(1).toLowerCase();
-  if (isAdmin(message.member!.id)) {
-    runDevCommands(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
-  } else {
-    runUserCommands(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
-  }
+  executeCommand(message, statement, server, args, prefixString).catch((err) => processStats.logError(err));
+}
+
+/**
+ * Execute a specific command.
+ * @param message {import("discord.js").Message} The message.
+ * @param statement {string} The command to process.
+ * @param server {LocalServer} The server object.
+ * @param args {Array<string>} The statement and provided arguments.
+ * @param prefixString {string} The prefix used by the server.
+ * @returns {Promise<void>}
+ */
+async function executeCommand(
+  message: Message,
+  statement: string,
+  server: LocalServer,
+  args: Array<string>,
+  prefixString: string
+): Promise<void> {
+  const event: MessageEventLocal = {
+    statement,
+    message,
+    args: args.slice(1),
+    prefix: prefixString,
+    data: new Map(),
+    server: server,
+    mgid: message.guild!.id
+  };
+  await commandHandler.execute(event);
 }

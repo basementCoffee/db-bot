@@ -1,11 +1,11 @@
 import { Message, MessageReaction, User, VoiceChannel } from 'discord.js';
 import processStats from '../../utils/lib/ProcessStats';
-import { appConfig, bot, botID, botVersion, checkActiveMS, CORE_ADM, hardwareTag } from '../../utils/lib/constants';
+import { appConfig, bot, botID, botVersion, CORE_ADM, hardwareTag } from '../../utils/lib/constants';
 import buildNumber from '../../utils/lib/BuildNumber';
 import reactions from '../../utils/lib/reactions';
 import { devUpdateCommand } from './devUpdateCommand';
 import { checkToSeeActive } from '../../process/checkToSeeActive';
-import { runCommandCases } from '../runCommandCases';
+import { runMessageCommand } from '../runMessageCommand';
 import { getVoiceConnection } from '@discordjs/voice';
 import { setProcessInactiveAndMonitor } from '../../process/monitor';
 import { getTemperature, processEnvFile } from '../../process/utils';
@@ -276,7 +276,7 @@ export async function devProcessCommands(message: Message) {
       await processEnvFile(message);
       break;
     default:
-      if (processStats.devMode && !processStats.isInactive && message.guild) return runCommandCases(message);
+      if (processStats.devMode && !processStats.isInactive && message.guild) return runMessageCommand(message);
       break;
   }
 }
