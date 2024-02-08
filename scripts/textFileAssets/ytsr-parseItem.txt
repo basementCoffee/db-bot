@@ -57,6 +57,7 @@ const parseItem = (item, resp) => {
 
     // Skip Adds for now
     case 'adSlotRenderer':
+    case 'reelPlayerHeaderRenderer':
     case 'carouselAdRenderer':
     case 'searchPyvRenderer':
     case 'promotedVideoRenderer':
@@ -353,7 +354,8 @@ const parseMovie = obj => {
 
 const parseShort = obj => {
   const playerHeader = obj.navigationEndpoint.reelWatchEndpoint.overlay
-    .reelPlayerOverlayRenderer.reelPlayerHeaderSupportedRenderers.reelPlayerHeaderRenderer;
+    .reelPlayerOverlayRenderer.reelPlayerHeaderSupportedRenderers?.reelPlayerHeaderRenderer;
+  if (!playerHeader) return null;
   const channelNavEndpoint = playerHeader.channelTitleText.runs[0].navigationEndpoint;
   return {
     type: 'short',
