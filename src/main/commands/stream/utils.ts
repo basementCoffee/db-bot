@@ -9,14 +9,13 @@ import processStats from '../../utils/lib/ProcessStats';
 /**
  * A system to manage votes for various bot actions. Used for DJ mode.
  * @param message THe message metadata
- * @param mgid The message guild id
  * @param commandName {string} The action for which the voting is for
  * @param voter The member that is doing the voting
  * @param votes {Array} An array representing the ids of the members who voted for the action
  * @param server {LocalServer} The server to use.
  * @returns {Boolean} If there are enough votes to perform the desired action.
  */
-function voteSystem(message: Message, mgid: string, commandName: string, voter: any, votes: any, server: LocalServer) {
+function voteSystem(message: Message, commandName: string, voter: any, votes: any, server: LocalServer): boolean {
   if (server.voteAdmin) {
     const vcMemMembersId = message.guild!.members.me!.voice.channel?.members.map((x) => x.id);
     if (vcMemMembersId && vcMemMembersId.includes(voter.id) && vcMemMembersId.includes(botID)) {
@@ -80,7 +79,7 @@ function pauseCommandUtil(
   noErrorMsg = false,
   force = false,
   noPrintMsg = false
-) {
+): boolean {
   if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
     if (server.dictator && actionUser.id !== server.dictator.id) {
       message.channel.send('only the dictator can pause');
@@ -89,7 +88,7 @@ function pauseCommandUtil(
     if (server.voteAdmin.length > 0) {
       if (force) {
         server.votePlayPauseMembersId = [];
-      } else if (voteSystem(message, message.guild!.id, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
+      } else if (voteSystem(message, 'pause', actionUser, server.votePlayPauseMembersId, server)) {
         noPrintMsg = true;
       } else {
         return false;
@@ -108,8 +107,8 @@ function pauseCommandUtil(
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     server.numSinceLastEmbed++;
-    return false;
   }
+  return false;
 }
 
 /**
@@ -126,10 +125,10 @@ function playCommandUtil(
   message: Message,
   actionUser: GuildMember,
   server: LocalServer,
-  noErrorMsg = false,
-  force = false,
-  noPrintMsg = false
-) {
+  noErrorMsg: any | null = false,
+  force: any | null = false,
+  noPrintMsg: any | null = false
+): boolean {
   if (actionUser.voice && botInVC(message) && server.audio.isVoiceChannelMember(actionUser)) {
     if (server.dictator && actionUser.id !== server.dictator.id) {
       message.channel.send('only the dictator can play');
@@ -138,7 +137,7 @@ function playCommandUtil(
     if (server.voteAdmin.length > 0) {
       if (force) {
         server.votePlayPauseMembersId = [];
-      } else if (voteSystem(message, message.guild!.id, 'play', actionUser, server.votePlayPauseMembersId, server)) {
+      } else if (voteSystem(message, 'play', actionUser, server.votePlayPauseMembersId, server)) {
         noPrintMsg = true;
       } else {
         return false;
@@ -157,13 +156,12 @@ function playCommandUtil(
   } else if (!noErrorMsg) {
     message.channel.send('nothing is playing right now');
     server.numSinceLastEmbed++;
-    return false;
   }
+  return false;
 }
 
 /**
  * Stops playing in the given voice channel and leaves. This is intended for when a user attempts to alter a session.
- * @param mgid The current guild id
  * @param voiceChannel The current voice channel
  * @param stayInVC Whether to stay in the voice channel
  * @param server {LocalServer} The server playback metadata
@@ -172,16 +170,16 @@ function playCommandUtil(
  * @returns {undefined}
  */
 function stopPlayingUtil(
-  mgid: string,
   voiceChannel: VoiceBasedChannel | null | undefined,
   stayInVC: boolean,
   server: LocalServer,
   message?: Message,
   actionUserId?: string
-) {
+): void {
   if (!voiceChannel) return;
   if (server.dictator && actionUserId && actionUserId !== server.dictator.id) {
-    return message?.channel.send('only the dictator can perform this action');
+    message?.channel.send('only the dictator can perform this action');
+    return;
   }
   if (
     server.voteAdmin.length > 0 &&
@@ -189,7 +187,8 @@ function stopPlayingUtil(
     !server.voteAdmin.map((x: any) => x.id).includes(actionUserId) &&
     server.queue.length > 0
   ) {
-    return message?.channel.send('*only the DJ can end the session*');
+    message?.channel.send('*only the DJ can end the session*');
+    return;
   }
   if (server.followUpMessage) {
     server.followUpMessage.delete();
@@ -252,7 +251,7 @@ function playComputation(server: LocalServer, force = false) {
  * @param server {LocalServer} The server object.
  */
 function endAudioDuringSession(server: LocalServer) {
-  updateActiveEmbed(server);
+  updateActiveEmbed(server).catch((e) => processStats.debug(e));
   // active stream should be removed within pauseComputation
   pauseComputation(server);
 }
