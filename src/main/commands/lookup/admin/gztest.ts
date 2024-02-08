@@ -1,7 +1,14 @@
-import { BaseGuildTextChannel } from 'discord.js';
-import processStats from '../../utils/lib/ProcessStats';
-import { devProcessCommands } from './processDevCommands';
-import { runCommandCases } from '../runCommandCases';
+import { MessageEventLocal } from '../../../utils/lib/types';
+import processStats from '../../../utils/lib/ProcessStats';
+import { BaseGuildTextChannel, TextChannel } from 'discord.js';
+import { devProcessCommands } from '../../dev/processDevCommands';
+import { runMessageCommand } from '../../runMessageCommand';
+
+exports.run = async (event: MessageEventLocal) => {
+  // this method is for testing purposes only. (cmd: npm run dev-test)
+  if (!processStats.devMode) return;
+  runDevTest(<TextChannel>event.message.channel, ['']).catch((err) => processStats.debug(err));
+};
 
 /**
  * Runs a test.
@@ -13,7 +20,7 @@ export async function runDevTest(channel: BaseGuildTextChannel, messagesToRun: A
   // fetch should be the message to test/mimic
   for (const msgId of messagesToRun) {
     if (!msgId) {
-      channel.send('warning: empty test cases, exiting...');
+      await channel.send('warning: empty test cases, exiting...');
       break;
     }
     const msg = await channel.messages.fetch(msgId);
@@ -24,8 +31,8 @@ export async function runDevTest(channel: BaseGuildTextChannel, messagesToRun: A
         processStats.debug(`${baseCmdInfo} (to ${devProcessCommands.name})`);
         await devProcessCommands(msg);
       } else {
-        processStats.debug(`${baseCmdInfo} (to ${runCommandCases.name})`);
-        await runCommandCases(msg);
+        processStats.debug(`${baseCmdInfo} (to ${runMessageCommand.name})`);
+        await runMessageCommand(msg);
       }
     } else {
       console.log(`${runDevTest.name}: could not find message with the id ${msgId}`);
