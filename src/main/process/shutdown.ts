@@ -1,9 +1,9 @@
-import { bot } from "../utils/lib/constants";
-import processStats from "../utils/lib/ProcessStats";
-import { Channel, Guild, TextBasedChannel } from "discord.js";
-import { getVoiceConnection } from "@discordjs/voice";
-import { parentThread } from "../threads/parentThread";
-import config from "../../../config.json";
+import { bot } from '../utils/lib/constants';
+import processStats from '../utils/lib/ProcessStats';
+import { Channel, Guild, TextBasedChannel } from 'discord.js';
+import { getVoiceConnection } from '@discordjs/voice';
+import { parentThread } from '../threads/parentThread';
+import config from '../../../config.json';
 
 /**
  * Shuts down the current process.
@@ -12,11 +12,10 @@ import config from "../../../config.json";
  */
 function shutdown(type: string) {
   return () => {
-    parentThread("SHUTDOWN", {}, []);
+    parentThread('SHUTDOWN', {}, []);
     const wasActive = !processStats.isInactive;
     processStats.setProcessInactive();
-    console.log("shutting down...");
-    // noinspection JSUnresolvedFunction
+    console.log('shutting down...');
     try {
       if (!processStats.devMode) {
         bot.channels
@@ -24,19 +23,17 @@ function shutdown(type: string) {
           .then((channel: Channel | null) => {
             (<TextBasedChannel>channel).send(`shutting down: '${process.pid}' (${type})`);
           })
-          .catch((e) => console.log("shutdown error: ", e));
+          .catch((e) => console.log('shutdown error: ', e));
         if (wasActive)
           bot.channels
             .fetch(config.process)
-            .then((channel: any) => channel.send("=gzz"))
-            .catch((e) => console.log("shutdown error: ", e));
+            .then((channel: any) => channel.send('=gzz'))
+            .catch((e) => console.log('shutdown error: ', e));
       }
-    } catch (e) {
-    }
+    } catch (e) {}
     const activeCSize = bot.voice.adapters.size;
     if (activeCSize > 0) {
-      console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? "s" : ""}`);
-      // noinspection JSUnresolvedFunction
+      console.log(`leaving ${activeCSize} voice channel${activeCSize > 1 ? 's' : ''}`);
       if (processStats.servers.size > 0) {
         bot.voice.adapters.forEach((x: any, guildId: string) => {
           const server = processStats.getServer(guildId);
@@ -47,12 +44,12 @@ function shutdown(type: string) {
               getVoiceConnection(guildId)?.disconnect();
               x.destroy();
               try {
-                if (currentEmbed) currentEmbed.channel.send("db vibe is restarting... (this will be quick)");
+                if (currentEmbed) currentEmbed.channel.send('db vibe is restarting... (this will be quick)');
                 else if (server.queue[0])
-                  guild.systemChannel?.send("db vibe is restarting... (this will be quick)").then();
+                  guild.systemChannel?.send('db vibe is restarting... (this will be quick)').then();
                 processStats.disconnectConnection(server);
               } catch (e) {
-                guild.systemChannel?.send("db vibe is restarting... (this will be quick)").then();
+                guild.systemChannel?.send('db vibe is restarting... (this will be quick)').then();
               }
             })
             .catch();

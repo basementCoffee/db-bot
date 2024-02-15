@@ -263,13 +263,14 @@ async function playLinkToVC(
           server.errors.continuousStreamErrors++;
           let errorMessage = 'could not retrieve link data';
           if (server.streamData.type === StreamType.YOUTUBE) {
-            errorMessage += ', ensure video is playable from a private browser';
+            errorMessage += ', ensure video is not restricted';
           }
-          message.channel.send(`*${errorMessage}*`);
           whatspMap.set(vc.id, '');
           if (server.errors.continuousStreamErrors < 4) {
+            message.channel.send(`*${errorMessage}. skipped*`);
             skipLink(message, vc, false, server, true).catch((er) => processStats.debug(er));
           } else {
+            message.channel.send(`*${errorMessage}*`);
             processStats.disconnectConnection(server);
             message.channel.send('***db vibe is facing some issues, please try again later***');
             checkStatusOfYtdl(processStats.getServer(config['check-in-guild']), message).then();
@@ -337,7 +338,6 @@ async function playLinkToVC(
       } else {
         skipLink(message, vc!, false, server, false).catch((er) => processStats.debug(er));
       }
-      // noinspection JSUnresolvedFunction
       processStats.logError({
         content: `Dispatcher Error: ${error}`,
         embeds: [
@@ -409,7 +409,6 @@ async function playLinkToVC(
           message.channel
             .send('*db vibe appears to be facing some issues: automated diagnosis is underway.*')
             .then(() => {
-              // noinspection JSUnresolvedFunction
               processStats.logError(
                 '***status code 404 error***' + '\n*if this error persists, try to change the active process*'
               );
@@ -594,7 +593,6 @@ function searchForBrokenLinkWithinDB(message: Message, server: LocalServer, what
  * @param message The message metadata to send a response to the appropriate channel
  */
 async function checkStatusOfYtdl(server: LocalServer, message?: Message) {
-  // noinspection JSUnresolvedFunction
   const stream = await ytdl('https://www.youtube.com/watch?v=1Bix44C1EzY', {
     // @ts-ignore
     filter: () => ['251'],
@@ -605,13 +603,13 @@ async function checkStatusOfYtdl(server: LocalServer, message?: Message) {
   await new Promise((res) => setTimeout(res, 500));
   let connection;
   try {
-    connection = await server.audio.joinVoiceChannel(
+    connection = server.audio.joinVoiceChannel(
       await bot.guilds.fetch(config['check-in-guild']),
       config['check-in-voice']
     );
   } catch (e) {
-    // if cannot join check-in voice channel, try the backup voice channel
-    connection = await server.audio.joinVoiceChannel(
+    // if the bot is unable to join the check-in voice channel, try the backup voice channel
+    connection = server.audio.joinVoiceChannel(
       await bot.guilds.fetch(config['check-in-guild']),
       config['check-in-voice-2']
     );
@@ -994,7 +992,7 @@ async function sendEmbedUpdate(
   server: LocalServer,
   forceEmbed: boolean,
   embed: EmbedBuilderLocal
-) {
+): Promise<Message> {
   server.numSinceLastEmbed = 0;
   if (server.currentEmbed) {
     if (!forceEmbed && server.currentEmbed.deletable) {
@@ -1006,7 +1004,6 @@ async function sendEmbedUpdate(
       }
     }
   }
-  // noinspection JSUnresolvedFunction
   const sentMsg = await embed.send(channel);
   server.currentEmbed = sentMsg;
   return sentMsg;

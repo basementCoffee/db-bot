@@ -10,7 +10,6 @@ import { checkToSeeActive } from '../process/checkToSeeActive';
 module.exports = async () => {
   parentThread('STARTUP', {}, []);
   // bot starts up as inactive, if no response from the channel then activates itself
-  // noinspection JSUnresolvedFunction
   processStats.getServer(appConfig['check-in-guild']);
   if (processStats.devMode) {
     processStats.setProcessActive();
