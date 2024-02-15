@@ -55,7 +55,7 @@ async function runPlayLinkCommand(
   while (args[linkItem]) {
     let url = removeFormattingLink(args[linkItem]);
     if (url[url.length - 1] === ',') url = url.replace(/,/, '');
-    pNums += await addLinkToQueue(args[linkItem], message, server, mgid, false, pushQueue);
+    pNums += await addLinkToQueue(args[linkItem], message, server, false, pushQueue);
     linkItem++;
   }
   // if queue was empty then play
@@ -118,7 +118,7 @@ async function playLinkNow(
       let url = args[linkItem];
       if (url[url.length - 1] === ',') url = url.replace(/,/, '');
       url = removeFormattingLink(url);
-      await addLinkToQueue(url, message, server, mgid, true, unshiftQueue);
+      await addLinkToQueue(url, message, server, true, unshiftQueue);
       linkItem--;
     }
   }

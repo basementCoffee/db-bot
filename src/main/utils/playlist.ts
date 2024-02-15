@@ -1,16 +1,16 @@
-import { Message } from "discord.js";
-import { createQueueItem, getLinkType, isPlaylistSpotifyLink, isSpotifyLink, verifyPlaylist } from "./utils";
-import { MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from "./lib/constants";
-import LocalServer from "./lib/LocalServer";
-import { linkFormatter } from "./formatUtils";
-import ytpl from "ytpl";
-import processStats from "./lib/ProcessStats";
-import spotifyAuth from "./lib/SpotifyAuthenticator";
-import fetch from "isomorphic-unfetch";
-import { SoundCloud as scdl } from "scdl-core";
-import { QueueItem } from "./lib/types";
+import { Message } from 'discord.js';
+import { createQueueItem, getLinkType, isPlaylistSpotifyLink, isSpotifyLink, verifyPlaylist } from './utils';
+import { MAX_QUEUE_S, SOUNDCLOUD_BASE_LINK, SPOTIFY_BASE_LINK, StreamType, TWITCH_BASE_LINK } from './lib/constants';
+import LocalServer from './lib/LocalServer';
+import { linkFormatter } from './formatUtils';
+import ytpl from 'ytpl';
+import processStats from './lib/ProcessStats';
+import spotifyAuth from './lib/SpotifyAuthenticator';
+import fetch from 'isomorphic-unfetch';
+import { SoundCloud as scdl } from 'scdl-core';
+import { QueueItem } from './lib/types';
 
-const { getData, getTracks } = require("spotify-url-info")(fetch);
+const { getData, getTracks } = require('spotify-url-info')(fetch);
 
 /**
  * Gets the url of the item from the metadata (infos).
@@ -96,7 +96,7 @@ async function getPlaylistArray(playlistUrl: string, type: StreamType) {
           let i = 0;
           do {
             const requestBody = (
-              await spotifyWebApi.getPlaylistTracks(playlistUrl.split("/").pop(), { offset: i * 100 })
+              await spotifyWebApi.getPlaylistTracks(playlistUrl.split('/').pop(), { offset: i * 100 })
             ).body;
             const requestData = requestBody.tracks ?? requestBody;
             const requestItems = requestData.items;
@@ -115,7 +115,7 @@ async function getPlaylistArray(playlistUrl: string, type: StreamType) {
             tracks.map((item) => (item.album = { images: firstTrack.images }));
           }
         } else {
-          const trackItem = (await spotifyWebApi.getTracks([playlistUrl.split("/").pop()])).body.tracks[0];
+          const trackItem = (await spotifyWebApi.getTracks([playlistUrl.split('/').pop()])).body.tracks[0];
           tracks.push(trackItem);
         }
         return tracks;
@@ -159,7 +159,7 @@ async function addPlaylistToQueue(
 ) {
   const playlist = (await getPlaylistArray(playlistUrl, linkType)) || [];
   if (playlist.length < 1) {
-    message.channel.send("*could not get data from the link provided:*\n" + playlistUrl);
+    message.channel.send('*could not get data from the link provided:*\n' + playlistUrl);
     return 0;
   }
 
@@ -180,7 +180,7 @@ async function addPlaylistToQueue(
             itemsLeft--;
           }
         } else {
-          message.channel.send("*queue is full*");
+          message.channel.send('*queue is full*');
           break;
         }
       }
@@ -200,14 +200,14 @@ async function addPlaylistToQueue(
             itemsLeft--;
           }
         } else {
-          message.channel.send("*queue is full*");
+          message.channel.send('*queue is full*');
           break;
         }
       }
     }
   } catch (e) {
     processStats.debug(e);
-    message.channel.send("there was an error");
+    message.channel.send('there was an error');
   }
   return numItems;
 }
@@ -217,7 +217,6 @@ async function addPlaylistToQueue(
  * @param url The link to add to the queue.
  * @param message The message metadata.
  * @param server {LocalServer} The server.
- * @param mgid The message guild id.
  * @param addToFront {boolean} If to add to the front.
  * @param queueFunction {(arr: Array, {type, url, infos})=>void}
  * A function that adds a given link to the server queue. Used for YT only.
@@ -227,7 +226,6 @@ async function addLinkToQueue(
   url: string,
   message: Message,
   server: LocalServer,
-  mgid: string,
   addToFront = false,
   queueFunction: (array: any[], obj: { type: StreamType; url: string; infos: any }) => void
 ) {
@@ -235,12 +233,12 @@ async function addLinkToQueue(
     if (url.includes(SPOTIFY_BASE_LINK)) {
       url = linkFormatter(url, SPOTIFY_BASE_LINK);
     }
-    if (url.includes("?")) {
-      url = url.substring(0, url.indexOf("?"));
+    if (url.includes('?')) {
+      url = url.substring(0, url.indexOf('?'));
     }
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.SPOTIFY, addToFront);
-  } else if (ytpl.validateID(url) || url.includes("music.youtube")) {
-    url = url.replace(/music.youtube/, "youtube");
+  } else if (ytpl.validateID(url) || url.includes('music.youtube')) {
+    url = url.replace(/music.youtube/, 'youtube');
     return await addPlaylistToQueue(message, server.queue, 0, url, StreamType.YOUTUBE, addToFront);
   } else if (url.includes(SOUNDCLOUD_BASE_LINK)) {
     if (verifyPlaylist(linkFormatter(url, SOUNDCLOUD_BASE_LINK))) {

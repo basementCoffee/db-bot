@@ -154,7 +154,7 @@ async function playRecommendation(message: Message, server: LocalServer, args: s
   }
   const wasEmpty = !server.queue[0];
   for (const link of recs) {
-    await addLinkToQueue(link, message, server, message.guild!.id, false, pushQueue);
+    await addLinkToQueue(link, message, server, false, pushQueue);
   }
   if (!botInVC(message) || wasEmpty) {
     playLinkToVC(message, server.queue[0], message.member!.voice.channel, server);
