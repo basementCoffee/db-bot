@@ -1,6 +1,11 @@
-import { MessageEventLocal } from "../../../../utils/lib/types";
-import commandHandlerCommon from "../../../CommandHandlerCommon";
+import { MessageEventLocal } from '../../../../utils/lib/types';
+import { parentThread } from '../../../../threads/parentThread';
 
 exports.run = async (event: MessageEventLocal) => {
-  commandHandlerCommon.lyrics(event.message.channel.id, event.message.member!.id, event.args, event.server.queue[0]);
+  // gets the lyrics for what is playing and returns it to the text channel
+  parentThread('lyrics', { channelId: event.message.channel.id }, [
+    event.args,
+    event.server.queue[0],
+    event.message.member!.id
+  ]);
 };

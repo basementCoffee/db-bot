@@ -4,6 +4,7 @@ import { botID, StreamType } from '../utils/lib/constants';
 import { EmbedBuilderLocal } from '@hoursofza/djs-common';
 import ytdl from 'ytdl-core-discord';
 import fetch from 'isomorphic-unfetch';
+import { Song } from 'genius-lyrics';
 
 const { getData } = require('spotify-url-info')(fetch);
 // imports for YouTube captions
@@ -23,15 +24,16 @@ const GeniusClient = new Genius.Client();
  * @param messageMemberId The id of the member that sent the command.
  * @returns {*}
  */
-function runLyricsCommand(
+async function runLyricsCommand(
   channel: BaseGuildTextChannel,
   reactionCallback: any,
   args: string[],
   queueItem: any,
   messageMemberId: string
-) {
+): Promise<void> {
   if (!queueItem) {
-    return channel.send('must be playing a song');
+    await channel.send('must be playing a song');
+    return;
   }
   channel.send('retrieving lyrics...').then(async (sentMsg) => {
     let searchTerm;
@@ -173,50 +175,59 @@ async function sendSongLyrics(
   messageMemberId: string,
   reactionCallback: any
 ): Promise<boolean> {
+  let firstSong: Song;
   try {
-    const firstSong = (await GeniusClient.songs.search(searchTerm))[0];
-    await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async (sentMsg) => {
-      await sentMsg.react('📄');
-      const filter = (reaction: MessageReaction, user: User) => {
-        return user.id !== botID && ['📄'].includes(reaction.emoji.name!);
-      };
-      let lyrics;
-      const collector = sentMsg.createReactionCollector({ filter, time: 300000 });
-      collector.once('collect', async () => {
-        try {
-          lyrics = await firstSong.lyrics();
-        } catch (e) {
-          lyrics = '*could not retrieve*';
-        }
-        // send the lyrics text on reaction click
-        const sentLyricsMsg = await new EmbedBuilderLocal()
-          .setDescription(lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics)
-          .send(message.channel);
-        reactionCallback();
-        // start reactionCollector for lyrics
-        sentLyricsMsg.react(reactions.X).then();
-        const lyricsFilter = (reaction: any, user: any) => {
-          return user.id === messageMemberId && [reactions.X].includes(reaction.emoji.name);
-        };
-        const lyricsCollector = sentLyricsMsg.createReactionCollector({
-          filter: lyricsFilter,
-          time: 300000,
-          dispose: true
-        });
-        lyricsCollector.once('collect', () => {
-          if (sentLyricsMsg.deletable) sentLyricsMsg.delete();
-          lyricsCollector.stop();
-        });
-        lyricsCollector.on('end', () => {
-          if (sentMsg.reactions) sentMsg.reactions.removeAll();
-        });
-      });
-    });
-    return true;
+    firstSong = (await GeniusClient.songs.search(searchTerm))[0];
   } catch (e) {
     // GeniusClient.songs.search throws an error if the song is not found
     return false;
   }
+  await message.edit('***Lyrics for ' + firstSong.title + '***\n<' + firstSong.url + '>').then(async (sentMsg) => {
+    await sentMsg.react(reactions.PAGE);
+    const filter = (reaction: MessageReaction, user: User) => {
+      return user.id !== botID && [reactions.PAGE].includes(reaction.emoji.name!);
+    };
+    let lyrics: string | undefined;
+    const collector = sentMsg.createReactionCollector({ filter, time: 300000 });
+    let pageIsShowing = false;
+    collector.on('collect', async () => {
+      if (pageIsShowing) return;
+      if (!lyrics) {
+        try {
+          lyrics = await firstSong.lyrics();
+        } catch (e) {
+          collector.stop();
+          message.channel.send('*could not retrieve lyrics*');
+          return;
+        }
+      }
+      pageIsShowing = true;
+      // send the lyrics text on reaction click
+      const sentLyricsMsg = await new EmbedBuilderLocal()
+        .setDescription(lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics)
+        .send(message.channel);
+      reactionCallback();
+      // start reactionCollector for lyrics
+      sentLyricsMsg.react(reactions.X).then();
+      const lyricsFilter = (reaction: any, user: any) => {
+        return user.id === messageMemberId && [reactions.X].includes(reaction.emoji.name);
+      };
+      const lyricsCollector = sentLyricsMsg.createReactionCollector({
+        filter: lyricsFilter,
+        time: 300000,
+        dispose: true
+      });
+      lyricsCollector.once('collect', () => {
+        if (sentLyricsMsg.deletable) sentLyricsMsg.delete();
+        lyricsCollector.stop();
+        pageIsShowing = false;
+      });
+      lyricsCollector.once('end', () => {
+        if (sentLyricsMsg.deletable) sentLyricsMsg.reactions?.removeAll();
+      });
+    });
+  });
+  return true;
 }
 
 /**

@@ -1,41 +1,43 @@
 // unicode reactions
 export default {
   // shuffle
-  SHUFFLE: "🔀",
+  SHUFFLE: '🔀',
   // question
-  QUESTION: "❔",
+  QUESTION: '❔',
   // sort
-  MIX: "🔄",
+  MIX: '🔄',
   // server key
-  KEY: "🔑",
+  KEY: '🔑',
   // personal key
-  PKEY: "🔐",
+  PKEY: '🔐',
   // fast-forward
-  SKIP: "⏩",
+  SKIP: '⏩',
   // play/pause
-  PPAUSE: "⏯",
+  PPAUSE: '⏯',
   // rewind
-  REWIND: "⏪",
+  REWIND: '⏪',
   // stop
-  STOP: "⏹",
+  STOP: '⏹',
   // page curl
-  PAGE_C: "📃",
+  PAGE_C: '📃',
   // x
-  X: "❌",
+  X: '❌',
   // checkmark
-  CHECK: "✅",
+  CHECK: '✅',
   // right arrow
-  ARROW_R: "➡️",
+  ARROW_R: '➡️',
   // left arrow
-  ARROW_L: "⬅️",
+  ARROW_L: '⬅️',
   // outbox
-  OUTBOX: "📤",
+  OUTBOX: '📤',
   // inbox
-  INBOX: "📥",
+  INBOX: '📥',
   // gear icon
-  GEAR: "⚙️",
+  GEAR: '⚙️',
   // orange diamond
-  O_DIAMOND: "🔸",
+  O_DIAMOND: '🔸',
   // orange book
-  BOOK_O: "📙"
+  BOOK_O: '📙',
+  // page with fold in top right
+  PAGE: '📄'
 };

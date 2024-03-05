@@ -165,18 +165,6 @@ class CommandHandlerCommon {
   }
 
   /**
-   * Gets the lyrics of what is playing and returns it in the text channel.
-   * @param channelId {string} The channel id.
-   * @param memberId {string} The member id.
-   * @param args The args with the message content.
-   * @param queueItem {any} The queueItem object of the link to get the lyrics of.
-   * @returns {void}
-   */
-  static lyrics(channelId: string, memberId: string, args: string[], queueItem: any): void {
-    parentThread('lyrics', { channelId }, [args, queueItem, memberId]);
-  }
-
-  /**
    * Moves an item in the queue from one position to another.
    * @param channel The channel object.
    * @param server {LocalServer} The server object.
