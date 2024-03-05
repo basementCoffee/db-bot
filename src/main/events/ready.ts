@@ -13,6 +13,7 @@ module.exports = async () => {
   processStats.getServer(appConfig['check-in-guild']);
   if (processStats.devMode) {
     processStats.setProcessActive();
+    console.log(`prefix: "${appConfig.devPrefix}"`);
     if (startupTest) {
       const index = process.argv.indexOf('--test');
       if (index === process.argv.length - 1) {
