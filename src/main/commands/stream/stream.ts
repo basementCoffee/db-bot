@@ -960,7 +960,7 @@ async function sendLinkAsEmbed(
       try {
         const sentMsg = await embed.edit(server.currentEmbed);
         if (sentMsg.reactions.cache.size < 1 && server.audio.player) {
-          generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild!.id);
+          await generatePlaybackReactions(sentMsg, server, voiceChannel, timeMS, message.guild!.id);
         }
         return queueItem;
       } catch (e) {

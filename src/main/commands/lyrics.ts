@@ -207,8 +207,6 @@ async function sendSongLyrics(
         .setDescription(lyrics.length > 1910 ? lyrics.substring(0, 1910) + '...' : lyrics)
         .send(message.channel);
       reactionCallback();
-      // start reactionCollector for lyrics
-      sentLyricsMsg.react(reactions.X).then();
       const lyricsFilter = (reaction: any, user: any) => {
         return user.id === messageMemberId && [reactions.X].includes(reaction.emoji.name);
       };
@@ -225,6 +223,8 @@ async function sendSongLyrics(
       lyricsCollector.once('end', () => {
         if (sentLyricsMsg.deletable) sentLyricsMsg.reactions?.removeAll();
       });
+      // start reactionCollector for lyrics
+      sentLyricsMsg.react(reactions.X).then();
     });
   });
   return true;

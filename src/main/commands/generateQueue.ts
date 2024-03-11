@@ -83,26 +83,6 @@ function runQueueCommand(
       sentMsg = await queueMsgEmbed.send(message.channel);
       sentMsgArray.push(sentMsg!);
     }
-    if (sentMsg!.reactions.cache.size < 1) {
-      server.numSinceLastEmbed += 10;
-      if (startingIndex + 11 < serverQueue.length) {
-        sentMsg!.react(reactions.ARROW_L).then(() => {
-          sentMsg!.react(reactions.ARROW_R).then(() => {
-            if (!collector.ended && serverQueue.length < 12) {
-              sentMsg!.react(reactions.INBOX).then(() => {
-                if (server.queue.length > 0 && !collector.ended) {
-                  sentMsg!.react(reactions.OUTBOX);
-                }
-              });
-            }
-          });
-        });
-      } else {
-        sentMsg!.react(reactions.INBOX).then(() => {
-          if (server.queue.length > 0) sentMsg!.react(reactions.OUTBOX);
-        });
-      }
-    }
     const filter = (reaction: MessageReaction, user: User) => {
       if (message.member!.voice?.channel) {
         for (const mem of message.member!.voice.channel.members) {
@@ -251,6 +231,26 @@ function runQueueCommand(
         });
       }
     });
+    if (sentMsg!.reactions.cache.size < 1) {
+      server.numSinceLastEmbed += 10;
+      if (startingIndex + 11 < serverQueue.length) {
+        sentMsg!.react(reactions.ARROW_L).then(() => {
+          sentMsg!.react(reactions.ARROW_R).then(() => {
+            if (!collector.ended && serverQueue.length < 12) {
+              sentMsg!.react(reactions.INBOX).then(() => {
+                if (server.queue.length > 0 && !collector.ended) {
+                  sentMsg!.react(reactions.OUTBOX);
+                }
+              });
+            }
+          });
+        });
+      } else {
+        sentMsg!.react(reactions.INBOX).then(() => {
+          if (server.queue.length > 0) sentMsg!.react(reactions.OUTBOX);
+        });
+      }
+    }
   }
 
   return generateQueue(0, false, undefined, []);
