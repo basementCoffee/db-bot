@@ -1052,6 +1052,7 @@ async function generatePlaybackReactions(
       case reactions.SKIP:
         if (processingReaction) return;
         processingReaction = true;
+        reaction.users.remove(user.id).catch((err) => processStats.debug('[skip_reaction_remove] ', err));
         await runSkipCommand(
           sentMsg,
           voiceChannel,
@@ -1061,10 +1062,9 @@ async function generatePlaybackReactions(
           false,
           sentMsg.member!.voice?.channel?.members.get(user.id)
         );
-        await reaction.users.remove(user.id);
         processingReaction = false;
         if (server.followUpMessage?.deletable) {
-          server.followUpMessage.delete();
+          await server.followUpMessage.delete();
           server.followUpMessage = undefined;
         }
         break;
@@ -1090,7 +1090,7 @@ async function generatePlaybackReactions(
         reaction.users.remove(user.id).catch((err) => processStats.debug(err));
         break;
       case reactions.REWIND:
-        reaction.users.remove(user.id).then();
+        reaction.users.remove(user.id).catch((err) => processStats.debug('[rewind_reaction_remove] ', err));
         runRewindCommand(
           sentMsg,
           mgid,
