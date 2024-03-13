@@ -247,6 +247,7 @@ async function playLinkToVC(
         audioResourceOptions = { inputType: playObj.type };
         server.streamData.ytPlayer = 'play-dl';
       } catch (e) {
+        processStats.debug('[ERROR] playLinkToVC: play-dl failed, trying ytdl-core-discord');
         try {
           stream = await ytdl(urlAlt, {
             // @ts-ignore
